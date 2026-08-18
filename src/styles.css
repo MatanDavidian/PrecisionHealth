@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+
+/**
+ * Design tokens, matched to the Organic look of the Timeline mockup.
+ * Everything visual should reference these names rather than raw hex values —
+ * when the design system is imported properly later, only this block changes.
+ */
+@theme {
+  --color-canvas: #f1ece1;
+  --color-surface: #faf7f0;
+  --color-card: #e8e1d1;
+  --color-card-soft: #eee8da;
+  --color-accent: #c2673e;
+  --color-accent-soft: #e8d3c4;
+  --color-leaf: #6f7f53;
+  --color-leaf-soft: #eaf1da;
+  --color-ink: #2b2721;
+  --color-ink-muted: #8a8375;
+  --color-hairline: #ddd4c2;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --radius-card: 1.25rem;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers in stat rows should align regardless of digit width. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

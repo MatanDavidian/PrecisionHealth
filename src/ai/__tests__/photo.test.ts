@@ -29,3 +29,17 @@ describe('photo identity', () => {
     expect(await sha256Hex(a)).not.toBe(await sha256Hex(c))
   })
 })
+
+describe('data URL encoding', () => {
+  it('encodes bytes as a base64 data URL', async () => {
+    const { toDataUrl } = await import('../photo')
+    const url = await toDataUrl(new Blob([new Uint8Array([72, 105])], { type: 'image/jpeg' }))
+    expect(url).toBe('data:image/jpeg;base64,SGk=')
+  })
+
+  it('survives a payload large enough to overflow a naive spread', async () => {
+    const { toDataUrl } = await import('../photo')
+    const url = await toDataUrl(new Blob([new Uint8Array(300_000)], { type: 'image/jpeg' }))
+    expect(url.startsWith('data:image/jpeg;base64,')).toBe(true)
+  })
+})

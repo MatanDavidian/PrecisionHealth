@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { repositories } from '@/data'
-import { DEFAULT_MODEL, testApiKey } from '@/ai/openaiEstimator'
+import { DEFAULT_MODEL, listChatModels, testApiKey } from '@/ai/openaiEstimator'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 
@@ -15,11 +15,14 @@ export function Settings() {
   const [keyInput, setKeyInput] = useState('')
   const [test, setTest] = useState<TestState>({ kind: 'idle' })
   const [saved, setSaved] = useState(false)
+  const [models, setModels] = useState<string[]>([])
+  const [loadingModels, setLoadingModels] = useState(false)
 
   useEffect(() => {
     void repositories.settings.get().then((loaded) => {
       setSettings(loaded)
       setKeyInput(loaded.apiKey ?? '')
+      if (loaded.apiKey) void loadModels(loaded.apiKey)
     })
   }, [])
 
@@ -32,6 +35,17 @@ export function Settings() {
     setTimeout(() => setSaved(false), 1800)
   }
 
+  /** Pull the account's own model list, so the choice is real rather than guessed. */
+  const loadModels = async (key: string) => {
+    if (!key) return
+    setLoadingModels(true)
+    try {
+      setModels(await listChatModels(key))
+    } finally {
+      setLoadingModels(false)
+    }
+  }
+
   const runTest = async () => {
     setTest({ kind: 'testing' })
     const result = await testApiKey(keyInput.trim())
@@ -40,6 +54,7 @@ export function Settings() {
       ok: result.ok,
       message: result.ok ? 'Key works.' : result.reason,
     })
+    if (result.ok) void loadModels(keyInput.trim())
   }
 
   return (
@@ -134,12 +149,24 @@ export function Settings() {
             <input
               id="model"
               className={field}
+              list="account-models"
               value={settings.model}
               onChange={(e) => setSettings({ ...settings, model: e.target.value })}
               onBlur={(e) => void update({ model: e.target.value.trim() || DEFAULT_MODEL })}
             />
+            <datalist id="account-models">
+              {models.map((id) => (
+                <option key={id} value={id} />
+              ))}
+            </datalist>
             <p className="pt-1 text-xs text-ink-muted">
-              Any vision-capable model on your account. Default is {DEFAULT_MODEL}.
+              {loadingModels
+                ? 'Loading the models on your account…'
+                : models.length > 0
+                  ? `Click the field to pick from the ${models.length} models on your account. It must be vision-capable, or analysis will fail.`
+                  : 'Any vision-capable model on your account.'}{' '}
+              Default is {DEFAULT_MODEL}. A larger model reads a plate more
+              carefully and costs more per photo — still fractions of a cent.
             </p>
           </div>
 

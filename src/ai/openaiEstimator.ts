@@ -81,6 +81,15 @@ export class OpenAiEstimator implements FoodVisionEstimator {
     const dataUrl = await toDataUrl(photo)
     const doFetch = this.options.fetchImpl ?? fetch
 
+    /**
+     * Newer models (GPT-5.x, o-series) reject `max_tokens` and require
+     * `max_completion_tokens`; older ones only know `max_tokens`. Since the
+     * model is a free-text setting, we cannot know which we are talking to —
+     * so we start with the modern spelling and fall back when the provider
+     * tells us it is wrong. Same for JSON mode, which not every model exposes.
+     */
+    const shape = { tokenParam: 'max_completion_tokens' as 'max_completion_tokens' | 'max_tokens', jsonMode: true }
+
     const call = async (extraInstruction?: string) => {
       const messages = [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -105,8 +114,8 @@ export class OpenAiEstimator implements FoodVisionEstimator {
           body: JSON.stringify({
             model,
             messages,
-            response_format: { type: 'json_object' },
-            max_tokens: 900,
+            ...(shape.jsonMode ? { response_format: { type: 'json_object' } } : {}),
+            [shape.tokenParam]: 900,
           }),
         })
       } catch {
@@ -122,6 +131,20 @@ export class OpenAiEstimator implements FoodVisionEstimator {
         if (response.status === 429) {
           throw new EstimateError('RATE_LIMIT', 'Rate limited by the provider', body)
         }
+
+        // A 400 naming a parameter is the provider telling us this model wants
+        // a different dialect. Adjust and retry rather than failing the user.
+        if (response.status === 400) {
+          if (shape.tokenParam === 'max_completion_tokens' && body.includes('max_completion_tokens')) {
+            shape.tokenParam = 'max_tokens'
+            return call(extraInstruction)
+          }
+          if (shape.jsonMode && body.includes('response_format')) {
+            shape.jsonMode = false
+            return call(extraInstruction)
+          }
+        }
+
         throw new EstimateError('PROVIDER', `Provider error ${response.status}`, body)
       }
 
@@ -176,4 +199,31 @@ export async function testApiKey(
   } catch {
     return { ok: false, reason: 'Could not reach the provider — are you online?' }
   }
+}
+
+/**
+ * Models available on the user's account.
+ *
+ * `/v1/models` reports ids but not capabilities, so vision support cannot be
+ * detected — this filters out the families that are definitely not chat
+ * (embeddings, audio, moderation, image generation) and leaves the judgement
+ * to the user, who can see their own account's list. Better than a hardcoded
+ * menu that goes stale every time the lineup changes.
+ */
+export async function listChatModels(
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string[]> {
+  const response = await fetchImpl('https://api.openai.com/v1/models', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  if (!response.ok) return []
+
+  const payload = (await response.json()) as { data?: { id: string }[] }
+  const EXCLUDE = /embedding|whisper|tts|audio|realtime|moderation|dall-e|image|transcribe|search|codex|babbage|davinci/i
+
+  return (payload.data ?? [])
+    .map((model) => model.id)
+    .filter((id) => /^(gpt|o[1-9]|chatgpt)/i.test(id) && !EXCLUDE.test(id))
+    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
 }

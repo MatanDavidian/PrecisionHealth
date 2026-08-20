@@ -331,3 +331,14 @@ no image bytes.
 error mapping and the repair retry are written to the documented API but have
 never run against it. Expect the first real-key session to need small
 adjustments, most likely to the prompt.
+
+**Follow-up (Aug 2026) — model choice.** The adapter originally sent
+`max_tokens`, which current models (GPT-5.x, o-series) reject outright with
+*"Unsupported parameter"*. Since the model is a free-text setting, the adapter
+cannot know which dialect it is talking to, so it now sends
+`max_completion_tokens` and falls back to `max_tokens` when the provider says
+otherwise — and drops `response_format` the same way. Both paths are tested
+against a mocked provider. Settings also loads the account's own model list
+via `/v1/models` into a datalist: `/v1/models` reports ids but not
+capabilities, so vision support cannot be filtered for and the field stays
+free text with the account list as suggestions.

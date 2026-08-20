@@ -63,11 +63,17 @@ export async function describePhoto(blob: Blob): Promise<PhotoMeta> {
   return meta
 }
 
+/**
+ * Base64 data URL, without FileReader — which does not exist outside a browser
+ * and would make the adapter untestable. Chunked because spreading a few
+ * hundred thousand bytes into String.fromCharCode blows the call stack.
+ */
 export async function toDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(new Error('Could not read the photo'))
-    reader.readAsDataURL(blob)
-  })
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  const CHUNK = 0x8000
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
+  }
+  return `data:${blob.type || 'image/jpeg'};base64,${btoa(binary)}`
 }

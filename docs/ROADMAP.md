@@ -50,26 +50,38 @@ not filtering superseded records. Live in `liveRecords()` now, with a test.
 Assumptions taken along the way are in
 [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — Q3 (aggregate rows are rewritten
 while the facts inside them are append-only) and Q7 (nothing can be deleted)
-are the two worth reading before slice 2.
+are the two worth reading before the cloud slice (now slice 3).
 
-## Slice 2 — My data, on my devices
+## Slice 2 — Photograph a meal, AI does the numbers ← next
+
+Resequenced ahead of auth on a product call (Aug 2026): manual macro entry is
+the thing nobody sustains, and the BYOK decision (D14) — the user's own
+provider key, stored on-device, calling the provider directly — removes the
+server dependency that had this waiting behind the backend.
+
+Camera-first Log screen becomes the app's default view: shutter + one tap to a
+saved meal. Optional hints (food name, grams, time) that the model must honour;
+everything else estimated — kcal, protein, carbs, fat. Estimates land as
+`AI_ESTIMATE` provenance with confidence and an `AIInference` audit row; the
+slice-1 Confirm flow settles them. Includes Settings (local key storage), the
+first IndexedDB migration, and mobile navigation.
+
+Full plan: [`features/photo-meal-logging.md`](features/photo-meal-logging.md).
+
+**Proves:** the provenance apparatus end to end — `AIInference` logging,
+`needsConfirmation`, the supersede chain — against a real model's output.
+**Ships:** the product's actual differentiator, and the fastest way to log food.
+
+## Slice 3 — My data, on my devices
 
 Auth and managed Postgres (see D9). The repository implementations change; no
-screen does.
+screen does. AI calls gain a second mode — a server-side proxy with a managed
+key — alongside BYOK; `settings` (and the key in it) is excluded from sync by
+design.
 
-**Proves:** the seam from D3, under real conditions — latency, failure, and the
-first schema migration.
+**Proves:** the seam from D3, under real conditions — latency, failure, and a
+schema migration with data in it.
 **Ships:** durable, multi-device data.
-
-## Slice 3 — Photograph a meal, confirm what it found
-
-The first AI feature, and deliberately early: photo → structured estimate →
-**user confirmation** → stored as USER_CONFIRMED superseding the estimate.
-
-**Proves:** the whole provenance apparatus end to end — `AIInference` logging,
-`needsConfirmation`, the supersede chain, server-side model calls with keys the
-browser never sees.
-**Ships:** the product's actual differentiator, and the fastest way to log food.
 
 ## Slice 4 — Import from Garmin
 
@@ -102,6 +114,11 @@ linked to the records it came from, refusing to conclude where data is thin.
 Structured workout and nutrition plans → plan adherence evaluation → clinical
 data (labs, conditions, regimens) → body-photo progression → longitudinal
 insights with effect sizes → N-of-1 experiments → proactive agent.
+
+Also parked here: **WhatsApp photo intake** (send a meal photo to a bot, it
+logs it) — needs a server to receive webhooks, so it waits for the backend
+from slice 3; and a **food database / barcode path**, which is the credible
+route to micronutrients (photo → identity → database), per the slice-2 spec.
 
 Each is a slice on the same pattern. None of them should start before the slice
 below it is in daily use.

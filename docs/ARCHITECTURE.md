@@ -158,8 +158,12 @@ stays friendly: `canonical(72.8, 'kg')` converts at construction, and
    write path, works offline.
 2. **Then** — managed Postgres with auth and object storage (Supabase is the
    recommendation) behind the same repository interfaces.
-3. **When AI lands** — a server-side function for model calls. API keys never
-   reach the browser, and every inference is logged as an `AIInference` record.
+3. **When AI lands** — originally planned as a server-side function so keys
+   never reach the browser. Amended by D14 (Aug 2026): AI arrives *before* the
+   backend, on the user's own key, stored on-device. The server-side proxy
+   with a managed key becomes the second mode when the backend exists. Every
+   inference is logged as an `AIInference` record in both modes — that part is
+   unchanged.
 
 **Why.** The original plan spends four phases on layers before the first
 feature (manual logging, phase 5) and makes nothing durable until the backend
@@ -229,3 +233,31 @@ auditable. A generated plan is a domain object rendered by the UI, not prose.
 
 **Consequence.** Every AI feature needs a deterministic counterpart to check it
 against — which is also what makes AI regressions detectable.
+
+## D14 — AI runs on the user's own key, from the device (BYOK)
+
+**Decision.** The first AI feature (photo meal logging, slice 2) calls the
+provider directly from the browser with an API key the user supplies in
+Settings. The key is stored on-device only, sent to exactly one host (the
+provider's API), never synced, never exported. Behind a
+`FoodVisionEstimator` port — the same seam pattern as D3 — so a server-proxy
+adapter can slot in later without touching the UI.
+
+**Why.** This is what unblocks AI before the backend exists: no server, no
+place to keep a managed key, and the alternative was parking the product's
+differentiator behind an infrastructure slice. It also matches the product's
+posture — the user's data goes from their device to their chosen provider on
+their own account, with no intermediary of ours to trust.
+
+**Consequence.** A key in browser storage is readable by anything that can run
+script in the origin (Q8) — a small surface here (static site, no third-party
+scripts) but a real one, stated plainly in Settings along with the advice to
+use a spend-capped key. And provider choice is constrained by CORS: each
+candidate must permit browser-origin calls, verified before it appears in
+Settings.
+
+**Revisit when** slice 3 ships the server proxy (BYOK becomes one of two
+modes), or if the app ever becomes multi-user on shared machines.
+
+**Amends** D9 step 3. **Planned in**
+`docs/features/photo-meal-logging.md`.

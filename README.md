@@ -39,6 +39,7 @@ serve is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | D11 | Medications and supplements are one type | Same structure; intent (`Regimen`) stays separate from fact (`IntakeEvent`) so adherence is answerable. |
 | D12 | Experiments modelled now, built much later | The only feature that constrains the whole model — cheaper to satisfy now than to migrate to. |
 | D13 | Deterministic before intelligent | AI proposes and explains; the rule engine computes. |
+| D14 | AI on the user's own key, from the device | BYOK: key stored locally, sent only to the provider. What lets photo logging ship before the backend exists. |
 
 ## Structure
 
@@ -67,5 +68,8 @@ record, leaving the original readable for audit.
 Assumptions and open questions taken along the way:
 [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md).
 
-Next: **slice 2** — auth and cloud Postgres, so the data outlives one browser.
-See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Next: **slice 2 — photo meal logging** (planned, spec in
+[`docs/features/photo-meal-logging.md`](docs/features/photo-meal-logging.md)):
+photograph food, AI estimates kcal/protein/carbs/fat on the user's own API key
+(D14), camera-first Log screen becomes the default view. Auth and cloud move to
+slice 3. See [`docs/ROADMAP.md`](docs/ROADMAP.md).

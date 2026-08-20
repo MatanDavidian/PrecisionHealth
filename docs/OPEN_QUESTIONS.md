@@ -1,8 +1,9 @@
 # Open questions and assumptions
 
-Decisions I made to keep slice 1 moving, that are genuinely yours to rule on.
-Each one is live in the code right now — the code links back here — so changing
-your mind is an edit, not an archaeology exercise.
+Decisions made to keep a slice moving, that are genuinely yours to rule on.
+Most are live in the code right now — the code links back here — so changing
+your mind is an edit, not an archaeology exercise. Ones whose **Files** say
+*(planned)* belong to the slice-2 spec and bind when it is built.
 
 Format: **Q** the question · **Assumed** what the code does today · **Cost of
 being wrong** what it takes to change · **Needs deciding by** the slice where it
@@ -46,9 +47,10 @@ photo flow from slice 3.
 **Cost of being wrong.** Low. `FoodItem` already carries everything a database
 would fill in; a lookup becomes a new provenance source, not a schema change.
 
-**Needs deciding by.** Slice 3. If the photo flow lands first, a database may
-never be needed — the AI estimate is the fast path and the database is only the
-correction path.
+**Needs deciding by.** Answered by resequencing: the photo flow IS slice 2
+(see `features/photo-meal-logging.md`). The AI estimate is the fast path; a
+database remains the correction path — and the only credible route to
+micronutrients (Q9).
 **Files.** `src/ui/components/MealForm.tsx`.
 
 ## Q3 — Are aggregate rows append-only, or only the facts inside them?
@@ -70,7 +72,7 @@ optimistic concurrency.
 **Cost of being wrong.** Moderate and rising. Single-device it is invisible;
 the moment two devices sync it is a lost-update bug.
 
-**Needs deciding by.** Slice 2 (cloud sync), which is exactly when concurrent
+**Needs deciding by.** Slice 3 (cloud sync), which is exactly when concurrent
 writes become possible.
 **Files.** `src/domain/corrections.ts`, `src/data/idb/schema.ts`.
 
@@ -114,7 +116,7 @@ year of real records mixed in.
 **Cost of being wrong.** Low, and entirely front-loaded: decide before you start
 logging real meals into it.
 
-**Needs deciding by.** Before slice 2 puts this data in the cloud.
+**Needs deciding by.** Before slice 3 puts this data in the cloud.
 **Files.** `src/data/index.ts` (`ensureSeeded`), `src/data/mock/seed.ts`.
 
 ## Q6 — One user, hardcoded
@@ -129,7 +131,7 @@ is already threaded everywhere rather than adding a parameter to every method.
 **Cost of being wrong.** Low — this is the one assumption the design already
 anticipates.
 
-**Needs deciding by.** Slice 2, by definition.
+**Needs deciding by.** Slice 3, by definition.
 **Files.** `src/data/mock/seed.ts` (`DEMO_USER_ID`), `src/ui/useHealthData.ts`.
 
 ## Q7 — No delete, anywhere
@@ -152,6 +154,59 @@ mistype a meal.
 want.
 **Files.** `src/domain/corrections.ts`.
 
+## Q8 — Is an API key in browser storage an acceptable risk?
+
+**Assumed.** Yes, for a single-user app on personal devices (D14). The key is
+stored in IndexedDB, sent only to the provider, never synced. The Settings
+screen says this in plain language and recommends a dedicated, spend-capped
+key.
+
+**The wrinkle.** Anything that can run script in this origin can read it. The
+surface is small — static site, no third-party scripts — but a shared or
+public computer makes it a bad idea, and nothing currently warns about that.
+
+**Alternative.** Slice 3's server proxy holds a managed key and BYOK becomes
+opt-in. Session-only storage (re-enter per visit) is a middle ground.
+
+**Cost of being wrong.** Bounded by the key's spend cap, which is why the
+Settings copy pushes one.
+
+**Needs deciding by.** Revisit at slice 3 when the proxy exists.
+**Files (planned).** `src/ai/`, Settings screen.
+
+## Q9 — Vitamins from a photo?
+
+**Assumed.** No. Macros (+fiber) only. A photo does not carry micronutrient
+information — fortification, soil, variety and preparation are invisible — and
+shipping confident-looking vitamin numbers would break the product's honesty
+rules (D13, provenance principles).
+
+**The credible path.** Photo → food *identity* → micros from a food database
+(USDA FDC / Open Food Facts). That is a food-database feature, not a better
+prompt, and it is parked in ROADMAP "Later".
+
+**Cost of being wrong.** None now; `Nutrients` extends compatibly when the
+database lands.
+
+**Needs deciding by.** Whenever the food database is scheduled.
+
+## Q10 — How long do meal photos live?
+
+**Assumed.** Forever, downscaled (~100–300 KB each), in IndexedDB. Three meals
+a day is ~250 MB/year — within browser quotas but not forever-free, and
+browsers can evict origin storage under pressure.
+
+**Alternative.** Delete the photo once its estimate is user-confirmed (the
+audit trail keeps the AIInference and numbers; the pixels were only evidence),
+or a rolling window (keep 90 days).
+
+**Cost of being wrong.** Low — retention can tighten later; loosening after
+deletion cannot recover pixels.
+
+**Needs deciding by.** Slice 3, when photos would otherwise start syncing to
+object storage and acquiring real cost.
+**Files (planned).** `attachments` store, `src/data/idb/schema.ts`.
+
 ---
 
 ## Smaller assumptions, noted without ceremony
@@ -169,3 +224,8 @@ want.
   sense — `convert` treats it as its own dimension. Harmless, slightly impure.
 - **`suggestSlot` uses fixed hour boundaries** (11 / 16 / 22) rather than
   learning from your logging pattern.
+- **The estimator model name is a setting, not a constant** — vision model
+  names churn too fast to hardcode; the spec picks a default at build time.
+- **One estimator provider (OpenAI) at launch.** The port makes a second
+  provider an adapter, but CORS behaviour must be verified per provider before
+  offering it.

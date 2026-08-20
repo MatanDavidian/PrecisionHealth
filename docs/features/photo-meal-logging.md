@@ -4,11 +4,8 @@
 kcal, protein, carbs and fat estimated by AI on the user's own API key, saved
 as an unconfirmed estimate the existing Confirm flow can settle.
 
-Status: **built** (Aug 2026), with one gap stated plainly: the OpenAI adapter
-has **not been exercised against the live API** — no real key was available
-during the build. Everything else is verified, including the full flow against
-a fake estimator in a real browser. The first real-key run is the remaining
-acceptance step (§10 step 3), along with deploying over HTTPS (§10 step 7).
+Status: **built and verified against the live API** (Aug 2026). Only the HTTPS
+deploy (§10 step 7) remains outstanding.
 
 ---
 
@@ -327,10 +324,35 @@ appear in Nutrition as unconfirmed estimates with working Confirm buttons; the
 API key persists across a reload; IndexedDB holds no `attachments` store and
 no image bytes.
 
-**Not yet verified.** The live OpenAI call — prompt, JSON-mode behaviour,
-error mapping and the repair retry are written to the documented API but have
-never run against it. Expect the first real-key session to need small
-adjustments, most likely to the prompt.
+**Live verification (Aug 2026).** Run end to end in a real browser against the
+live API with a real key. Three findings, all now fixed:
+
+1. **Browser CORS works — this was the architectural risk.** A POST to
+   `/v1/chat/completions` from a page origin returns 200 with a valid key. The
+   preflight is answered with `allow-origin: <our origin>` and
+   `allow-methods: GET, OPTIONS, POST`. An earlier probe with a deliberately
+   malformed key failed with `ERR_FAILED` — the 401 comes back from the edge
+   WITHOUT CORS headers, so a rejected key looks identical to a blocked
+   browser. That distinction cost a debugging cycle and is why `BLOCKED` is now
+   its own error kind rather than being reported as "you are offline".
+2. **The prompt refused real food.** A photo of a large food display was
+   rejected with "does not contain specific food items that can be portioned",
+   because the prompt said "split the PLATE" and treated uncertainty as grounds
+   for refusal. The user asked for groceries to work. The prompt now names what
+   counts (plated meals, loose ingredients, groceries, packaged products,
+   spreads), says an honest low-confidence estimate beats no answer, and
+   reserves refusal for images with no edible food at all.
+3. **`detail: 'low'` was starving the estimate.** It hands the model a 512px
+   thumbnail, and portion size is most of the answer. Now `auto`, with the
+   photo already downscaled to 1280px before it is sent.
+
+**Observed on the same photo after the fixes** (a food display, ~2700x1800):
+`gpt-4o-mini` returned 10 items in 13s with 70-80% confidence and sensible
+assumptions ("whole chicken assumed to be raw weight"). `gpt-5.6-terra`
+returned ~20 items with better-calibrated confidence (38-78%), separated dry
+pantry goods from cooked portions, and noted that a whole fish estimate
+includes inedible portions. The stronger model is visibly better at exactly
+the thing that matters here.
 
 **Follow-up (Aug 2026) — model choice.** The adapter originally sent
 `max_tokens`, which current models (GPT-5.x, o-series) reject outright with

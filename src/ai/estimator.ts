@@ -60,7 +60,14 @@ export interface FoodVisionEstimator {
 /** Thrown for every failure the user could act on. `kind` drives the message. */
 export class EstimateError extends Error {
   constructor(
-    readonly kind: 'NO_KEY' | 'BAD_KEY' | 'RATE_LIMIT' | 'PROVIDER' | 'OFFLINE' | 'UNREADABLE',
+    readonly kind:
+      | 'NO_KEY'
+      | 'BAD_KEY'
+      | 'RATE_LIMIT'
+      | 'PROVIDER'
+      | 'OFFLINE'
+      | 'BLOCKED'
+      | 'UNREADABLE',
     message: string,
     /** Kept so even a failure can be written to the audit trail. */
     readonly raw?: unknown,
@@ -76,5 +83,7 @@ export const ESTIMATE_ERROR_TEXT: Record<EstimateError['kind'], string> = {
   RATE_LIMIT: 'The provider is busy or over quota. Try again shortly.',
   PROVIDER: 'The provider returned an error. Try again shortly.',
   OFFLINE: "You're offline — analyzing a photo needs a connection.",
+  BLOCKED:
+    'The request never reached OpenAI. This is usually a rejected key, an ad blocker or privacy extension, or a browser restriction on calling the API directly — check the key in Settings first.',
   UNREADABLE: "Couldn't read the analysis. Try again, or log it manually.",
 }

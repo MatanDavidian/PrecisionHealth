@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { repositories } from '@/data'
-import { DEFAULT_MODEL, listChatModels, testApiKey } from '@/ai/openaiEstimator'
+import { DEFAULT_MODEL, listChatModels, testApiKey, type ModelChoice } from '@/ai/openaiEstimator'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 
@@ -15,8 +15,11 @@ export function Settings() {
   const [keyInput, setKeyInput] = useState('')
   const [test, setTest] = useState<TestState>({ kind: 'idle' })
   const [saved, setSaved] = useState(false)
-  const [models, setModels] = useState<string[]>([])
+  const [models, setModels] = useState<ModelChoice[]>([])
+  const [modelsError, setModelsError] = useState<string>()
   const [loadingModels, setLoadingModels] = useState(false)
+  /** True when the chosen model is not in the account list — shows the text field. */
+  const [customModel, setCustomModel] = useState(false)
 
   useEffect(() => {
     void repositories.settings.get().then((loaded) => {
@@ -39,8 +42,15 @@ export function Settings() {
   const loadModels = async (key: string) => {
     if (!key) return
     setLoadingModels(true)
+    setModelsError(undefined)
     try {
-      setModels(await listChatModels(key))
+      const result = await listChatModels(key)
+      if (result.ok) {
+        setModels(result.models)
+      } else {
+        setModels([])
+        setModelsError(result.reason)
+      }
     } finally {
       setLoadingModels(false)
     }
@@ -90,7 +100,13 @@ export function Settings() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => void update({ apiKey: keyInput.trim() })}
+              onClick={() => {
+                const key = keyInput.trim()
+                // Saving a key is exactly when the account's model list becomes
+                // available — waiting for a separate Refresh click just looks
+                // like the feature is broken.
+                void update({ apiKey: key }).then(() => loadModels(key))
+              }}
               className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
             >
               Save key
@@ -143,31 +159,94 @@ export function Settings() {
 
         <Card label="Analysis">
           <div className="pb-4">
-            <label className={label} htmlFor="model">
-              Model
-            </label>
-            <input
-              id="model"
-              className={field}
-              list="account-models"
-              value={settings.model}
-              onChange={(e) => setSettings({ ...settings, model: e.target.value })}
-              onBlur={(e) => void update({ model: e.target.value.trim() || DEFAULT_MODEL })}
-            />
-            <datalist id="account-models">
-              {models.map((id) => (
-                <option key={id} value={id} />
-              ))}
-            </datalist>
+            <div className="flex items-baseline justify-between gap-3 pb-1">
+              <label className={label.replace(' pb-1', '')} htmlFor="model">
+                Model
+              </label>
+              {settings.apiKey && (
+                <button
+                  type="button"
+                  onClick={() => void loadModels(settings.apiKey!)}
+                  disabled={loadingModels}
+                  className="text-xs text-ink-muted underline disabled:opacity-40"
+                >
+                  {loadingModels ? 'Loading…' : 'Refresh list'}
+                </button>
+              )}
+            </div>
+
+            {models.length > 0 && !customModel ? (
+              <select
+                id="model"
+                className={field}
+                value={models.some((m) => m.id === settings.model) ? settings.model : ''}
+                onChange={(e) => {
+                  if (e.target.value === '__custom__') {
+                    setCustomModel(true)
+                    return
+                  }
+                  void update({ model: e.target.value })
+                }}
+              >
+                {!models.some((m) => m.id === settings.model) && (
+                  <option value="">{settings.model} (not in your account list)</option>
+                )}
+                <optgroup label="Can read photos">
+                  {models
+                    .filter((m) => m.vision)
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.id}
+                        {m.note ? ` — ${m.note}` : ''}
+                      </option>
+                    ))}
+                </optgroup>
+                {/* Shown but unselectable: seeing why a model is missing beats
+                    wondering where it went. */}
+                <optgroup label="Text only — cannot read photos">
+                  {models
+                    .filter((m) => !m.vision)
+                    .map((m) => (
+                      <option key={m.id} value={m.id} disabled>
+                        {m.id}
+                      </option>
+                    ))}
+                </optgroup>
+                <option value="__custom__">Type a model ID myself…</option>
+              </select>
+            ) : (
+              <input
+                id="model"
+                className={field}
+                value={settings.model}
+                onChange={(e) => setSettings({ ...settings, model: e.target.value })}
+                onBlur={(e) => void update({ model: e.target.value.trim() || DEFAULT_MODEL })}
+              />
+            )}
+
             <p className="pt-1 text-xs text-ink-muted">
               {loadingModels
                 ? 'Loading the models on your account…'
-                : models.length > 0
-                  ? `Click the field to pick from the ${models.length} models on your account. It must be vision-capable, or analysis will fail.`
-                  : 'Any vision-capable model on your account.'}{' '}
-              Default is {DEFAULT_MODEL}. A larger model reads a plate more
-              carefully and costs more per photo — still fractions of a cent.
+                : modelsError
+                  ? modelsError
+                  : models.length > 0
+                    ? `${models.filter((m) => m.vision).length} of your ${models.length} chat models can read a photo. Capability is inferred from the name — OpenAI does not publish it — so a rejected model may just be mislabelled here.`
+                    : settings.apiKey
+                      ? 'Save your key and hit Refresh list to load the models on your account.'
+                      : 'Add a key above to load the models on your account.'}{' '}
+              Default is {DEFAULT_MODEL}. A larger model reads a plate more carefully and costs
+              more per photo.
             </p>
+
+            {models.length > 0 && customModel && (
+              <button
+                type="button"
+                onClick={() => setCustomModel(false)}
+                className="pt-1 text-xs text-ink-muted underline"
+              >
+                Pick from my account list instead
+              </button>
+            )}
           </div>
 
           <label className="flex items-start gap-3 text-sm">

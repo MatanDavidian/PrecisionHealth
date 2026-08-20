@@ -4,8 +4,11 @@
 kcal, protein, carbs and fat estimated by AI on the user's own API key, saved
 as an unconfirmed estimate the existing Confirm flow can settle.
 
-Status: **planned**. This document is the build plan; nothing below exists yet
-except where marked *(exists)*.
+Status: **built** (Aug 2026), with one gap stated plainly: the OpenAI adapter
+has **not been exercised against the live API** — no real key was available
+during the build. Everything else is verified, including the full flow against
+a fake estimator in a real browser. The first real-key run is the remaining
+acceptance step (§10 step 3), along with deploying over HTTPS (§10 step 7).
 
 ---
 
@@ -259,6 +262,8 @@ flag and `photoMeta`) — failures are part of the audit trail too.
 
 ## 10. Build order (each step leaves the app working)
 
+Status: 1-6 done, 7 outstanding (needs a hosting decision).
+
 1. IndexedDB v2 migration + `settings` store + Settings screen with key entry
    and Test button.
 2. Estimator port + validator + FakeEstimator + unit tests.
@@ -278,3 +283,51 @@ flag and `photoMeta`) — failures are part of the audit trail too.
   behind a port.
 - **Key on device** — §7; revisited when slice 3 offers the proxy mode.
 - **Scope creep toward a food database** — out; the spec says why.
+
+
+---
+
+## 12. What was built, and what it cost
+
+**Files.** `src/ai/` holds the port (`estimator.ts`), the validator
+(`validate.ts`), the OpenAI adapter (`openaiEstimator.ts`), the fake
+(`fakeEstimator.ts`) and in-memory photo handling (`photo.ts`).
+`src/data/photoMeal.ts` turns an estimate into a `Meal` plus its `AIInference`.
+`src/ui/screens/Log.tsx` is the front door; `Settings.tsx` holds the key;
+`components/BottomNav.tsx` is the mobile navigation.
+
+**Two things the plan did not anticipate.**
+
+1. **The key gate had to be about the estimator, not the key.** The Log screen
+   first gated Analyze on "is an API key set", which made the fake estimator
+   unreachable behind a prompt for a key it never uses — and would have done
+   the same to slice 3's server-proxy mode. The composition root now exports
+   `estimatorRequiresKey` and the UI gates on that. Found by driving the
+   browser, invisible to unit tests.
+2. **The grams hint needed enforcing twice.** The prompt tells the model to
+   honour it, but a model that ignores an explicit "250 g" cannot be allowed to
+   overrule the person holding the scales, so `applyGramsHint` rescales after
+   the fact. Belt and braces, deliberately.
+
+**Deleted along the way.** `src/data/mock/inMemoryRepositories.ts` — unused
+since the IndexedDB swap and now a second implementation of a growing
+interface. The seed data it served lives on in `mock/seed.ts`.
+
+**Tests.** 62 total, 30 new: validator behaviour against degenerate and
+hostile model output, the grams-hint rescale, downscaling maths and photo
+hashing, estimate→domain mapping with per-item confidence and inference links,
+failure auditing, the v1→v2 migration keeping slice-1 rows readable, settings
+round-trip, and the guarantee no image bytes are ever persisted (every store
+scanned for binary values after both the save and failure paths).
+
+**Verified in a real browser** (mobile viewport, fake estimator): default route
+is the camera, photo → auto-analysis → result card with per-item confidence →
+Save; today's protein moved 128 → 192 g and survived a reload; the saved items
+appear in Nutrition as unconfirmed estimates with working Confirm buttons; the
+API key persists across a reload; IndexedDB holds no `attachments` store and
+no image bytes.
+
+**Not yet verified.** The live OpenAI call — prompt, JSON-mode behaviour,
+error mapping and the repair retry are written to the documented API but have
+never run against it. Expect the first real-key session to need small
+adjustments, most likely to the prompt.

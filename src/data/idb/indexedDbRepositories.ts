@@ -7,6 +7,7 @@
  */
 import type { IDBPDatabase } from 'idb'
 import type {
+  AIInference,
   CalendarDate,
   Goal,
   Meal,
@@ -17,7 +18,8 @@ import type {
   UserProfile,
   Workout,
 } from '@/domain'
-import type { DateRange, HealthRepositories } from '@/data/repositories'
+import type { AppSettings, DateRange, HealthRepositories } from '@/data/repositories'
+import { DEFAULT_MODEL } from '@/ai/openaiEstimator'
 import {
   mealRow,
   observationRow,
@@ -100,6 +102,45 @@ export function createIndexedDbRepositories(
       listActive: async (userId: UserId) => {
         const rows = await (await db()).getAll('goals')
         return unwrap(rows.filter((row) => row.userId === userId && row.data.active))
+      },
+    },
+
+    inferences: {
+      add: async (inference: AIInference) => {
+        await (await db()).put('inferences', {
+          id: inference.id,
+          userId: inference.userId,
+          day: inference.createdAt.slice(0, 10),
+          data: inference,
+        })
+      },
+      listByDay: async (userId, day) =>
+        unwrap(await (await db()).getAllFromIndex('inferences', 'by-user-day', exactDay(userId, day))),
+      get: async (id: string) => (await (await db()).get('inferences', id))?.data,
+    },
+
+    settings: {
+      get: async (): Promise<AppSettings> => {
+        const rows = await (await db()).getAll('settings')
+        const value = (key: string) => rows.find((row) => row.key === key)?.value
+        return {
+          apiKey: value('apiKey') || undefined,
+          model: value('model') || DEFAULT_MODEL,
+          // Default on: it is what makes the flow two taps.
+          autoAnalyze: value('autoAnalyze') !== 'false',
+        }
+      },
+      save: async (patch) => {
+        const database = await db()
+        const tx = database.transaction('settings', 'readwrite')
+        for (const [key, value] of Object.entries(patch)) {
+          if (value === undefined || value === '') {
+            await tx.store.delete(key)
+          } else {
+            await tx.store.put({ key, value: String(value) })
+          }
+        }
+        await tx.done
       },
     },
 

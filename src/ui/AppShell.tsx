@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
+import { BottomNav } from './components/BottomNav'
 
 const TRACK = [
+  { to: '/log', label: 'Log' },
   { to: '/today', label: 'Today' },
   { to: '/nutrition', label: 'Nutrition' },
   { to: '/training', label: 'Training' },
@@ -29,20 +31,27 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <SectionLabel>Overview</SectionLabel>
         <nav className="flex flex-col gap-1">
-          {TRACK.slice(0, 1).map((item) => (
+          {TRACK.slice(0, 2).map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
 
         <SectionLabel>Track</SectionLabel>
         <nav className="flex flex-col gap-1">
-          {TRACK.slice(1).map((item) => (
+          {TRACK.slice(2).map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
+
+        <SectionLabel>App</SectionLabel>
+        <nav className="flex flex-col gap-1">
+          <NavItem to="/settings" label="Settings" />
+        </nav>
       </aside>
 
-      <main className="flex-1 overflow-y-auto px-6 py-8 md:px-10">{children}</main>
+      {/* pb-20 keeps the last card clear of the mobile bar. */}
+      <main className="flex-1 overflow-y-auto px-6 py-8 pb-20 md:px-10 md:pb-8">{children}</main>
+      <BottomNav />
     </div>
   )
 }

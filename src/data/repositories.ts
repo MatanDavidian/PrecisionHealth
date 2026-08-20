@@ -12,6 +12,7 @@
  * sources disagree" instead of silently picking one.
  */
 import type {
+  AIInference,
   CalendarDate,
   Condition,
   Goal,
@@ -73,6 +74,34 @@ export interface ClinicalRepository {
   listIntakeEvents(userId: UserId, range: DateRange): Promise<IntakeEvent[]>
 }
 
+/**
+ * The AI audit trail (D4, D13). Every inference is recorded — including the
+ * ones that failed — so "why did the app think that?" always has an answer.
+ */
+export interface InferenceRepository {
+  add(inference: AIInference): Promise<void>
+  listByDay(userId: UserId, day: CalendarDate): Promise<AIInference[]>
+  get(id: string): Promise<AIInference | undefined>
+}
+
+/**
+ * Local-only key/value settings, holding the user's API key (D14).
+ *
+ * Deliberately NOT part of anything that syncs: when slice 3 adds the cloud,
+ * this store stays on the device. That exclusion is the whole reason it is a
+ * separate repository rather than a corner of the profile.
+ */
+export interface AppSettings {
+  apiKey?: string
+  model: string
+  autoAnalyze: boolean
+}
+
+export interface SettingsRepository {
+  get(): Promise<AppSettings>
+  save(patch: Partial<AppSettings>): Promise<void>
+}
+
 export interface HealthRepositories {
   profiles: ProfileRepository
   meals: MealRepository
@@ -81,4 +110,6 @@ export interface HealthRepositories {
   observations: ObservationRepository
   goals: GoalRepository
   clinical: ClinicalRepository
+  inferences: InferenceRepository
+  settings: SettingsRepository
 }

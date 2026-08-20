@@ -15,6 +15,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import {
   dayKeyOf,
+  type AIInference,
   type CalendarDate,
   type Condition,
   type Goal,
@@ -41,6 +42,12 @@ export interface ObservationRow extends Row<Observation> {
   code: ObservationCode
 }
 
+/** Key-value settings. Never synced — it holds the API key (D14, Q8). */
+export interface SettingsRow {
+  key: string
+  value: string
+}
+
 export interface HealthDB extends DBSchema {
   meals: { key: string; value: Row<Meal>; indexes: { 'by-user-day': [string, string] } }
   workouts: { key: string; value: Row<Workout>; indexes: { 'by-user-day': [string, string] } }
@@ -57,10 +64,19 @@ export interface HealthDB extends DBSchema {
   regimens: { key: string; value: Row<Regimen>; indexes: { 'by-user-day': [string, string] } }
   intakeEvents: { key: string; value: Row<IntakeEvent>; indexes: { 'by-user-day': [string, string] } }
   meta: { key: string; value: { key: string; value: string } }
+  /** AI audit trail (D4): one row per inference, successful or not. */
+  inferences: { key: string; value: Row<AIInference>; indexes: { 'by-user-day': [string, string] } }
+  settings: { key: string; value: SettingsRow }
 }
 
 export const DB_NAME = 'timeline-health'
-export const DB_VERSION = 1
+/**
+ * v1 — slice 1 stores.
+ * v2 — slice 2 adds `inferences` and `settings`. Additive only: no existing
+ *      row is rewritten, so the upgrade cannot corrupt slice-1 data. There is
+ *      deliberately no store for photos (spec §3).
+ */
+export const DB_VERSION = 2
 
 const DAY_INDEXED = [
   'meals',
@@ -76,19 +92,27 @@ const DAY_INDEXED = [
 
 export const openHealthDB = (): Promise<IDBPDatabase<HealthDB>> =>
   openDB<HealthDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      for (const name of DAY_INDEXED) {
-        const store = db.createObjectStore(name, { keyPath: 'id' })
-        store.createIndex('by-user-day', ['userId', 'day'])
-        if (name === 'observations') {
-          ;(store as unknown as { createIndex: (n: string, k: string[]) => void }).createIndex(
-            'by-user-code',
-            ['userId', 'code'],
-          )
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        for (const name of DAY_INDEXED) {
+          const store = db.createObjectStore(name, { keyPath: 'id' })
+          store.createIndex('by-user-day', ['userId', 'day'])
+          if (name === 'observations') {
+            ;(store as unknown as { createIndex: (n: string, k: string[]) => void }).createIndex(
+              'by-user-code',
+              ['userId', 'code'],
+            )
+          }
         }
+        db.createObjectStore('profiles', { keyPath: 'userId' })
+        db.createObjectStore('meta', { keyPath: 'key' })
       }
-      db.createObjectStore('profiles', { keyPath: 'userId' })
-      db.createObjectStore('meta', { keyPath: 'key' })
+
+      if (oldVersion < 2) {
+        const inferences = db.createObjectStore('inferences', { keyPath: 'id' })
+        inferences.createIndex('by-user-day', ['userId', 'day'])
+        db.createObjectStore('settings', { keyPath: 'key' })
+      }
     },
   })
 

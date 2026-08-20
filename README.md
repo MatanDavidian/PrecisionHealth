@@ -53,7 +53,8 @@ data sources → normalized health model → analytics/goal engine → AI tools 
 | `src/domain/__tests__/` | The rules that must not silently regress: day identity, precedence, units. |
 | `src/data/repositories.ts` | Interfaces the UI depends on. Async by design. |
 | `src/data/index.ts` | Composition root — the one place the active store is named. |
-| `src/data/idb/` | IndexedDB store (slice 1). Swapped in without touching a screen. |
+| `src/data/idb/` | IndexedDB store (slice 1, v2 in slice 2). Swapped in without touching a screen. |
+| `src/ai/` | The food-vision port, validator, OpenAI adapter and a fake. Photos stay in memory. |
 | `src/data/mock/seed.ts` | The sample day, built for whatever date you open it on. |
 | `src/data/analytics.ts` | Derived values, never written back onto records. |
 | `src/ui/` | Screens and components; reaches data only through repositories. |
@@ -68,8 +69,16 @@ record, leaving the original readable for audit.
 Assumptions and open questions taken along the way:
 [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md).
 
-Next: **slice 2 — photo meal logging** (planned, spec in
-[`docs/features/photo-meal-logging.md`](docs/features/photo-meal-logging.md)):
-photograph food, AI estimates kcal/protein/carbs/fat on the user's own API key
-(D14), camera-first Log screen becomes the default view. Auth and cloud move to
-slice 3. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+**Slice 2 built** — photo meal logging
+([spec](docs/features/photo-meal-logging.md)). The app opens on a camera:
+photograph food, and kcal/protein/carbs/fat come back estimated with per-item
+confidence, saved as unconfirmed estimates the Confirm flow settles. Optional
+hints (food name, total grams) are treated as ground truth. Runs on your own
+OpenAI key, stored on this device only (D14). **Meal photos are never stored** —
+sent once, then discarded.
+
+Two steps outstanding: a first run against a live API key (the adapter has
+never called the real API), and an HTTPS deploy so it works from a phone.
+
+Then: **slice 3** — auth and cloud Postgres. See
+[`docs/ROADMAP.md`](docs/ROADMAP.md).

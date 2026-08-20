@@ -52,7 +52,7 @@ Assumptions taken along the way are in
 while the facts inside them are append-only) and Q7 (nothing can be deleted)
 are the two worth reading before the cloud slice (now slice 3).
 
-## Slice 2 — Photograph a meal, AI does the numbers ← next
+## Slice 2 — Photograph a meal, AI does the numbers ✅ built
 
 Resequenced ahead of auth on a product call (Aug 2026): manual macro entry is
 the thing nobody sustains, and the BYOK decision (D14) — the user's own
@@ -68,9 +68,16 @@ first IndexedDB migration, and mobile navigation.
 
 Full plan: [`features/photo-meal-logging.md`](features/photo-meal-logging.md).
 
-**Proves:** the provenance apparatus end to end — `AIInference` logging,
-`needsConfirmation`, the supersede chain — against a real model's output.
+**Proved:** the provenance apparatus end to end — `AIInference` logging,
+`needsConfirmation`, the supersede chain — and found a second bug the unit
+tests could not: the Log screen gated analysis on "is a key set" rather than
+"does this estimator need one", which would have blocked slice 3's
+server-proxy mode too.
 **Ships:** the product's actual differentiator, and the fastest way to log food.
+
+**Outstanding before this counts as done by the roadmap's own definition:** a
+first run against a live OpenAI key (the adapter is written but has never
+called the real API), and a deploy over HTTPS so it works from a phone.
 
 ## Slice 3 — My data, on my devices
 

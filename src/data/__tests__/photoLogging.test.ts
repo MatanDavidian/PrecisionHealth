@@ -1,0 +1,240 @@
+import 'fake-indexeddb/auto'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { deleteDB, openDB, type IDBPDatabase } from 'idb'
+import { createIndexedDbRepositories, seedOnce } from '../idb/indexedDbRepositories'
+import { DB_NAME, openHealthDB, type HealthDB } from '../idb/schema'
+import { buildFailedInference, buildPhotoMeal } from '../photoMeal'
+import { goals, meals, observations, profile, sleep, workouts } from '../mock/seed'
+import { FakeEstimator, SAMPLE_REPLY } from '@/ai/fakeEstimator'
+import { EstimateError, type PhotoMeta } from '@/ai/estimator'
+import { convert, liveItems, needsConfirmation, type UserId } from '@/domain'
+
+const USER = 'user-demo' as UserId
+const seed = { profile, meals, workouts, sleep, observations, goals }
+
+const PHOTO: PhotoMeta = { width: 1280, height: 960, bytes: 184_320, sha256: 'a'.repeat(64) }
+
+let openConnection: IDBPDatabase<HealthDB> | undefined
+const fresh = async () => {
+  const db = openHealthDB()
+  openConnection = await db
+  return { db, repos: createIndexedDbRepositories(db) }
+}
+
+afterEach(() => {
+  openConnection?.close()
+  openConnection = undefined
+})
+beforeEach(async () => {
+  await deleteDB(DB_NAME)
+})
+
+const photoMealInput = (overrides: Partial<Parameters<typeof buildPhotoMeal>[1]> = {}) => ({
+  slot: 'LUNCH' as const,
+  at: new Date('2026-08-20T12:30:00'),
+  zone: 'Asia/Jerusalem',
+  hints: {},
+  photo: PHOTO,
+  ...overrides,
+})
+
+describe('photo estimate becomes domain records', () => {
+  it('writes a meal whose items are unconfirmed AI estimates linked to the inference', async () => {
+    const { repos } = await fresh()
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const { meal, inference } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+
+    await repos.inferences.add(inference)
+    await repos.meals.add(meal)
+
+    const [stored] = await repos.meals.listByDay(USER, '2026-08-20')
+    expect(stored.items).toHaveLength(2)
+    expect(stored.items.every((item) => needsConfirmation(item.provenance))).toBe(true)
+    // Every item points back at the audit record.
+    expect(stored.items.every((item) => item.provenance.inferenceId === inference.id)).toBe(true)
+    // Per-item confidence, not a single flattened figure.
+    expect(stored.items.map((i) => i.provenance.confidence)).toEqual([0.72, 0.61])
+    expect(convert(stored.items[0].nutrients.protein, 'g')).toBe(53)
+
+    const audit = await repos.inferences.get(inference.id)
+    expect(audit?.purpose).toBe('FOOD_PHOTO_ESTIMATE')
+    expect(audit?.userConfirmed).toBe(false)
+    expect((audit?.output as { raw: unknown }).raw).toEqual(SAMPLE_REPLY)
+  })
+
+  it('records what the photo was without keeping the photo', async () => {
+    const { repos } = await fresh()
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const { inference } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    await repos.inferences.add(inference)
+
+    const audit = await repos.inferences.get(inference.id)
+    const output = audit?.output as { photoMeta: PhotoMeta }
+    expect(output.photoMeta).toEqual(PHOTO)
+    expect(audit?.inputReferences).toEqual([`photo:${PHOTO.sha256}`])
+  })
+
+  it('never sets photoId, because there is no stored attachment', async () => {
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    expect(meal.photoId).toBeUndefined()
+  })
+
+  it('honours the grams hint end to end', async () => {
+    const result = await new FakeEstimator().estimate(new Blob(), { totalGrams: 900 })
+    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), hints: { totalGrams: 900 }, result })
+    const total = meal.items.reduce((sum, item) => sum + convert(item.amount, 'g'), 0)
+    expect(total).toBeCloseTo(900, 6)
+  })
+
+  it('lets the slice-1 confirm flow settle an estimate', async () => {
+    const { repos } = await fresh()
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    await repos.meals.add(meal)
+
+    const { confirmFoodItem } = await import('@/domain')
+    const { newId } = await import('../newRecords')
+    const target = meal.items[0]
+    const confirmed = confirmFoodItem(target, '2026-08-20T12:40:00.000Z', newId)
+    await repos.meals.add({ ...meal, items: [...meal.items, confirmed] })
+
+    const [stored] = await repos.meals.listByDay(USER, '2026-08-20')
+    const live = liveItems(stored.items)
+    expect(stored.items).toHaveLength(3) // estimate kept for audit
+    expect(live).toHaveLength(2) // but superseded, so not double counted
+    expect(live.some((item) => item.id === target.id)).toBe(false)
+  })
+})
+
+describe('failures are audited too', () => {
+  it('writes a flagged inference and no meal', async () => {
+    const { repos } = await fresh()
+    const failure = new EstimateError('BAD_KEY', 'rejected')
+    await expect(new FakeEstimator(SAMPLE_REPLY, failure).estimate(new Blob(), {})).rejects.toThrow(
+      'rejected',
+    )
+
+    const inference = buildFailedInference(USER, {
+      at: new Date('2026-08-20T12:30:00'),
+      model: 'fake-vision',
+      hints: {},
+      photo: PHOTO,
+      kind: failure.kind,
+      message: failure.message,
+    })
+    await repos.inferences.add(inference)
+
+    expect(await repos.meals.listByDay(USER, '2026-08-20')).toHaveLength(0)
+    const audit = await repos.inferences.listByDay(USER, '2026-08-20')
+    expect(audit).toHaveLength(1)
+    expect(audit[0].safetyFlags).toContain('FAILED_BAD_KEY')
+    expect(audit[0].confidence).toBe(0)
+  })
+})
+
+describe('no image bytes are ever persisted', () => {
+  const containsBinary = (value: unknown, depth = 0): boolean => {
+    if (depth > 8 || value === null || value === undefined) return false
+    if (value instanceof Blob || value instanceof ArrayBuffer || ArrayBuffer.isView(value)) return true
+    if (Array.isArray(value)) return value.some((entry) => containsBinary(entry, depth + 1))
+    if (typeof value === 'object') {
+      return Object.values(value as Record<string, unknown>).some((entry) =>
+        containsBinary(entry, depth + 1),
+      )
+    }
+    return false
+  }
+
+  it('holds nothing image-shaped after a successful save', async () => {
+    const { db, repos } = await fresh()
+    await seedOnce(db, seed)
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const { meal, inference } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    await repos.inferences.add(inference)
+    await repos.meals.add(meal)
+
+    const database = await db
+    // There is deliberately no attachments store at all.
+    expect([...database.objectStoreNames]).not.toContain('attachments')
+    for (const name of database.objectStoreNames) {
+      const rows = await database.getAll(name)
+      expect(containsBinary(rows), `store ${name} holds binary data`).toBe(false)
+    }
+  })
+
+  it('holds nothing image-shaped after a failure either', async () => {
+    const { db, repos } = await fresh()
+    await repos.inferences.add(
+      buildFailedInference(USER, {
+        at: new Date('2026-08-20T12:30:00'),
+        model: 'fake-vision',
+        hints: { foodName: 'salad' },
+        photo: PHOTO,
+        kind: 'UNREADABLE',
+        message: 'nope',
+      }),
+    )
+    const database = await db
+    for (const name of database.objectStoreNames) {
+      expect(containsBinary(await database.getAll(name))).toBe(false)
+    }
+  })
+})
+
+describe('settings', () => {
+  it('round-trips the API key and defaults sensibly', async () => {
+    const { repos } = await fresh()
+    const defaults = await repos.settings.get()
+    expect(defaults.apiKey).toBeUndefined()
+    expect(defaults.autoAnalyze).toBe(true)
+    expect(defaults.model).toBeTruthy()
+
+    await repos.settings.save({ apiKey: 'sk-test-123', autoAnalyze: false })
+    const saved = await repos.settings.get()
+    expect(saved.apiKey).toBe('sk-test-123')
+    expect(saved.autoAnalyze).toBe(false)
+  })
+
+  it('clears the key when it is emptied', async () => {
+    const { repos } = await fresh()
+    await repos.settings.save({ apiKey: 'sk-test-123' })
+    await repos.settings.save({ apiKey: '' })
+    expect((await repos.settings.get()).apiKey).toBeUndefined()
+  })
+})
+
+describe('the v1 to v2 migration', () => {
+  it('adds the new stores and keeps slice-1 data readable', async () => {
+    // Build a database exactly as slice 1 left it.
+    const v1 = await openDB(DB_NAME, 1, {
+      upgrade(db) {
+        for (const name of ['meals', 'workouts', 'sleep', 'observations', 'goals', 'labPanels', 'conditions', 'regimens', 'intakeEvents']) {
+          const store = db.createObjectStore(name, { keyPath: 'id' })
+          store.createIndex('by-user-day', ['userId', 'day'])
+          if (name === 'observations') store.createIndex('by-user-code', ['userId', 'code'])
+        }
+        db.createObjectStore('profiles', { keyPath: 'userId' })
+        db.createObjectStore('meta', { keyPath: 'key' })
+      },
+    })
+    await v1.put('meals', {
+      id: 'meal-from-v1',
+      userId: USER,
+      day: '2026-08-19',
+      data: { id: 'meal-from-v1', userId: USER, slot: 'DINNER', items: [] },
+    })
+    v1.close()
+
+    // Open at v2.
+    const { repos } = await fresh()
+    const database = await openConnection!
+    expect(database.version).toBe(2)
+    expect([...database.objectStoreNames]).toContain('inferences')
+    expect([...database.objectStoreNames]).toContain('settings')
+
+    const survived = await repos.meals.listByDay(USER, '2026-08-19')
+    expect(survived).toHaveLength(1)
+    expect(survived[0].id).toBe('meal-from-v1')
+  })
+})

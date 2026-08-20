@@ -196,6 +196,18 @@ describe('settings', () => {
     expect(saved.autoAnalyze).toBe(false)
   })
 
+  it('defaults to browser storage and remembers a different choice', async () => {
+    const { repos } = await fresh()
+    expect((await repos.settings.get()).storageTarget).toBe('BROWSER')
+
+    // Recording intent for something not built yet: the preference must
+    // survive so it is already in place when the implementation lands.
+    await repos.settings.save({ storageTarget: 'SERVER', serverUrl: 'https://health.example.com' })
+    const saved = await repos.settings.get()
+    expect(saved.storageTarget).toBe('SERVER')
+    expect(saved.serverUrl).toBe('https://health.example.com')
+  })
+
   it('clears the key when it is emptied', async () => {
     const { repos } = await fresh()
     await repos.settings.save({ apiKey: 'sk-test-123' })

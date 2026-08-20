@@ -18,7 +18,12 @@ import type {
   UserProfile,
   Workout,
 } from '@/domain'
-import type { AppSettings, DateRange, HealthRepositories } from '@/data/repositories'
+import type {
+  AppSettings,
+  DateRange,
+  HealthRepositories,
+  StorageTarget,
+} from '@/data/repositories'
 import { DEFAULT_MODEL } from '@/ai/openaiEstimator'
 import {
   mealRow,
@@ -128,6 +133,8 @@ export function createIndexedDbRepositories(
           model: value('model') || DEFAULT_MODEL,
           // Default on: it is what makes the flow two taps.
           autoAnalyze: value('autoAnalyze') !== 'false',
+          storageTarget: (value('storageTarget') as StorageTarget) || 'BROWSER',
+          serverUrl: value('serverUrl') || undefined,
         }
       },
       save: async (patch) => {

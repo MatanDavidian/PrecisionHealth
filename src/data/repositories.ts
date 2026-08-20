@@ -91,10 +91,23 @@ export interface InferenceRepository {
  * this store stays on the device. That exclusion is the whole reason it is a
  * separate repository rather than a corner of the profile.
  */
+/**
+ * Where the user WANTS their data kept.
+ *
+ * Only BROWSER is implemented. The others record intent so the preference
+ * survives until the implementation lands — the Settings screen states
+ * plainly which one is actually in force, because a setting that silently
+ * does nothing is worse than no setting.
+ */
+export type StorageTarget = 'BROWSER' | 'JSON_FILE' | 'SERVER'
+
 export interface AppSettings {
   apiKey?: string
   model: string
   autoAnalyze: boolean
+  storageTarget: StorageTarget
+  /** Base URL of the user's own backend, for STORAGE_TARGET 'SERVER'. */
+  serverUrl?: string
 }
 
 export interface SettingsRepository {

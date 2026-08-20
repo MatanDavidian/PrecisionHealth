@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { repositories } from '@/data'
 import { DEFAULT_MODEL, listChatModels, testApiKey, type ModelChoice } from '@/ai/openaiEstimator'
 import { Card } from '../components/Card'
-import type { AppSettings } from '@/data/repositories'
+import type { AppSettings, StorageTarget } from '@/data/repositories'
 
 const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
 const field =
@@ -20,6 +20,15 @@ export function Settings() {
   const [loadingModels, setLoadingModels] = useState(false)
   /** True when the chosen model is not in the account list — shows the text field. */
   const [customModel, setCustomModel] = useState(false)
+  const [usage, setUsage] = useState<string>()
+
+  useEffect(() => {
+    // Browsers report this per origin; it is the honest answer to "how much of
+    // my data is sitting in this browser".
+    void navigator.storage?.estimate?.().then((estimate) => {
+      if (estimate.usage != null) setUsage(`${Math.round(estimate.usage / 1024)} kB`)
+    })
+  }, [])
 
   useEffect(() => {
     void repositories.settings.get().then((loaded) => {
@@ -272,7 +281,101 @@ export function Settings() {
             a record of the photo's size and fingerprint.
           </p>
         </Card>
+
+        <Card label="Where your data is saved">
+          <p className="pb-3 text-sm text-ink-muted">
+            Everything you log lives in this browser{usage ? `, currently ${usage}` : ''}. Clearing
+            your browsing data erases it, and no other device can see it.
+          </p>
+
+          <div className="space-y-2">
+            <StorageOption
+              value="BROWSER"
+              selected={settings.storageTarget}
+              onSelect={(target) => void update({ storageTarget: target })}
+              title="This browser"
+              detail="Working now. Fast and private, but tied to this browser on this device, with no backup."
+            />
+            <StorageOption
+              value="JSON_FILE"
+              selected={settings.storageTarget}
+              onSelect={(target) => void update({ storageTarget: target })}
+              title="JSON file"
+              planned
+              detail="Export everything as a JSON file you keep. A web app cannot write to your phone's storage on its own — iOS has no such API — so this will be a file you download and re-import, not a live sync."
+            />
+            <StorageOption
+              value="SERVER"
+              selected={settings.storageTarget}
+              onSelect={(target) => void update({ storageTarget: target })}
+              title="My own server"
+              planned
+              detail="Sync to a backend you control, so your phone and laptop see the same data."
+            />
+          </div>
+
+          {settings.storageTarget === 'SERVER' && (
+            <div className="pt-3">
+              <label className={label} htmlFor="serverUrl">
+                Server URL
+              </label>
+              <input
+                id="serverUrl"
+                className={field}
+                placeholder="https://health.example.com"
+                defaultValue={settings.serverUrl ?? ''}
+                onBlur={(e) => void update({ serverUrl: e.target.value.trim() })}
+              />
+            </div>
+          )}
+
+          {settings.storageTarget !== 'BROWSER' && (
+            <p className="pt-3 text-xs text-accent">
+              Not built yet — your data is still being saved in this browser. This choice is
+              remembered and takes effect when the option ships.
+            </p>
+          )}
+        </Card>
       </div>
     </div>
+  )
+}
+
+function StorageOption({
+  value,
+  selected,
+  onSelect,
+  title,
+  detail,
+  planned,
+}: {
+  value: StorageTarget
+  selected: StorageTarget
+  onSelect: (value: StorageTarget) => void
+  title: string
+  detail: string
+  planned?: boolean
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-hairline p-3">
+      <input
+        type="radio"
+        name="storageTarget"
+        className="mt-1"
+        checked={selected === value}
+        onChange={() => onSelect(value)}
+      />
+      <span>
+        <span className="text-sm font-medium">
+          {title}
+          {planned && (
+            <span className="ml-2 rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-normal text-ink-muted">
+              not built yet
+            </span>
+          )}
+        </span>
+        <span className="block pt-0.5 text-xs text-ink-muted">{detail}</span>
+      </span>
+    </label>
   )
 }

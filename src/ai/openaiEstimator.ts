@@ -21,6 +21,15 @@ const ENDPOINT = 'https://api.openai.com/v1/chat/completions'
  */
 export const DEFAULT_MODEL = 'gpt-4o-mini'
 
+/**
+ * Generous on purpose. On reasoning models this budget covers hidden reasoning
+ * tokens as well as the reply, and a cap that runs out mid-thought returns
+ * EMPTY content — the estimate fails rather than degrading. Unused budget is
+ * not billed, so the only cost of setting this high is on models that actually
+ * think that long, which is precisely when we want them to finish.
+ */
+export const MAX_COMPLETION_TOKENS = 4000
+
 const SYSTEM_PROMPT = `You estimate nutrition from a single photo of food.
 
 Reply with ONLY a JSON object of this exact shape:
@@ -115,7 +124,7 @@ export class OpenAiEstimator implements FoodVisionEstimator {
             model,
             messages,
             ...(shape.jsonMode ? { response_format: { type: 'json_object' } } : {}),
-            [shape.tokenParam]: 900,
+            [shape.tokenParam]: MAX_COMPLETION_TOKENS,
           }),
         })
       } catch {

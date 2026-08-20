@@ -153,3 +153,28 @@ describe('listing account models', () => {
     expect(await listChatModels('bad', fetchImpl)).toEqual([])
   })
 })
+
+describe('reasoning-model headroom', () => {
+  it('asks for enough completion budget that hidden reasoning cannot starve the reply', async () => {
+    const bodies: string[] = []
+    const fetchImpl = (async (_url: string, init?: RequestInit) => {
+      bodies.push(String(init?.body))
+      return reply(SAMPLE_REPLY)
+    }) as unknown as typeof fetch
+
+    await new OpenAiEstimator(options(fetchImpl)).estimate(photo, {})
+    const sent = JSON.parse(bodies[0]) as Record<string, number>
+    expect(sent.max_completion_tokens).toBeGreaterThanOrEqual(4000)
+  })
+
+  it('surfaces an empty reply as unreadable rather than saving nothing silently', async () => {
+    const fetchImpl = (async () =>
+      new Response(JSON.stringify({ choices: [{ message: { content: '' } }] }), {
+        status: 200,
+      })) as unknown as typeof fetch
+
+    await expect(new OpenAiEstimator(options(fetchImpl)).estimate(photo, {})).rejects.toMatchObject({
+      kind: 'UNREADABLE',
+    })
+  })
+})

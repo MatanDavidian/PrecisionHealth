@@ -190,22 +190,23 @@ database lands.
 
 **Needs deciding by.** Whenever the food database is scheduled.
 
-## Q10 — How long do meal photos live?
+## Q10 — How long do meal photos live? · **settled: they are not stored**
 
-**Assumed.** Forever, downscaled (~100–300 KB each), in IndexedDB. Three meals
-a day is ~250 MB/year — within browser quotas but not forever-free, and
-browsers can evict origin storage under pressure.
+**Decided (Aug 2026, product call).** Meal photos are never persisted — not in
+the app, not in any future backend. The photo lives in memory for the flow, is
+sent to the provider once, and is discarded on save or cancel. The AIInference
+row keeps photo *metadata* (dimensions, bytes, SHA-256) so the audit trail
+still has a shape; the only copy that outlives the flow is whatever the
+provider retains under its own API data policy.
 
-**Alternative.** Delete the photo once its estimate is user-confirmed (the
-audit trail keeps the AIInference and numbers; the pixels were only evidence),
-or a rolling window (keep 90 days).
+**Deliberately forgone.** Re-running old photos through better future models,
+and thumbnails as a memory aid in the log. Judged not worth a growing archive
+of food photos — privacy first, and it removes this feature's storage cost
+from slice 3 entirely.
 
-**Cost of being wrong.** Low — retention can tighten later; loosening after
-deletion cannot recover pixels.
-
-**Needs deciding by.** Slice 3, when photos would otherwise start syncing to
-object storage and acquiring real cost.
-**Files (planned).** `attachments` store, `src/data/idb/schema.ts`.
+**Unchanged.** `Attachment` and `Meal.photoId` stay in the domain for
+body-progress photos and lab documents, where persistence is the point.
+**Files (planned).** Spec §3 (scope), §4 (data flow), §7 (privacy).
 
 ---
 

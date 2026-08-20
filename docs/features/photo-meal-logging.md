@@ -78,10 +78,20 @@ model as hints it must honour:
 
 **In:** camera capture, downscaling, OpenAI vision call on the user's key,
 structured estimate (macros), hints, save-as-estimate, Settings screen with
-local key storage + test button, AIInference audit records, photo stored
-locally and shown as a thumbnail, mobile bottom nav, default-route change.
+local key storage + test button, AIInference audit records (with photo
+metadata, not pixels), mobile bottom nav, default-route change.
 
 **Out (explicitly):**
+- **Storing the photo — anywhere, ever** (product decision, Aug 2026). The
+  photo exists in memory during the flow, goes to the provider once, and is
+  discarded on save or cancel. Not written to IndexedDB, and later not to any
+  backend. What this buys: no food-photo archive to protect or sync, no
+  storage growth, a cheaper cloud slice. What it forgoes, deliberately:
+  re-running old photos through better future models, and thumbnails in the
+  log. The audit trail keeps photo *metadata* (dimensions, bytes, SHA-256)
+  inside the AIInference row. The domain is untouched — `Attachment` and
+  `Meal.photoId` remain for body-progress photos and lab documents, where
+  persistence is the point; this flow simply never sets them.
 - **WhatsApp bot intake** — needs a server to receive webhooks; parked until
   after the cloud slice. Listed in ROADMAP "Later".
 - **Vitamins/micros** — see Q9. A photo does not contain that information;
@@ -139,23 +149,25 @@ photo (file input)
   → validate → EstimateResult
   → user reviews → Save:
       AIInference row        (purpose FOOD_PHOTO_ESTIMATE, model, confidence,
-                              inputReferences=[attachmentId], output=raw)
-      Attachment row         (kind FOOD_PHOTO, blob in IndexedDB)
-      Meal row               (photoId set; each item provenance =
+                              output = { photoMeta, hints, raw })
+      Meal row               (each item provenance =
                               aiEstimate(now, confidence, inferenceId))  ← exists
+  → photo discarded — held in memory for the flow (and Retry), never persisted
 ```
+
+`photoMeta` = `{ width, height, bytes, sha256 }` — enough to answer "what did
+the model look at" and to spot the same photo logged twice, without keeping
+pixels.
 
 Confirm/correct after saving is **already built** (slice 1): badge, Confirm
 button, `confirmFoodItem` supersede chain, no double counting.
 
 ### Storage — IndexedDB v1 → v2, the first real migration
 
-New stores: `attachments` (photo blobs + metadata), `inferences` (AIInference
-rows), `settings` (key-value). Migration adds stores only — no row rewrites —
-but exercises the `upgrade` path for real, which is deliberate practice for
-slice 3.
-
-Photos are stored downscaled (~100–300 KB each). Retention is Q10.
+New stores: `inferences` (AIInference rows) and `settings` (key-value).
+No store for photos — see Scope. Migration adds stores only — no row
+rewrites — but exercises the `upgrade` path for real, which is deliberate
+practice for slice 3.
 
 ### Settings
 
@@ -198,8 +210,9 @@ carries the macro-arithmetic flag and any refusal.
 | Unparseable after repair | "Couldn't read the analysis" + Retry + manual path | photo, hints, raw reply in inference |
 | Not food | model's refusal, verbatim-ish | nothing saved |
 
-Every failed attempt still writes an AIInference row (with a failure flag) —
-failures are part of the audit trail too.
+"Kept" means held in memory for Retry — a failure never persists the photo
+either. Every failed attempt still writes an AIInference row (with a failure
+flag and `photoMeta`) — failures are part of the audit trail too.
 
 ## 7. Security & privacy
 
@@ -207,8 +220,11 @@ failures are part of the audit trail too.
   can read it; an XSS could read it. Surface is small (static site, no
   third-party scripts) but real — stated plainly in the Settings screen, not
   buried here.
-- The photo leaves the device exactly once, to the provider, over TLS, only
-  when the user analyzes. Stored copies stay local.
+- The photo is never written to disk. It lives in memory for the duration of
+  the flow, goes to the provider once over TLS when the user analyzes, and is
+  discarded on save or cancel. The only copy that outlives the flow is
+  whatever the provider retains under its API data-usage policy — linked from
+  the Settings copy so the user reads the provider's terms, not our summary.
 - OpenAI's API permits browser-origin calls. **Providers differ on CORS** —
   verify per provider before ever adding one to Settings.
 - Recommend (in Settings copy) a dedicated, spend-capped key.
@@ -218,8 +234,10 @@ failures are part of the audit trail too.
 - **Unit:** validator (good/degenerate/hostile JSON, the 4/4/9 flag,
   clamping); grams-hint scaling; downscale respects max dimension.
 - **Integration (FakeEstimator + fake-indexeddb):** photo → save writes
-  Meal + Attachment + AIInference with linked ids; failure writes a flagged
-  inference and no meal; confirm-after-photo-save reuses slice-1 tests' path.
+  Meal + AIInference with linked ids and correct `photoMeta`; failure writes a
+  flagged inference and no meal; **no image bytes anywhere in IndexedDB after
+  either path** (scan every store for Blob/ArrayBuffer values);
+  confirm-after-photo-save reuses slice-1 tests' path.
 - **Migration:** open a v1 database, assert v2 upgrade adds stores and keeps
   every slice-1 row readable.
 - **Manual E2E (real key, real food, phone):** the two-tap path; a hostile
@@ -233,6 +251,8 @@ failures are part of the audit trail too.
   shown, nothing broken.
 - Every AI item shows provenance + confidence; Confirm settles it exactly as
   slice 1 does; totals never double-count.
+- Nothing image-shaped is ever persisted — the photo is gone once the flow
+  ends (enforced by a test, not a comment).
 - All existing 32 tests stay green; new tests cover §8.
 - Deployed over HTTPS somewhere the phone can reach (ROADMAP's definition of
   done; a static host suffices — there is no server).
@@ -245,7 +265,7 @@ failures are part of the audit trail too.
 3. OpenAI adapter behind the port; manual smoke test with a real key.
 4. Log screen (camera input, downscale, hints, result card, Save) wired to
    FakeEstimator first, then the real adapter via the composition root.
-5. Attachment + AIInference persistence; thumbnails in Nutrition's logged list.
+5. AIInference persistence with `photoMeta`; the no-image-bytes-persisted test.
 6. Default-route change + mobile bottom nav.
 7. Deploy static build over HTTPS; phone E2E; update ROADMAP/README status.
 

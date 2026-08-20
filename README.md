@@ -51,15 +51,21 @@ data sources → normalized health model → analytics/goal engine → AI tools 
 | `src/domain/` | Entities, units, time, provenance and conflict resolution. No framework imports. |
 | `src/domain/__tests__/` | The rules that must not silently regress: day identity, precedence, units. |
 | `src/data/repositories.ts` | Interfaces the UI depends on. Async by design. |
-| `src/data/mock/` | In-memory store + the 18 Aug seed day. Replaced in slice 1. |
+| `src/data/index.ts` | Composition root — the one place the active store is named. |
+| `src/data/idb/` | IndexedDB store (slice 1). Swapped in without touching a screen. |
+| `src/data/mock/seed.ts` | The sample day, built for whatever date you open it on. |
 | `src/data/analytics.ts` | Derived values, never written back onto records. |
 | `src/ui/` | Screens and components; reaches data only through repositories. |
 
 ## Status
 
-Slice 0 complete. Today renders the seed day end to end, including an
-unconfirmed AI portion estimate and a genuine two-source weight disagreement —
-both visible on the screen rather than hidden in the data.
+**Slice 1 complete.** You can log a meal and watch today's protein move, and it
+survives a reload — data lives in IndexedDB, no account, no server. Confirming
+an AI estimate or settling a two-source disagreement writes a real superseding
+record, leaving the original readable for audit.
 
-Next: **slice 1** — manual meal logging with local persistence. See
-[`docs/ROADMAP.md`](docs/ROADMAP.md).
+Assumptions and open questions taken along the way:
+[`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md).
+
+Next: **slice 2** — auth and cloud Postgres, so the data outlives one browser.
+See [`docs/ROADMAP.md`](docs/ROADMAP.md).

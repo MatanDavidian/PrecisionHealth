@@ -7,12 +7,15 @@
  * are exercised by the app's very first screen rather than by tests alone.
  */
 import {
+  addDays,
   asId,
   canonical,
   aiEstimate,
   deviceReading,
   userEntered,
+  zonedTimeToUtc,
   type AIInferenceId,
+  type CalendarDate,
   type Condition,
   type ExerciseId,
   type FoodItemId,
@@ -36,17 +39,21 @@ import {
 
 export const DEMO_USER_ID = asId<'User'>('user-demo') as UserId
 export const ZONE: IanaZone = 'Asia/Jerusalem'
-/** Local calendar day being demonstrated. */
+/** The day the fixed sample set describes. Tests pin to this. */
 export const DEMO_DAY = '2026-08-18'
 
-/** Asia/Jerusalem is UTC+3 in August, so local 06:42 is 03:42Z. */
-const utc = (localHHMM: string, dayOffset = 0): string => {
-  const [h, m] = localHHMM.split(':').map(Number)
-  const d = new Date(Date.UTC(2026, 7, 18 + dayOffset, h - 3, m))
-  return d.toISOString()
-}
+/**
+ * The sample day is built for a target date rather than hardcoded, so a fresh
+ * install opens on a populated TODAY instead of an empty screen with the data
+ * two days in the past. Tests use the fixed export below.
+ */
+export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
+  const utc = (localHHMM: string, dayOffset = 0): string =>
+    zonedTimeToUtc(addDays(day, dayOffset), localHHMM, zone)
+  const DEMO_DAY = day
+  const ZONE = zone
 
-export const profile: UserProfile = {
+  const profile: UserProfile = {
   userId: DEMO_USER_ID,
   displayName: 'Matan',
   timezone: ZONE,
@@ -55,7 +62,7 @@ export const profile: UserProfile = {
   preferredLengthUnit: 'cm',
 }
 
-export const sleep: Sleep[] = [
+  const sleep: Sleep[] = [
   {
     id: asId<'Sleep'>('sleep-1') as SleepId,
     userId: DEMO_USER_ID,
@@ -66,7 +73,7 @@ export const sleep: Sleep[] = [
   },
 ]
 
-export const observations: Observation[] = [
+  const observations: Observation[] = [
   {
     id: asId<'Observation'>('obs-hrv') as ObservationId,
     userId: DEMO_USER_ID,
@@ -136,9 +143,9 @@ export const observations: Observation[] = [
   },
 ]
 
-const FOOD_INFERENCE = asId<'AIInference'>('inf-food-1') as AIInferenceId
+  const FOOD_INFERENCE = asId<'AIInference'>('inf-food-1') as AIInferenceId
 
-export const meals: Meal[] = [
+  const meals: Meal[] = [
   {
     id: asId<'Meal'>('meal-breakfast') as MealId,
     userId: DEMO_USER_ID,
@@ -221,7 +228,7 @@ export const meals: Meal[] = [
   },
 ]
 
-export const workouts: Workout[] = [
+  const workouts: Workout[] = [
   {
     id: asId<'Workout'>('workout-1') as WorkoutId,
     userId: DEMO_USER_ID,
@@ -256,16 +263,16 @@ export const workouts: Workout[] = [
   },
 ]
 
-export const goals: Goal[] = [
+  const goals: Goal[] = [
   {
     id: asId<'Goal'>('goal-protein') as GoalId,
     userId: DEMO_USER_ID,
     metric: 'PROTEIN',
     direction: 'AT_LEAST',
     target: canonical(145, 'g'),
-    startsOn: '2026-08-01',
+    startsOn: addDays(day, -17),
     active: true,
-    provenance: userEntered('2026-08-01T05:00:00.000Z'),
+    provenance: userEntered(zonedTimeToUtc(addDays(day, -17), '08:00', zone)),
   },
   {
     id: asId<'Goal'>('goal-steps') as GoalId,
@@ -273,11 +280,17 @@ export const goals: Goal[] = [
     metric: 'STEPS',
     direction: 'AT_LEAST',
     target: canonical(10000, 'count'),
-    startsOn: '2026-08-01',
+    startsOn: addDays(day, -17),
     active: true,
-    provenance: userEntered('2026-08-01T05:00:00.000Z'),
+    provenance: userEntered(zonedTimeToUtc(addDays(day, -17), '08:00', zone)),
   },
 ]
+
+  return { profile, sleep, observations, meals, workouts, goals }
+}
+
+/** Fixed sample set on DEMO_DAY, used by tests. */
+export const { profile, sleep, observations, meals, workouts, goals } = buildSeed()
 
 /** Clinical entities: shapes are modelled, no screen reads them yet. */
 export const labPanels: LabPanel[] = []

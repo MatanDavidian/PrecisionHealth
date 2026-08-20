@@ -1,29 +1,38 @@
+import { Link } from 'react-router-dom'
 import { Card, StatRow } from '../components/Card'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
 import { ConflictNotice } from '../components/ConflictNotice'
 import { show, showDuration, showNumber } from '../format'
-import { useToday } from '../useHealthData'
+import { today, useActions, useDay } from '../useHealthData'
 import { evaluateGoal } from '@/data/analytics'
 import { convert } from '@/domain'
 
 export function Today() {
-  const data = useToday()
+  const day = today()
+  const data = useDay(day)
+  const { resolveConflict } = useActions()
 
   if (!data) return <p className="text-sm text-ink-muted">Loading your day…</p>
 
   const { nutrients, workouts, sleep, effective, conflicts, goals, unconfirmed } = data
   const workout = workouts[0]
   const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
-  const proteinProgress = proteinGoal
-    ? evaluateGoal(proteinGoal, nutrients.protein.value)
-    : undefined
+  const proteinProgress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
   const weightConflict = conflicts.find((c) => c.effective.code === 'WEIGHT')
 
   return (
     <div className="mx-auto max-w-5xl">
-      <header className="pb-6">
-        <h1 className="font-display text-4xl">Good evening</h1>
-        <p className="pt-1 text-sm text-ink-muted">Tuesday, August 18</p>
+      <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
+        <div>
+          <h1 className="font-display text-4xl">Today</h1>
+          <p className="pt-1 text-sm text-ink-muted">{day}</p>
+        </div>
+        <Link
+          to="/nutrition"
+          className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+        >
+          Log a meal
+        </Link>
       </header>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -43,27 +52,24 @@ export function Today() {
           {unconfirmed.length > 0 && (
             <p className="pt-3 text-xs text-ink-muted">
               {unconfirmed.length === 1 ? 'One item is' : `${unconfirmed.length} items are`} an
-              unconfirmed AI estimate — totals may change once confirmed.
+              unconfirmed AI estimate —{' '}
+              <Link to="/nutrition" className="underline">
+                review in Nutrition
+              </Link>
+              .
             </p>
           )}
         </Card>
 
         <Card label="Activity">
-          <StatRow
-            name="Steps"
-            value={effective.STEPS ? showNumber(effective.STEPS.value, 'count') : '—'}
-          />
+          <StatRow name="Steps" value={effective.STEPS ? showNumber(effective.STEPS.value, 'count') : '—'} />
           <StatRow
             name="Workout"
-            value={
-              workout ? `Strength · ${showNumber(workout.duration, 'min')} min` : 'Rest day'
-            }
+            value={workout ? `Strength · ${showNumber(workout.duration, 'min')} min` : 'Rest day'}
           />
           <StatRow
             name="Active kcal"
-            value={
-              effective.ACTIVE_ENERGY ? showNumber(effective.ACTIVE_ENERGY.value, 'kcal') : '—'
-            }
+            value={effective.ACTIVE_ENERGY ? showNumber(effective.ACTIVE_ENERGY.value, 'kcal') : '—'}
           />
         </Card>
 
@@ -72,27 +78,26 @@ export function Today() {
           <StatRow name="HRV" value={effective.HRV ? show(effective.HRV.value, 'ms') : '—'} />
           <StatRow
             name="Resting HR"
-            value={
-              effective.RESTING_HEART_RATE
-                ? show(effective.RESTING_HEART_RATE.value, 'bpm')
-                : '—'
-            }
+            value={effective.RESTING_HEART_RATE ? show(effective.RESTING_HEART_RATE.value, 'bpm') : '—'}
           />
         </Card>
 
         <Card label="Body">
-          <StatRow
-            name="Weight"
-            value={effective.WEIGHT ? show(effective.WEIGHT.value, 'kg', 1) : '—'}
-          />
-          <StatRow
-            name="Body fat"
-            value={effective.BODY_FAT ? show(effective.BODY_FAT.value, '%', 1) : '—'}
-          />
-          {weightConflict && <ConflictNotice conflict={weightConflict} unit="kg" />}
+          <StatRow name="Weight" value={effective.WEIGHT ? show(effective.WEIGHT.value, 'kg', 1) : '—'} />
+          <StatRow name="Body fat" value={effective.BODY_FAT ? show(effective.BODY_FAT.value, '%', 1) : '—'} />
+          {weightConflict && (
+            <ConflictNotice
+              conflict={weightConflict}
+              unit="kg"
+              onChoose={(chosen) => void resolveConflict(chosen, data.candidates.WEIGHT ?? [])}
+            />
+          )}
         </Card>
 
         <Card label="Meals">
+          {data.meals.length === 0 && (
+            <p className="py-1.5 text-sm text-ink-muted">Nothing logged yet today.</p>
+          )}
           {data.meals.map((meal) => {
             const kcal = meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0)
             const estimate = meal.items.find((item) => item.provenance.source === 'AI_ESTIMATE')

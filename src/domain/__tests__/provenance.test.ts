@@ -76,3 +76,30 @@ describe('conflict detection', () => {
     expect(detectConflict(only, byValue, 0)).toBeUndefined()
   })
 })
+
+describe('a settled conflict stays settled', () => {
+  const byValue = (r: { value: number }) => r.value
+
+  it('stops raising a conflict once a confirmation supersedes the candidates', () => {
+    const scale = record('scale', { source: 'SMART_SCALE', kind: 'RAW', recordedAt: at('2026-08-18T06:00:00Z') }, 72800)
+    const phone = record('phone', { source: 'APPLE_HEALTH', kind: 'RAW', recordedAt: at('2026-08-18T07:00:00Z') }, 73700)
+
+    // Unsettled: the two disagree.
+    expect(detectConflict([scale, phone], byValue, 200)).toBeDefined()
+
+    // The user picked the phone's number; the decision supersedes both readings.
+    const confirmed = record(
+      'confirmed',
+      {
+        source: 'USER',
+        kind: 'USER_CONFIRMED',
+        recordedAt: at('2026-08-18T18:00:00Z'),
+        supersedes: ['scale', 'phone'],
+      },
+      73700,
+    )
+
+    expect(detectConflict([scale, phone, confirmed], byValue, 200)).toBeUndefined()
+    expect(resolveEffective([scale, phone, confirmed])?.id).toBe('confirmed')
+  })
+})

@@ -1,0 +1,171 @@
+# Open questions and assumptions
+
+Decisions I made to keep slice 1 moving, that are genuinely yours to rule on.
+Each one is live in the code right now — the code links back here — so changing
+your mind is an edit, not an archaeology exercise.
+
+Format: **Q** the question · **Assumed** what the code does today · **Cost of
+being wrong** what it takes to change · **Needs deciding by** the slice where it
+stops being cheap.
+
+---
+
+## Q1 — Which timezone stamps a new record: the device or the profile?
+
+**Assumed.** The **device's** current zone (`Intl.DateTimeFormat().resolvedOptions().timeZone`).
+Where you physically are when you eat is what decides which day the meal belongs
+to, and the device knows that; a profile setting goes stale the moment you fly.
+
+**The wrinkle.** A phone left on the wrong zone, or a laptop that never updates,
+silently files records against the wrong day. There is no way to tell that from
+the data afterwards.
+
+**Alternative.** Ask on arrival ("You seem to be in Berlin — log in Berlin
+time?"), which is what Garmin does, or let the profile win and treat the device
+as a suggestion.
+
+**Cost of being wrong.** Low now, high later: records already written keep the
+zone they were stamped with (by design, D7), so a change affects new records
+only — but a year of mis-stamped history cannot be repaired without knowing
+where you actually were.
+
+**Needs deciding by.** Slice 4 (Garmin import), where the device supplies its
+own zone and the two can disagree.
+**Files.** `src/data/newRecords.ts` (`deviceZone`).
+
+## Q2 — Where do nutrition numbers come from?
+
+**Assumed.** Typed by hand — name, grams, kcal and macros, every time. There is
+no food database.
+
+**The wrinkle.** Nobody sustains manual macro entry. This is fine for slice 1
+because the point is proving the write path, but as a product it is a dead end
+without either a food database (USDA FoodData Central, Open Food Facts) or the
+photo flow from slice 3.
+
+**Cost of being wrong.** Low. `FoodItem` already carries everything a database
+would fill in; a lookup becomes a new provenance source, not a schema change.
+
+**Needs deciding by.** Slice 3. If the photo flow lands first, a database may
+never be needed — the AI estimate is the fast path and the database is only the
+correction path.
+**Files.** `src/ui/components/MealForm.tsx`.
+
+## Q3 — Are aggregate rows append-only, or only the facts inside them?
+
+**Assumed.** The facts are append-only; the **row** is rewritten. Confirming an
+AI portion appends a new `FoodItem` that supersedes the estimate, and the whole
+`Meal` row is written back with both items in it. `liveItems()` hides the
+superseded one from totals.
+
+**The wrinkle.** This is a weaker guarantee than D4 reads like it promises. The
+meal's *contents* have full history, but the meal row itself has no version
+chain — a concurrent write from two devices would clobber, and "what did this
+meal look like on Tuesday?" is unanswerable.
+
+**Alternative.** Event-source the aggregates (store `MealCreated`,
+`ItemConfirmed` and fold them), or version the row with an `updatedAt` and
+optimistic concurrency.
+
+**Cost of being wrong.** Moderate and rising. Single-device it is invisible;
+the moment two devices sync it is a lost-update bug.
+
+**Needs deciding by.** Slice 2 (cloud sync), which is exactly when concurrent
+writes become possible.
+**Files.** `src/domain/corrections.ts`, `src/data/idb/schema.ts`.
+
+## Q4 — What is a "day" for a user who is awake past midnight?
+
+**Assumed.** Local midnight. A 01:00 meal counts toward the day that just
+started, matching Garmin and Apple Health so imported daily totals line up
+without a fudge factor.
+
+**The wrinkle.** It is not how people experience a late dinner. Someone eating
+at 01:00 thinks of it as part of the evening that just ended, and their protein
+total for "yesterday" will look wrong to them.
+
+**Alternative.** A per-user day boundary (04:00 is the usual choice). The code
+is ready for it — `DAY_BOUNDARY_HOUR` is one constant threaded through
+`dayKey` — but the moment it becomes a setting, every stored `day` index needs
+recomputing.
+
+**Cost of being wrong.** Low now, high after real data exists: the derived day
+is persisted as an index (D7), so changing the boundary means a migration over
+every record.
+
+**Needs deciding by.** Whenever you first notice it annoying you. Worth
+deciding before slice 4 fills the database with imported days.
+**Files.** `src/domain/time.ts` (`DAY_BOUNDARY_HOUR`).
+
+## Q5 — Is the seeded sample day helping or lying?
+
+**Assumed.** A fresh install seeds a full sample day onto **today**, including a
+deliberate two-source weight conflict and an unconfirmed AI estimate, so both
+paths are visible immediately.
+
+**The wrinkle.** It is fake data indistinguishable from real data once you start
+logging alongside it. There is no "this is a demo" marker, and no way to clear
+it beyond deleting the whole database.
+
+**Alternative.** Mark seeded records (a `DEMO` provenance source, or a flag on
+the row) and offer "clear sample data" — cheap now, awkward once the store has a
+year of real records mixed in.
+
+**Cost of being wrong.** Low, and entirely front-loaded: decide before you start
+logging real meals into it.
+
+**Needs deciding by.** Before slice 2 puts this data in the cloud.
+**Files.** `src/data/index.ts` (`ensureSeeded`), `src/data/mock/seed.ts`.
+
+## Q6 — One user, hardcoded
+
+**Assumed.** Everything reads `DEMO_USER_ID`. There are no accounts, and the
+repository interfaces take a `userId` that only ever has one value.
+
+**Why it is fine for now.** The interfaces are already user-scoped and the
+IndexedDB indexes are all `[userId, day]`, so real auth populates a value that
+is already threaded everywhere rather than adding a parameter to every method.
+
+**Cost of being wrong.** Low — this is the one assumption the design already
+anticipates.
+
+**Needs deciding by.** Slice 2, by definition.
+**Files.** `src/data/mock/seed.ts` (`DEMO_USER_ID`), `src/ui/useHealthData.ts`.
+
+## Q7 — No delete, anywhere
+
+**Assumed.** You can add a meal and correct an estimate, but you cannot delete
+anything. D4 says records are append-only, and nothing in the UI removes one.
+
+**The wrinkle.** "I logged this twice by mistake" is the single most common
+correction in any food tracker, and right now the only remedy is confirming a
+zeroed correction over it, which is not something a person will discover.
+
+**Alternative.** A `retracted` provenance kind that supersedes without
+supplying a replacement value — append-only, still auditable, and it reads as
+"delete" in the UI.
+
+**Cost of being wrong.** Low to fix, but it is a visible gap the first time you
+mistype a meal.
+
+**Needs deciding by.** Slice 1 follow-up — realistically the next thing you will
+want.
+**Files.** `src/domain/corrections.ts`.
+
+---
+
+## Smaller assumptions, noted without ceremony
+
+- **Latency is unmodelled.** IndexedDB is fast enough that no screen shows a
+  spinner beyond first load. Slice 2 adds a network and this stops being true.
+- **No date picker.** Every screen shows today. Viewing yesterday needs one, and
+  `useDay(day)` already takes the parameter.
+- **Errors are unhandled past the storage gate.** A failed write logs nothing
+  and shows nothing; the only handled failure is IndexedDB being unavailable
+  entirely (private browsing).
+- **Goals are seeded, not editable.** 145 g protein and 10,000 steps are
+  hardcoded in the seed. Slice 5 owns making them real.
+- **Body fat is stored as `%`,** which is a ratio, not a unit in the dimensional
+  sense — `convert` treats it as its own dimension. Harmless, slightly impure.
+- **`suggestSlot` uses fixed hour boundaries** (11 / 16 / 22) rather than
+  learning from your logging pattern.

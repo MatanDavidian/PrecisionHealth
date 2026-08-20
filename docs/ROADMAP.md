@@ -36,16 +36,21 @@ seeded day end to end.
 **Ships:** nothing user-facing — this is the only slice that doesn't, which is
 why it was kept to days rather than weeks.
 
-## Slice 1 — Log a meal, watch today's protein move
+## Slice 1 — Log a meal, watch today's protein move ✅ done
 
 Manual meal entry, persisted in the browser (IndexedDB), Today recalculating
-from stored data. No accounts, no server, no network.
+from stored data. No accounts, no server, no network. Confirming an AI estimate
+and settling a two-source conflict both write real superseding records.
 
-**Proves:** the *write* path — the thing a read-only mock cannot test. Every
-modelling mistake in `Meal`, `FoodItem`, units and day-bucketing surfaces here,
-while the cost of fixing them is one screen.
-**Ships:** a usable protein tracker. Genuinely useful on day one, which is what
-makes the feedback real.
+**Proved:** the write path, and it found a bug a read-only mock could not — a
+conflict the user had settled kept being raised, because `detectConflict` was
+not filtering superseded records. Live in `liveRecords()` now, with a test.
+**Ships:** a usable protein tracker.
+
+Assumptions taken along the way are in
+[`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — Q3 (aggregate rows are rewritten
+while the facts inside them are append-only) and Q7 (nothing can be deleted)
+are the two worth reading before slice 2.
 
 ## Slice 2 — My data, on my devices
 

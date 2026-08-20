@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayKey, dayKeyOf } from '../time'
+import { dayKey, dayKeyOf, zonedTimeToUtc } from '../time'
 
 const JERUSALEM = 'Asia/Jerusalem'
 const NEW_YORK = 'America/New_York'
@@ -39,5 +39,26 @@ describe('day identity', () => {
   it('handles a DST boundary without shifting the day', () => {
     // Israel leaves DST on 25 Oct 2026 at 02:00 local.
     expect(dayKey('2026-10-25T00:30:00.000Z', JERUSALEM)).toBe('2026-10-25')
+  })
+})
+
+describe('zonedTimeToUtc', () => {
+  it('resolves a local wall-clock time to the right instant', () => {
+    // Jerusalem is UTC+3 in August.
+    expect(zonedTimeToUtc('2026-08-18', '13:05', JERUSALEM)).toBe('2026-08-18T10:05:00.000Z')
+  })
+
+  it('accounts for DST rather than assuming a fixed offset', () => {
+    // UTC+3 in summer, UTC+2 in winter — same wall time, different instants.
+    expect(zonedTimeToUtc('2026-01-15', '13:05', JERUSALEM)).toBe('2026-01-15T11:05:00.000Z')
+  })
+
+  it('round-trips with dayKey', () => {
+    const instant = zonedTimeToUtc('2026-08-21', '01:00', JERUSALEM)
+    expect(dayKey(instant, JERUSALEM)).toBe('2026-08-21')
+  })
+
+  it('agrees with a different zone on the same wall time', () => {
+    expect(zonedTimeToUtc('2026-08-18', '13:05', NEW_YORK)).toBe('2026-08-18T17:05:00.000Z')
   })
 })

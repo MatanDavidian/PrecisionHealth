@@ -84,9 +84,22 @@ export interface Provenanced {
  * Pure and dependency-free on purpose: the client and the future server must
  * reach the same answer, so this function is the single definition of "true".
  */
-export function resolveEffective<T extends Provenanced>(candidates: readonly T[]): T | undefined {
+/**
+ * Records nothing has replaced.
+ *
+ * Every reader must filter these out, not just `resolveEffective` — a
+ * superseded record is history, and history does not get a vote. Missing this
+ * in `detectConflict` meant a disagreement the user had already settled kept
+ * being raised, because the record they rejected was still arguing with the
+ * decision that rejected it.
+ */
+export function liveRecords<T extends Provenanced>(candidates: readonly T[]): T[] {
   const superseded = new Set(candidates.flatMap((c) => c.provenance.supersedes ?? []))
-  const live = candidates.filter((c) => !superseded.has(c.id))
+  return candidates.filter((c) => !superseded.has(c.id))
+}
+
+export function resolveEffective<T extends Provenanced>(candidates: readonly T[]): T | undefined {
+  const live = liveRecords(candidates)
 
   return [...live].sort((a, b) => {
     const byPrecedence = precedenceOf(b.provenance) - precedenceOf(a.provenance)
@@ -116,11 +129,14 @@ export function detectConflict<T extends Provenanced>(
   valueOf: (record: T) => number,
   tolerance: number,
 ): Conflict<T> | undefined {
-  const effective = resolveEffective(candidates)
-  if (!effective || candidates.length < 2) return undefined
+  // Only live records can disagree. Once the user settles a conflict, their
+  // decision supersedes every candidate, so there is nothing left to argue.
+  const live = liveRecords(candidates)
+  const effective = resolveEffective(live)
+  if (!effective || live.length < 2) return undefined
 
   const base = valueOf(effective)
-  const competing = candidates
+  const competing = live
     .filter((c) => c.id !== effective.id && Math.abs(valueOf(c) - base) > tolerance)
     .sort((a, b) => precedenceOf(b.provenance) - precedenceOf(a.provenance))
 

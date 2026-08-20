@@ -1,5 +1,7 @@
-import type { DurationUnit, EnergyUnit, Id, LengthUnit, MassUnit, Quantity, TimeSemantics } from './primitives'
+import type { Id } from './ids'
+import type { CanonicalQuantity } from './units'
 import type { Provenance } from './provenance'
+import type { TimeSemantics } from './time'
 import type { UserId } from './user'
 
 export type WorkoutId = Id<'Workout'>
@@ -14,10 +16,10 @@ export type WorkoutType =
   | 'TENNIS'
   | 'OTHER'
 
-/** One set of a strength exercise. */
 export interface SetEntry {
   reps: number
-  weight?: Quantity<MassUnit>
+  weight?: CanonicalQuantity
+  /** Rate of perceived exertion, 1-10. Subjective load, needed for plan evaluation. */
   rpe?: number
 }
 
@@ -33,11 +35,10 @@ export interface Workout {
   userId: UserId
   type: WorkoutType
   time: TimeSemantics
-  duration: Quantity<DurationUnit>
-  /** Endurance sessions carry distance; strength sessions carry exercises. */
-  distance?: Quantity<LengthUnit>
-  activeEnergy?: Quantity<EnergyUnit>
-  averageHeartRate?: Quantity<'bpm'>
+  duration: CanonicalQuantity
+  distance?: CanonicalQuantity
+  activeEnergy?: CanonicalQuantity
+  averageHeartRate?: CanonicalQuantity
   exercises: Exercise[]
   notes?: string
   provenance: Provenance

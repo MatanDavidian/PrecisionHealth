@@ -1,53 +1,96 @@
 /**
- * In-memory implementation of the repository interfaces, backed by the seed
- * dataset. Swapping this for a REST-backed implementation is the only change
- * needed when the backend lands (roadmap phase 6).
+ * In-memory implementation of the repository interfaces.
+ *
+ * This is the throwaway one. Slice 1 replaces it with IndexedDB and slice 2
+ * with the API — neither of which changes a single screen, which is the whole
+ * point of the seam.
  */
-import type { CalendarDate, MeasurementCode, ObservationCode, UserId } from '@/domain'
+import { dayKeyOf, type CalendarDate, type Observation, type ObservationCode, type UserId } from '@/domain'
 import type { DateRange, HealthRepositories } from '@/data/repositories'
-import { goals, meals, measurements, observations, profile, sleep, workouts } from './seed'
+import {
+  conditions,
+  goals,
+  intakeEvents,
+  labPanels,
+  meals,
+  observations,
+  profile,
+  regimens,
+  sleep,
+  workouts,
+} from './seed'
 
-/** Pretend latency so loading states are real from the start. */
+/** Pretend latency, so loading states are real from the first commit. */
 const delay = <T>(value: T): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), 120))
 
-const dateOf = (time: { kind: string; at?: string; start?: string; date?: string }): CalendarDate => {
-  if (time.kind === 'daily') return time.date as CalendarDate
-  const iso = time.kind === 'interval' ? time.start! : time.at!
-  return iso.slice(0, 10)
-}
+const inRange = (day: CalendarDate, range: DateRange) => day >= range.from && day <= range.to
 
-const inRange = (date: CalendarDate, range: DateRange) => date >= range.from && date <= range.to
+const mutableObservations = [...observations]
+const mutableMeals = [...meals]
+const mutableWorkouts = [...workouts]
 
 export const inMemoryRepositories: HealthRepositories = {
   profiles: {
     get: async (userId: UserId) => delay(profile.userId === userId ? profile : undefined),
   },
+
   meals: {
-    listByDate: async (_userId, date) => delay(meals.filter((m) => dateOf(m.time) === date)),
-    listByRange: async (_userId, range) => delay(meals.filter((m) => inRange(dateOf(m.time), range))),
-  },
-  workouts: {
-    listByDate: async (_userId, date) => delay(workouts.filter((w) => dateOf(w.time) === date)),
+    listByDay: async (_userId, day) => delay(mutableMeals.filter((m) => dayKeyOf(m.time) === day)),
     listByRange: async (_userId, range) =>
-      delay(workouts.filter((w) => inRange(dateOf(w.time), range))),
+      delay(mutableMeals.filter((m) => inRange(dayKeyOf(m.time), range))),
+    add: async (meal) => {
+      mutableMeals.push(meal)
+      return delay(undefined)
+    },
   },
+
+  workouts: {
+    listByDay: async (_userId, day) => delay(mutableWorkouts.filter((w) => dayKeyOf(w.time) === day)),
+    listByRange: async (_userId, range) =>
+      delay(mutableWorkouts.filter((w) => inRange(dayKeyOf(w.time), range))),
+    add: async (workout) => {
+      mutableWorkouts.push(workout)
+      return delay(undefined)
+    },
+  },
+
   sleep: {
-    latest: async () => delay(sleep),
-    listByRange: async (_userId, range) => delay([sleep].filter((s) => inRange(dateOf(s.time), range))),
+    // Anchored to the wake day, not the day the user fell asleep.
+    forDay: async (_userId, day) => delay(sleep.filter((s) => dayKeyOf(s.time, 'END') === day)),
   },
+
   observations: {
-    latest: async (_userId, code: ObservationCode) =>
-      delay(observations.find((o) => o.code === code)),
-    listByDate: async (_userId, date) => delay(observations.filter((o) => dateOf(o.time) === date)),
+    listByDay: async (_userId, day, code?: ObservationCode) =>
+      delay(
+        mutableObservations.filter(
+          (o) => dayKeyOf(o.time) === day && (code === undefined || o.code === code),
+        ),
+      ),
+    latest: async (_userId, code) => {
+      const matching = mutableObservations.filter((o) => o.code === code)
+      if (matching.length === 0) return delay([] as Observation[])
+      const mostRecentDay = matching
+        .map((o) => dayKeyOf(o.time))
+        .sort()
+        .at(-1)
+      return delay(matching.filter((o) => dayKeyOf(o.time) === mostRecentDay))
+    },
+    add: async (observation) => {
+      mutableObservations.push(observation)
+      return delay(undefined)
+    },
   },
-  measurements: {
-    latest: async (_userId, code: MeasurementCode) =>
-      delay(measurements.find((m) => m.code === code)),
-    listByRange: async (_userId, code, range) =>
-      delay(measurements.filter((m) => m.code === code && inRange(dateOf(m.time), range))),
-  },
+
   goals: {
     listActive: async () => delay(goals.filter((g) => g.active)),
+  },
+
+  clinical: {
+    listPanels: async () => delay(labPanels),
+    listConditions: async () => delay(conditions),
+    listRegimens: async () => delay(regimens),
+    listIntakeEvents: async (_userId, range) =>
+      delay(intakeEvents.filter((e) => inRange(e.takenAt.slice(0, 10), range))),
   },
 }

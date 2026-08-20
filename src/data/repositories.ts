@@ -1,21 +1,26 @@
 /**
- * Phase 2 — repository interfaces.
+ * Repository interfaces — the seam.
  *
- * The UI talks to these, never to a concrete store. Today they are backed by
- * in-memory mock data; later the same interfaces are implemented against the
- * REST API without a single screen changing.
+ * The UI depends on these and nothing else, so the store behind them can be an
+ * in-memory mock today, IndexedDB next, and Postgres over HTTP after that
+ * without a screen changing. Everything is async for that reason: a synchronous
+ * mock that later becomes a network call would force every caller to be rewritten.
  *
- * All methods are async on purpose — a synchronous mock that later becomes a
- * network call would force a rewrite of every caller.
+ * DECISION: reads return ALL candidate records, not a pre-resolved value.
+ * Conflict resolution lives in the domain layer (`resolveEffective`) so the
+ * client and the future server cannot drift apart, and so the UI can show "two
+ * sources disagree" instead of silently picking one.
  */
 import type {
   CalendarDate,
+  Condition,
   Goal,
+  IntakeEvent,
+  LabPanel,
   Meal,
-  Measurement,
-  MeasurementCode,
   Observation,
   ObservationCode,
+  Regimen,
   Sleep,
   UserId,
   UserProfile,
@@ -32,41 +37,48 @@ export interface ProfileRepository {
 }
 
 export interface MealRepository {
-  listByDate(userId: UserId, date: CalendarDate): Promise<Meal[]>
+  listByDay(userId: UserId, day: CalendarDate): Promise<Meal[]>
   listByRange(userId: UserId, range: DateRange): Promise<Meal[]>
+  add(meal: Meal): Promise<void>
 }
 
 export interface WorkoutRepository {
-  listByDate(userId: UserId, date: CalendarDate): Promise<Workout[]>
+  listByDay(userId: UserId, day: CalendarDate): Promise<Workout[]>
   listByRange(userId: UserId, range: DateRange): Promise<Workout[]>
+  add(workout: Workout): Promise<void>
 }
 
 export interface SleepRepository {
-  latest(userId: UserId): Promise<Sleep | undefined>
-  listByRange(userId: UserId, range: DateRange): Promise<Sleep[]>
+  /** Anchored to the wake day. */
+  forDay(userId: UserId, day: CalendarDate): Promise<Sleep[]>
 }
 
 export interface ObservationRepository {
-  latest(userId: UserId, code: ObservationCode): Promise<Observation | undefined>
-  listByDate(userId: UserId, date: CalendarDate): Promise<Observation[]>
-}
-
-export interface MeasurementRepository {
-  latest(userId: UserId, code: MeasurementCode): Promise<Measurement | undefined>
-  listByRange(userId: UserId, code: MeasurementCode, range: DateRange): Promise<Measurement[]>
+  /** All candidates for one code on one day — callers resolve precedence themselves. */
+  listByDay(userId: UserId, day: CalendarDate, code?: ObservationCode): Promise<Observation[]>
+  /** All candidates for the most recent day that has any, for a single code. */
+  latest(userId: UserId, code: ObservationCode): Promise<Observation[]>
+  add(observation: Observation): Promise<void>
 }
 
 export interface GoalRepository {
   listActive(userId: UserId): Promise<Goal[]>
 }
 
-/** Single entry point the UI depends on. */
+/** Clinical reads exist as interfaces before any screen uses them — see docs/ARCHITECTURE.md. */
+export interface ClinicalRepository {
+  listPanels(userId: UserId): Promise<LabPanel[]>
+  listConditions(userId: UserId): Promise<Condition[]>
+  listRegimens(userId: UserId): Promise<Regimen[]>
+  listIntakeEvents(userId: UserId, range: DateRange): Promise<IntakeEvent[]>
+}
+
 export interface HealthRepositories {
   profiles: ProfileRepository
   meals: MealRepository
   workouts: WorkoutRepository
   sleep: SleepRepository
   observations: ObservationRepository
-  measurements: MeasurementRepository
   goals: GoalRepository
+  clinical: ClinicalRepository
 }

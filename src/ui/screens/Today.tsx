@@ -1,31 +1,23 @@
 import { Card, StatRow } from '../components/Card'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
+import { ConflictNotice } from '../components/ConflictNotice'
+import { show, showDuration, showNumber } from '../format'
 import { useToday } from '../useHealthData'
-import type { Goal, Observation } from '@/domain'
-
-const hhmm = (minutes: number) => `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-
-const findObs = (observations: Observation[], code: Observation['code']) =>
-  observations.find((o) => o.code === code)
-
-const goalFor = (goals: Goal[], metric: Goal['metric']) => goals.find((g) => g.metric === metric)
+import { evaluateGoal } from '@/data/analytics'
+import { convert } from '@/domain'
 
 export function Today() {
   const data = useToday()
 
-  if (!data) {
-    return <p className="text-sm text-ink-muted">Loading your day…</p>
-  }
+  if (!data) return <p className="text-sm text-ink-muted">Loading your day…</p>
 
-  const { nutrients, workouts, sleep, observations, measurements, goals } = data
-  const steps = findObs(observations, 'STEPS')
-  const activeEnergy = findObs(observations, 'ACTIVE_ENERGY')
-  const hrv = findObs(observations, 'HRV')
-  const rhr = findObs(observations, 'RESTING_HEART_RATE')
-  const weight = measurements.find((m) => m.code === 'WEIGHT')
-  const bodyFat = measurements.find((m) => m.code === 'BODY_FAT')
-  const proteinGoal = goalFor(goals, 'PROTEIN')
+  const { nutrients, workouts, sleep, effective, conflicts, goals, unconfirmed } = data
   const workout = workouts[0]
+  const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
+  const proteinProgress = proteinGoal
+    ? evaluateGoal(proteinGoal, nutrients.protein.value)
+    : undefined
+  const weightConflict = conflicts.find((c) => c.effective.code === 'WEIGHT')
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -36,50 +28,73 @@ export function Today() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card label="Nutrition">
-          <StatRow name="Calories" value={`${nutrients.energy.value.toLocaleString()}`} />
+          <StatRow name="Calories" value={showNumber(nutrients.energy, 'kcal')} />
           <StatRow
             name="Protein"
             value={
               proteinGoal
-                ? `${nutrients.protein.value} / ${proteinGoal.target.value} g`
-                : `${nutrients.protein.value} g`
+                ? `${showNumber(nutrients.protein, 'g')} / ${showNumber(proteinGoal.target, 'g')} g`
+                : show(nutrients.protein, 'g')
             }
+            tone={proteinProgress?.attained ? 'good' : undefined}
           />
-          <StatRow name="Carbs" value={`${nutrients.carbs.value} g`} />
-          <StatRow name="Fat" value={`${nutrients.fat.value} g`} />
-          {data.estimatesPending && (
+          <StatRow name="Carbs" value={show(nutrients.carbs, 'g')} />
+          <StatRow name="Fat" value={show(nutrients.fat, 'g')} />
+          {unconfirmed.length > 0 && (
             <p className="pt-3 text-xs text-ink-muted">
-              Contains an unconfirmed AI estimate — open Nutrition to confirm.
+              {unconfirmed.length === 1 ? 'One item is' : `${unconfirmed.length} items are`} an
+              unconfirmed AI estimate — totals may change once confirmed.
             </p>
           )}
         </Card>
 
         <Card label="Activity">
-          <StatRow name="Steps" value={steps ? steps.value.value.toLocaleString() : '—'} />
+          <StatRow
+            name="Steps"
+            value={effective.STEPS ? showNumber(effective.STEPS.value, 'count') : '—'}
+          />
           <StatRow
             name="Workout"
-            value={workout ? `Strength · ${workout.duration.value} min` : 'Rest day'}
+            value={
+              workout ? `Strength · ${showNumber(workout.duration, 'min')} min` : 'Rest day'
+            }
           />
           <StatRow
             name="Active kcal"
-            value={activeEnergy ? `${activeEnergy.value.value}` : '—'}
+            value={
+              effective.ACTIVE_ENERGY ? showNumber(effective.ACTIVE_ENERGY.value, 'kcal') : '—'
+            }
           />
         </Card>
 
         <Card label="Recovery">
-          <StatRow name="Sleep" value={sleep ? hhmm(sleep.duration.value) : '—'} />
-          <StatRow name="HRV" value={hrv ? `${hrv.value.value} ms` : '—'} />
-          <StatRow name="Resting HR" value={rhr ? `${rhr.value.value} bpm` : '—'} />
+          <StatRow name="Sleep" value={sleep ? showDuration(sleep.duration) : '—'} />
+          <StatRow name="HRV" value={effective.HRV ? show(effective.HRV.value, 'ms') : '—'} />
+          <StatRow
+            name="Resting HR"
+            value={
+              effective.RESTING_HEART_RATE
+                ? show(effective.RESTING_HEART_RATE.value, 'bpm')
+                : '—'
+            }
+          />
         </Card>
 
         <Card label="Body">
-          <StatRow name="Weight" value={weight ? `${weight.value.value} kg` : '—'} />
-          <StatRow name="Body fat" value={bodyFat ? `${bodyFat.value.value} %` : '—'} />
+          <StatRow
+            name="Weight"
+            value={effective.WEIGHT ? show(effective.WEIGHT.value, 'kg', 1) : '—'}
+          />
+          <StatRow
+            name="Body fat"
+            value={effective.BODY_FAT ? show(effective.BODY_FAT.value, '%', 1) : '—'}
+          />
+          {weightConflict && <ConflictNotice conflict={weightConflict} unit="kg" />}
         </Card>
 
         <Card label="Meals">
           {data.meals.map((meal) => {
-            const kcal = meal.items.reduce((sum, item) => sum + item.nutrients.energy.value, 0)
+            const kcal = meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0)
             const estimate = meal.items.find((item) => item.provenance.source === 'AI_ESTIMATE')
             return (
               <div key={meal.id} className="flex items-baseline justify-between gap-4 py-1.5">
@@ -87,7 +102,7 @@ export function Today() {
                   {meal.slot.charAt(0) + meal.slot.slice(1).toLowerCase()}
                   {estimate && <ProvenanceBadge provenance={estimate.provenance} />}
                 </span>
-                <span className="tabular text-sm font-medium">{kcal} kcal</span>
+                <span className="tabular text-sm font-medium">{Math.round(kcal)} kcal</span>
               </div>
             )
           })}

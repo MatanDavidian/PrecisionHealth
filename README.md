@@ -13,15 +13,34 @@ UI direction comes from the Timeline mockups in Claude Design (link in
 ```bash
 npm install
 npm run dev        # http://localhost:5173
+npm test           # domain rules
 npm run build      # typecheck + production build
-npm run typecheck
 ```
 
 Node 20+.
 
-## Architecture
+## High-level decisions
 
-The roadmap's core principle drives the folder layout:
+Full reasoning in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); the plan they
+serve is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+| # | Decision | In short |
+|---|---|---|
+| D1 | React + TypeScript on the web | The watch needs Connect IQ regardless, so Flutter's one-codebase promise never applied. Mobile-native is deferred, not foreclosed. |
+| D2 | The domain layer imports no framework | It is the asset that outlives every technology choice. |
+| D3 | Screens depend on repository interfaces | Makes the store — and later the whole backend — a swappable adapter. |
+| D4 | Records are append-only | A correction is a new record superseding the old, so AI writes are reversible and history survives. |
+| D5 | `USER_CONFIRMED > device > AI_ESTIMATE` | One pure resolver, shared by client and future server. |
+| D6 | Disagreements are shown, not resolved silently | Two sources past tolerance become a question, and the answer is the best signal in the system. |
+| D7 | UTC instants **plus** the record's IANA zone | UTC answers "when"; the zone is what answers "which day", stably, after travel and across DST. |
+| D8 | One canonical unit per dimension, branded | g / cm / kcal / s. The compiler rejects an unconverted value; conventions erode, types don't. |
+| D9 | Infrastructure chosen late, in three steps | Local → managed Postgres → server-side AI. Slice 1 ships without a backend. |
+| D10 | `Observation` is the spine | Every scalar fact is one type; only aggregates (Meal, Workout, Sleep) get their own. |
+| D11 | Medications and supplements are one type | Same structure; intent (`Regimen`) stays separate from fact (`IntakeEvent`) so adherence is answerable. |
+| D12 | Experiments modelled now, built much later | The only feature that constrains the whole model — cheaper to satisfy now than to migrate to. |
+| D13 | Deterministic before intelligent | AI proposes and explains; the rule engine computes. |
+
+## Structure
 
 ```
 data sources → normalized health model → analytics/goal engine → AI tools → UI
@@ -29,24 +48,18 @@ data sources → normalized health model → analytics/goal engine → AI tools 
 
 | Path | Role |
 |---|---|
-| `src/domain/` | **Phase 1.** Entities, units, time semantics and provenance. No framework imports — this layer is portable to any client. |
-| `src/data/repositories.ts` | **Phase 2.** Repository interfaces the UI depends on. Async by design so a REST implementation drops in unchanged. |
-| `src/data/mock/` | In-memory store + seed dataset (the 18 Aug sample day). Replaced by the API in phase 6. |
-| `src/data/analytics.ts` | Derived values (daily totals). Kept apart from stored records — computed numbers never overwrite measurements. |
-| `src/ui/` | Screens and components. Reaches data only through the repository interfaces. |
-
-### Two rules worth keeping
-
-1. **Provenance is not optional.** Every record carries `source`, `kind`
-   (`RAW` / `USER_CONFIRMED` / `DERIVED`) and, for AI values, `confidence`.
-   A Garmin reading, a manual entry and an unconfirmed AI estimate are
-   different kinds of evidence and the UI shows them differently.
-2. **Units are explicit.** Values are `Quantity<Unit>`, never bare numbers.
+| `src/domain/` | Entities, units, time, provenance and conflict resolution. No framework imports. |
+| `src/domain/__tests__/` | The rules that must not silently regress: day identity, precedence, units. |
+| `src/data/repositories.ts` | Interfaces the UI depends on. Async by design. |
+| `src/data/mock/` | In-memory store + the 18 Aug seed day. Replaced in slice 1. |
+| `src/data/analytics.ts` | Derived values, never written back onto records. |
+| `src/ui/` | Screens and components; reaches data only through repositories. |
 
 ## Status
 
-Phase 1–3 skeleton. Today screen renders the seed day end to end; the other
-screens are stubs labelled with the roadmap phase that fills them in.
+Slice 0 complete. Today renders the seed day end to end, including an
+unconfirmed AI portion estimate and a genuine two-source weight disagreement —
+both visible on the screen rather than hidden in the data.
 
-Next: finish the domain model (labs, conditions, medications, experiments are
-sketched but not exercised), then manual logging, then the backend.
+Next: **slice 1** — manual meal logging with local persistence. See
+[`docs/ROADMAP.md`](docs/ROADMAP.md).

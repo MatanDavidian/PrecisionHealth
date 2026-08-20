@@ -25,18 +25,17 @@ export function Card({
 export function StatRow({
   name,
   value,
-  hint,
+  tone,
 }: {
   name: string
   value: string
-  hint?: ReactNode
+  tone?: 'good'
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-1.5">
       <span className="text-sm text-ink-muted">{name}</span>
-      <span className="tabular text-sm font-medium">
+      <span className={`tabular text-sm font-medium ${tone === 'good' ? 'text-leaf' : ''}`}>
         {value}
-        {hint}
       </span>
     </div>
   )

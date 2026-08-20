@@ -1,263 +1,286 @@
 /**
- * Mock dataset — the sample day from the roadmap doc and the Timeline mockup
- * (18 Aug). Every record carries realistic provenance so the UI is exercised
- * against mixed sources from day one: device data, manual entries and one
- * unconfirmed AI estimate.
+ * Seed dataset — the 18 Aug sample day from the roadmap doc and the Timeline
+ * mockup, in Asia/Jerusalem.
+ *
+ * Deliberately not clean: it contains an unconfirmed AI portion estimate AND a
+ * genuine two-source weight disagreement, so the provenance and conflict paths
+ * are exercised by the app's very first screen rather than by tests alone.
  */
 import {
-  quantity,
+  asId,
+  canonical,
+  aiEstimate,
+  deviceReading,
+  userEntered,
+  type AIInferenceId,
+  type Condition,
+  type ExerciseId,
+  type FoodItemId,
   type Goal,
+  type GoalId,
+  type IanaZone,
+  type IntakeEvent,
+  type LabPanel,
   type Meal,
-  type Measurement,
+  type MealId,
   type Observation,
+  type ObservationId,
+  type Regimen,
   type Sleep,
+  type SleepId,
   type UserId,
   type UserProfile,
   type Workout,
-} from '@/domain'
-import type {
-  AIInferenceId,
-  ExerciseId,
-  FoodItemId,
-  GoalId,
-  MealId,
-  MeasurementId,
-  ObservationId,
-  Provenance,
-  SleepId,
-  WorkoutId,
+  type WorkoutId,
 } from '@/domain'
 
-export const DEMO_USER_ID = 'user-demo' as UserId
-export const DEMO_DATE = '2026-08-18'
+export const DEMO_USER_ID = asId<'User'>('user-demo') as UserId
+export const ZONE: IanaZone = 'Asia/Jerusalem'
+/** Local calendar day being demonstrated. */
+export const DEMO_DAY = '2026-08-18'
 
-const at = (time: string) => `${DEMO_DATE}T${time}:00Z`
-
-const garmin = (recordedAt: string): Provenance => ({
-  source: 'GARMIN',
-  kind: 'RAW',
-  recordedAt,
-})
-const manual = (recordedAt: string): Provenance => ({
-  source: 'USER',
-  kind: 'RAW',
-  recordedAt,
-})
+/** Asia/Jerusalem is UTC+3 in August, so local 06:42 is 03:42Z. */
+const utc = (localHHMM: string, dayOffset = 0): string => {
+  const [h, m] = localHHMM.split(':').map(Number)
+  const d = new Date(Date.UTC(2026, 7, 18 + dayOffset, h - 3, m))
+  return d.toISOString()
+}
 
 export const profile: UserProfile = {
   userId: DEMO_USER_ID,
   displayName: 'Matan',
+  timezone: ZONE,
+  height: { value: 178, unit: 'cm' },
   preferredMassUnit: 'kg',
-  height: quantity(178, 'cm'),
-  timezone: 'Asia/Jerusalem',
+  preferredLengthUnit: 'cm',
 }
 
-export const sleep: Sleep = {
-  id: 'sleep-1' as SleepId,
-  userId: DEMO_USER_ID,
-  time: { kind: 'interval', start: `${DEMO_DATE}T23:10:00Z`, end: at('06:42') },
-  duration: quantity(452, 'min'), // 7h 32m
-  score: 78,
-  provenance: garmin(at('06:42')),
-}
+export const sleep: Sleep[] = [
+  {
+    id: asId<'Sleep'>('sleep-1') as SleepId,
+    userId: DEMO_USER_ID,
+    // Starts on the 17th, ends on the 18th — attributed to the WAKE day.
+    time: { kind: 'interval', start: utc('23:10', -1), end: utc('06:42'), zone: ZONE },
+    duration: canonical(452, 'min'),
+    provenance: deviceReading('GARMIN', utc('06:42')),
+  },
+]
 
 export const observations: Observation[] = [
   {
-    id: 'obs-hrv' as ObservationId,
+    id: asId<'Observation'>('obs-hrv') as ObservationId,
     userId: DEMO_USER_ID,
     code: 'HRV',
-    time: { kind: 'instant', at: at('06:42') },
-    value: quantity(54, 'ms'),
-    provenance: garmin(at('06:42')),
+    time: { kind: 'instant', at: utc('06:42'), zone: ZONE },
+    value: canonical(54, 'ms'),
+    provenance: deviceReading('GARMIN', utc('06:42')),
   },
   {
-    id: 'obs-rhr' as ObservationId,
+    id: asId<'Observation'>('obs-rhr') as ObservationId,
     userId: DEMO_USER_ID,
     code: 'RESTING_HEART_RATE',
-    time: { kind: 'instant', at: at('06:42') },
-    value: quantity(57, 'bpm'),
-    provenance: garmin(at('06:42')),
+    time: { kind: 'instant', at: utc('06:42'), zone: ZONE },
+    value: canonical(57, 'bpm'),
+    provenance: deviceReading('GARMIN', utc('06:42')),
   },
   {
-    id: 'obs-steps' as ObservationId,
+    id: asId<'Observation'>('obs-steps') as ObservationId,
     userId: DEMO_USER_ID,
     code: 'STEPS',
-    time: { kind: 'daily', date: DEMO_DATE },
-    value: quantity(9412, 'count'),
-    provenance: garmin(at('20:00')),
+    time: { kind: 'daily', date: DEMO_DAY, zone: ZONE },
+    value: canonical(9412, 'count'),
+    provenance: deviceReading('GARMIN', utc('20:00')),
   },
   {
-    id: 'obs-active-kcal' as ObservationId,
+    id: asId<'Observation'>('obs-active-kcal') as ObservationId,
     userId: DEMO_USER_ID,
     code: 'ACTIVE_ENERGY',
-    time: { kind: 'daily', date: DEMO_DATE },
-    value: quantity(640, 'kcal'),
-    provenance: garmin(at('20:00')),
+    time: { kind: 'daily', date: DEMO_DAY, zone: ZONE },
+    value: canonical(640, 'kcal'),
+    provenance: deviceReading('GARMIN', utc('20:00')),
+  },
+  // --- Two sources, one morning, genuine disagreement -----------------------
+  {
+    id: asId<'Observation'>('obs-weight-scale') as ObservationId,
+    userId: DEMO_USER_ID,
+    code: 'WEIGHT',
+    time: { kind: 'instant', at: utc('06:50'), zone: ZONE },
+    value: canonical(72.8, 'kg'),
+    provenance: deviceReading('SMART_SCALE', utc('06:50')),
+  },
+  {
+    // Phone-based estimate 900 g off the scale — past the 200 g tolerance, so
+    // the UI raises it rather than quietly averaging or picking one.
+    id: asId<'Observation'>('obs-weight-phone') as ObservationId,
+    userId: DEMO_USER_ID,
+    code: 'WEIGHT',
+    time: { kind: 'instant', at: utc('07:05'), zone: ZONE },
+    value: canonical(73.7, 'kg'),
+    provenance: deviceReading('APPLE_HEALTH', utc('07:05')),
+  },
+  {
+    id: asId<'Observation'>('obs-bodyfat') as ObservationId,
+    userId: DEMO_USER_ID,
+    code: 'BODY_FAT',
+    time: { kind: 'instant', at: utc('06:50'), zone: ZONE },
+    value: canonical(14.2, '%'),
+    provenance: deviceReading('SMART_SCALE', utc('06:50')),
+  },
+  {
+    id: asId<'Observation'>('obs-energy') as ObservationId,
+    userId: DEMO_USER_ID,
+    code: 'ENERGY_RATING',
+    time: { kind: 'daily', date: DEMO_DAY, zone: ZONE },
+    value: canonical(8, 'score'),
+    provenance: userEntered(utc('21:30')),
   },
 ]
 
-export const measurements: Measurement[] = [
-  {
-    id: 'meas-weight' as MeasurementId,
-    userId: DEMO_USER_ID,
-    code: 'WEIGHT',
-    time: { kind: 'instant', at: at('06:50') },
-    value: quantity(72.8, 'kg'),
-    provenance: garmin(at('06:50')),
-  },
-  {
-    id: 'meas-bodyfat' as MeasurementId,
-    userId: DEMO_USER_ID,
-    code: 'BODY_FAT',
-    time: { kind: 'instant', at: at('06:50') },
-    value: quantity(14.2, '%'),
-    provenance: garmin(at('06:50')),
-  },
-]
+const FOOD_INFERENCE = asId<'AIInference'>('inf-food-1') as AIInferenceId
 
 export const meals: Meal[] = [
   {
-    id: 'meal-breakfast' as MealId,
+    id: asId<'Meal'>('meal-breakfast') as MealId,
     userId: DEMO_USER_ID,
     slot: 'BREAKFAST',
-    time: { kind: 'instant', at: at('07:20') },
+    time: { kind: 'instant', at: utc('07:20'), zone: ZONE },
     items: [
       {
-        id: 'food-eggs' as FoodItemId,
-        mealId: 'meal-breakfast' as MealId,
+        id: asId<'FoodItem'>('food-eggs') as FoodItemId,
+        mealId: asId<'Meal'>('meal-breakfast') as MealId,
         name: 'Eggs and oats',
-        amount: quantity(320, 'g'),
+        amount: canonical(320, 'g'),
         nutrients: {
-          energy: quantity(560, 'kcal'),
-          protein: quantity(32, 'g'),
-          carbs: quantity(58, 'g'),
-          fat: quantity(19, 'g'),
+          energy: canonical(560, 'kcal'),
+          protein: canonical(32, 'g'),
+          carbs: canonical(58, 'g'),
+          fat: canonical(19, 'g'),
         },
-        provenance: manual(at('07:25')),
+        provenance: userEntered(utc('07:25')),
       },
     ],
-    provenance: manual(at('07:25')),
+    provenance: userEntered(utc('07:25')),
   },
   {
-    id: 'meal-lunch' as MealId,
+    id: asId<'Meal'>('meal-lunch') as MealId,
     userId: DEMO_USER_ID,
     slot: 'LUNCH',
-    time: { kind: 'instant', at: at('13:05') },
+    time: { kind: 'instant', at: utc('13:05'), zone: ZONE },
     items: [
       {
-        id: 'food-chicken' as FoodItemId,
-        mealId: 'meal-lunch' as MealId,
+        // The roadmap's own worked example: 170 g chicken at 0.72 confidence.
+        id: asId<'FoodItem'>('food-chicken') as FoodItemId,
+        mealId: asId<'Meal'>('meal-lunch') as MealId,
         name: 'Grilled chicken breast',
-        amount: quantity(170, 'g'),
+        amount: canonical(170, 'g'),
         nutrients: {
-          energy: quantity(281, 'kcal'),
-          protein: quantity(53, 'g'),
-          carbs: quantity(0, 'g'),
-          fat: quantity(6, 'g'),
+          energy: canonical(281, 'kcal'),
+          protein: canonical(53, 'g'),
+          carbs: canonical(0, 'g'),
+          fat: canonical(6, 'g'),
         },
-        // The roadmap's worked example: an AI photo estimate, not yet confirmed.
-        provenance: {
-          source: 'AI_ESTIMATE',
-          kind: 'DERIVED',
-          recordedAt: at('13:06'),
-          confidence: 0.72,
-          inferenceId: 'inf-food-1' as AIInferenceId,
-        },
+        provenance: aiEstimate(utc('13:06'), 0.72, FOOD_INFERENCE),
       },
       {
-        id: 'food-rice' as FoodItemId,
-        mealId: 'meal-lunch' as MealId,
+        id: asId<'FoodItem'>('food-rice') as FoodItemId,
+        mealId: asId<'Meal'>('meal-lunch') as MealId,
         name: 'Rice and vegetables',
-        amount: quantity(280, 'g'),
+        amount: canonical(280, 'g'),
         nutrients: {
-          energy: quantity(430, 'kcal'),
-          protein: quantity(11, 'g'),
-          carbs: quantity(86, 'g'),
-          fat: quantity(5, 'g'),
+          energy: canonical(430, 'kcal'),
+          protein: canonical(11, 'g'),
+          carbs: canonical(86, 'g'),
+          fat: canonical(5, 'g'),
         },
-        provenance: manual(at('13:06')),
+        provenance: userEntered(utc('13:06')),
       },
     ],
-    provenance: manual(at('13:06')),
+    provenance: userEntered(utc('13:06')),
   },
   {
-    id: 'meal-dinner' as MealId,
+    id: asId<'Meal'>('meal-dinner') as MealId,
     userId: DEMO_USER_ID,
     slot: 'DINNER',
-    time: { kind: 'instant', at: at('19:40') },
+    time: { kind: 'instant', at: utc('19:40'), zone: ZONE },
     items: [
       {
-        id: 'food-salmon' as FoodItemId,
-        mealId: 'meal-dinner' as MealId,
+        id: asId<'FoodItem'>('food-salmon') as FoodItemId,
+        mealId: asId<'Meal'>('meal-dinner') as MealId,
         name: 'Salmon, potatoes, salad',
-        amount: quantity(430, 'g'),
+        amount: canonical(430, 'g'),
         nutrients: {
-          energy: quantity(859, 'kcal'),
-          protein: quantity(32, 'g'),
-          carbs: quantity(86, 'g'),
-          fat: quantity(38, 'g'),
+          energy: canonical(859, 'kcal'),
+          protein: canonical(32, 'g'),
+          carbs: canonical(86, 'g'),
+          fat: canonical(38, 'g'),
         },
-        provenance: manual(at('19:45')),
+        provenance: userEntered(utc('19:45')),
       },
     ],
-    provenance: manual(at('19:45')),
+    provenance: userEntered(utc('19:45')),
   },
 ]
 
 export const workouts: Workout[] = [
   {
-    id: 'workout-1' as WorkoutId,
+    id: asId<'Workout'>('workout-1') as WorkoutId,
     userId: DEMO_USER_ID,
     type: 'STRENGTH',
-    time: { kind: 'interval', start: at('17:30'), end: at('18:32') },
-    duration: quantity(62, 'min'),
-    activeEnergy: quantity(410, 'kcal'),
-    averageHeartRate: quantity(118, 'bpm'),
+    time: { kind: 'interval', start: utc('17:30'), end: utc('18:32'), zone: ZONE },
+    duration: canonical(62, 'min'),
+    activeEnergy: canonical(410, 'kcal'),
+    averageHeartRate: canonical(118, 'bpm'),
     exercises: [
       {
-        id: 'ex-bench' as ExerciseId,
-        workoutId: 'workout-1' as WorkoutId,
+        id: asId<'Exercise'>('ex-bench') as ExerciseId,
+        workoutId: asId<'Workout'>('workout-1') as WorkoutId,
         name: 'Bench press',
         sets: [
-          { reps: 8, weight: quantity(70, 'kg'), rpe: 7 },
-          { reps: 8, weight: quantity(75, 'kg'), rpe: 8 },
-          { reps: 6, weight: quantity(80, 'kg'), rpe: 9 },
+          { reps: 8, weight: canonical(70, 'kg'), rpe: 7 },
+          { reps: 8, weight: canonical(75, 'kg'), rpe: 8 },
+          { reps: 6, weight: canonical(80, 'kg'), rpe: 9 },
         ],
       },
       {
-        id: 'ex-row' as ExerciseId,
-        workoutId: 'workout-1' as WorkoutId,
+        id: asId<'Exercise'>('ex-row') as ExerciseId,
+        workoutId: asId<'Workout'>('workout-1') as WorkoutId,
         name: 'Barbell row',
         sets: [
-          { reps: 10, weight: quantity(60, 'kg'), rpe: 7 },
-          { reps: 10, weight: quantity(60, 'kg'), rpe: 8 },
+          { reps: 10, weight: canonical(60, 'kg'), rpe: 7 },
+          { reps: 10, weight: canonical(60, 'kg'), rpe: 8 },
         ],
       },
     ],
     notes: 'Chest / back',
-    provenance: garmin(at('18:32')),
+    provenance: deviceReading('GARMIN', utc('18:32')),
   },
 ]
 
 export const goals: Goal[] = [
   {
-    id: 'goal-protein' as GoalId,
+    id: asId<'Goal'>('goal-protein') as GoalId,
     userId: DEMO_USER_ID,
     metric: 'PROTEIN',
     direction: 'AT_LEAST',
-    target: quantity(145, 'g'),
+    target: canonical(145, 'g'),
     startsOn: '2026-08-01',
     active: true,
-    provenance: manual(`2026-08-01T08:00:00Z`),
+    provenance: userEntered('2026-08-01T05:00:00.000Z'),
   },
   {
-    id: 'goal-steps' as GoalId,
+    id: asId<'Goal'>('goal-steps') as GoalId,
     userId: DEMO_USER_ID,
     metric: 'STEPS',
     direction: 'AT_LEAST',
-    target: quantity(10000, 'count'),
+    target: canonical(10000, 'count'),
     startsOn: '2026-08-01',
     active: true,
-    provenance: manual(`2026-08-01T08:00:00Z`),
+    provenance: userEntered('2026-08-01T05:00:00.000Z'),
   },
 ]
+
+/** Clinical entities: shapes are modelled, no screen reads them yet. */
+export const labPanels: LabPanel[] = []
+export const conditions: Condition[] = []
+export const regimens: Regimen[] = []
+export const intakeEvents: IntakeEvent[] = []

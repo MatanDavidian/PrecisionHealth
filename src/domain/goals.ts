@@ -1,24 +1,29 @@
-import type { CalendarDate, Id, Quantity } from './primitives'
+import type { Id } from './ids'
+import type { CanonicalQuantity } from './units'
+import type { ObservationCode } from './observation'
 import type { Provenance } from './provenance'
+import type { CalendarDate } from './time'
 import type { UserId } from './user'
 
 export type GoalId = Id<'Goal'>
 export type NutritionPlanId = Id<'NutritionPlan'>
 export type WorkoutPlanId = Id<'WorkoutPlan'>
 
-export type GoalMetric = 'PROTEIN' | 'ENERGY' | 'WEIGHT' | 'BODY_FAT' | 'STEPS' | 'SLEEP_DURATION'
+/** Nutrition targets are not ObservationCodes — they are derived from meals. */
+export type GoalMetric = ObservationCode | 'PROTEIN' | 'ENERGY' | 'CARBS' | 'FAT' | 'SLEEP_DURATION'
+
 export type GoalDirection = 'AT_LEAST' | 'AT_MOST' | 'REACH'
 
 /**
- * Goals are deterministic and rule-evaluated (roadmap phase 8) — the AI proposes
- * them, but adherence is computed by the engine, never asserted by a model.
+ * Goals are evaluated by the rule engine, never asserted by a model. An AI may
+ * propose a goal; whether you hit it is arithmetic.
  */
 export interface Goal {
   id: GoalId
   userId: UserId
   metric: GoalMetric
   direction: GoalDirection
-  target: Quantity
+  target: CanonicalQuantity
   startsOn: CalendarDate
   endsOn?: CalendarDate
   active: boolean
@@ -34,6 +39,7 @@ export interface NutritionPlan {
 }
 
 export interface PlannedSession {
+  /** 1 = Monday. */
   dayOfWeek: number
   focus: string
   durationMinutes: number

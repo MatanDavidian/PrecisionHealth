@@ -16,10 +16,16 @@ import { applyGramsHint, validateEstimate } from './validate'
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions'
 
 /**
- * Economical, vision-capable and widely available. Editable in Settings
- * because model names churn faster than this file will be revisited.
+ * The flagship vision model, chosen after comparing them on the same photo:
+ * against gpt-4o-mini it found roughly twice as many items, separated dry
+ * pantry goods from cooked portions, and gave calibrated rather than flat
+ * confidence. Portioning is most of the estimate, so the accuracy is worth
+ * the cost — still around $1-2/month at three meals a day.
+ *
+ * Editable in Settings, because model names churn faster than this file will
+ * be revisited, and an account without access to this one needs a way out.
  */
-export const DEFAULT_MODEL = 'gpt-4o-mini'
+export const DEFAULT_MODEL = 'gpt-5.6-sol'
 
 /**
  * Generous on purpose. On reasoning models this budget covers hidden reasoning

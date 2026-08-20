@@ -11,10 +11,11 @@ The original plan is ordered by layer — domain model, then repositories, then
 UI, then manual logging, then backend, then integrations, then AI. Each phase
 is a complete horizontal band across the system.
 
-That ordering has a specific failure mode: **nothing is usable until phase 6.**
-You cannot log a meal until the backend exists, so the model goes unvalidated
-for months and every mistake in it is discovered late, when six phases of work
-already sit on top.
+That ordering has a specific failure mode: **the first four phases produce
+nothing you can use.** Manual logging — the first real feature — arrives at
+phase 5, and nothing you log survives until the backend lands at phase 6. So
+the model's write path goes unvalidated for four phases, and every mistake in
+it is discovered late, when the work already sits on top of it.
 
 This plan slices vertically instead. Each slice cuts through every layer —
 model, store, UI — and ends with something you can actually use that evening.

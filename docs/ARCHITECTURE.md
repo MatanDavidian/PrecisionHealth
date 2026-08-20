@@ -17,8 +17,9 @@ roadmap recommended, is not adopted.
 **Why.** The roadmap's own text notes that Garmin watch apps require Connect IQ
 regardless of client choice, so "one codebase everywhere" was never available.
 That leaves web (Flutter's weakest target and this product's only proven
-demand), desktop (a wrapper either way) and mobile (Flutter's genuine
-advantage, and the target the roadmap explicitly says not to build yet).
+demand), desktop (a wrapper either way, and one the roadmap defers anyway) and
+mobile (Flutter's genuine advantage — deferred here, with responsive web
+covering phones until native HealthKit / Health Connect access is needed).
 Existing UI mockups are responsive web, and the design tooling around them
 emits React.
 
@@ -45,15 +46,19 @@ callers supply data, which is why repositories exist (D3).
 ## D3 — The UI depends on repository interfaces, never on a store
 
 **Decision.** `src/data/repositories.ts` defines interfaces; screens use only
-those. Every method is async, including in the mock.
+those. The concrete store is named in exactly one place — the composition root,
+`src/data/index.ts` — and UI code imports `repositories` from there. Every
+method is async, including in the mock.
 
 **Why.** It makes infrastructure a late and reversible decision (D9). A
 synchronous mock that later became a network call would force a rewrite of
 every caller, so the mock is async from day one even though it does not need
 to be.
 
-**Consequence.** Swapping in-memory → IndexedDB → HTTP touches one adapter file
-and no screens.
+**Consequence.** Swapping in-memory → IndexedDB → HTTP means writing the new
+adapter and changing one line in `src/data/index.ts`; no screen changes. The
+claim holds only while nothing outside `src/data/` imports a concrete store —
+worth a lint rule once there is more than one.
 
 ## D4 — Records are append-only
 
@@ -93,7 +98,8 @@ is what makes D6 possible.
 **Decision.** When two sources differ by more than the metric's tolerance
 (`CONFLICT_TOLERANCE`), the app raises a conflict for the user instead of
 quietly picking a winner or averaging. Their answer is written as a new
-USER_CONFIRMED record that supersedes the others.
+USER_CONFIRMED record that supersedes the others. (Detection and display are
+built; the confirm-and-write step arrives with the first write path, slice 1.)
 
 **Why.** Silent resolution is how health apps lose trust: the number changes and
 nobody can say why. Surfacing the disagreement also produces the single most
@@ -102,8 +108,9 @@ valuable signal in the system — a human adjudicating between sources.
 **Consequence.** Tolerances are judgement calls per metric and will need tuning
 with real data. They live in one table, not scattered through queries.
 
-**Implemented in** `src/domain/observation.ts` (tolerances),
-`src/ui/components/ConflictNotice.tsx` (the surface).
+**Implemented in** `src/domain/provenance.ts` (`detectConflict`),
+`src/domain/observation.ts` (tolerances), `src/ui/components/ConflictNotice.tsx`
+(the surface); tested in `src/domain/__tests__/provenance.test.ts`.
 
 ## D7 — Every instant is UTC, and every record stores its zone
 
@@ -135,9 +142,10 @@ only at input and display.
 in one path and lb in another is the classic failure. A convention in a comment
 erodes. An invariant in the type system does not.
 
-**Consequence.** Seed data and tests read in grams and seconds rather than
-friendly units; `src/ui/format.ts` is the single place values become human
-again.
+**Consequence.** Stored values are in base units — a raw record says `72800 g`,
+not `72.8 kg` — so debugging output takes a moment's translation. Authoring
+stays friendly: `canonical(72.8, 'kg')` converts at construction, and
+`src/ui/format.ts` is the single place stored values become human again.
 
 **Implemented in** `src/domain/units.ts`, tested in
 `src/domain/__tests__/units.test.ts`.
@@ -153,9 +161,10 @@ again.
 3. **When AI lands** — a server-side function for model calls. API keys never
    reach the browser, and every inference is logged as an `AIInference` record.
 
-**Why.** The roadmap put the backend at phase 6, meaning nothing is usable until
-then. Starting local makes slice 1 shippable in days, and D3 means the eventual
-move is an adapter swap rather than a migration.
+**Why.** The original plan spends four phases on layers before the first
+feature (manual logging, phase 5) and makes nothing durable until the backend
+(phase 6). Starting local makes slice 1 shippable in days, and D3 means the
+eventual move is an adapter swap rather than a migration.
 
 Supabase is recommended over building on ASP.NET Core first — despite that being
 the stronger existing skill here — purely for time-to-first-slice. It is real

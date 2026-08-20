@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { inMemoryRepositories } from '@/data/mock/inMemoryRepositories'
+import { repositories } from '@/data'
 import { DEMO_DAY, DEMO_USER_ID } from '@/data/mock/seed'
 import {
   effectiveObservation,
@@ -29,7 +29,7 @@ export function useToday() {
 
   useEffect(() => {
     let cancelled = false
-    const repos = inMemoryRepositories
+    const repos = repositories
 
     async function load() {
       const [meals, workouts, sleepRecords, goals, ...observationSets] = await Promise.all([

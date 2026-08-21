@@ -48,9 +48,9 @@ not filtering superseded records. Live in `liveRecords()` now, with a test.
 **Ships:** a usable protein tracker.
 
 Assumptions taken along the way are in
-[`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — Q3 (aggregate rows are rewritten
-while the facts inside them are append-only) and Q7 (nothing can be deleted)
-are the two worth reading before the cloud slice (now slice 3).
+[`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — Q3 has since been settled as D15
+(meal versioning, opening slice 3); Q7 (nothing can be deleted) is still open
+and worth reading before the cloud slice.
 
 ## Slice 2 — Photograph a meal, AI does the numbers ✅ built
 
@@ -75,9 +75,10 @@ tests could not: the Log screen gated analysis on "is a key set" rather than
 server-proxy mode too.
 **Ships:** the product's actual differentiator, and the fastest way to log food.
 
-**Outstanding before this counts as done by the roadmap's own definition:** a
-first run against a live OpenAI key (the adapter is written but has never
-called the real API), and a deploy over HTTPS so it works from a phone.
+**Since verified against the live API** (real key, real photo — which caught a
+prompt that refused groceries and an image-detail setting that starved
+portions; both fixed). Outstanding: the HTTPS deploy, which moves into
+slice 3.
 
 ## Slice 3 — My data, on my devices ← next
 

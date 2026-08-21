@@ -178,22 +178,69 @@ export function Settings() {
             {saved && <span className="text-xs text-leaf">Saved.</span>}
           </div>
 
+          {/*
+            Shown only when there is no key: the steps matter exactly once, and
+            the ChatGPT-Plus point is the misunderstanding almost everyone
+            arrives with.
+          */}
+          {!settings.apiKey && (
+            <div className="mt-4 rounded-xl border border-hairline p-3">
+              <p className="text-sm font-medium">Don't have a key yet?</p>
+              <ol className="list-decimal space-y-1 pl-4 pt-2 text-xs leading-relaxed text-ink-muted">
+                <li>
+                  Open{' '}
+                  <a
+                    className="underline"
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    platform.openai.com/api-keys
+                  </a>{' '}
+                  and sign in.
+                </li>
+                <li>
+                  Add credit under{' '}
+                  <a
+                    className="underline"
+                    href="https://platform.openai.com/settings/organization/billing"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Billing
+                  </a>{' '}
+                  — $5 is the minimum, and set a spending limit while you are there.
+                </li>
+                <li>
+                  Create a new secret key and copy it straight away. OpenAI shows it once.
+                </li>
+              </ol>
+              <p className="pt-2 text-xs leading-relaxed text-ink-muted">
+                <strong>A ChatGPT subscription does not include this.</strong> The API is a
+                separate product on separate billing, and paying for Plus grants no API access at
+                all. The upside is that it is cheap: analysing a photo costs a fraction of a cent,
+                so a few meals a day runs to pennies a month.
+              </p>
+            </div>
+          )}
+
           <div className="pt-4 text-xs leading-relaxed text-ink-muted">
             <p>
               Your key is stored <strong>on this device only</strong>, in this browser. It is sent
               to OpenAI and nowhere else, and it is never included in any backup or sync.
             </p>
             <p className="pt-2">
-              Anything able to run scripts in this browser could read it, so use a{' '}
+              Anything able to run scripts in this browser could read it, so use a dedicated key
+              with a{' '}
               <a
                 className="underline"
-                href="https://platform.openai.com/api-keys"
+                href="https://platform.openai.com/settings/organization/limits"
                 target="_blank"
                 rel="noreferrer"
               >
-                dedicated key
-              </a>{' '}
-              with a spending limit, and avoid shared computers. Photos you analyze are handled
+                spending limit
+              </a>
+              , and avoid shared computers. Photos you analyze are handled
               under{' '}
               <a
                 className="underline"

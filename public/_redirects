@@ -1,0 +1,10 @@
+# SPA routing.
+#
+# The app uses BrowserRouter, so /today and /signin are routes the client
+# resolves — there is no file at those paths. Without this, a refresh or a
+# shared link 404s. The 200 (rather than 301) means the URL is preserved while
+# index.html is served, which is what lets the router see the real path.
+#
+# Must come last: it matches everything, so any future API route or redirect
+# belongs above it.
+/*    /index.html   200

@@ -1,0 +1,12 @@
+# Vite fingerprints every asset (index-DEBcp-uF.js), so those filenames only
+# ever describe one build and can be cached indefinitely.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# index.html must not be cached: it is the file that points at the current
+# asset names, so a stale copy pins the browser to a previous deploy.
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate

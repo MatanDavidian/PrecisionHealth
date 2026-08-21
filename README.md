@@ -12,10 +12,17 @@ UI direction comes from the Timeline mockups in Claude Design (link in
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm test           # domain rules
-npm run build      # typecheck + production build
+npm run dev              # http://localhost:5173
+npm test                 # domain rules, plus the repository contract
+npm run build            # typecheck + production build
+npm run supabase:check   # confirm .env.local reaches your project
+npm run db:verify        # prove the schema enforces its invariants
 ```
+
+Copy [`.env.example`](.env.example) to `.env.local` for Supabase; without it
+the app runs local-only. Backend setup is in
+[`supabase/README.md`](supabase/README.md), hosting in
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 Node 20+.
 

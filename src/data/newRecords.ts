@@ -69,6 +69,8 @@ export function buildMeal(userId: UserId, input: MealInput, zone = deviceZone())
 
   return {
     id: mealId,
+    recordId: newId(),
+    version: 1,
     userId,
     slot: input.slot,
     time: { kind: 'instant', at, zone },

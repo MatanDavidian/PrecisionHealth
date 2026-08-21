@@ -48,8 +48,26 @@ export interface FoodItem {
   provenance: Provenance
 }
 
+/**
+ * A meal, at one version (D15).
+ *
+ * Meals are never updated in place. Every edit appends a NEW record sharing
+ * `id` with an incremented `version`, so each device only ever ADDS records —
+ * which is what lets two devices sync by taking the union of what they hold,
+ * with nothing overwritten.
+ *
+ * `id` is the meal a person would point at ("my lunch"). `recordId` identifies
+ * one version of it, and is what storage keys on. Two records with the same
+ * `(id, version)` but different `recordId`s mean two devices edited the same
+ * base — a conflict, raised for the user to settle.
+ */
 export interface Meal {
+  /** Stable across every version of this meal. FoodItem.mealId points here. */
   id: MealId
+  /** Unique to this version. The storage key. */
+  recordId: string
+  /** Starts at 1, incremented by every edit. */
+  version: number
   userId: UserId
   slot: MealSlot
   time: TimeSemantics

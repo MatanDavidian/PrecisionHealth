@@ -149,6 +149,8 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
   const meals: Meal[] = [
   {
     id: asId<'Meal'>('meal-breakfast') as MealId,
+    recordId: 'meal-breakfast-v1',
+    version: 1,
     userId: DEMO_USER_ID,
     slot: 'BREAKFAST',
     time: { kind: 'instant', at: utc('07:20'), zone: ZONE },
@@ -171,6 +173,8 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
   },
   {
     id: asId<'Meal'>('meal-lunch') as MealId,
+    recordId: 'meal-lunch-v1',
+    version: 1,
     userId: DEMO_USER_ID,
     slot: 'LUNCH',
     time: { kind: 'instant', at: utc('13:05'), zone: ZONE },
@@ -207,6 +211,8 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
   },
   {
     id: asId<'Meal'>('meal-dinner') as MealId,
+    recordId: 'meal-dinner-v1',
+    version: 1,
     userId: DEMO_USER_ID,
     slot: 'DINNER',
     time: { kind: 'instant', at: utc('19:40'), zone: ZONE },

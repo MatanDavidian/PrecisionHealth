@@ -26,16 +26,17 @@ import type {
 } from '@/data/repositories'
 import { DEFAULT_SETTINGS } from '@/config'
 import {
+  asMeal,
   mealRow,
   observationRow,
   openHealthDB,
   sleepRow,
   workoutRow,
   type HealthDB,
-  type Row,
 } from './schema'
 
-const unwrap = <T>(rows: Row<T>[]): T[] => rows.map((row) => row.data)
+/** Rows carry indexing columns; callers only ever want the domain object. */
+const unwrap = <T>(rows: { data: T }[]): T[] => rows.map((row) => row.data)
 
 /** IndexedDB has no "between" on a compound key without a range; build one. */
 const dayRange = (userId: string, range: DateRange) =>
@@ -54,10 +55,17 @@ export function createIndexedDbRepositories(
     },
 
     meals: {
+      // Returns EVERY version for the day; the domain decides which one wins
+      // and whether any of them disagree (D15) — the same division of labour
+      // as observations.
       listByDay: async (userId, day) =>
-        unwrap(await (await db()).getAllFromIndex('meals', 'by-user-day', exactDay(userId, day))),
+        (await (await db()).getAllFromIndex('meals', 'by-user-day', exactDay(userId, day))).map(
+          asMeal,
+        ),
       listByRange: async (userId, range) =>
-        unwrap(await (await db()).getAllFromIndex('meals', 'by-user-day', dayRange(userId, range))),
+        (await (await db()).getAllFromIndex('meals', 'by-user-day', dayRange(userId, range))).map(
+          asMeal,
+        ),
       add: async (meal: Meal) => {
         await (await db()).put('meals', mealRow(meal))
       },

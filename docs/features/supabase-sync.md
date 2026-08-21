@@ -43,7 +43,7 @@ storage-target setting wired to reality, HTTPS deploy.
   worthwhile once there are users who should not manage keys — not this slice.
 - **Photos.** Still never stored (Q10) — nothing changes.
 
-## 3. Step 0 — meal versioning (D15), before any sync exists
+## 3. Step 0 — meal versioning (D15), before any sync exists ✅ done
 
 *(Findings 2-4 from the architecture review — the session module, the config
 leak, and silent write failures — are already fixed. This is the remaining
@@ -76,6 +76,26 @@ interface Meal {
 
 Local-only, fully testable before Supabase enters: same-version collisions can
 be fabricated in tests exactly as the weight conflict is today.
+
+**Built (Aug 2026).** `src/domain/mealVersions.ts` holds the three rules
+(`latestVersions`, `detectMealConflicts`, `nextVersion` / `resolveMealConflict`);
+`MealConflictNotice` mirrors the observation conflict card.
+
+One design change against the plan above: **the IndexedDB v3 migration is
+additive and rewrites nothing.** The store's key path was already `id`, so
+versioned rows simply put their `recordId` there — no rekeying needed. Rows
+written before v3 carry no `version`, and are normalised on READ (`asMeal`:
+missing version means version 1, and its record id is its meal id, which is
+exactly true since it was the only version). A migration that rewrites every
+meal is the one that can lose meals; a tolerant read cannot. The first attempt
+did try the read-drop-recreate dance and silently failed to stamp rows —
+`getAll()` returns a promise under `idb`, so the request callback never fired.
+That is the argument for the additive route, not just a preference.
+
+Verified in a browser: confirming an AI estimate appended version 2 and left
+version 1 on disk; a fabricated second-device write at the same version raised
+the conflict card with both choices; resolving wrote version 3, which wins,
+with all four records still present.
 
 ## 4. The backend shape
 

@@ -11,9 +11,14 @@ import {
 import {
   confirmFoodItem,
   confirmObservation,
+  detectMealConflicts,
+  latestVersions,
+  nextVersion,
+  resolveMealConflict,
   liveItems,
   type Conflict,
   type FoodItem,
+  type MealConflict,
   type Goal,
   type Meal,
   type Nutrients,
@@ -30,7 +35,10 @@ const instantOf = (time: Meal['time']): string =>
 export interface DayData {
   day: string
   nutrients: Nutrients
+  /** Latest version of each meal, superseded items already removed. */
   meals: Meal[]
+  /** Meals two devices edited from the same base (D15). */
+  mealConflicts: MealConflict[]
   unconfirmed: FoodItem[]
   workouts: Workout[]
   sleep?: Sleep
@@ -73,16 +81,18 @@ export function useDay(day: string) {
         if (conflict) conflicts.push(conflict)
       })
 
-      // Superseded items are excluded before anything is summed, so a confirmed
-      // correction replaces the estimate rather than double-counting with it.
-      // Sorted by time so the day reads as a timeline, not in insertion order.
-      const live = meals
+      // The store returns every version; take the newest of each meal, then
+      // drop superseded items inside it, so a confirmed correction replaces
+      // the estimate rather than double-counting with it. Sorted by time so
+      // the day reads as a timeline, not in insertion order.
+      const live = latestVersions(meals)
         .map((meal) => ({ ...meal, items: liveItems(meal.items) }))
         .sort((a, b) => instantOf(a.time).localeCompare(instantOf(b.time)))
 
       setData({
         day,
         meals: live,
+        mealConflicts: detectMealConflicts(meals),
         nutrients: totalNutrients(live),
         unconfirmed: unconfirmedItems(live),
         workouts,
@@ -127,15 +137,25 @@ export function useActions() {
   )
 
   /** D4: confirming an AI estimate appends a confirmed item superseding it. */
+  /** D4 inside the meal (the item supersedes), D15 outside it (a new version). */
   const confirmEstimate = useCallback(
     async (meal: Meal, item: FoodItem) => {
       const confirmed = confirmFoodItem(item, new Date().toISOString(), newId)
-      await runWrite('this confirmation', () =>
-        repositories.meals.add({ ...meal, items: [...meal.items, confirmed] }),
+      const next = nextVersion(meal, { items: [...meal.items, confirmed] }, newId)
+      await runWrite('this confirmation', () => repositories.meals.add(next))
+    },
+    [runWrite],
+  )
+
+  /** The user settled a same-version disagreement; their pick becomes the next version. */
+  const resolveMealVersion = useCallback(
+    async (chosen: Meal, conflict: MealConflict) => {
+      await runWrite('your choice', () =>
+        repositories.meals.add(resolveMealConflict(chosen, conflict, newId)),
       )
     },
     [runWrite],
   )
 
-  return { addMeal, resolveConflict, confirmEstimate }
+  return { addMeal, resolveConflict, confirmEstimate, resolveMealVersion }
 }

@@ -6,13 +6,14 @@ import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
 import { evaluateGoal } from '@/data/analytics'
-import { convert, needsConfirmation, type Meal } from '@/domain'
+import { convert, needsConfirmation, type Meal, type MealConflict } from '@/domain'
+import { MealConflictNotice } from '../components/MealConflictNotice'
 
 export function Nutrition() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const data = useDay(day)
-  const { addMeal, confirmEstimate } = useActions()
+  const { addMeal, confirmEstimate, resolveMealVersion } = useActions()
 
   if (!data) return <p className="text-sm text-ink-muted">Loading…</p>
 
@@ -71,7 +72,13 @@ export function Nutrition() {
             </p>
           )}
           {meals.map((meal) => (
-            <MealRow key={meal.id} meal={meal} onConfirm={confirmEstimate} />
+            <MealRow
+              key={meal.id}
+              meal={meal}
+              onConfirm={confirmEstimate}
+              conflict={data.mealConflicts.find((c) => c.mealId === meal.id)}
+              onResolve={resolveMealVersion}
+            />
           ))}
         </Card>
       </div>
@@ -91,9 +98,13 @@ function Total({ name, value, good }: { name: string; value: string; good?: bool
 function MealRow({
   meal,
   onConfirm,
+  conflict,
+  onResolve,
 }: {
   meal: Meal
   onConfirm: (meal: Meal, item: Meal['items'][number]) => Promise<void>
+  conflict?: MealConflict
+  onResolve: (chosen: Meal, conflict: MealConflict) => Promise<void>
 }) {
   const kcal = meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0)
 
@@ -105,6 +116,12 @@ function MealRow({
         </span>
         <span className="tabular text-sm">{Math.round(kcal)} kcal</span>
       </div>
+      {conflict && (
+        <MealConflictNotice
+          conflict={conflict}
+          onChoose={(chosen) => void onResolve(chosen, conflict)}
+        />
+      )}
       {meal.items.map((item) => (
         <div key={item.id} className="flex flex-wrap items-baseline justify-between gap-2 pt-2">
           <span className="text-sm text-ink-muted">

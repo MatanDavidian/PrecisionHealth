@@ -48,8 +48,40 @@ export interface SettingsRow {
   value: string
 }
 
+/**
+ * One version of one meal.
+ *
+ * Keyed by `recordId` rather than the meal id, which is what lets several
+ * versions of the same meal coexist. `mealId` groups them; `version` orders
+ * them. Deliberately not `Row<Meal>`: its `id` means "the thing", and here the
+ * key means "this version of the thing".
+ */
+export interface MealRow {
+  /** The record id of this version. Rows predating v3 hold the meal id here. */
+  id: string
+  /** Absent on rows written before v3. */
+  mealId?: string
+  version?: number
+  userId: string
+  day: CalendarDate
+  data: Meal
+}
+
+/**
+ * Reads a meal row, filling in what pre-v3 rows lack.
+ *
+ * Anything logged before versioning existed is version 1, and its record id is
+ * its meal id — which is exactly true, since it was the only version.
+ */
+export const asMeal = (row: MealRow): Meal =>
+  row.data.version ? row.data : { ...row.data, version: 1, recordId: row.id }
+
 export interface HealthDB extends DBSchema {
-  meals: { key: string; value: Row<Meal>; indexes: { 'by-user-day': [string, string] } }
+  meals: {
+    key: string
+    value: MealRow
+    indexes: { 'by-user-day': [string, string]; 'by-meal': string }
+  }
   workouts: { key: string; value: Row<Workout>; indexes: { 'by-user-day': [string, string] } }
   sleep: { key: string; value: Row<Sleep>; indexes: { 'by-user-day': [string, string] } }
   observations: {
@@ -75,8 +107,18 @@ export const DB_NAME = 'timeline-health'
  * v2 — slice 2 adds `inferences` and `settings`. Additive only: no existing
  *      row is rewritten, so the upgrade cannot corrupt slice-1 data. There is
  *      deliberately no store for photos (spec §3).
+ * v3 — meal versioning (D15). Several versions of one meal now coexist, so the
+ *      meals store is keyed by `recordId` instead of the meal id. That needs no
+ *      rekeying: the key path was always `id`, and new rows simply put the
+ *      record id there. The upgrade is therefore purely ADDITIVE — it creates
+ *      one index and rewrites nothing.
+ *
+ *      Rows written before versioning existed carry no `version`, and are
+ *      normalised on READ (`asMeal` below) rather than by a migration that
+ *      rewrites every meal. A migration that rewrites rows is the one that can
+ *      lose them; a tolerant read cannot.
  */
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 const DAY_INDEXED = [
   'meals',
@@ -92,7 +134,7 @@ const DAY_INDEXED = [
 
 export const openHealthDB = (): Promise<IDBPDatabase<HealthDB>> =>
   openDB<HealthDB>(DB_NAME, DB_VERSION, {
-    upgrade(db, oldVersion) {
+    upgrade(db, oldVersion, _newVersion, tx) {
       if (oldVersion < 1) {
         for (const name of DAY_INDEXED) {
           const store = db.createObjectStore(name, { keyPath: 'id' })
@@ -113,6 +155,16 @@ export const openHealthDB = (): Promise<IDBPDatabase<HealthDB>> =>
         inferences.createIndex('by-user-day', ['userId', 'day'])
         db.createObjectStore('settings', { keyPath: 'key' })
       }
+
+      if (oldVersion < 3) {
+        // Additive: the meals store keeps its `id` key path — new rows put the
+        // record id there — and only gains an index for grouping versions.
+        // Existing rows are left untouched and normalised on read.
+        const meals = tx.objectStore('meals')
+        if (!meals.indexNames.contains('by-meal')) {
+          meals.createIndex('by-meal', 'mealId')
+        }
+      }
     },
   })
 
@@ -122,7 +174,16 @@ export const rowFor = <T extends { id: string; userId: string }>(
   day: CalendarDate,
 ): Row<T> => ({ id: data.id, userId: data.userId, day, data })
 
-export const mealRow = (meal: Meal): Row<Meal> => rowFor(meal, dayKeyOf(meal.time))
+export const mealRow = (meal: Meal): MealRow => ({
+  // The key is the version's record id, so appending a version adds a row
+  // rather than replacing one.
+  id: meal.recordId,
+  mealId: meal.id,
+  version: meal.version,
+  userId: meal.userId,
+  day: dayKeyOf(meal.time),
+  data: meal,
+})
 export const workoutRow = (workout: Workout): Row<Workout> => rowFor(workout, dayKeyOf(workout.time))
 export const sleepRow = (sleep: Sleep): Row<Sleep> => rowFor(sleep, dayKeyOf(sleep.time, 'END'))
 export const observationRow = (observation: Observation): ObservationRow => ({

@@ -80,7 +80,11 @@ prompt that refused groceries and an image-detail setting that starved
 portions; both fixed). Outstanding: the HTTPS deploy, which moves into
 slice 3.
 
-## Slice 3 — My data, on my devices ← next
+## Slice 3 — My data, on my devices ← in progress
+
+**Step 0 done:** meal versioning (D15) — meals append a version per edit,
+same-version records raise a conflict the user settles. The change that had to
+precede sync now has, and the app is better for it regardless of what follows.
 
 Supabase (D16): accounts via email code, each family member's data isolated by
 Row-Level Security, online-first. Opens with the D15 meal-versioning fix —

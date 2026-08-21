@@ -4,10 +4,21 @@ import { deleteDB, openDB, type IDBPDatabase } from 'idb'
 import { createIndexedDbRepositories, seedOnce } from '../idb/indexedDbRepositories'
 import { DB_NAME, openHealthDB, type HealthDB } from '../idb/schema'
 import { buildFailedInference, buildPhotoMeal } from '../photoMeal'
+import { newId } from '../newRecords'
 import { goals, meals, observations, profile, sleep, workouts } from '../mock/seed'
 import { FakeEstimator, SAMPLE_REPLY } from '@/ai/fakeEstimator'
 import { EstimateError, type PhotoMeta } from '@/ai/estimator'
-import { convert, liveItems, needsConfirmation, type UserId } from '@/domain'
+import {
+  confirmFoodItem,
+  convert,
+  detectMealConflicts,
+  latestVersions,
+  liveItems,
+  needsConfirmation,
+  nextVersion,
+  resolveMealConflict,
+  type UserId,
+} from '@/domain'
 
 const USER = 'user-demo' as UserId
 const seed = { profile, meals, workouts, sleep, observations, goals }
@@ -104,6 +115,59 @@ describe('photo estimate becomes domain records', () => {
     expect(stored.items).toHaveLength(3) // estimate kept for audit
     expect(live).toHaveLength(2) // but superseded, so not double counted
     expect(live.some((item) => item.id === target.id)).toBe(false)
+  })
+})
+
+describe('meal versioning through storage (D15)', () => {
+  it('appends a version instead of overwriting, and shows the newest', async () => {
+    const { repos } = await fresh()
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    await repos.meals.add(meal)
+
+    // Confirm an estimate: an item supersedes (D4) inside a new version (D15).
+    const estimate = meal.items[0]
+    const confirmed = confirmFoodItem(estimate, '2026-08-20T13:00:00.000Z', newId)
+    const v2 = nextVersion(meal, { items: [...meal.items, confirmed] }, newId)
+    await repos.meals.add(v2)
+
+    const stored = await repos.meals.listByDay(USER, '2026-08-20')
+    // Both versions are on disk; nothing was overwritten.
+    expect(stored).toHaveLength(2)
+    expect(stored.map((m) => m.version).sort()).toEqual([1, 2])
+
+    const latest = latestVersions(stored)
+    expect(latest).toHaveLength(1)
+    expect(latest[0].version).toBe(2)
+    // And within that version, the superseded estimate drops out of the totals.
+    expect(liveItems(latest[0].items)).toHaveLength(2)
+  })
+
+  it('surfaces a same-version collision written by two devices', async () => {
+    const { repos } = await fresh()
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    await repos.meals.add(meal)
+
+    // What sync will produce: two devices editing v1 without seeing each other.
+    await repos.meals.add(nextVersion(meal, { slot: 'DINNER' }, () => 'phone-edit'))
+    await repos.meals.add(nextVersion(meal, { slot: 'SNACK' }, () => 'laptop-edit'))
+
+    const stored = await repos.meals.listByDay(USER, '2026-08-20')
+    expect(stored).toHaveLength(3)
+
+    const conflicts = detectMealConflicts(stored)
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0].version).toBe(2)
+
+    // Resolving writes v3, which wins without deleting either edit.
+    const keep = conflicts[0].candidates.find((c) => c.recordId === 'laptop-edit')!
+    await repos.meals.add(resolveMealConflict(keep, conflicts[0], () => 'resolution'))
+
+    const after = await repos.meals.listByDay(USER, '2026-08-20')
+    expect(after).toHaveLength(4)
+    expect(detectMealConflicts(after)).toEqual([])
+    expect(latestVersions(after)[0].slot).toBe('SNACK')
   })
 })
 
@@ -216,8 +280,8 @@ describe('settings', () => {
   })
 })
 
-describe('the v1 to v2 migration', () => {
-  it('adds the new stores and keeps slice-1 data readable', async () => {
+describe('migrating a slice-1 database forward', () => {
+  it('reaches v3, adds the new stores, and rekeys meals without losing them', async () => {
     // Build a database exactly as slice 1 left it.
     const v1 = await openDB(DB_NAME, 1, {
       upgrade(db) {
@@ -234,19 +298,39 @@ describe('the v1 to v2 migration', () => {
       id: 'meal-from-v1',
       userId: USER,
       day: '2026-08-19',
-      data: { id: 'meal-from-v1', userId: USER, slot: 'DINNER', items: [] },
+      data: {
+        id: 'meal-from-v1',
+        userId: USER,
+        slot: 'DINNER',
+        // No version/recordId: this is what slice 1 actually wrote.
+        time: { kind: 'instant', at: '2026-08-19T17:00:00.000Z', zone: 'Asia/Jerusalem' },
+        items: [],
+        provenance: { source: 'USER', kind: 'RAW', recordedAt: '2026-08-19T17:00:00.000Z' },
+      },
     })
     v1.close()
 
     // Open at v2.
     const { repos } = await fresh()
     const database = await openConnection!
-    expect(database.version).toBe(2)
+    expect(database.version).toBe(3)
     expect([...database.objectStoreNames]).toContain('inferences')
     expect([...database.objectStoreNames]).toContain('settings')
 
+    // The v3 migration REWRITES meal rows rather than just adding a store, so
+    // this is the first upgrade that could actually lose data.
     const survived = await repos.meals.listByDay(USER, '2026-08-19')
     expect(survived).toHaveLength(1)
     expect(survived[0].id).toBe('meal-from-v1')
+    // Everything logged before versioning existed is version 1.
+    expect(survived[0].version).toBe(1)
+    expect(survived[0].recordId).toBeTruthy()
+
+    // And the store is now keyed by version, so an edit can be appended.
+    const edited = { ...survived[0], recordId: 'v2-record', version: 2, slot: 'LUNCH' as const }
+    await repos.meals.add(edited)
+    const both = await repos.meals.listByDay(USER, '2026-08-19')
+    expect(both).toHaveLength(2)
+    expect(latestVersions(both)[0].slot).toBe('LUNCH')
   })
 })

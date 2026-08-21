@@ -64,6 +64,8 @@ export function buildPhotoMeal(
 
   const meal: Meal = {
     id: mealId,
+    recordId: newId(),
+    version: 1,
     userId,
     slot: input.slot,
     time: { kind: 'instant', at, zone: input.zone },

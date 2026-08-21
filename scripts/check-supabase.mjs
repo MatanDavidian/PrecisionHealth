@@ -80,34 +80,60 @@ else warn(`Key format unrecognised — continuing, but check you copied the anon
 const base = normalisedUrl.replace(/\/$/, '')
 const headers = { apikey: key, Authorization: `Bearer ${key}` }
 
-let response
+/**
+ * One request answers everything, if you read the BODY rather than the status.
+ *
+ * Signed out, the app connects as `anon`, and migration 0002 grants `anon`
+ * nothing at all — so the correct response is Postgres refusing the table
+ * (42501). That shares HTTP 401 with "your key is wrong", which is why the
+ * first version of this script reported a working project as broken.
+ */
+let probe
 try {
-  response = await fetch(`${base}/rest/v1/`, { headers })
+  probe = await fetch(`${base}/rest/v1/meals?select=record_id&limit=1`, { headers })
 } catch (cause) {
   fail(`Could not reach the project: ${cause}`)
 }
 
-if (response.status === 401) fail('The project rejected the key. Re-copy it from Project Settings → API.')
-if (!response.ok) fail(`Project answered ${response.status} — is it still provisioning, or paused?`)
+const bodyText = await probe.text()
+let body
+try {
+  body = JSON.parse(bodyText)
+} catch {
+  body = null
+}
+const code = body?.code
+const message = String(body?.message ?? '')
+
+if (/invalid.*api key|JWSError|PGRST301/i.test(message) || code === 'PGRST301') {
+  fail(`The project rejected the key: ${message}\n    Re-copy it from Project Settings → Data API.`)
+}
+if (code === 'PGRST205' || probe.status === 404) {
+  fail('No `meals` table — run supabase/migrations/0001 then 0002 in the SQL Editor.')
+}
+
 ok('Project reachable and key accepted')
 
-// Is the schema there? An unknown table 404s with a clear message.
-const meals = await fetch(`${base}/rest/v1/meals?select=record_id&limit=1`, { headers })
-if (meals.status === 404) {
-  fail('No `meals` table. Run supabase/migrations/0001 then 0002 in the SQL Editor.')
-}
-if (!meals.ok) fail(`Reading meals failed with ${meals.status}: ${(await meals.text()).slice(0, 200)}`)
-ok('Schema applied (meals table present)')
-
-// RLS: signed out, you must see nothing — not an error, an empty set.
-const rows = await meals.json()
-if (Array.isArray(rows) && rows.length === 0) {
-  ok('Row-Level Security active (signed out sees no rows)')
+if (code === '42501') {
+  // The intended state: no grant for anon, so a signed-out read cannot even start.
+  ok('Schema applied (meals table present)')
+  ok('Signed out is refused at the grant level — stricter than RLS filtering')
+} else if (probe.ok && Array.isArray(body)) {
+  ok('Schema applied (meals table present)')
+  if (body.length === 0) {
+    warn(
+      'Signed-out reads are permitted but return no rows.\n' +
+        '      RLS is filtering, but `anon` still holds a SELECT grant — re-run migration 0002\n' +
+        '      if you want signed-out callers refused outright.',
+    )
+  } else {
+    fail(`Signed-out read returned ${body.length} row(s). Neither grants nor RLS are protecting this table — run migration 0002.`)
+  }
 } else {
-  fail(`Signed-out request returned ${rows.length} row(s). RLS is not protecting this table — run migration 0002.`)
+  fail(`Unexpected response ${probe.status}: ${bodyText.slice(0, 200)}`)
 }
 
-// And it must refuse a write from nobody.
+// And a write from nobody must be refused.
 const write = await fetch(`${base}/rest/v1/meals`, {
   method: 'POST',
   headers: { ...headers, 'Content-Type': 'application/json' },

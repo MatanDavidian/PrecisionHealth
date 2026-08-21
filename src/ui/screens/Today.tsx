@@ -6,6 +6,7 @@ import { show, showDuration, showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
+import { AdoptionPrompt } from '../components/AdoptionPrompt'
 import { evaluateGoal } from '@/data/analytics'
 import { convert } from '@/domain'
 
@@ -47,6 +48,8 @@ export function Today() {
           </Link>
         </div>
       </header>
+
+      <AdoptionPrompt />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card label="Nutrition">

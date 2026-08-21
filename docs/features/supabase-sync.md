@@ -237,9 +237,14 @@ shows sign-in state, and "This browser" remains what signed-out means.
    filtering, inclusive ranges, every meal version kept, candidates left
    unresolved, `latest()` scoped to the newest day, empty days, audit payload
    intact, same-version writes surfaced rather than silently replacing).
-4. Auth screens + `session.ts` becomes real + composition root switches on
-   sign-in.
-5. First-login adoption flow.
+4. ✅ **Auth screens + `session.ts` becomes real + composition root switches on
+   sign-in.** Emailed sign-in; the adapter swap is the one-line change D3
+   promised. supabase-js loads dynamically, so the initial bundle is smaller
+   than before the slice began.
+5. ✅ **First-login adoption flow** — offers to move this browser's records
+   into a new account, judging by id: generated UUIDs are yours, the seed's
+   fixed ids are not, so the sample day never reaches the cloud (Q5). Copies
+   rather than moves, and is safe to re-run.
 6. Settings storage card reflects reality; read-failure states.
 7. HTTPS deploy; two-device E2E; docs + ROADMAP status.
 

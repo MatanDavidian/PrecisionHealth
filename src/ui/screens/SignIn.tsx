@@ -14,12 +14,14 @@ type Stage =
   | { kind: 'verifying' }
 
 /**
- * Sign in with an emailed code — no passwords, which is the right shape for a
- * family app where nobody wants to manage one.
+ * Sign in by email — no passwords, which is the right shape for a family app
+ * where nobody wants to manage one.
  *
- * The same email also carries a link; clicking it signs you in on that device
- * without ever returning here. The code exists for the common case of reading
- * mail on the phone while the app is open on a laptop.
+ * The LINK is the primary path, because it works with Supabase's stock email
+ * template. A six-digit code only appears in that email if the template
+ * includes `{{ .Token }}`, so the code box is offered second and framed as
+ * optional — a UI that demands a code the email does not contain is a dead
+ * end.
  */
 export function SignIn() {
   const navigate = useNavigate()
@@ -96,12 +98,16 @@ export function SignIn() {
           </form>
         ) : (
           <form onSubmit={submitCode}>
-            <p className="pb-3 text-sm text-ink-muted">
-              Sent to <span className="font-medium text-ink">{email}</span>. Enter the code, or
-              just click the link in the email on this device.
+            <p className="text-sm">
+              Check <span className="font-medium">{email}</span> and click the link — that signs
+              you in on this device.
             </p>
+            <p className="pb-4 pt-1 text-xs text-ink-muted">
+              You can close this page; the link brings you back signed in.
+            </p>
+
             <label className={label} htmlFor="code">
-              Code
+              Or enter a code, if your email shows one
             </label>
             <input
               id="code"
@@ -118,7 +124,7 @@ export function SignIn() {
                 disabled={busy || !code.trim()}
                 className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
               >
-                {stage.kind === 'verifying' ? 'Checking…' : 'Sign in'}
+                {stage.kind === 'verifying' ? 'Checking…' : 'Sign in with code'}
               </button>
               <button
                 type="button"

@@ -23,8 +23,11 @@ import type { Session } from './session'
 
 const dbPromise = openHealthDB()
 
-/** Always present: the signed-out store, and the home of settings in both modes. */
-const localRepositories = createIndexedDbRepositories(dbPromise)
+/**
+ * Always present: the signed-out store, the home of settings in both modes,
+ * and — while signed in — the source the adoption flow reads from.
+ */
+export const localRepositories = createIndexedDbRepositories(dbPromise)
 
 let active: HealthRepositories = localRepositories
 

@@ -106,7 +106,19 @@ every record.
 deciding before slice 4 fills the database with imported days.
 **Files.** `src/domain/time.ts` (`DAY_BOUNDARY_HOUR`).
 
-## Q5 — Is the seeded sample day helping or lying?
+## Q5 — Is the seeded sample day helping or lying? · **partly settled**
+
+**Settled for the cloud (Aug 2026).** Adoption uploads only records with
+generated ids, so the sample day stays in the browser and never enters an
+account. The distinction was free: seeded rows have hand-written ids
+(`meal-breakfast`), everything real gets a UUID.
+
+**Still open locally:** signed out, sample data still sits alongside yours with
+no marker and no way to clear it short of deleting the database.
+
+---
+
+### Original note
 
 **Assumed.** A fresh install seeds a full sample day onto **today**, including a
 deliberate two-source weight conflict and an unconfirmed AI estimate, so both

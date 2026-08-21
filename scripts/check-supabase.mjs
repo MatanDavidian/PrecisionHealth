@@ -41,10 +41,28 @@ console.log('\nChecking .env.local\n')
 if (!url) fail('VITE_SUPABASE_URL is empty.')
 if (!key) fail('VITE_SUPABASE_ANON_KEY is empty.')
 
-if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url)) {
-  fail(`VITE_SUPABASE_URL looks wrong: ${url}\n    Expected https://<ref>.supabase.co (Project Settings → API → Project URL).`)
+// The likely mistake: copying the dashboard address instead of the API one.
+const dashboard = /supabase\.com\/dashboard\/project\/([a-z0-9]+)/.exec(url)
+if (dashboard) {
+  fail(
+    'That is the dashboard URL, not the project API URL.\n' +
+      `    Use: https://${dashboard[1]}.supabase.co\n` +
+      '    (Project Settings → Data API → Project URL, or take the ref from the dashboard address.)',
+  )
 }
-ok(`URL looks right (${new URL(url).hostname})`)
+
+// A bare project ref is unambiguous, so accept it rather than nit-picking.
+const bareRef = /^[a-z0-9]{16,}$/.test(url)
+const normalisedUrl = bareRef ? `https://${url}.supabase.co` : url
+if (bareRef) warn(`Read that as a project ref; using ${normalisedUrl}`)
+
+if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(normalisedUrl)) {
+  fail(
+    `VITE_SUPABASE_URL looks wrong: ${url}\n` +
+      '    Expected https://<ref>.supabase.co — Project Settings → Data API → Project URL.',
+  )
+}
+ok(`URL looks right (${new URL(normalisedUrl).hostname})`)
 
 // The dangerous mistake this script exists to catch.
 if (key.startsWith('sb_secret_') || /"role"\s*:\s*"service_role"/.test(decodeJwt(key) ?? '')) {
@@ -59,7 +77,7 @@ if (key.startsWith('sb_publishable_')) ok('Key format: publishable (current styl
 else if (key.startsWith('eyJ')) ok('Key format: anon JWT (legacy style, still fine)')
 else warn(`Key format unrecognised — continuing, but check you copied the anon/publishable key`)
 
-const base = url.replace(/\/$/, '')
+const base = normalisedUrl.replace(/\/$/, '')
 const headers = { apikey: key, Authorization: `Bearer ${key}` }
 
 let response

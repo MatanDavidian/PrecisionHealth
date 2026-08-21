@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { estimator, estimatorRequiresKey, repositories } from '@/data'
+import { estimator, estimatorRequiresKey, getRepositories } from '@/data'
 import { describePhoto, downscale } from '@/ai/photo'
 import {
   ESTIMATE_ERROR_TEXT,
@@ -55,7 +55,7 @@ export function Log() {
   const [showDetails, setShowDetails] = useState(false)
 
   useEffect(() => {
-    void repositories.settings.get().then(setSettings)
+    void getRepositories().settings.get().then(setSettings)
   }, [])
 
   // Object URLs are the one browser resource here that leaks if ignored.
@@ -81,7 +81,7 @@ export function Log() {
       // error handler, and a failure to record the failure must not replace the
       // message explaining what actually went wrong.
       try {
-        await repositories.inferences.add(
+        await getRepositories().inferences.add(
           buildFailedInference(currentUserId(), {
             at: new Date(),
             model: estimator.model,
@@ -136,8 +136,8 @@ export function Log() {
       result: phase.result,
     })
     const saved = await runWrite('this meal', async () => {
-      await repositories.inferences.add(inference)
-      await repositories.meals.add(meal)
+      await getRepositories().inferences.add(inference)
+      await getRepositories().meals.add(meal)
     })
     // The photo is only discarded once the save actually landed, so a retry
     // still has something to retry with.

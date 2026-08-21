@@ -4,6 +4,7 @@ import { Today } from './ui/screens/Today'
 import { Nutrition } from './ui/screens/Nutrition'
 import { Log } from './ui/screens/Log'
 import { Settings } from './ui/screens/Settings'
+import { SignIn } from './ui/screens/SignIn'
 import { Placeholder } from './ui/screens/Placeholder'
 
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
         <Route path="/body" element={<Placeholder title="Body" phase="a later slice — body measurements" />} />
         <Route path="/health" element={<Placeholder title="Health" phase="a later slice — clinical data" />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/signin" element={<SignIn />} />
         <Route path="*" element={<Navigate to="/log" replace />} />
       </Routes>
     </AppShell>

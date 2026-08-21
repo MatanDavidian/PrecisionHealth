@@ -113,6 +113,22 @@ PG="postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres" \
 6. Confirm it took — see "Verifying your live project" above. Every row should
    read PASS.
 
+## Emailed codes rather than links
+
+Sign-in uses `signInWithOtp`, which sends Supabase's **Magic Link** template.
+By default that email contains only a link — fine when you read mail on the
+same device, awkward when the app is on a laptop and the mail is on a phone.
+
+To get the six-digit code the sign-in screen asks for, add the token to the
+template: **Authentication → Emails → Magic Link**, and include
+
+```
+{{ .Token }}
+```
+
+Both paths then work from one email: click the link on this device, or type the
+code on another.
+
 ## Running the contract tests against your project
 
 `npm test` runs the repository contract against IndexedDB always, and against

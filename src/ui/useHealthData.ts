@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { repositories } from '@/data'
+import { getRepositories } from '@/data'
 import { currentUserId } from '@/data/session'
 import { buildMeal, newId, type MealInput } from '@/data/newRecords'
 import {
@@ -60,11 +60,11 @@ export function useDay(day: string) {
 
     async function load() {
       const [meals, workouts, sleepRecords, goals, ...observationSets] = await Promise.all([
-        repositories.meals.listByDay(currentUserId(), day),
-        repositories.workouts.listByDay(currentUserId(), day),
-        repositories.sleep.forDay(currentUserId(), day),
-        repositories.goals.listActive(currentUserId()),
-        ...TRACKED.map((code) => repositories.observations.listByDay(currentUserId(), day, code)),
+        getRepositories().meals.listByDay(currentUserId(), day),
+        getRepositories().workouts.listByDay(currentUserId(), day),
+        getRepositories().sleep.forDay(currentUserId(), day),
+        getRepositories().goals.listActive(currentUserId()),
+        ...TRACKED.map((code) => getRepositories().observations.listByDay(currentUserId(), day, code)),
       ])
       if (cancelled) return
 
@@ -119,7 +119,7 @@ export function useActions() {
 
   const addMeal = useCallback(
     async (input: MealInput) => {
-      await runWrite('this meal', () => repositories.meals.add(buildMeal(currentUserId(), input)))
+      await runWrite('this meal', () => getRepositories().meals.add(buildMeal(currentUserId(), input)))
     },
     [runWrite],
   )
@@ -128,7 +128,7 @@ export function useActions() {
   const resolveConflict = useCallback(
     async (chosen: Observation, candidates: Observation[]) => {
       await runWrite('your choice', () =>
-        repositories.observations.add(
+        getRepositories().observations.add(
           confirmObservation(chosen, candidates, new Date().toISOString(), newId),
         ),
       )
@@ -142,7 +142,7 @@ export function useActions() {
     async (meal: Meal, item: FoodItem) => {
       const confirmed = confirmFoodItem(item, new Date().toISOString(), newId)
       const next = nextVersion(meal, { items: [...meal.items, confirmed] }, newId)
-      await runWrite('this confirmation', () => repositories.meals.add(next))
+      await runWrite('this confirmation', () => getRepositories().meals.add(next))
     },
     [runWrite],
   )
@@ -151,7 +151,7 @@ export function useActions() {
   const resolveMealVersion = useCallback(
     async (chosen: Meal, conflict: MealConflict) => {
       await runWrite('your choice', () =>
-        repositories.meals.add(resolveMealConflict(chosen, conflict, newId)),
+        getRepositories().meals.add(resolveMealConflict(chosen, conflict, newId)),
       )
     },
     [runWrite],

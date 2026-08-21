@@ -1,5 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { ensureSeeded } from '@/data'
+import { ensureSeeded, selectRepositoriesFor } from '@/data'
+import {
+  getSession,
+  isAuthAvailable,
+  subscribeToSession,
+  LOCAL_SESSION,
+  type Session,
+} from '@/data/session'
 
 /** A write that failed, kept with the means to try it again. */
 export interface WriteFailure {
@@ -12,6 +19,10 @@ interface DataContextValue {
   /** Bumped after every write; reads depend on it and re-run. */
   revision: number
   refresh: () => void
+  /** Who is signed in, or the local stand-in when nobody is. */
+  session: Session
+  /** False in builds with no Supabase project configured. */
+  authAvailable: boolean
   /**
    * Runs a write, refreshes reads on success, and surfaces the failure with a
    * retry on error.
@@ -28,6 +39,8 @@ interface DataContextValue {
 const DataContext = createContext<DataContextValue>({
   revision: 0,
   refresh: () => {},
+  session: LOCAL_SESSION,
+  authAvailable: false,
   runWrite: async () => false,
   dismissFailure: () => {},
 })
@@ -43,14 +56,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [revision, setRevision] = useState(0)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string>()
+  const [session, setSession] = useState<Session>(LOCAL_SESSION)
 
   useEffect(() => {
-    ensureSeeded()
-      .then(() => setReady(true))
-      .catch((cause: unknown) => {
-        // Private browsing and some iOS configurations block IndexedDB outright.
-        setError(cause instanceof Error ? cause.message : 'Storage is unavailable')
+    /**
+     * Nothing renders until the session is known AND the store has been chosen
+     * for it. Rendering earlier would briefly show the local user's data to
+     * someone who is actually signed in — reading one account and then
+     * silently becoming another.
+     */
+    async function start() {
+      const current = await getSession()
+      setSession(current)
+      await selectRepositoriesFor(current)
+      // Only the signed-out, local store carries sample data.
+      if (!current.authenticated) await ensureSeeded()
+      setReady(true)
+    }
+
+    start().catch((cause: unknown) => {
+      // Private browsing and some iOS configurations block IndexedDB outright.
+      setError(cause instanceof Error ? cause.message : 'Storage is unavailable')
+    })
+
+    // Signing in or out swaps the store underneath every screen.
+    return subscribeToSession((next) => {
+      void selectRepositoriesFor(next).then(() => {
+        // Only announce the new session once its store is in place, so no
+        // screen can read the previous adapter as the new user.
+        setSession(next)
+        setRevision((r) => r + 1)
       })
+    })
   }, [])
 
   const [failure, setFailure] = useState<WriteFailure>()
@@ -91,7 +128,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   if (!ready) return <p className="p-8 text-sm text-ink-muted">Opening your data…</p>
 
   return (
-    <DataContext.Provider value={{ revision, refresh, runWrite, failure, dismissFailure }}>
+    <DataContext.Provider
+      value={{
+        revision,
+        refresh,
+        session,
+        authAvailable: isAuthAvailable,
+        runWrite,
+        failure,
+        dismissFailure,
+      }}
+    >
       {children}
     </DataContext.Provider>
   )

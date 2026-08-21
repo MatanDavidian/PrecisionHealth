@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
-import { repositories } from '@/data'
+import { getRepositories } from '@/data'
 import { listChatModels, testApiKey, type ModelChoice } from '@/ai/openaiEstimator'
 import { DEFAULT_SETTINGS } from '@/config'
+import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
+import { useDataRevision } from '../DataProvider'
+import { signOut } from '@/data/session'
 import type { AppSettings, StorageTarget } from '@/data/repositories'
 
 const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
@@ -12,6 +15,7 @@ const field =
 type TestState = { kind: 'idle' | 'testing' } | { kind: 'done'; ok: boolean; message: string }
 
 export function Settings() {
+  const { session, authAvailable } = useDataRevision()
   const [settings, setSettings] = useState<AppSettings>()
   const [keyInput, setKeyInput] = useState('')
   const [test, setTest] = useState<TestState>({ kind: 'idle' })
@@ -32,7 +36,7 @@ export function Settings() {
   }, [])
 
   useEffect(() => {
-    void repositories.settings.get().then((loaded) => {
+    void getRepositories().settings.get().then((loaded) => {
       setSettings(loaded)
       setKeyInput(loaded.apiKey ?? '')
       if (loaded.apiKey) void loadModels(loaded.apiKey)
@@ -42,7 +46,7 @@ export function Settings() {
   if (!settings) return <p className="text-sm text-ink-muted">Loading…</p>
 
   const update = async (patch: Partial<AppSettings>) => {
-    await repositories.settings.save(patch)
+    await getRepositories().settings.save(patch)
     setSettings((current) => ({ ...current!, ...patch }))
     setSaved(true)
     setTimeout(() => setSaved(false), 1800)
@@ -87,6 +91,43 @@ export function Settings() {
       </header>
 
       <div className="grid gap-4">
+        <Card label="Account">
+          {!authAvailable ? (
+            <p className="text-sm text-ink-muted">
+              No backend is configured in this build, so everything stays in this browser.
+            </p>
+          ) : session.authenticated ? (
+            <>
+              <p className="text-sm">
+                Signed in as <span className="font-medium">{session.email}</span>
+              </p>
+              <p className="pt-1 text-xs text-ink-muted">
+                Your data is saved to your account and follows you between devices.
+              </p>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="mt-3 rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-ink-muted">
+                Not signed in. Everything you log stays in this browser — clearing your browsing
+                data erases it, and no other device can see it.
+              </p>
+              <Link
+                to="/signin"
+                className="mt-3 inline-block rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+              >
+                Sign in
+              </Link>
+            </>
+          )}
+        </Card>
+
         <Card label="OpenAI API key">
           <div className="pb-3">
             <label className={label} htmlFor="apiKey">
@@ -285,8 +326,9 @@ export function Settings() {
 
         <Card label="Where your data is saved">
           <p className="pb-3 text-sm text-ink-muted">
-            Everything you log lives in this browser{usage ? `, currently ${usage}` : ''}. Clearing
-            your browsing data erases it, and no other device can see it.
+            {session.authenticated
+              ? 'Saved to your account, so every device you sign in on sees the same data. Your API key stays on this device and never syncs.'
+              : `Everything you log lives in this browser${usage ? `, currently ${usage}` : ''}. Clearing your browsing data erases it, and no other device can see it.`}
           </p>
 
           <div className="space-y-2">

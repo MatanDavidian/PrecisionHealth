@@ -1,42 +1,114 @@
 /**
  * Who is using the app.
  *
- * Every read and write is scoped to a user id, and until now each screen
- * reached into the demo seed data to get one. That works with a single
- * hardcoded user and stops working the moment auth exists — so identity gets
- * one module now, and Supabase auth replaces the body of this file in slice 3
- * without any screen changing.
+ * Built in slice 3 step 0 as a single hardcoded user so that identity had one
+ * home before auth existed; this is that promise being cashed. Screens never
+ * changed, because they only ever asked this module.
  *
- * Deliberately async: real auth resolves a session over the network, and a
- * synchronous accessor here would force every caller to be rewritten later
- * (the same reasoning as the async repositories in D3).
+ * When no Supabase project is configured the app stays exactly as it was —
+ * one local user, everything in the browser — so a checkout with no
+ * `.env.local` still runs.
  */
 import { asId, type UserId } from '@/domain'
+import { getSupabaseClient, isSupabaseConfigured } from './supabase/client'
 
-/** The single local user, until accounts exist. */
+/** The single local user, used when signed out or when no project is configured. */
 export const LOCAL_USER_ID = asId<'User'>('user-demo') as UserId
 
 export interface Session {
   userId: UserId
-  /** False once real accounts exist and nobody is signed in. */
+  email?: string
+  /** False when this is the local stand-in rather than a real account. */
   authenticated: boolean
 }
 
-const LOCAL_SESSION: Session = { userId: LOCAL_USER_ID, authenticated: true }
+export const LOCAL_SESSION: Session = { userId: LOCAL_USER_ID, authenticated: false }
+
+/** Whether signing in is even possible in this build. */
+export const isAuthAvailable = isSupabaseConfigured
 
 /**
- * The current session.
- *
- * Slice 3 replaces this with a Supabase session lookup; callers already await
- * it, so the change is contained here.
+ * Cached so `currentUserId()` can stay synchronous for render paths.
+ * Kept in step with Supabase by the subscription below.
  */
-export const getSession = async (): Promise<Session> => LOCAL_SESSION
+let current: Session = LOCAL_SESSION
+
+const sessionFrom = (user: { id: string; email?: string } | undefined | null): Session =>
+  user ? { userId: user.id as UserId, email: user.email, authenticated: true } : LOCAL_SESSION
+
+export async function getSession(): Promise<Session> {
+  if (!isAuthAvailable) return LOCAL_SESSION
+  const supabase = await getSupabaseClient()
+  const { data } = await supabase.auth.getSession()
+  current = sessionFrom(data.session?.user)
+  return current
+}
 
 /**
- * Synchronous access for render paths that cannot await.
+ * Synchronous access for code that cannot await.
  *
- * Kept separate and explicit so the places that need a session *before* an
- * await are visible — they are the ones that need a loading state when auth
- * becomes real.
+ * Returns the local user until the first `getSession()` resolves, which is why
+ * `DataProvider` gates rendering on that call — otherwise a screen could read
+ * one user's data and then re-read as another.
  */
-export const currentUserId = (): UserId => LOCAL_SESSION.userId
+export const currentUserId = (): UserId => current.userId
+export const currentSession = (): Session => current
+
+export function subscribeToSession(listener: (session: Session) => void): () => void {
+  if (!isAuthAvailable) return () => {}
+  // The client loads asynchronously, so the unsubscribe handle is returned
+  // immediately and wired up once it arrives.
+  let unsubscribe: (() => void) | undefined
+  let cancelled = false
+
+  void getSupabaseClient().then((supabase) => {
+    if (cancelled) return
+    const { data } = supabase.auth.onAuthStateChange((_event, supabaseSession) => {
+      current = sessionFrom(supabaseSession?.user)
+      listener(current)
+    })
+    unsubscribe = () => data.subscription.unsubscribe()
+  })
+
+  return () => {
+    cancelled = true
+    unsubscribe?.()
+  }
+}
+
+/**
+ * Starts sign-in. Supabase emails a link and — when the template includes
+ * `{{ .Token }}` — a six-digit code. Either finishes the job: the link is
+ * picked up automatically on return, the code is typed in.
+ *
+ * `shouldCreateUser` is on, so the first sign-in creates the account. For a
+ * family app that is the whole signup flow.
+ */
+export async function sendSignInCode(email: string): Promise<void> {
+  const supabase = await getSupabaseClient()
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim(),
+    options: { shouldCreateUser: true },
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function verifySignInCode(email: string, code: string): Promise<Session> {
+  const supabase = await getSupabaseClient()
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim(),
+    token: code.trim(),
+    type: 'email',
+  })
+  if (error) throw new Error(error.message)
+  current = sessionFrom(data.session?.user)
+  return current
+}
+
+export async function signOut(): Promise<void> {
+  if (!isAuthAvailable) return
+  const supabase = await getSupabaseClient()
+  const { error } = await supabase.auth.signOut()
+  if (error) throw new Error(error.message)
+  current = LOCAL_SESSION
+}

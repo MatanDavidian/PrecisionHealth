@@ -139,11 +139,17 @@ in as that user — so every row is subject to exactly the Row-Level Security a
 real user faces. That is the point: it proves the adapter works under the
 policies, not merely that the SQL parses.
 
-Its rows are prefixed per run and **left in place**: the schema is append-only
-by design (D4), so a test cannot clean up after itself. A test account slowly
-accumulating rows is the price of proving that history cannot be rewritten.
-Delete the user from the dashboard to remove them all at once — the foreign
-keys cascade.
+Its rows are **left in place**: the schema is append-only by design (D4), so a
+test cannot clean up after itself. That shapes the suite in a way worth knowing
+about — each run writes to its own stretch of the calendar, derived from the
+clock so that later runs always land later than earlier ones. Both properties
+are needed: distinct stretches stop runs colliding, and *advancing* stretches
+are what make `latest()` (a global "newest day for this user" query) return the
+current run's rows rather than an older run's.
+
+A test account slowly accumulating rows is the price of proving that history
+cannot be rewritten. Delete the user from the dashboard to remove them all at
+once — the foreign keys cascade.
 
 ## Changing the schema later
 

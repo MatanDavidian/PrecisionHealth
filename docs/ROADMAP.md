@@ -79,16 +79,23 @@ server-proxy mode too.
 first run against a live OpenAI key (the adapter is written but has never
 called the real API), and a deploy over HTTPS so it works from a phone.
 
-## Slice 3 — My data, on my devices
+## Slice 3 — My data, on my devices ← next
 
-Auth and managed Postgres (see D9). The repository implementations change; no
-screen does. AI calls gain a second mode — a server-side proxy with a managed
-key — alongside BYOK; `settings` (and the key in it) is excluded from sync by
-design.
+Supabase (D16): accounts via email code, each family member's data isolated by
+Row-Level Security, online-first. Opens with the D15 meal-versioning fix —
+the one change that must precede sync rather than follow it. Append-only
+becomes a database grant (INSERT/SELECT only), the same-version conflict
+becomes a unique constraint, and first sign-in adopts this browser's real
+records while leaving the demo day behind (its fixed ids give it away).
+`settings` — and the API key in it — is excluded from sync by design. Includes
+the HTTPS deploy that slice 2 left outstanding. The server-side AI proxy stays
+out; BYOK continues.
 
-**Proves:** the seam from D3, under real conditions — latency, failure, and a
-schema migration with data in it.
-**Ships:** durable, multi-device data.
+Full plan: [`features/supabase-sync.md`](features/supabase-sync.md).
+
+**Proves:** the seam from D3, under real conditions — latency, failure, RLS,
+and a schema migration with data in it.
+**Ships:** durable, multi-device data, and the first accounts.
 
 ## Slice 4 — Import from Garmin
 

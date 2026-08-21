@@ -17,5 +17,4 @@ export const DEFAULT_SETTINGS: AppSettings = {
   model: 'gpt-5.6-sol',
   /** On, because it is what makes the photo flow two taps. */
   autoAnalyze: true,
-  storageTarget: 'BROWSER',
 }

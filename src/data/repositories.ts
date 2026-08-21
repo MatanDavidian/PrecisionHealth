@@ -92,22 +92,18 @@ export interface InferenceRepository {
  * separate repository rather than a corner of the profile.
  */
 /**
- * Where the user WANTS their data kept.
+ * Device-local settings.
  *
- * Only BROWSER is implemented. The others record intent so the preference
- * survives until the implementation lands — the Settings screen states
- * plainly which one is actually in force, because a setting that silently
- * does nothing is worse than no setting.
+ * There is deliberately no "where to store my data" preference. Before
+ * accounts existed it recorded intent — browser, file, or a server — but
+ * storage is now a consequence of being signed in, not a choice made here, and
+ * a control implying otherwise would be describing a decision the app does not
+ * actually take.
  */
-export type StorageTarget = 'BROWSER' | 'JSON_FILE' | 'SERVER'
-
 export interface AppSettings {
   apiKey?: string
   model: string
   autoAnalyze: boolean
-  storageTarget: StorageTarget
-  /** Base URL of the user's own backend, for STORAGE_TARGET 'SERVER'. */
-  serverUrl?: string
 }
 
 export interface SettingsRepository {

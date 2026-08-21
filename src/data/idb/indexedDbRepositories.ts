@@ -18,12 +18,7 @@ import type {
   UserProfile,
   Workout,
 } from '@/domain'
-import type {
-  AppSettings,
-  DateRange,
-  HealthRepositories,
-  StorageTarget,
-} from '@/data/repositories'
+import type { AppSettings, DateRange, HealthRepositories } from '@/data/repositories'
 import { DEFAULT_SETTINGS } from '@/config'
 import {
   asMeal,
@@ -141,8 +136,6 @@ export function createIndexedDbRepositories(
           apiKey: value('apiKey') || undefined,
           model: value('model') || DEFAULT_SETTINGS.model,
           autoAnalyze: value('autoAnalyze') !== 'false',
-          storageTarget: (value('storageTarget') as StorageTarget) || DEFAULT_SETTINGS.storageTarget,
-          serverUrl: value('serverUrl') || undefined,
         }
       },
       save: async (patch) => {

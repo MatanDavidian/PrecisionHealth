@@ -260,16 +260,14 @@ describe('settings', () => {
     expect(saved.autoAnalyze).toBe(false)
   })
 
-  it('defaults to browser storage and remembers a different choice', async () => {
+  it('remembers the analysis preferences', async () => {
     const { repos } = await fresh()
-    expect((await repos.settings.get()).storageTarget).toBe('BROWSER')
+    expect((await repos.settings.get()).autoAnalyze).toBe(true)
 
-    // Recording intent for something not built yet: the preference must
-    // survive so it is already in place when the implementation lands.
-    await repos.settings.save({ storageTarget: 'SERVER', serverUrl: 'https://health.example.com' })
+    await repos.settings.save({ autoAnalyze: false, model: 'gpt-4o-mini' })
     const saved = await repos.settings.get()
-    expect(saved.storageTarget).toBe('SERVER')
-    expect(saved.serverUrl).toBe('https://health.example.com')
+    expect(saved.autoAnalyze).toBe(false)
+    expect(saved.model).toBe('gpt-4o-mini')
   })
 
   it('clears the key when it is emptied', async () => {

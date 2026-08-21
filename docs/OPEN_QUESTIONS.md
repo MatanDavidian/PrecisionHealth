@@ -227,41 +227,27 @@ from slice 3 entirely.
 body-progress photos and lab documents, where persistence is the point.
 **Files (planned).** Spec §3 (scope), §4 (data flow), §7 (privacy).
 
-## Q11 — What does "save my data as JSON on the phone" actually mean?
+## Q11 — What does "save my data as JSON on the phone" mean? · **mostly settled**
 
-**Assumed.** Settings now offers three destinations — this browser (working),
-a JSON file, and your own server — but only the first is implemented. The
-other two record intent: the choice persists, the screen says plainly that
-data is still going to browser storage, and the preference is already in place
-when the implementation lands.
+**The server half is answered.** Slice 3 built it: signed in, data lives in
+Postgres and follows you between devices. The Settings card that once offered
+"this browser / a JSON file / my own server" as a *choice* has been removed —
+where data goes is now a consequence of being signed in, and a control implying
+otherwise described a decision the app does not take. It also went stale the
+moment sync shipped, still labelling "my own server" as not built.
 
-**The platform constraint, worth knowing before planning around it.** A web
-app cannot silently write files to a phone. The File System Access API is
-desktop-Chrome only; iOS Safari has nothing equivalent. So "JSON on the
-device" can realistically be:
+**The file half is still open, and worth building** — not as a storage
+destination but as an **export**: a JSON download you keep, independent of both
+the browser and the account. That covers what neither does — losing access to
+the account, wanting your data elsewhere, or simply keeping a copy.
 
-- a **download** the user saves and later re-imports (works everywhere, manual,
-  and the file is a static snapshot that goes stale immediately);
-- the **origin-private file system**, which is invisible to the user and lives
-  in the same storage bucket that clearing browsing data wipes — so it solves
-  nothing the current store does not;
-- a **share-sheet export** on iOS, which is a download with better ergonomics.
+**The constraint that shaped the original question stands:** a web app cannot
+silently write files to a phone. The File System Access API is desktop-Chrome
+only and iOS Safari has no equivalent, so this is a download you re-import, not
+a live sync. Which is fine for a backup, and was never fine for a storage
+backend.
 
-None of those is a live sync. If the actual goal is "my data survives and my
-phone and laptop agree", that is the server option, not the file option.
-
-**What the JSON file IS good for:** a backup and an escape hatch. Everything
-this app holds is a handful of small JSON documents, so an export is cheap to
-build and removes the "clearing browser data erases it" risk (Q10's
-neighbour). Worth building on its own merits, just not as a storage backend.
-
-**Cost of being wrong.** Low. The repository seam (D3) means each destination
-is an adapter; the setting already exists to select one.
-
-**Needs deciding by.** Slice 3, which is the server option under a different
-name.
-**Files.** `src/data/repositories.ts` (`StorageTarget`),
-`src/ui/screens/Settings.tsx`.
+**Files.** `src/ui/screens/Settings.tsx`.
 
 ---
 

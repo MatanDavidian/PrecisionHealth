@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { useDataRevision } from '../DataProvider'
 import { signOut } from '@/data/session'
-import type { AppSettings, StorageTarget } from '@/data/repositories'
+import type { AppSettings } from '@/data/repositories'
 
 const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
 const field =
@@ -372,100 +372,41 @@ export function Settings() {
         </Card>
 
         <Card label="Where your data is saved">
-          <p className="pb-3 text-sm text-ink-muted">
-            {session.authenticated
-              ? 'Saved to your account, so every device you sign in on sees the same data. Your API key stays on this device and never syncs.'
-              : `Everything you log lives in this browser${usage ? `, currently ${usage}` : ''}. Clearing your browsing data erases it, and no other device can see it.`}
+          {session.authenticated ? (
+            <>
+              <p className="text-sm">
+                In your account. Every device you sign in on sees the same data, and it survives
+                clearing this browser.
+              </p>
+              <p className="pt-2 text-xs text-ink-muted">
+                Records are only ever added, never overwritten — corrections are new entries that
+                supersede old ones, so nothing you log can be silently lost or rewritten. Your
+                OpenAI key is the exception to all of this: it stays on this device and is never
+                sent to your account.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm">
+                In this browser only{usage ? `, currently ${usage}` : ''}.
+              </p>
+              <p className="pt-2 text-xs text-ink-muted">
+                Clearing your browsing data erases it, and no other device can see it. Signing in
+                copies it to your account and keeps it in step from then on.
+              </p>
+            </>
+          )}
+
+          <p className="pt-3 text-xs text-ink-muted">
+            <span className="rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-medium">
+              not built yet
+            </span>{' '}
+            Exporting everything as a JSON file, so you hold a copy independently of both this
+            browser and the account.
           </p>
-
-          <div className="space-y-2">
-            <StorageOption
-              value="BROWSER"
-              selected={settings.storageTarget}
-              onSelect={(target) => void update({ storageTarget: target })}
-              title="This browser"
-              detail="Working now. Fast and private, but tied to this browser on this device, with no backup."
-            />
-            <StorageOption
-              value="JSON_FILE"
-              selected={settings.storageTarget}
-              onSelect={(target) => void update({ storageTarget: target })}
-              title="JSON file"
-              planned
-              detail="Export everything as a JSON file you keep. A web app cannot write to your phone's storage on its own — iOS has no such API — so this will be a file you download and re-import, not a live sync."
-            />
-            <StorageOption
-              value="SERVER"
-              selected={settings.storageTarget}
-              onSelect={(target) => void update({ storageTarget: target })}
-              title="My own server"
-              planned
-              detail="Sync to a backend you control, so your phone and laptop see the same data."
-            />
-          </div>
-
-          {settings.storageTarget === 'SERVER' && (
-            <div className="pt-3">
-              <label className={label} htmlFor="serverUrl">
-                Server URL
-              </label>
-              <input
-                id="serverUrl"
-                className={field}
-                placeholder="https://health.example.com"
-                defaultValue={settings.serverUrl ?? ''}
-                onBlur={(e) => void update({ serverUrl: e.target.value.trim() })}
-              />
-            </div>
-          )}
-
-          {settings.storageTarget !== 'BROWSER' && (
-            <p className="pt-3 text-xs text-accent">
-              Not built yet — your data is still being saved in this browser. This choice is
-              remembered and takes effect when the option ships.
-            </p>
-          )}
         </Card>
       </div>
     </div>
   )
 }
 
-function StorageOption({
-  value,
-  selected,
-  onSelect,
-  title,
-  detail,
-  planned,
-}: {
-  value: StorageTarget
-  selected: StorageTarget
-  onSelect: (value: StorageTarget) => void
-  title: string
-  detail: string
-  planned?: boolean
-}) {
-  return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-hairline p-3">
-      <input
-        type="radio"
-        name="storageTarget"
-        className="mt-1"
-        checked={selected === value}
-        onChange={() => onSelect(value)}
-      />
-      <span>
-        <span className="text-sm font-medium">
-          {title}
-          {planned && (
-            <span className="ml-2 rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-normal text-ink-muted">
-              not built yet
-            </span>
-          )}
-        </span>
-        <span className="block pt-0.5 text-xs text-ink-muted">{detail}</span>
-      </span>
-    </label>
-  )
-}

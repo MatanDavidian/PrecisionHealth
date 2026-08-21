@@ -1,5 +1,8 @@
 # Deploying
 
+**Live at [precisionhealth-9bn.pages.dev](https://precisionhealth-9bn.pages.dev)**,
+deploying from `main` on every push.
+
 The app is a static bundle plus Supabase, so hosting only has to serve files
 over HTTPS — and, later, run a function or two for the WhatsApp webhook and
 the server-side AI proxy. **Cloudflare Pages** is the choice (see below for
@@ -89,3 +92,25 @@ Same account, same data, which is the whole point of slice 3.
 fingerprints those filenames, so each only ever describes one build — while
 `index.html` is never cached, because it is the file that points at the current
 asset names. A stale copy of it would pin a browser to a previous deploy.
+
+
+## Verified on first deploy (Aug 2026)
+
+| Check | Result |
+|---|---|
+| `/today`, `/signin`, `/nutrition`, `/log`, `/settings` on a hard load | 200 — the rewrite works |
+| `index.html` cache | `max-age=0, must-revalidate` |
+| `/assets/*` cache | `max-age=31536000, immutable` |
+| Supabase project compiled into the bundle | yes — env vars were set at build time |
+| Landing route on a phone viewport | `/log`, camera button present |
+| Signed out | local sample day, as designed |
+| Signed in | reads from Postgres, no sample day, account shown in Settings |
+| Console errors | none |
+
+One thing that looked like a bug and was not: driving the site with a session
+minted milliseconds earlier produced `JWT issued at future` and a 401, because
+the client validates `iat` against its own clock and sub-second skew between
+Supabase's auth server and the browser is enough. Real sign-ins never hit it —
+the token arrives through the redirect or `verifyOtp`, not from a script racing
+its own request. The machine's clock was checked and is within a second of
+internet time; a fresh token gets 200 from PostgREST directly.

@@ -98,9 +98,15 @@ out; BYOK continues.
 
 Full plan: [`features/supabase-sync.md`](features/supabase-sync.md).
 
-**Proves:** the seam from D3, under real conditions — latency, failure, RLS,
-and a schema migration with data in it.
-**Ships:** durable, multi-device data, and the first accounts.
+**Proved:** the seam from D3 under real conditions. The Supabase adapter passed
+the same ten behavioural assertions as IndexedDB without a single change —
+which is what makes "swapping the store cannot change what a screen sees" a
+tested fact rather than a claim. Everything that broke along the way was the
+test harness assuming it could clean up after itself, which an append-only
+schema forbids.
+**Ships:** durable, multi-device data, the first accounts, and the app running
+over HTTPS at precisionhealth-9bn.pages.dev — so the camera is finally on the
+device that has one.
 
 ## Slice 4 — Import from Garmin
 

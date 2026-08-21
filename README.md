@@ -89,8 +89,12 @@ sent once, then discarded.
 Two steps outstanding: a first run against a live API key (the adapter has
 never called the real API), and an HTTPS deploy so it works from a phone.
 
-Then: **slice 3** — Supabase accounts and sync, planned in
-[`docs/features/supabase-sync.md`](docs/features/supabase-sync.md): meal
-versioning first (D15), then Postgres with append-only enforced by grants,
-family isolation by RLS, and first-login adoption of this browser's data. See
-[`docs/ROADMAP.md`](docs/ROADMAP.md).
+**Slice 3 done** — accounts and sync, live at
+[precisionhealth-9bn.pages.dev](https://precisionhealth-9bn.pages.dev). Sign in
+and your data follows you between devices; signed out it stays in the browser
+exactly as before. Planned in
+[`docs/features/supabase-sync.md`](docs/features/supabase-sync.md); hosting in
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
+
+Next: **slice 4** — importing from Garmin, the first time two sources describe
+the same day. See [`docs/ROADMAP.md`](docs/ROADMAP.md).

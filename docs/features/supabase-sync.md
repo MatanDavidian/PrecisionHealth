@@ -123,7 +123,10 @@ would freeze the domain model at its least-proven moment.
 **Not synced, ever:** the `settings` store. The API key stays on-device (D14,
 Q8) — this exclusion is why settings was a separate store from day one.
 
-### The database enforces the architecture
+### The database enforces the architecture ✅ built (step 1)
+
+*Migrations live in `supabase/migrations/`; `npm run db:verify` proves every
+rule below against a throwaway Postgres in seconds.*
 
 Two properties move from convention into the database itself:
 
@@ -218,10 +221,15 @@ shows sign-in state, and "This browser" remains what signed-out means.
 
 ## 8. Build order (each step leaves the app working)
 
-1. **D15 meal versioning** — domain + IDB v3 migration + conflict UI + tests.
+1. ✅ **D15 meal versioning** — domain + IDB v3 migration + conflict UI + tests.
    Ships alone; the app is better even if Supabase never arrives.
-2. Supabase project + schema + RLS + grants; contract test rig against local
-   Supabase.
+2. ✅ **Schema, RLS and grants** — `supabase/migrations/`, verified by
+   `npm run db:verify` against real Postgres (append-only refuses UPDATE and
+   DELETE; a duplicate `(meal_id, version)` is refused, which IS the conflict
+   signal; one user cannot read or write another's rows). Creating the cloud
+   project and pasting the two migrations is the user's step —
+   `supabase/README.md` has it. The adapter *contract* test rig moves to step 3,
+   where the adapter it tests exists.
 3. Supabase repository adapter (reads + writes), unwired.
 4. Auth screens + `session.ts` becomes real + composition root switches on
    sign-in.

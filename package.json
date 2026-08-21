@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:verify": "./supabase/test/run.sh"
   },
   "dependencies": {
     "idb": "^8.0.3",

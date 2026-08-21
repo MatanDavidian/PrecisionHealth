@@ -6,3 +6,6 @@ dist/
 .env.*
 !.env.example
 *.tsbuildinfo
+
+# Supabase project credentials
+.env.local

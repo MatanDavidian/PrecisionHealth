@@ -8,6 +8,9 @@
 #
 #   ./supabase/test/run.sh          spin up a throwaway container and verify
 #   PG="postgres://…" ./run.sh      verify against an existing database
+#
+# For a live Supabase project with no psql to hand, paste 01_verify_web.sql
+# into the SQL Editor instead — same checks, pure SQL.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."

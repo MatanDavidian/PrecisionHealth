@@ -40,7 +40,16 @@ provide — `auth.users` and `auth.uid()` — and is **never deployed**. The rea
 `auth.uid()` reads a JWT claim; the shim reads a session setting, so
 `set request.jwt.claim.sub = '<uuid>'` impersonates a signed-in user.
 
-To verify against a real database instead:
+### Verifying your live project
+
+**Easiest — no tooling needed.** Paste
+[`test/01_verify_web.sql`](test/01_verify_web.sql) into the Supabase **SQL
+Editor** and run it. Same seven checks, returned as a table where every row
+should read PASS. It writes only to two throwaway user ids and deletes them
+afterwards, so it is safe on a live project.
+
+**Or from the terminal**, if you have `psql`
+(`brew install libpq && brew link --force libpq`):
 
 ```bash
 PG="postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres" \

@@ -11,7 +11,6 @@ import {
 import {
   confirmFoodItem,
   confirmObservation,
-  dayKey,
   liveItems,
   type Conflict,
   type FoodItem,
@@ -23,14 +22,10 @@ import {
   type Workout,
 } from '@/domain'
 import { useDataRevision } from './DataProvider'
-import { deviceZone } from '@/data/newRecords'
 
 /** Sort key for a record's time, whichever shape it has. */
 const instantOf = (time: Meal['time']): string =>
   time.kind === 'daily' ? time.date : time.kind === 'interval' ? time.start : time.at
-
-/** The day being viewed. Slice 1 shows today only; a date picker comes with slice 2. */
-export const today = (): string => dayKey(new Date().toISOString(), deviceZone())
 
 export interface DayData {
   day: string

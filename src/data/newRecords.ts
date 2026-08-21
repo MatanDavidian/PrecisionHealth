@@ -78,9 +78,16 @@ export function buildMeal(userId: UserId, input: MealInput, zone = deviceZone())
   }
 }
 
-/** Meal slot suggested from the hour, so the common case needs no thought. */
+/**
+ * Meal slot suggested from the hour, so the common case needs no thought.
+ *
+ * Boundaries are deliberate rather than even: 00:00-04:00 is NIGHT (eating at
+ * 01:00 is not breakfast), and late evening is SNACK rather than a second
+ * dinner. Always a suggestion — the picker is one tap away.
+ */
 export const suggestSlot = (date: Date): MealSlot => {
   const hour = date.getHours()
+  if (hour < 4) return 'NIGHT'
   if (hour < 11) return 'BREAKFAST'
   if (hour < 16) return 'LUNCH'
   if (hour < 22) return 'DINNER'

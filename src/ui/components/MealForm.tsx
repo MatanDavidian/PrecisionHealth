@@ -1,8 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { suggestSlot, type FoodItemInput, type MealInput } from '@/data/newRecords'
-import type { MealSlot } from '@/domain'
-
-const SLOTS: MealSlot[] = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']
+import { MEAL_SLOTS, type MealSlot } from '@/domain'
 
 const emptyItem = (): FoodItemInput => ({
   name: '',
@@ -69,7 +67,7 @@ export function MealForm({ onSubmit }: { onSubmit: (input: MealInput) => Promise
             value={slot}
             onChange={(e) => setSlot(e.target.value as MealSlot)}
           >
-            {SLOTS.map((option) => (
+            {MEAL_SLOTS.map((option) => (
               <option key={option} value={option}>
                 {option.charAt(0) + option.slice(1).toLowerCase()}
               </option>

@@ -15,7 +15,7 @@ import { DEMO_USER_ID } from '@/data/mock/seed'
 import { useDataRevision } from '../DataProvider'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
-import type { MealSlot } from '@/domain'
+import { MEAL_SLOTS, type MealSlot } from '@/domain'
 
 const field =
   'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm outline-none focus:border-accent'
@@ -270,7 +270,7 @@ export function Log() {
                     value={slot}
                     onChange={(e) => setSlot(e.target.value as MealSlot)}
                   >
-                    {(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as MealSlot[]).map((option) => (
+                    {MEAL_SLOTS.map((option) => (
                       <option key={option} value={option}>
                         {option.charAt(0) + option.slice(1).toLowerCase()}
                       </option>

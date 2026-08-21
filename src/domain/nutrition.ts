@@ -17,7 +17,19 @@ export type MealId = Id<'Meal'>
 export type FoodItemId = Id<'FoodItem'>
 export type AttachmentId = Id<'Attachment'>
 
-export type MealSlot = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'
+/**
+ * NIGHT covers the small hours. A 01:00 meal is not breakfast — it belongs to
+ * the night you are still awake in, and calling it breakfast misfiles both the
+ * habit and the pattern anyone would later look for.
+ *
+ * Note this is about LABELLING, not about which day the meal counts toward:
+ * that is the day boundary in `time.ts` (currently local midnight, see
+ * OPEN_QUESTIONS Q4).
+ */
+export type MealSlot = 'NIGHT' | 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'
+
+/** Chronological through a day, for pickers and grouping. */
+export const MEAL_SLOTS: MealSlot[] = ['NIGHT', 'BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']
 
 export interface Nutrients {
   energy: CanonicalQuantity

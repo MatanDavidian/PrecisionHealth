@@ -175,3 +175,34 @@ describe('observation candidates', () => {
     expect(convert(latest[0].value, 'kg')).toBeCloseTo(72.5, 3)
   })
 })
+
+describe('meal slot suggestions', () => {
+  const at = (hour: number, minute = 0) => {
+    const d = new Date('2026-08-21T00:00:00')
+    d.setHours(hour, minute, 0, 0)
+    return d
+  }
+
+  it('calls the small hours night, not breakfast', async () => {
+    const { suggestSlot } = await import('../newRecords')
+    expect(suggestSlot(at(0, 30))).toBe('NIGHT')
+    expect(suggestSlot(at(1))).toBe('NIGHT')
+    expect(suggestSlot(at(3, 59))).toBe('NIGHT')
+  })
+
+  it('moves to breakfast at 4am', async () => {
+    const { suggestSlot } = await import('../newRecords')
+    expect(suggestSlot(at(4))).toBe('BREAKFAST')
+    expect(suggestSlot(at(10, 59))).toBe('BREAKFAST')
+  })
+
+  it('covers the rest of the day', async () => {
+    const { suggestSlot } = await import('../newRecords')
+    expect(suggestSlot(at(11))).toBe('LUNCH')
+    expect(suggestSlot(at(15, 59))).toBe('LUNCH')
+    expect(suggestSlot(at(16))).toBe('DINNER')
+    expect(suggestSlot(at(21, 59))).toBe('DINNER')
+    expect(suggestSlot(at(22))).toBe('SNACK')
+    expect(suggestSlot(at(23, 59))).toBe('SNACK')
+  })
+})

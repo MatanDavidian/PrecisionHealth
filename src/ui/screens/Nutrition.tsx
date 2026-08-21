@@ -2,12 +2,15 @@ import { Card } from '../components/Card'
 import { MealForm } from '../components/MealForm'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
 import { show, showNumber } from '../format'
-import { today, useActions, useDay } from '../useHealthData'
+import { useActions, useDay } from '../useHealthData'
+import { useSelectedDay, dayLabel } from '../useSelectedDay'
+import { DayNav } from '../components/DayNav'
 import { evaluateGoal } from '@/data/analytics'
 import { convert, needsConfirmation, type Meal } from '@/domain'
 
 export function Nutrition() {
-  const day = today()
+  const selected = useSelectedDay()
+  const { day, today, isToday } = selected
   const data = useDay(day)
   const { addMeal, confirmEstimate } = useActions()
 
@@ -19,9 +22,21 @@ export function Nutrition() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <header className="pb-6">
-        <h1 className="font-display text-4xl">Nutrition</h1>
-        <p className="pt-1 text-sm text-ink-muted">{day}</p>
+      <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
+        <div>
+          <h1 className="font-display text-4xl">Nutrition</h1>
+          <p className="pt-1 text-sm text-ink-muted">
+            {dayLabel(day, today)} · {day}
+          </p>
+        </div>
+        <DayNav
+          day={day}
+          today={today}
+          isToday={isToday}
+          onPrevious={selected.goPrevious}
+          onNext={selected.goNext}
+          onToday={selected.goToday}
+        />
       </header>
 
       <div className="grid gap-4">
@@ -42,12 +57,19 @@ export function Nutrition() {
           </div>
         </Card>
 
-        <Card label="Log a meal">
-          <MealForm onSubmit={addMeal} />
-        </Card>
+        {/* Logging always writes to now, so the form only makes sense on today. */}
+        {isToday && (
+          <Card label="Log a meal">
+            <MealForm onSubmit={addMeal} />
+          </Card>
+        )}
 
         <Card label={`Logged (${meals.length})`}>
-          {meals.length === 0 && <p className="py-2 text-sm text-ink-muted">Nothing logged yet.</p>}
+          {meals.length === 0 && (
+            <p className="py-2 text-sm text-ink-muted">
+              {isToday ? 'Nothing logged yet.' : 'Nothing was logged on this day.'}
+            </p>
+          )}
           {meals.map((meal) => (
             <MealRow key={meal.id} meal={meal} onConfirm={confirmEstimate} />
           ))}

@@ -3,12 +3,15 @@ import { Card, StatRow } from '../components/Card'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
 import { ConflictNotice } from '../components/ConflictNotice'
 import { show, showDuration, showNumber } from '../format'
-import { today, useActions, useDay } from '../useHealthData'
+import { useActions, useDay } from '../useHealthData'
+import { useSelectedDay, dayLabel } from '../useSelectedDay'
+import { DayNav } from '../components/DayNav'
 import { evaluateGoal } from '@/data/analytics'
 import { convert } from '@/domain'
 
 export function Today() {
-  const day = today()
+  const selected = useSelectedDay()
+  const { day, today, isToday } = selected
   const data = useDay(day)
   const { resolveConflict } = useActions()
 
@@ -24,15 +27,25 @@ export function Today() {
     <div className="mx-auto max-w-5xl">
       <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
         <div>
-          <h1 className="font-display text-4xl">Today</h1>
+          <h1 className="font-display text-4xl">{dayLabel(day, today)}</h1>
           <p className="pt-1 text-sm text-ink-muted">{day}</p>
         </div>
-        <Link
-          to="/nutrition"
-          className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
-        >
-          Log a meal
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <DayNav
+            day={day}
+            today={today}
+            isToday={isToday}
+            onPrevious={selected.goPrevious}
+            onNext={selected.goNext}
+            onToday={selected.goToday}
+          />
+          <Link
+            to="/log"
+            className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+          >
+            Log a meal
+          </Link>
+        </div>
       </header>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -96,7 +109,9 @@ export function Today() {
 
         <Card label="Meals">
           {data.meals.length === 0 && (
-            <p className="py-1.5 text-sm text-ink-muted">Nothing logged yet today.</p>
+            <p className="py-1.5 text-sm text-ink-muted">
+              {isToday ? 'Nothing logged yet today.' : 'Nothing was logged on this day.'}
+            </p>
           )}
           {data.meals.map((meal) => {
             const kcal = meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0)

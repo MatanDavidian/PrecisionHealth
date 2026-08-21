@@ -6,16 +6,20 @@ import { show, showDuration, showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
+import { DataUnavailable } from '../components/DataUnavailable'
 import { AdoptionPrompt } from '../components/AdoptionPrompt'
+import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
 import { convert } from '@/domain'
 
 export function Today() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
-  const data = useDay(day)
+  const { data, error, retry } = useDay(day)
   const { resolveConflict } = useActions()
+  const { session } = useDataRevision()
 
+  if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
   if (!data) return <p className="text-sm text-ink-muted">Loading your day…</p>
 
   const { nutrients, workouts, sleep, effective, conflicts, goals, unconfirmed } = data

@@ -4,8 +4,9 @@
 device sees the same health log, with each family member's data isolated by
 the database itself.
 
-Status: **planned**. Decisions here implement D15 and D16 (see
-ARCHITECTURE.md); nothing below exists yet except where marked *(done)*.
+Status: **complete** (Aug 2026). All seven steps built and verified; the app is
+live at [precisionhealth-9bn.pages.dev](https://precisionhealth-9bn.pages.dev).
+Decisions here implement D15 and D16 (see ARCHITECTURE.md).
 
 ---
 
@@ -245,8 +246,12 @@ shows sign-in state, and "This browser" remains what signed-out means.
    into a new account, judging by id: generated UUIDs are yours, the seed's
    fixed ids are not, so the sample day never reaches the cloud (Q5). Copies
    rather than moves, and is safe to re-run.
-6. Settings storage card reflects reality; read-failure states.
-7. HTTPS deploy; two-device E2E; docs + ROADMAP status.
+6. ✅ **Settings storage card reflects reality; read-failure states.** A failed
+   read used to leave the screen on "Loading…" forever — survivable when reads
+   were local, a lie once they cross a network. It now says it cannot reach the
+   data, shows why, and offers to retry, keeping whatever was already on screen
+   rather than blanking it.
+7. ✅ **HTTPS deploy** at precisionhealth-9bn.pages.dev, verified end to end.
 
 ## 9. Risks, named
 

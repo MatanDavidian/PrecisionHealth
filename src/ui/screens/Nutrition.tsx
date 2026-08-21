@@ -5,16 +5,20 @@ import { show, showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
+import { DataUnavailable } from '../components/DataUnavailable'
 import { evaluateGoal } from '@/data/analytics'
 import { convert, needsConfirmation, type Meal, type MealConflict } from '@/domain'
 import { MealConflictNotice } from '../components/MealConflictNotice'
+import { useDataRevision } from '../DataProvider'
 
 export function Nutrition() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
-  const data = useDay(day)
+  const { data, error, retry } = useDay(day)
   const { addMeal, confirmEstimate, resolveMealVersion } = useActions()
+  const { session } = useDataRevision()
 
+  if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
   if (!data) return <p className="text-sm text-ink-muted">Loading…</p>
 
   const { nutrients, meals, goals } = data

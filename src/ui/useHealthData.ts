@@ -51,9 +51,24 @@ export interface DayData {
 
 const TRACKED = ['STEPS', 'ACTIVE_ENERGY', 'HRV', 'RESTING_HEART_RATE', 'WEIGHT', 'BODY_FAT'] as const
 
-export function useDay(day: string) {
+export interface DayState {
+  data?: DayState extends never ? never : DayData
+  /**
+   * Set when the day could not be read at all.
+   *
+   * Reads used to be local and effectively infallible, so a failure left the
+   * screen on "Loading…" forever. Across a network that is a lie — the app
+   * must say it cannot reach the data rather than pretend it is still coming.
+   */
+  error?: string
+  retry: () => void
+}
+
+export function useDay(day: string): DayState {
   const { revision } = useDataRevision()
   const [data, setData] = useState<DayData>()
+  const [error, setError] = useState<string>()
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -104,13 +119,20 @@ export function useDay(day: string) {
       })
     }
 
-    void load()
+    setError(undefined)
+    load().catch((cause: unknown) => {
+      if (cancelled) return
+      // Keep whatever was already on screen: a stale day plus an explicit
+      // failure is more useful than a blank one.
+      setError(cause instanceof Error ? cause.message : 'Could not reach your data')
+    })
+
     return () => {
       cancelled = true
     }
-  }, [day, revision])
+  }, [day, revision, attempt])
 
-  return data
+  return { data, error, retry: () => setAttempt((n) => n + 1) }
 }
 
 /** Write actions. Each one persists, then bumps the revision so reads re-run. */

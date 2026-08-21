@@ -62,9 +62,24 @@ PG="postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres" \
    closest to you; free tier is ample for a family.
 2. **SQL Editor** → paste `migrations/0001_initial_schema.sql`, run it → then
    `migrations/0002_rls_and_grants.sql`. Order matters.
-3. **Authentication → Providers** → enable **Email**, and turn on
-   "Confirm email". Magic links / OTP need no password (D16).
-4. **Project Settings → API** → copy the **Project URL** and the **anon**
+3. **Authentication → Sign In / Providers → Email** → make sure it is enabled
+   (it is on by default in new projects). Nothing else in there needs
+   changing: magic links and one-time codes are part of the email provider, so
+   nobody in the family manages a password (D16).
+
+   Leave **Confirm email** on. Turning it off only saves a click while
+   testing, and means an unverified address can hold an account.
+
+4. **Authentication → URL Configuration** — this one is easy to miss and
+   magic links fail silently without it. The link in the email redirects to
+   **Site URL**, so it must point at the app:
+
+   - **Site URL:** `http://localhost:5173` while developing
+   - **Redirect URLs:** add the deployed origin too, once it exists
+
+   A link that redirects to the wrong origin lands on a page with no session,
+   which looks like broken auth rather than broken configuration.
+5. **Project Settings → API** → copy the **Project URL** and the **anon**
    public key into `.env.local`:
 
    ```
@@ -76,8 +91,8 @@ PG="postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres" \
    RLS allows, which is why the policies above are the actual security boundary.
    **Never** put the `service_role` key in the app: it bypasses RLS entirely.
 
-5. Confirm it took: `PG="…" ./supabase/test/run.sh` against the project should
-   print the same PASS lines.
+6. Confirm it took — see "Verifying your live project" above. Every row should
+   read PASS.
 
 ## Changing the schema later
 

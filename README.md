@@ -40,6 +40,8 @@ serve is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | D12 | Experiments modelled now, built much later | The only feature that constrains the whole model — cheaper to satisfy now than to migrate to. |
 | D13 | Deterministic before intelligent | AI proposes and explains; the rule engine computes. |
 | D14 | AI on the user's own key, from the device | BYOK: key stored locally, sent only to the provider. What lets photo logging ship before the backend exists. |
+| D15 | Aggregates are versioned, not rewritten | Meals append a new version per edit; same-version records are a conflict the user settles. Restores D4's sync-safety for meals. |
+| D16 | Supabase, online-first, accounts from day one | Real Postgres keeps the analytics roadmap open and the schema portable; offline sync is a later addition the append-only model makes tractable. |
 
 ## Structure
 

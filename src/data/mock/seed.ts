@@ -6,6 +6,7 @@
  * genuine two-source weight disagreement, so the provenance and conflict paths
  * are exercised by the app's very first screen rather than by tests alone.
  */
+import { LOCAL_USER_ID } from '@/data/session'
 import {
   addDays,
   asId,
@@ -31,13 +32,13 @@ import {
   type Regimen,
   type Sleep,
   type SleepId,
-  type UserId,
   type UserProfile,
   type Workout,
   type WorkoutId,
 } from '@/domain'
 
-export const DEMO_USER_ID = asId<'User'>('user-demo') as UserId
+/** Re-exported so the seed and the app agree on who the local user is. */
+export const DEMO_USER_ID = LOCAL_USER_ID
 export const ZONE: IanaZone = 'Asia/Jerusalem'
 /** The day the fixed sample set describes. Tests pin to this. */
 export const DEMO_DAY = '2026-08-18'

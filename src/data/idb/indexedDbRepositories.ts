@@ -24,7 +24,7 @@ import type {
   HealthRepositories,
   StorageTarget,
 } from '@/data/repositories'
-import { DEFAULT_MODEL } from '@/ai/openaiEstimator'
+import { DEFAULT_SETTINGS } from '@/config'
 import {
   mealRow,
   observationRow,
@@ -129,11 +129,11 @@ export function createIndexedDbRepositories(
         const rows = await (await db()).getAll('settings')
         const value = (key: string) => rows.find((row) => row.key === key)?.value
         return {
+          ...DEFAULT_SETTINGS,
           apiKey: value('apiKey') || undefined,
-          model: value('model') || DEFAULT_MODEL,
-          // Default on: it is what makes the flow two taps.
+          model: value('model') || DEFAULT_SETTINGS.model,
           autoAnalyze: value('autoAnalyze') !== 'false',
-          storageTarget: (value('storageTarget') as StorageTarget) || 'BROWSER',
+          storageTarget: (value('storageTarget') as StorageTarget) || DEFAULT_SETTINGS.storageTarget,
           serverUrl: value('serverUrl') || undefined,
         }
       },

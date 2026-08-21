@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { repositories } from '@/data'
-import { DEMO_USER_ID } from '@/data/mock/seed'
+import { currentUserId } from '@/data/session'
 import { buildMeal, newId, type MealInput } from '@/data/newRecords'
 import {
   effectiveObservation,
@@ -52,11 +52,11 @@ export function useDay(day: string) {
 
     async function load() {
       const [meals, workouts, sleepRecords, goals, ...observationSets] = await Promise.all([
-        repositories.meals.listByDay(DEMO_USER_ID, day),
-        repositories.workouts.listByDay(DEMO_USER_ID, day),
-        repositories.sleep.forDay(DEMO_USER_ID, day),
-        repositories.goals.listActive(DEMO_USER_ID),
-        ...TRACKED.map((code) => repositories.observations.listByDay(DEMO_USER_ID, day, code)),
+        repositories.meals.listByDay(currentUserId(), day),
+        repositories.workouts.listByDay(currentUserId(), day),
+        repositories.sleep.forDay(currentUserId(), day),
+        repositories.goals.listActive(currentUserId()),
+        ...TRACKED.map((code) => repositories.observations.listByDay(currentUserId(), day, code)),
       ])
       if (cancelled) return
 
@@ -105,35 +105,36 @@ export function useDay(day: string) {
 
 /** Write actions. Each one persists, then bumps the revision so reads re-run. */
 export function useActions() {
-  const { refresh } = useDataRevision()
+  const { runWrite } = useDataRevision()
 
   const addMeal = useCallback(
     async (input: MealInput) => {
-      await repositories.meals.add(buildMeal(DEMO_USER_ID, input))
-      refresh()
+      await runWrite('this meal', () => repositories.meals.add(buildMeal(currentUserId(), input)))
     },
-    [refresh],
+    [runWrite],
   )
 
   /** D6: settling a disagreement writes a new record superseding every candidate. */
   const resolveConflict = useCallback(
     async (chosen: Observation, candidates: Observation[]) => {
-      await repositories.observations.add(
-        confirmObservation(chosen, candidates, new Date().toISOString(), newId),
+      await runWrite('your choice', () =>
+        repositories.observations.add(
+          confirmObservation(chosen, candidates, new Date().toISOString(), newId),
+        ),
       )
-      refresh()
     },
-    [refresh],
+    [runWrite],
   )
 
   /** D4: confirming an AI estimate appends a confirmed item superseding it. */
   const confirmEstimate = useCallback(
     async (meal: Meal, item: FoodItem) => {
       const confirmed = confirmFoodItem(item, new Date().toISOString(), newId)
-      await repositories.meals.add({ ...meal, items: [...meal.items, confirmed] })
-      refresh()
+      await runWrite('this confirmation', () =>
+        repositories.meals.add({ ...meal, items: [...meal.items, confirmed] }),
+      )
     },
-    [refresh],
+    [runWrite],
   )
 
   return { addMeal, resolveConflict, confirmEstimate }

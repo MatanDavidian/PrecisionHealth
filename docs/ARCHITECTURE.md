@@ -261,3 +261,58 @@ modes), or if the app ever becomes multi-user on shared machines.
 
 **Amends** D9 step 3. **Planned in**
 `docs/features/photo-meal-logging.md`.
+
+## D15 — Aggregates are versioned, not rewritten
+
+**Decision.** A meal is never updated in place. Each edit appends a new meal
+record with the same `mealId` and `version + 1`. Readers take the highest
+version; two records sharing a version are a conflict, surfaced to the user,
+whose answer is written as the next version.
+
+**Why.** D4 made single facts append-only, which is what lets observations sync
+by simply taking the union of both devices' records. Meals broke that rule —
+one row holding all its items, rewritten on every confirmation — so two devices
+editing the same meal would silently overwrite each other the moment sync
+existed. Versioning restores the invariant using the mechanism already proven
+on screen for observations (D6).
+
+**Consequence.** Storage grows per edit, and meal-level versioning reports a
+conflict even when two devices edited different items of the same meal — edits
+that are mergeable in principle. Accepted: the simplicity is worth more than
+the false-conflict rate for a family-sized app.
+
+**Must precede sync** (D16). Afterwards it is a live data-loss bug rather than a
+latent one. **Planned in** `docs/OPEN_QUESTIONS.md` Q3.
+
+## D16 — Supabase for the backend, online-first, real accounts from day one
+
+**Decision.** Slice 3 uses Supabase — managed Postgres, auth, storage and edge
+functions — behind the existing repository interfaces. The app is online-first;
+offline support is a later addition, not a slice 3 requirement. Accounts and
+row-level isolation are built in from the start, not retrofitted.
+
+**Why Supabase over Firestore.** The roadmap chose Postgres deliberately, and
+the analytics phases (13-17: correlations, effect sizes, N-of-1 evaluation) are
+exactly what a document store is bad at — choosing Firestore would trade the
+product's endgame for convenience the app has already deferred. Postgres also
+means the schema is portable: moving to a self-hosted ASP.NET service later is
+a dump and a restore, not a re-modelling. Row-Level Security expresses "each
+user sees only their own rows" once, enforced by the database rather than by
+every query.
+
+**Why accounts now.** The app is intended for family and friends, and possibly
+a wider audience later. Multi-user isolation is cheap to design in and painful
+to retrofit — every table, every query and every sync path assumes it.
+
+**Why online-first.** Offline sync is genuinely hard, and the append-only model
+(D4, D15) is what will make it tractable when it arrives: records only ever get
+added, so an offline queue replays rather than merges. Choosing online-first now
+costs nothing later.
+
+**Consequence.** The app stops working without a connection until offline
+support lands. Write failures therefore have to be visible and retryable —
+which is why that was fixed before any of this was built.
+
+**Revisit when** hosting cost, data-residency or the AI tool layer (roadmap
+phases 7-12) argue for a self-hosted ASP.NET service. The seam (D3) keeps that
+affordable.

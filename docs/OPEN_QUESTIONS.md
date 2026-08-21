@@ -53,28 +53,35 @@ database remains the correction path — and the only credible route to
 micronutrients (Q9).
 **Files.** `src/ui/components/MealForm.tsx`.
 
-## Q3 — Are aggregate rows append-only, or only the facts inside them?
+## Q3 — Are aggregate rows append-only? · **settled: versioned meal records**
 
-**Assumed.** The facts are append-only; the **row** is rewritten. Confirming an
-AI portion appends a new `FoodItem` that supersedes the estimate, and the whole
-`Meal` row is written back with both items in it. `liveItems()` hides the
-superseded one from totals.
+**Decided (Aug 2026).** Meals stop being rewritten. Every edit appends a NEW
+meal record sharing the same `mealId` and carrying an incremented `version`.
+The UI shows the highest version. Two records at the *same* version with
+different content is, by definition, two devices having edited the same base —
+that is raised as a conflict, the user picks, and their choice is saved as the
+next version.
 
-**The wrinkle.** This is a weaker guarantee than D4 reads like it promises. The
-meal's *contents* have full history, but the meal row itself has no version
-chain — a concurrent write from two devices would clobber, and "what did this
-meal look like on Tuesday?" is unanswerable.
+**Why this shape.** It restores the property that makes everything else sync
+safely (D4): each device only ever ADDS records, so syncing is a union and
+nothing can be clobbered. It also reuses the pattern already on screen for
+observations (D6) — surface the disagreement, let the human settle it, record
+the answer as data. One idea, applied twice, rather than two mechanisms.
 
-**Alternative.** Event-source the aggregates (store `MealCreated`,
-`ItemConfirmed` and fold them), or version the row with an `updatedAt` and
-optimistic concurrency.
+**The tradeoff, accepted deliberately.** Versioning at the meal level means two
+devices editing *different items of the same meal* still collide, even though
+those edits are mergeable in principle. Item-level append would avoid that but
+needs per-item version chains and a merge rule. For a family app where two
+people rarely edit the same meal in the same minute, the false-conflict rate is
+low and the simplicity is worth more. Revisit if it turns out to fire often.
 
-**Cost of being wrong.** Moderate and rising. Single-device it is invisible;
-the moment two devices sync it is a lost-update bug.
+**Still to design when it is built:** whether old versions are pruned (history
+grows per edit), and whether `version` is enough on its own or needs the
+device id alongside it to explain *who* diverged.
 
-**Needs deciding by.** Slice 3 (cloud sync), which is exactly when concurrent
-writes become possible.
-**Files.** `src/domain/corrections.ts`, `src/data/idb/schema.ts`.
+**Must land before sync exists**, not after — after, it is a live data-loss bug.
+**Files (planned).** `src/domain/nutrition.ts`, `src/domain/corrections.ts`,
+`src/data/idb/schema.ts`.
 
 ## Q4 — What is a "day" for a user who is awake past midnight?
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { repositories } from '@/data'
-import { DEFAULT_MODEL, listChatModels, testApiKey, type ModelChoice } from '@/ai/openaiEstimator'
+import { listChatModels, testApiKey, type ModelChoice } from '@/ai/openaiEstimator'
+import { DEFAULT_SETTINGS } from '@/config'
 import { Card } from '../components/Card'
 import type { AppSettings, StorageTarget } from '@/data/repositories'
 
@@ -229,7 +230,7 @@ export function Settings() {
                 className={field}
                 value={settings.model}
                 onChange={(e) => setSettings({ ...settings, model: e.target.value })}
-                onBlur={(e) => void update({ model: e.target.value.trim() || DEFAULT_MODEL })}
+                onBlur={(e) => void update({ model: e.target.value.trim() || DEFAULT_SETTINGS.model })}
               />
             )}
 
@@ -243,7 +244,7 @@ export function Settings() {
                     : settings.apiKey
                       ? 'Save your key and hit Refresh list to load the models on your account.'
                       : 'Add a key above to load the models on your account.'}{' '}
-              Default is {DEFAULT_MODEL}. A larger model reads a plate more carefully and costs
+              Default is {DEFAULT_SETTINGS.model}. A larger model reads a plate more carefully and costs
               more per photo.
             </p>
 

@@ -11,7 +11,7 @@ import {
 } from '@/ai/estimator'
 import { buildFailedInference, buildPhotoMeal } from '@/data/photoMeal'
 import { deviceZone, suggestSlot } from '@/data/newRecords'
-import { DEMO_USER_ID } from '@/data/mock/seed'
+import { currentUserId } from '@/data/session'
 import { useDataRevision } from '../DataProvider'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
@@ -41,7 +41,7 @@ const hhmm = (date: Date) =>
  * written anywhere (spec §3) — Retry reuses it, saving or clearing drops it.
  */
 export function Log() {
-  const { refresh } = useDataRevision()
+  const { runWrite } = useDataRevision()
   const fileInput = useRef<HTMLInputElement>(null)
   const photoRef = useRef<{ blob: Blob; meta: PhotoMeta } | null>(null)
 
@@ -76,18 +76,25 @@ export function Log() {
     } catch (error) {
       const known = error instanceof EstimateError
       const kind = known ? error.kind : 'UNREADABLE'
-      // A failed attempt is part of the audit trail too (spec §6).
-      await repositories.inferences.add(
-        buildFailedInference(DEMO_USER_ID, {
-          at: new Date(),
-          model: estimator.model,
-          hints: hints(),
-          photo: photo.meta,
-          kind,
-          message: error instanceof Error ? error.message : 'Unknown failure',
-          raw: known ? error.raw : undefined,
-        }),
-      )
+      // A failed attempt is part of the audit trail too (spec §6). Written on
+      // a best-effort basis and deliberately NOT surfaced: this runs inside the
+      // error handler, and a failure to record the failure must not replace the
+      // message explaining what actually went wrong.
+      try {
+        await repositories.inferences.add(
+          buildFailedInference(currentUserId(), {
+            at: new Date(),
+            model: estimator.model,
+            hints: hints(),
+            photo: photo.meta,
+            kind,
+            message: error instanceof Error ? error.message : 'Unknown failure',
+            raw: known ? error.raw : undefined,
+          }),
+        )
+      } catch {
+        // Nothing useful to do here; the estimate error below is the real news.
+      }
       setPhase({
         kind: 'error',
         message: ESTIMATE_ERROR_TEXT[kind],
@@ -120,7 +127,7 @@ export function Log() {
     const at = new Date()
     at.setHours(hours, minutes, 0, 0)
 
-    const { meal, inference } = buildPhotoMeal(DEMO_USER_ID, {
+    const { meal, inference } = buildPhotoMeal(currentUserId(), {
       slot,
       at,
       zone: deviceZone(),
@@ -128,9 +135,13 @@ export function Log() {
       photo: photoRef.current.meta,
       result: phase.result,
     })
-    await repositories.inferences.add(inference)
-    await repositories.meals.add(meal)
-    refresh()
+    const saved = await runWrite('this meal', async () => {
+      await repositories.inferences.add(inference)
+      await repositories.meals.add(meal)
+    })
+    // The photo is only discarded once the save actually landed, so a retry
+    // still has something to retry with.
+    if (!saved) return
     clearPhoto()
     setPhase({ kind: 'saved' })
     setTimeout(() => setPhase({ kind: 'idle' }), 2500)

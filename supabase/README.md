@@ -89,7 +89,26 @@ PG="postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres" \
 
    Both are safe in a client bundle by design — the anon key only grants what
    RLS allows, which is why the policies above are the actual security boundary.
-   **Never** put the `service_role` key in the app: it bypasses RLS entirely.
+   **Never** put the `service_role` (or `sb_secret_…`) key in the app: it
+   bypasses RLS entirely, making every policy decorative.
+
+   Supabase renamed these. Either style works:
+
+   | Newer projects | Older projects | Use it? |
+   |---|---|---|
+   | `sb_publishable_…` | `anon` (a long `eyJ…` JWT) | **yes** — this is the one |
+   | `sb_secret_…` | `service_role` | never in the app |
+
+   Then confirm it works:
+
+   ```bash
+   npm run supabase:check
+   ```
+
+   It checks the URL and key are accepted, the schema is applied, that a
+   signed-out caller sees **no rows**, and that a signed-out write is refused —
+   i.e. that RLS is genuinely protecting the tables. It also refuses to
+   continue if you have pasted a service-role key by mistake.
 
 6. Confirm it took — see "Verifying your live project" above. Every row should
    read PASS.

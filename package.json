@@ -10,7 +10,8 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:verify": "./supabase/test/run.sh"
+    "db:verify": "./supabase/test/run.sh",
+    "supabase:check": "node scripts/check-supabase.mjs"
   },
   "dependencies": {
     "idb": "^8.0.3",

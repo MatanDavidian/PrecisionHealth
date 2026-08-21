@@ -90,3 +90,16 @@ export function resolveMealConflict(
 ): Meal {
   return { ...chosen, recordId: newId(), version: conflict.version + 1 }
 }
+
+/**
+ * Normalises a meal that predates versioning.
+ *
+ * Rows written before D15 carry no `version`, and their record id is their
+ * meal id — exactly true, since they were the only version. Belongs in the
+ * domain rather than in a store, because both adapters read such rows and must
+ * agree on what they mean.
+ */
+export function asMealRecord(meal: Meal, fallbackRecordId?: string): Meal {
+  if (meal.version) return meal
+  return { ...meal, version: 1, recordId: meal.recordId ?? fallbackRecordId ?? meal.id }
+}

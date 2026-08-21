@@ -230,7 +230,13 @@ shows sign-in state, and "This browser" remains what signed-out means.
    project and pasting the two migrations is the user's step —
    `supabase/README.md` has it. The adapter *contract* test rig moves to step 3,
    where the adapter it tests exists.
-3. Supabase repository adapter (reads + writes), unwired.
+3. ✅ **Supabase repository adapter** (reads + writes), unwired — plus the
+   contract rig: one behavioural suite in `src/data/__tests__/contract.ts`, run
+   against IndexedDB always and against a real project when a test account is
+   configured. Ten assertions asking what a screen asks (round-trip, day
+   filtering, inclusive ranges, every meal version kept, candidates left
+   unresolved, `latest()` scoped to the newest day, empty days, audit payload
+   intact, same-version writes surfaced rather than silently replacing).
 4. Auth screens + `session.ts` becomes real + composition root switches on
    sign-in.
 5. First-login adoption flow.

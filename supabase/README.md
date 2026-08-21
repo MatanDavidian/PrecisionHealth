@@ -113,6 +113,38 @@ PG="postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres" \
 6. Confirm it took — see "Verifying your live project" above. Every row should
    read PASS.
 
+## Running the contract tests against your project
+
+`npm test` runs the repository contract against IndexedDB always, and against
+Supabase only when a test account is configured — so the default suite needs no
+network and no account.
+
+To enable the Supabase run, create a dedicated test user:
+
+1. **Authentication → Users → Add user → Create new user**
+2. Use an address you control, or any real-looking domain — Supabase rejects
+   `example.com` and `.invalid`. Something like
+   `contract-test@yourdomain.com` works.
+3. **Tick "Auto Confirm User"**, otherwise the account cannot sign in.
+
+Then add it to `.env.local`:
+
+```
+SUPABASE_TEST_EMAIL=contract-test@yourdomain.com
+SUPABASE_TEST_PASSWORD=…
+```
+
+`npm test` will then run the same ten assertions against real Postgres, signed
+in as that user — so every row is subject to exactly the Row-Level Security a
+real user faces. That is the point: it proves the adapter works under the
+policies, not merely that the SQL parses.
+
+Its rows are prefixed per run and **left in place**: the schema is append-only
+by design (D4), so a test cannot clean up after itself. A test account slowly
+accumulating rows is the price of proving that history cannot be rewritten.
+Delete the user from the dashboard to remove them all at once — the foreign
+keys cascade.
+
 ## Changing the schema later
 
 Add a new numbered file in `migrations/`; never edit one that has been applied.

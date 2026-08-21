@@ -14,6 +14,7 @@
  */
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import {
+  asMealRecord,
   dayKeyOf,
   type AIInference,
   type CalendarDate,
@@ -73,8 +74,7 @@ export interface MealRow {
  * Anything logged before versioning existed is version 1, and its record id is
  * its meal id — which is exactly true, since it was the only version.
  */
-export const asMeal = (row: MealRow): Meal =>
-  row.data.version ? row.data : { ...row.data, version: 1, recordId: row.id }
+export const asMeal = (row: MealRow): Meal => asMealRecord(row.data, row.id)
 
 export interface HealthDB extends DBSchema {
   meals: {

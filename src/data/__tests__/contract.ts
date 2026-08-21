@@ -217,7 +217,7 @@ export function runRepositoryContract(
       expect(hrv).toHaveLength(0)
     })
 
-    it('latest() returns all candidates from the most recent day only', async () => {
+    it('latest() returns candidates from exactly one day', async () => {
       const { ctx, day } = await begin()
       await ctx.repositories.observations.add(observationFor(ctx, day(0), 'old', 74))
       await ctx.repositories.observations.add(
@@ -228,13 +228,27 @@ export function runRepositoryContract(
       )
 
       const latest = await ctx.repositories.observations.latest(ctx.userId, 'WEIGHT')
-      // Remote stores keep earlier tests' rows, so assert about THIS test's
-      // days rather than about the store as a whole.
-      const mine = latest.filter((o) => o.id.startsWith(`${ctx.prefix}-`))
-      expect(mine).toHaveLength(2)
-      expect(
-        mine.every((o) => o.time.kind === 'instant' && o.time.at.startsWith(day(1))),
-      ).toBe(true)
+      expect(latest.length).toBeGreaterThan(0)
+
+      /**
+       * The store-agnostic half of the promise: whatever day `latest()` picks,
+       * it returns everything from that day and nothing from another, so the
+       * caller can resolve precedence over a complete set (D5).
+       *
+       * It deliberately does NOT assert WHICH day. That is a global question —
+       * "the newest this user has" — and a shared, append-only test account
+       * carries rows from every previous run, any of which may be newer. The
+       * stronger claim (that it picks THIS test's most recent day) is asserted
+       * against IndexedDB in writes.test.ts, where the store is wiped between
+       * tests and the answer is knowable.
+       */
+      const days = new Set(
+        latest.map((o) =>
+          o.time.kind === 'daily' ? o.time.date : o.time.kind === 'interval' ? o.time.start.slice(0, 10) : o.time.at.slice(0, 10),
+        ),
+      )
+      expect(days.size).toBe(1)
+      expect([...days][0] >= day(0)).toBe(true)
     })
 
     it('returns nothing for a day with nothing, rather than failing', async () => {

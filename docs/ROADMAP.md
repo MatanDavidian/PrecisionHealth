@@ -108,6 +108,21 @@ schema forbids.
 over HTTPS at precisionhealth-9bn.pages.dev — so the camera is finally on the
 device that has one.
 
+## Slice 3.5 — AI access: server keys, free trial, paid plans ← next
+
+Inserted ahead of Garmin at the owner's request. Three asks that turn out to
+be one feature: a **server-side AI proxy**. A master key in the browser is
+extracted in minutes, a client-enforced quota is a suggestion, and a
+subscription must be provable — so all three need code the user cannot read.
+D14 reserved the space for exactly this; the estimator port means it is one
+new adapter, and no screen changes.
+
+Full plan: [`features/ai-access-plans.md`](features/ai-access-plans.md).
+
+**Proves:** that the second estimator mode fits the seam D14 claimed it would.
+**Ships:** photo analysis that works the moment you sign in, without anyone
+pasting a key.
+
 ## Slice 4 — Import from Garmin
 
 Sleep, HRV, resting heart rate, steps, weight. The first time two sources

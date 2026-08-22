@@ -7,6 +7,13 @@ readable by any browser again.
 
 Status: **planned**. Sequenced before the Garmin slice at the owner's request.
 
+**Settled (Aug 2026):** the trial is **10 analyses total**, not per day.
+**Step 1 ships alone** — proxy, master key and trial — and steps 2 and 3
+follow separately. Billing is **deliberately deferred**: the owner is not
+ready to be a merchant, and the app should be good before anyone is asked to
+pay for it. The plan below is therefore a design to build against later, not
+work queued now.
+
 ---
 
 ## 1. The architectural fact that shapes everything
@@ -68,9 +75,9 @@ becomes moot for signed-in users.
 
 ## 3. Feature 2 — the free trial
 
-- New signed-in users get **10 analyses total** on the master key
-  (assumption to confirm: total, not per-day — "let them take 10 pictures
-  with my key, then ask").
+- New signed-in users get **10 analyses total** on the master key — a
+  lifetime allowance, not a daily one. Simple to explain, simple to count,
+  and it costs the owner about 30 cents per person who tries the app.
 - Counted server-side in an **append-only usage ledger** (D4 applied to
   metering): `usage(id, user_id, day, model, created_at)`, RLS so users see
   their own rows, INSERT only via the function's service role.
@@ -82,56 +89,80 @@ becomes moot for signed-in users.
   The ledger keys by user id, so a new email = a new trial — accepted for a
   family-scale app, revisit if it is ever farmed.
 
-## 4. Feature 3 — paid plans
+## 4. Feature 3 — paid plans (design only; not being built yet)
 
-Two monthly plans, quota enforced by the same ledger the trial uses:
+**Plans are model tiers.** The owner's call, and the right one: a user is
+buying a quality level, not an abstract quota, and the cost difference between
+models is 20x — so it has to be visible in the price rather than absorbed.
 
-| Plan | Daily cap | Monthly worst case | Realistic (3–4 meals/day) |
-|---|---|---|---|
-| A | 10 photos/day | 300 photos | ~100–120 |
-| B | 20 photos/day | 600 photos | ~100–150 |
+### The cost that sets the price
 
-### The cost math that sets the price
+Per photo ≈ ~2.5k input tokens (1280px image + prompt) + ~2k output (JSON plus
+hidden reasoning), at Aug 2026 prices:
 
-Per-photo cost ≈ ~2.5k input tokens (1280px image + prompt) + ~2k output
-tokens (JSON + hidden reasoning), at Aug 2026 prices:
-
-| Model | $/photo | Plan A worst case | Plan B worst case | Realistic month |
+| Model | $/photo | Daily cap | Worst-case month | Realistic (3-4 meals/day) |
 |---|---|---|---|---|
-| gpt-5.6-sol ($5/$30) | ~$0.07 | ~$21 | ~$42 | ~$7–8 |
-| **gpt-5.6-terra ($2/$12)** | **~$0.03** | **~$9** | **~$17** | **~$3–4** |
-| gpt-5.6-luna ($0.2/$1.2) | ~$0.003 | ~$0.90 | ~$1.80 | ~$0.35 |
+| **luna** ($0.20/$1.20) | ~$0.003 | 20/day | ~$1.80 | ~$0.35 |
+| **terra** ($2/$12) | ~$0.03 | 10/day | ~$9 | ~$3-4 |
+| **sol** ($5/$30) | ~$0.07 | — | — | ~$7-8 |
 
-The daily caps are the abuse control: the worst case is *bounded by design*.
+The daily cap is the abuse control: worst case is bounded by design, so a
+plan cannot run away from its price.
 
-**Recommendation:** subsidised plans run **terra** (the quality/cost knee —
-the live comparison showed it separating dry goods from cooked portions and
-calibrating confidence well). BYOK users keep whatever model they like,
-including sol.
+### Suggested shape
 
-**Suggested prices:** Plan A **$7/month**, Plan B **$12/month**.
-After merchant fees (~5% + $0.50): A nets ~$6.15, B nets ~$10.90. Healthy
-against realistic usage, break-even-ish against a maxed-out Plan A, slightly
-exposed on a maxed-out Plan B — acceptable, revisit with real usage data.
-(For confirmation: sol-quality plans would need ~$15/$25 to be safe, which
-reads badly next to ChatGPT at $20.)
+| Plan | Model | Cap | Price | Worst-case margin |
+|---|---|---|---|---|
+| **Everyday** | luna | 20/day | **$4/mo** | comfortable (~$1.80 cost) |
+| **Accurate** | terra | 10/day | **$9/mo** | thin but positive (~$9 cost, ~$8.05 net) |
+| **Precision** | sol | — | **not sold** | — |
 
-### Payments — the part that needs a business decision
+**Sol is deliberately not offered as a plan, and saying why is the honest
+part:** at ~$0.07/photo a realistic month costs $7-8 and a maxed 10/day month
+costs $21. A defensible price would be $15-25 — which reads terribly beside
+ChatGPT Plus at $20, and would be worse value than the alternative sitting
+right there: **bring your own key and run sol for ~$7/month at cost.** The
+product should say that out loud rather than sell a bad deal. Plans exist to
+remove setup friction at the cheaper tiers; BYOK exists for people who want
+the best model at the lowest price. Those are different customers.
 
-The owner is in Israel, which constrains providers: **Stripe does not
-support Israel-based merchant accounts** (verify current status at build
-time). The practical route is a **merchant of record** — they are the legal
-seller, handle global VAT/tax, and pay out to Israeli founders:
+If sol is ever sold, it should be metered (credits) rather than flat — but
+that is a later problem and adds explaining that a family-scale app does not
+need.
 
-- **Paddle** — the established MoR, broadest tax coverage.
-- **Lemon Squeezy** — simplest integration, 5% + $0.50/txn, though its
-  roadmap post-Stripe-acquisition is a question mark.
-- **Polar / Creem** — newer, developer-focused alternatives.
+### Payments — deferred, and the decline is informative
 
-Integration shape is identical for all: hosted checkout link from Settings →
-provider webhook → edge function (service role) writes
+Lemon Squeezy declined the owner's store application. Their wording ("we
+assess the totality of data... guided by regulations imposed on us by Stripe,
+PayPal and card companies") is a template, but the common cause is applying
+**before there is a live product**: no working app, no pricing page, no terms
+of service or privacy policy for a reviewer to look at. That application was
+made when the repository was empty.
+
+That makes the deferral fortunate rather than costly. Re-applying later —
+with the app live, a real pricing page, and published terms and privacy
+policy — is a materially different application, to a materially different
+reviewer impression.
+
+Providers worth applying to when the time comes, all **revenue-share only,
+no monthly fee**:
+
+| Provider | Cut | Notes |
+|---|---|---|
+| **Creem** | 3.9% + $0.40 (0% on first $1,000) | Cheapest full MoR; newer, smaller |
+| **Paddle** | 5% + $0.50 | The established MoR; broadest tax coverage; also has an approval process |
+| **Polar** | ~4% + 40c | Developer-focused, GitHub-native origins |
+| **Gumroad** | 10% flat | Highest cut, but the most lenient approval — the fallback if others decline |
+
+Integration is identical for all four: hosted checkout link from Settings →
+provider webhook → an edge function (service role) writes
 `subscriptions(user_id, plan, status, current_period_end)` → the proxy reads
-it. The client can *read* its subscription row (RLS), never write it.
+it. The client can read its own subscription row (RLS); it can never write one.
+So the provider choice is swappable and does not shape the code.
+
+**Before applying anywhere:** publish a pricing page, terms of service and a
+privacy policy (the last is required regardless — the app handles health data
+and routes photos through a third-party model). Apply with the live URL.
 
 Records as **D18**.
 
@@ -141,6 +172,10 @@ Records as **D18**.
   remaining / plan + usage today / "using your own key", with the right
   actions per state. The key input stays for BYOK — it now submits to the
   server (write-only) instead of localStorage when signed in.
+- **Model choice belongs to the user in both modes.** On a plan, the tier
+  fixes the model (that is what the tier is). On BYOK, the existing model
+  picker stays exactly as it is — including sol, which is the cheapest way to
+  run sol.
 - **Log screen**: no setup card for new signed-in users — the trial means
   photo analysis just works, which is the whole point. Quota/trial exhaustion
   is a friendly card with the two doors, photo kept.
@@ -148,9 +183,12 @@ Records as **D18**.
 
 ## 6. Order of work (each step ships alone)
 
-1. **Proxy + ledger + trial** — edge function, master key as secret, usage
-   table, `ProxyEstimator` adapter, trial-exhausted UI. Delivers immediate
-   value (new users need no key) before any payment exists.
+1. **Proxy + ledger + trial** ← *the only step queued now.* Edge function,
+   master key as a function secret, usage ledger, `ProxyEstimator` adapter,
+   trial-exhausted UI. Delivers the whole point — a new user signs in and
+   photo analysis just works — with no payment infrastructure anywhere.
+   Trial users run **terra** (the quality/cost knee), which at 10 analyses
+   costs the owner about 30 cents per signup.
 2. **Server-held BYOK** — encrypted storage, write-only API, proxy uses it;
    Settings key card moves server-side for signed-in users.
 3. **Billing** — provider account, checkout, webhook, `subscriptions` table,

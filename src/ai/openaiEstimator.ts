@@ -11,6 +11,10 @@ import {
   type FoodVisionEstimator,
 } from './estimator'
 import { toDataUrl } from './photo'
+// One prompt, shared with the edge function: two paths to the same provider
+// must ask the same question, or the same photo answers differently depending
+// on whose key paid for it.
+import { SYSTEM_PROMPT, hintText } from '../../supabase/functions/_shared/prompt'
 import { applyGramsHint, validateEstimate } from './validate'
 
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions'
@@ -23,55 +27,6 @@ const ENDPOINT = 'https://api.openai.com/v1/chat/completions'
  * think that long, which is precisely when we want them to finish.
  */
 export const MAX_COMPLETION_TOKENS = 4000
-
-const SYSTEM_PROMPT = `You estimate nutrition from a single photo of food.
-
-Reply with ONLY a JSON object of this exact shape:
-{
-  "items": [
-    { "name": string, "amountG": number, "energyKcal": number,
-      "proteinG": number, "carbsG": number, "fatG": number,
-      "fiberG": number, "confidence": number }
-  ],
-  "overallConfidence": number,
-  "assumptions": [string],
-  "refusal": string
-}
-
-What counts as food to estimate:
-- A plated or served meal.
-- Loose or raw ingredients, groceries, packaged products, fruit in a bowl, a
-  spread of several dishes — anything edible, whether or not it is a "meal".
-- If several foods are visible, list each one separately.
-
-Rules:
-- Split what you see into the items a person would name, not every ingredient.
-- All weights in grams, all energy in kilocalories, per item as served.
-- "confidence" and "overallConfidence" are between 0 and 1. Be honest: a
-  half-hidden portion or an ambiguous sauce deserves a low number.
-- "assumptions" lists what you had to assume, in short plain sentences —
-  cooked vs raw weight, invisible oil or dressing, hidden ingredients.
-- Treat any user-supplied food name or total weight as GROUND TRUTH. If a
-  weight is given, your amounts must sum to it. If a food is named, do not
-  second-guess the identification; only portion and compute.
-- Do not estimate vitamins or minerals. A photo does not carry that
-  information.
-- Estimate even when you are unsure. An honest low-confidence number is more
-  useful than no answer; that is what "confidence" is for.
-- Use "refusal" ONLY when the image contains no edible food at all (a person,
-  a screenshot, a landscape). Being unable to identify a dish precisely is not
-  a reason to refuse — estimate it as best you can and say so in
-  "assumptions". When you do refuse, return an empty "items" array; otherwise
-  omit "refusal" entirely.`
-
-function hintText(hints: EstimateHints): string {
-  const lines: string[] = []
-  if (hints.foodName) lines.push(`The user says this is: ${hints.foodName}`)
-  if (hints.totalGrams) lines.push(`The user weighed it: ${hints.totalGrams} g in total`)
-  return lines.length > 0
-    ? `${lines.join('\n')}\n\nTreat the above as ground truth.`
-    : 'No hints were provided; identify and portion from the photo alone.'
-}
 
 export interface OpenAiEstimatorOptions {
   /** Read fresh on every call so a key change in Settings applies at once. */

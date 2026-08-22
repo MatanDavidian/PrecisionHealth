@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { estimator, estimatorRequiresKey, getRepositories } from '@/data'
+import { getEstimator, estimatorRequiresKey, getRepositories } from '@/data'
 import { describePhoto, downscale } from '@/ai/photo'
 import {
   ESTIMATE_ERROR_TEXT,
@@ -13,6 +13,7 @@ import { buildFailedInference, buildPhotoMeal } from '@/data/photoMeal'
 import { deviceZone, suggestSlot } from '@/data/newRecords'
 import { currentUserId } from '@/data/session'
 import { useDataRevision } from '../DataProvider'
+import { TrialExhaustedError } from '@/ai/proxyEstimator'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
@@ -26,10 +27,11 @@ type Phase =
   | { kind: 'analyzing' }
   | { kind: 'result'; result: EstimateResult }
   | { kind: 'error'; message: string; retryable: boolean }
+  | { kind: 'exhausted' }
   | { kind: 'saved' }
 
 /** Only the estimators that call a provider on the user's behalf need a key. */
-const keyMissing = (settings: AppSettings): boolean => estimatorRequiresKey && !settings.apiKey
+const keyMissing = (settings: AppSettings): boolean => estimatorRequiresKey() && !settings.apiKey
 
 const hhmm = (date: Date) =>
   `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
@@ -41,7 +43,7 @@ const hhmm = (date: Date) =>
  * written anywhere (spec §3) — Retry reuses it, saving or clearing drops it.
  */
 export function Log() {
-  const { runWrite } = useDataRevision()
+  const { runWrite, trial, refreshTrial } = useDataRevision()
   const fileInput = useRef<HTMLInputElement>(null)
   const photoRef = useRef<{ blob: Blob; meta: PhotoMeta } | null>(null)
 
@@ -71,8 +73,10 @@ export function Log() {
     if (!photo) return
     setPhase({ kind: 'analyzing' })
     try {
-      const result = await estimator.estimate(photo.blob, hints())
+      const result = await getEstimator().estimate(photo.blob, hints())
       setPhase({ kind: 'result', result })
+      // A free analysis was just spent; keep the counter honest.
+      if (trial) refreshTrial()
     } catch (error) {
       const known = error instanceof EstimateError
       const kind = known ? error.kind : 'UNREADABLE'
@@ -84,7 +88,7 @@ export function Log() {
         await getRepositories().inferences.add(
           buildFailedInference(currentUserId(), {
             at: new Date(),
-            model: estimator.model,
+            model: getEstimator().model,
             hints: hints(),
             photo: photo.meta,
             kind,
@@ -94,6 +98,13 @@ export function Log() {
         )
       } catch {
         // Nothing useful to do here; the estimate error below is the real news.
+      }
+      if (error instanceof TrialExhaustedError) {
+        // Not a failure — the trial did its job. Re-read so the UI switches to
+        // the user's own key from here on.
+        refreshTrial()
+        setPhase({ kind: 'exhausted' })
+        return
       }
       setPhase({
         kind: 'error',
@@ -193,7 +204,41 @@ export function Log() {
         </p>
       )}
 
-      {needsKey && (
+      {trial && trial.remaining > 0 && !preview && (
+        <p className="pt-3 text-xs text-ink-muted">
+          {trial.remaining} free {trial.remaining === 1 ? 'analysis' : 'analyses'} left — no API key
+          needed.
+        </p>
+      )}
+
+      {phase.kind === 'exhausted' && (
+        <Card label="Free analyses used up">
+          <p className="text-sm text-ink-muted">
+            You have used all {trial?.allowance ?? 10}. To carry on, add your own OpenAI key —
+            analysing a photo costs a fraction of a cent, and the key stays on this device.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-3">
+            <Link
+              to="/settings"
+              className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+            >
+              Add my key
+            </Link>
+            <Link
+              to="/nutrition"
+              className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+            >
+              Log by hand instead
+            </Link>
+          </div>
+          <p className="pt-3 text-xs text-ink-muted">
+            Your photo is still here — adding a key and pressing Analyze picks up where you left
+            off.
+          </p>
+        </Card>
+      )}
+
+      {needsKey && !trial?.remaining && (
         <Card label="One-time setup">
           <p className="text-sm text-ink-muted">
             Photo analysis runs on your own OpenAI key, so add one to switch it on. A photo costs a

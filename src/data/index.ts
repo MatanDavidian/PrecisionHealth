@@ -18,7 +18,10 @@ import type { HealthRepositories } from './repositories'
 import { dayKey } from '@/domain'
 import { FakeEstimator } from '@/ai/fakeEstimator'
 import { OpenAiEstimator } from '@/ai/openaiEstimator'
+import { ProxyEstimator } from '@/ai/proxyEstimator'
 import type { FoodVisionEstimator } from '@/ai/estimator'
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase/client'
+import { deviceZone } from './newRecords'
 import type { Session } from './session'
 
 const dbPromise = openHealthDB()
@@ -77,11 +80,60 @@ const useFake = (): boolean =>
  * that needs no key is unreachable behind a setup prompt for a key it never
  * uses.
  */
-export const estimatorRequiresKey = !useFake()
+const directEstimator = new OpenAiEstimator({
+  getApiKey: async () => (await localRepositories.settings.get()).apiKey,
+  getModel: async () => (await localRepositories.settings.get()).model,
+})
 
-export const estimator: FoodVisionEstimator = useFake()
-  ? new FakeEstimator()
-  : new OpenAiEstimator({
-      getApiKey: async () => (await localRepositories.settings.get()).apiKey,
-      getModel: async () => (await localRepositories.settings.get()).model,
+let activeEstimator: FoodVisionEstimator = useFake() ? new FakeEstimator() : directEstimator
+
+/**
+ * Whether the ACTIVE estimator needs the user to supply a key.
+ *
+ * The UI gates on this rather than on "is a key set": the proxy needs no key
+ * at all, and the fake needs none either, so gating on the key would hide
+ * analysis behind a setup prompt for something it never uses.
+ */
+let requiresKey = !useFake()
+export const estimatorRequiresKey = (): boolean => requiresKey
+
+/** Read through this — the estimator changes with the session, like the store. */
+export const getEstimator = (): FoodVisionEstimator => activeEstimator
+
+/**
+ * Chooses who pays for analysis.
+ *
+ * Signed in with free analyses left → our server, on the owner's key: the
+ * entire point, since a new user should be able to photograph a meal without
+ * first creating an OpenAI account. Otherwise the direct adapter on the user's
+ * own key, exactly as before. The server enforces the entitlement regardless;
+ * this only decides which door to knock on.
+ */
+export function selectEstimatorFor(options: {
+  authenticated: boolean
+  trialExhausted: boolean
+  getAccessToken: () => Promise<string | undefined>
+}): FoodVisionEstimator {
+  if (useFake()) {
+    requiresKey = false
+    activeEstimator = new FakeEstimator()
+    return activeEstimator
+  }
+
+  const canUseProxy =
+    options.authenticated && !options.trialExhausted && isSupabaseConfigured
+
+  if (canUseProxy) {
+    requiresKey = false
+    activeEstimator = new ProxyEstimator({
+      supabaseUrl: SUPABASE_URL!,
+      anonKey: SUPABASE_ANON_KEY!,
+      getAccessToken: options.getAccessToken,
+      getDay: () => dayKey(new Date().toISOString(), deviceZone()),
     })
+  } else {
+    requiresKey = true
+    activeEstimator = directEstimator
+  }
+  return activeEstimator
+}

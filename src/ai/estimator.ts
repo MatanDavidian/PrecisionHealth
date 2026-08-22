@@ -67,6 +67,7 @@ export class EstimateError extends Error {
       | 'PROVIDER'
       | 'OFFLINE'
       | 'BLOCKED'
+      | 'QUOTA'
       | 'UNREADABLE',
     message: string,
     /** Kept so even a failure can be written to the audit trail. */
@@ -85,5 +86,6 @@ export const ESTIMATE_ERROR_TEXT: Record<EstimateError['kind'], string> = {
   OFFLINE: "You're offline — analyzing a photo needs a connection.",
   BLOCKED:
     'The request never reached OpenAI. This is usually a rejected key, an ad blocker or privacy extension, or a browser restriction on calling the API directly — check the key in Settings first.',
+  QUOTA: 'Your free analyses are used up — add your own OpenAI key to carry on.',
   UNREADABLE: "Couldn't read the analysis. Try again, or log it manually.",
 }

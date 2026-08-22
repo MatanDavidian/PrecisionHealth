@@ -167,6 +167,62 @@ A test account slowly accumulating rows is the price of proving that history
 cannot be rewritten. Delete the user from the dashboard to remove them all at
 once — the foreign keys cascade.
 
+## AI analysis on the owner's key (the trial)
+
+New users get **10 free analyses** on the owner's OpenAI key, so someone can
+sign in and photograph a meal before they have ever heard of an API key. It
+runs on `gpt-5.6-sol` — the trial is the pitch, so it should show the app at
+its best, at roughly 70 cents per person who tries it.
+
+None of it can live in the browser: a master key in the bundle is extracted in
+minutes, and a quota the client counts is a suggestion. So the key is a
+function secret, the count comes from the `usage` ledger, and the refusal
+happens server-side.
+
+### Deploying it
+
+1. **Apply the migrations** (SQL Editor, in order):
+   `0003_usage_ledger.sql` then `0004_admin_views.sql`.
+
+2. **Set a hard spend cap on the OpenAI organisation** before the key is ever
+   used by anyone but you — [platform.openai.com](https://platform.openai.com)
+   → Settings → Limits. Per-user quotas bound the normal case; the cap is the
+   backstop for everything else, and it is the cheapest insurance there is.
+
+3. **Store the master key as a function secret** — never an environment
+   variable the client build can see:
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <your-ref>
+   npx supabase secrets set OPENAI_MASTER_KEY=sk-...
+   npx supabase functions deploy estimate-food
+   ```
+
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are
+   provided to functions automatically — do not set them.
+
+4. **Check it**: sign in, and the Log screen should say "10 free analyses left"
+   with no setup card. Take a photo; the count drops by one.
+
+If the migration is not applied, the app quietly stays in bring-your-own-key
+mode rather than advertising a trial it cannot honour.
+
+### Watching what it costs
+
+`admin_daily_cost`, `admin_user_summary` and `admin_funnel` (migration 0004)
+answer cost, per-user usage and trial conversion from the SQL Editor. Add
+yourself to `app_admins` to see other users' rows:
+
+```sql
+insert into public.app_admins (user_id, note)
+values ('<your auth.users id>', 'owner');
+```
+
+That grant covers **usage metadata only**. The health tables have no admin
+policy at all, so an admin reading someone's meals is not "denied" — it
+returns zero rows (D19).
+
 ## Changing the schema later
 
 Add a new numbered file in `migrations/`; never edit one that has been applied.

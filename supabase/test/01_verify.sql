@@ -93,4 +93,50 @@ set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 select case when count(*) = 0 then 'PASS: no cross-user observations' else 'FAIL' end
 from public.observations;
 
+\echo '== D19: an admin sees usage, never food =='
+reset role;
+
+-- Bob is an admin; Alice's meal and her usage row both already exist.
+insert into public.app_admins (user_id) values ('22222222-2222-2222-2222-222222222222')
+on conflict do nothing;
+insert into public.usage (id, user_id, day, model, key_source, outcome)
+values ('usage-alice-1', '11111111-1111-1111-1111-111111111111', '2026-08-21',
+        'gpt-5.6-sol', 'MASTER_TRIAL', 'OK');
+
+set role authenticated;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+
+select case when count(*) = 1
+  then 'PASS: admin sees another user''s usage row'
+  else 'FAIL: admin sees ' || count(*) || ' usage rows' end
+from public.usage where user_id = '11111111-1111-1111-1111-111111111111';
+
+-- The point of D19: no admin policy exists on the health tables, so this is
+-- not "denied" — there is simply nothing to return.
+select case when count(*) = 0
+  then 'PASS: admin sees NO meals belonging to another user'
+  else 'FAIL: admin can read ' || count(*) || ' of another user''s meals' end
+from public.meals where user_id = '11111111-1111-1111-1111-111111111111';
+
+select case when count(*) = 0
+  then 'PASS: admin sees NO observations belonging to another user'
+  else 'FAIL: admin can read ' || count(*) || ' of another user''s observations' end
+from public.observations where user_id = '11111111-1111-1111-1111-111111111111';
+
+\echo '== the ledger is append-only too =='
+do $$
+begin
+  update public.usage set outcome = 'OK' where id = 'usage-alice-1';
+  raise exception 'FAIL: UPDATE on usage was permitted';
+exception
+  when insufficient_privilege then raise notice 'PASS: usage cannot be rewritten';
+end
+$$;
+
+-- A plain user must not see anyone else's metering.
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select case when count(*) = 1 then 'PASS: user sees only their own usage'
+  else 'FAIL: user sees ' || count(*) || ' usage rows' end
+from public.usage;
+
 reset role;

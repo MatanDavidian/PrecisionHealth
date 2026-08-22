@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { ensureSeeded, selectRepositoriesFor } from '@/data'
+import { ensureSeeded, selectRepositoriesFor, selectEstimatorFor } from '@/data'
+import { readTrialStatus, type TrialStatus } from '@/data/trial'
+import { getSupabaseClient, isSupabaseConfigured } from '@/data/supabase/client'
 import {
   getSession,
   isAuthAvailable,
@@ -23,6 +25,10 @@ interface DataContextValue {
   session: Session
   /** False in builds with no Supabase project configured. */
   authAvailable: boolean
+  /** Free analyses left on the owner's key; undefined when not applicable. */
+  trial?: TrialStatus
+  /** Re-reads the trial after an analysis spends one. */
+  refreshTrial: () => void
   /**
    * Runs a write, refreshes reads on success, and surfaces the failure with a
    * retry on error.
@@ -41,6 +47,7 @@ const DataContext = createContext<DataContextValue>({
   refresh: () => {},
   session: LOCAL_SESSION,
   authAvailable: false,
+  refreshTrial: () => {},
   runWrite: async () => false,
   dismissFailure: () => {},
 })
@@ -57,6 +64,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string>()
   const [session, setSession] = useState<Session>(LOCAL_SESSION)
+  const [trial, setTrial] = useState<TrialStatus>()
+
+  /**
+   * Points the app at whoever is paying for analysis.
+   *
+   * Signed in with free analyses left, that is our server on the owner's key —
+   * which is what lets a new user photograph a meal before they have ever
+   * heard of an API key.
+   */
+  const applyEstimator = useCallback(async (current: Session) => {
+    const status = current.authenticated ? await readTrialStatus(current.userId) : undefined
+    setTrial(status)
+    selectEstimatorFor({
+      authenticated: current.authenticated,
+      trialExhausted: status?.exhausted ?? false,
+      getAccessToken: async () => {
+        if (!isSupabaseConfigured) return undefined
+        const client = await getSupabaseClient()
+        const { data } = await client.auth.getSession()
+        return data.session?.access_token
+      },
+    })
+  }, [])
 
   useEffect(() => {
     /**
@@ -69,6 +99,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const current = await getSession()
       setSession(current)
       await selectRepositoriesFor(current)
+      await applyEstimator(current)
       // Only the signed-out, local store carries sample data.
       if (!current.authenticated) await ensureSeeded()
       setReady(true)
@@ -81,14 +112,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     // Signing in or out swaps the store underneath every screen.
     return subscribeToSession((next) => {
-      void selectRepositoriesFor(next).then(() => {
+      void Promise.all([selectRepositoriesFor(next), applyEstimator(next)]).then(() => {
         // Only announce the new session once its store is in place, so no
         // screen can read the previous adapter as the new user.
         setSession(next)
         setRevision((r) => r + 1)
       })
     })
-  }, [])
+  }, [applyEstimator])
+
+  const refreshTrial = useCallback(() => {
+    void applyEstimator(session)
+  }, [applyEstimator, session])
 
   const [failure, setFailure] = useState<WriteFailure>()
   const refresh = useCallback(() => setRevision((r) => r + 1), [])
@@ -134,6 +169,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         refresh,
         session,
         authAvailable: isAuthAvailable,
+        trial,
+        refreshTrial,
         runWrite,
         failure,
         dismissFailure,

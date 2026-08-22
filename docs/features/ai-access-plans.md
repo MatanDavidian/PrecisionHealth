@@ -111,24 +111,31 @@ plan cannot run away from its price.
 
 ### Suggested shape
 
-| Plan | Model | Cap | Price | Worst-case margin |
-|---|---|---|---|---|
-| **Everyday** | luna | 20/day | **$4/mo** | comfortable (~$1.80 cost) |
-| **Accurate** | terra | 10/day | **$9/mo** | thin but positive (~$9 cost, ~$8.05 net) |
-| **Precision** | sol | — | **not sold** | — |
+| Plan | Model | Cap | Price | Worst-case cost | Net after 5% MoR |
+|---|---|---|---|---|---|
+| **Everyday** | luna | 20/day | **$4/mo** | ~$1.80 | ~$3.30 |
+| **Accurate** | terra | 10/day | **$9/mo** | ~$9.00 | ~$8.05 |
+| **Precision** | sol | **5/day** | **$15/mo** | ~$10.50 | ~$13.75 |
 
-**Sol is deliberately not offered as a plan, and saying why is the honest
-part:** at ~$0.07/photo a realistic month costs $7-8 and a maxed 10/day month
-costs $21. A defensible price would be $15-25 — which reads terribly beside
-ChatGPT Plus at $20, and would be worse value than the alternative sitting
-right there: **bring your own key and run sol for ~$7/month at cost.** The
-product should say that out loud rather than sell a bad deal. Plans exist to
-remove setup friction at the cheaper tiers; BYOK exists for people who want
-the best model at the lowest price. Those are different customers.
+**Precision is sold, and the daily cap is what makes it possible.** At
+~$0.07/photo, sol at 10/day would cost $21 in a maxed month and could not be
+priced sanely. At **5 a day** the worst case is ~$10.50 against ~$13.75 net —
+positive at the ceiling, and comfortably so at realistic use (3-4 meals a day
+is ~100 analyses a month, about $7). Five a day is not a real constraint for a
+meal log; it is a constraint on abuse.
 
-If sol is ever sold, it should be metered (credits) rather than flat — but
-that is a later problem and adds explaining that a family-scale app does not
-need.
+The customer is specific and worth serving: someone who wants the most
+accurate estimates and does not want to create an API key. That is most
+non-technical users, and it is the whole reason the tier exists.
+
+**The app must say that BYOK is cheaper.** Running sol on your own key costs
+about $7/month at realistic use, against $15 for Precision — so the plan is
+worth roughly $8/month to never think about keys, billing or spend caps. For
+many people that is a fair trade; for a developer it plainly is not. The plan
+picker should say so in a line, the same way this app already labels AI
+estimates with their confidence and marks unbuilt features "not built yet".
+A product that hides the cheaper option from the people best able to use it
+has spent trust it will need later.
 
 ### Payments — deferred, and the decline is informative
 
@@ -166,7 +173,82 @@ and routes photos through a third-party model). Apply with the live URL.
 
 Records as **D18**.
 
-## 5. What the user sees
+## 5. Analytics, and an admin who cannot read your food
+
+The usage ledger that meters the trial is the same table that answers every
+business question later, so it is designed once, now.
+
+### What the ledger records
+
+One append-only row per analysis attempt (D4 applied to metering):
+
+```
+usage(
+  id, user_id, created_at, day,
+  model,                      -- what actually ran
+  key_source,                 -- 'MASTER_TRIAL' | 'MASTER_PLAN' | 'USER_KEY'
+  input_tokens, output_tokens,-- as reported by OpenAI, not estimated
+  cost_micros,                -- computed server-side from a rate table
+  outcome                     -- 'OK' | 'REFUSED_QUOTA' | 'PROVIDER_ERROR' | 'UNREADABLE'
+)
+```
+
+Token counts come back on every OpenAI response, so **cost is measured rather
+than modelled** — which matters, because the margin tables above are estimates
+and reasoning tokens are invisible until you count them. Recording refusals
+too is what makes "how many people hit the trial wall and then left" a question
+with an answer.
+
+Rows are written by the edge function under the service role. Users may read
+their own (RLS) — that is what powers "6 of 10 today". Nobody may update or
+delete, same as every other table.
+
+### D19 — the admin boundary: metadata, never health data
+
+An admin role must **not** be a key to everyone's medical records. The whole
+product rests on the opposite promise, and RLS makes the boundary explicit
+rather than a matter of restraint:
+
+| Table | Admin may read |
+|---|---|
+| `usage`, `subscriptions` | **yes** — all rows |
+| `profiles` | limited view: id, email, created_at, plan |
+| `meals`, `observations`, `sleep`, `workouts`, `goals`, `inferences` | **no — no policy is written** |
+
+The last row is the point. Admin visibility is added by writing new SELECT
+policies for admins on the metadata tables; the health tables simply never get
+one, so an admin reading someone's meals is not "against policy" — it returns
+zero rows. A privacy promise enforced by the database is worth more than one
+kept by an operator's good manners, and this app has already used that argument
+twice (D4's grants, D16's isolation).
+
+Admin identity: an `app_admins(user_id)` table, populated by hand in the
+dashboard. No self-service, no role column a bug could flip.
+
+### What it answers
+
+- **Money:** cost by day and by model, revenue by plan, gross margin, cost per
+  active user. The number that matters most: are subsidised plans profitable
+  *in practice* rather than on the table above.
+- **Funnel:** signups → analyses tried → trial exhausted → subscribed / added
+  own key / stopped. Trial conversion is the single most useful number for
+  deciding whether any of this is worth continuing.
+- **Health of the thing:** error and refusal rates by model, how often the
+  repair retry fires, p95 latency.
+
+### Build it as SQL first
+
+**Recommendation: no admin screen initially.** Ship the ledger with a handful
+of SQL views (`admin_daily_cost`, `admin_user_summary`, `admin_funnel`) and
+read them in the Supabase dashboard. That is a few hours, needs no UI, no
+route, no auth work, and answers every question above.
+
+Build an in-app `/admin` screen only when the dashboard is genuinely annoying —
+realistically once there are enough users that you want a chart on your phone.
+Designing it now would be inventing requirements before knowing which numbers
+you actually look at each week.
+
+## 5b. What the user sees
 
 - **Settings → "AI access"** replaces the API-key card: shows trial
   remaining / plan + usage today / "using your own key", with the right
@@ -192,7 +274,11 @@ Records as **D18**.
 2. **Server-held BYOK** — encrypted storage, write-only API, proxy uses it;
    Settings key card moves server-side for signed-in users.
 3. **Billing** — provider account, checkout, webhook, `subscriptions` table,
-   plan quotas in the proxy, Settings/paywall UI.
+   plan quotas in the proxy, Settings/paywall UI (including the line saying
+   BYOK is cheaper).
+3b. **Analytics views** — SQL views over the ledger, read in the Supabase
+   dashboard. Can ship with step 1; needs no UI.
+3c. **Admin screen** — only once the dashboard is genuinely annoying.
 4. **Docs, policies, and the boring-but-required**: privacy policy update
    (photos transit our server and OpenAI under the owner's account; keys
    stored encrypted, write-only), terms of service, OpenAI usage-policy

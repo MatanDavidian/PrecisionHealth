@@ -14,6 +14,8 @@ import { deviceZone, suggestSlot } from '@/data/newRecords'
 import { currentUserId } from '@/data/session'
 import { useDataRevision } from '../DataProvider'
 import { TrialExhaustedError } from '@/ai/proxyEstimator'
+import { OneTimeNotice } from '../components/OneTimeNotice'
+import { MODEL_LABELS, MODEL_TERRA } from '../../../supabase/functions/_shared/prompt'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
@@ -25,7 +27,7 @@ const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] te
 type Phase =
   | { kind: 'idle' }
   | { kind: 'analyzing' }
-  | { kind: 'result'; result: EstimateResult }
+  | { kind: 'result'; result: EstimateResult; downgraded?: boolean }
   | { kind: 'error'; message: string; retryable: boolean }
   | { kind: 'exhausted' }
   | { kind: 'saved' }
@@ -73,8 +75,15 @@ export function Log() {
     if (!photo) return
     setPhase({ kind: 'analyzing' })
     try {
-      const result = await getEstimator().estimate(photo.blob, hints())
-      setPhase({ kind: 'result', result })
+      const estimatorUsed = getEstimator()
+      const result = await estimatorUsed.estimate(photo.blob, hints())
+      setPhase({
+        kind: 'result',
+        result,
+        // The server ran a different model than we asked for. Surfaced, not
+        // swallowed — a quietly weaker answer is worse than a slower one.
+        downgraded: 'downgraded' in estimatorUsed ? Boolean(estimatorUsed.downgraded) : false,
+      })
       /**
        * Re-read the trial after each analysis.
        *
@@ -173,6 +182,36 @@ export function Log() {
         <h1 className="font-display text-4xl">Log</h1>
         <p className="pt-1 text-sm text-ink-muted">Photograph your food — the numbers follow.</p>
       </header>
+
+      {/*
+        Said once, when it is first true and first useful. New users learn the
+        choice exists; the switch to a faster model is announced rather than
+        done quietly behind their back.
+      */}
+      {trial && !trial.exhausted && trial.used === 0 && (
+        <OneTimeNotice
+          id="model-tradeoff"
+          title="Accuracy or speed — your choice"
+          actionLabel="See the options"
+          actionTo="/settings"
+        >
+          Photos are read by the most accurate model to start with, which takes up to a minute.
+          You can trade some accuracy for a much faster answer in Settings, any time.
+        </OneTimeNotice>
+      )}
+
+      {trial && !trial.exhausted && trial.pastNudge && trial.solRemaining > 0 && (
+        <OneTimeNotice
+          id="switched-to-terra"
+          title={`Switched to ${MODEL_LABELS[MODEL_TERRA].name.toLowerCase()}`}
+          actionLabel="Change it"
+          actionTo="/settings"
+        >
+          Your next photos are read by a quicker model — about fifteen seconds instead of a
+          minute, and still good. You have {trial.solRemaining} analyses left on the most accurate
+          one; save them for a crowded plate.
+        </OneTimeNotice>
+      )}
 
       <input
         ref={fileInput}
@@ -385,17 +424,26 @@ export function Log() {
         </Card>
       )}
 
-      {phase.kind === 'result' && <ResultCard result={phase.result} onSave={() => void save()} onDiscard={clearPhoto} />}
+      {phase.kind === 'result' && (
+        <ResultCard
+          result={phase.result}
+          downgraded={phase.downgraded}
+          onSave={() => void save()}
+          onDiscard={clearPhoto}
+        />
+      )}
     </div>
   )
 }
 
 function ResultCard({
   result,
+  downgraded,
   onSave,
   onDiscard,
 }: {
   result: EstimateResult
+  downgraded?: boolean
   onSave: () => void
   onDiscard: () => void
 }) {
@@ -466,6 +514,12 @@ function ResultCard({
         {lowConfidence && (
           <p className="pt-3 text-xs text-accent">
             Low confidence — worth checking the numbers before you trust them.
+          </p>
+        )}
+
+        {downgraded && (
+          <p className="pt-3 text-xs text-accent">
+            Read by the quicker model — your most-accurate analyses are used up.
           </p>
         )}
 

@@ -79,6 +79,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     selectEstimatorFor({
       authenticated: current.authenticated,
       trialExhausted: status?.exhausted ?? false,
+      suggestedModel: status?.suggestedModel,
       getAccessToken: async () => {
         if (!isSupabaseConfigured) return undefined
         const client = await getSupabaseClient()

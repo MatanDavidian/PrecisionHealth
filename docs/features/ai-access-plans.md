@@ -81,13 +81,33 @@ becomes moot for signed-in users.
   its best. Measured cost: **~$1.11 per person** who uses the whole trial, and
   ~45 seconds per photo. Both are worth knowing before inviting a crowd: a $10
   spend cap covers about **nine** people, not fourteen.
-- **The latency is the open question.** Sol thinks for the better part of a
-  minute; terra returned in ~13 seconds in the same conditions and costs about
-  a fifth as much. A first-time user waiting 45 seconds on their first-ever
-  photo may conclude the app is broken before it ever answers. The waiting
-  state now says the model thinks for up to a minute, which helps; switching
-  the trial to terra would help more, at the cost of showing the app at
-  slightly less than its best.
+- **Settled (Aug 2026): the trial spends its models deliberately.** Sol is
+  brilliant and slow; terra is quick and nearly as good. Rather than choosing
+  one for the whole trial, the trial budgets them:
+
+  | | |
+  |---|---|
+  | Analyses on sol | **4** of the 10 |
+  | Default at signup | sol — the first impression is the app at its best |
+  | After **2** sol analyses | the app moves itself to terra **and says so**, with 2 sol still in reserve |
+  | After **4** | sol locks; terra or luna only |
+  | Anywhere in between | the user chooses, in Settings |
+
+  Two reasons the nudge lands at two rather than four. Switching only when the
+  budget is gone would feel like a wall; switching with two still in reserve is
+  an offer — the user has seen the best, is told what changed, and can spend
+  what is left on a meal that deserves it. And a first-timer who waits 45
+  seconds for every photo may decide the app is broken before it has finished
+  proving otherwise; fifteen seconds keeps them.
+
+  Cost per trial falls from ~$1.11 to about **$0.74 at worst** (4 sol + 6
+  terra), and less for anyone who switches early. A $10 spend cap covers
+  roughly **13** people rather than 9.
+
+  **The budget is enforced server-side.** The client shows a picker, but a
+  limit the browser keeps is a suggestion — the function counts sol analyses in
+  the ledger and, if the budget is gone, runs terra and *says it did* rather
+  than silently substituting a weaker answer for the one that was asked for.
 - Counted server-side in an **append-only usage ledger** (D4 applied to
   metering): `usage(id, user_id, day, model, created_at)`, RLS so users see
   their own rows, INSERT only via the function's service role.

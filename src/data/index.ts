@@ -113,6 +113,8 @@ export function selectEstimatorFor(options: {
   authenticated: boolean
   trialExhausted: boolean
   getAccessToken: () => Promise<string | undefined>
+  /** What the app should ask for when the user has expressed no preference. */
+  suggestedModel?: string
 }): FoodVisionEstimator {
   if (useFake()) {
     requiresKey = false
@@ -130,6 +132,8 @@ export function selectEstimatorFor(options: {
       anonKey: SUPABASE_ANON_KEY!,
       getAccessToken: options.getAccessToken,
       getDay: () => dayKey(new Date().toISOString(), deviceZone()),
+      getModel: async () =>
+        (await localRepositories.settings.get()).trialModel ?? options.suggestedModel,
     })
   } else {
     requiresKey = true

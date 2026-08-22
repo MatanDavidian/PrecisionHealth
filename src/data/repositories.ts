@@ -104,6 +104,15 @@ export interface AppSettings {
   apiKey?: string
   model: string
   autoAnalyze: boolean
+  /**
+   * Which model to ask for while on the free trial.
+   *
+   * Unset means "follow the app's suggestion", which opens on the best model
+   * and moves to the faster one after a couple of analyses. Once the user
+   * chooses explicitly, their choice stands — the server clamps it to what
+   * they may actually have.
+   */
+  trialModel?: string
 }
 
 export interface SettingsRepository {

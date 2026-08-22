@@ -12,9 +12,13 @@
  */
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
+  MODEL_SOL,
+  MODEL_TERRA,
   SYSTEM_PROMPT,
   TRIAL_ANALYSES,
   TRIAL_MODEL,
+  TRIAL_MODELS,
+  TRIAL_SOL_ANALYSES,
   costMicros,
   hintText,
   type EstimateHints,
@@ -41,6 +45,8 @@ interface RequestBody {
   hints?: EstimateHints
   /** The user's local day, so a daily cap means their day and not UTC (D7). */
   day: string
+  /** Which model the user asked for. Validated here; never trusted. */
+  model?: string
 }
 
 Deno.serve(async (request) => {
@@ -108,6 +114,16 @@ Deno.serve(async (request) => {
   // Step 1 has one entitlement: the lifetime trial. Plans land in step 3 and
   // slot in here, which is why the ledger already records key_source.
   let used = 0
+  let solUsed = 0
+  /**
+   * What the user asked for, clamped to what they may actually have.
+   *
+   * The client shows a picker, but the picker is a convenience — the budget
+   * lives here, because a limit the browser enforces is a suggestion.
+   */
+  let effectiveModel: string = TRIAL_MODEL
+  let downgraded = false
+
   if (!isAdmin) {
     const { count, error: countError } = await admin
       .from('usage')
@@ -123,10 +139,40 @@ Deno.serve(async (request) => {
       await record({ model: TRIAL_MODEL, key_source: 'MASTER_TRIAL', outcome: 'REFUSED_QUOTA' })
       return json({ error: 'trial_exhausted', used, allowance: TRIAL_ANALYSES }, 402)
     }
+
+    const { count: solCount } = await admin
+      .from('usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('key_source', 'MASTER_TRIAL')
+      .eq('outcome', 'OK')
+      .eq('model', MODEL_SOL)
+    solUsed = solCount ?? 0
+
+    const requested = body.model && TRIAL_MODELS.includes(body.model as never)
+      ? body.model
+      : TRIAL_MODEL
+
+    if (requested === MODEL_SOL && solUsed >= TRIAL_SOL_ANALYSES) {
+      /**
+       * The sol budget is spent. Analyse on terra rather than refusing — the
+       * user has a photo in front of them and wants an answer — but say so in
+       * the reply, because quietly substituting a weaker model for the one
+       * they picked is exactly the sort of thing this app does not do.
+       */
+      effectiveModel = MODEL_TERRA
+      downgraded = true
+    } else {
+      effectiveModel = requested
+    }
+  } else {
+    // Admins get whatever they ask for, since they are paying for it.
+    effectiveModel =
+      body.model && TRIAL_MODELS.includes(body.model as never) ? body.model : TRIAL_MODEL
   }
 
   // --- the call --------------------------------------------------------------
-  const model = TRIAL_MODEL
+  const model = effectiveModel
   let response: Response
   try {
     response = await fetch(OPENAI_ENDPOINT, {
@@ -208,7 +254,15 @@ Deno.serve(async (request) => {
   return json({
     content,
     model,
+    downgraded,
     // Admins have no allowance to report.
-    trial: isAdmin ? undefined : { used: used + 1, allowance: TRIAL_ANALYSES },
+    trial: isAdmin
+      ? undefined
+      : {
+          used: used + 1,
+          allowance: TRIAL_ANALYSES,
+          solUsed: model === MODEL_SOL ? solUsed + 1 : solUsed,
+          solAllowance: TRIAL_SOL_ANALYSES,
+        },
   })
 })

@@ -22,6 +22,8 @@ import { applyGramsHint, validateEstimate } from './validate'
 export interface TrialState {
   used: number
   allowance: number
+  solUsed?: number
+  solAllowance?: number
 }
 
 export interface ProxyEstimatorOptions {
@@ -32,6 +34,8 @@ export interface ProxyEstimatorOptions {
   getAccessToken: () => Promise<string | undefined>
   /** The user's local day, so a daily cap follows their calendar (D7). */
   getDay: () => string
+  /** Which model to ask for. The server clamps it to what is actually allowed. */
+  getModel: () => Promise<string | undefined>
   fetchImpl?: typeof fetch
 }
 
@@ -48,6 +52,11 @@ export class ProxyEstimator implements FoodVisionEstimator {
   model = 'server'
   /** Latest trial state the server reported, for the UI to show. */
   trial?: TrialState
+  /**
+   * True when the server ran a different model than was asked for, because the
+   * best one's budget is spent. Surfaced rather than swallowed.
+   */
+  downgraded = false
 
   constructor(private readonly options: ProxyEstimatorOptions) {}
 
@@ -67,7 +76,12 @@ export class ProxyEstimator implements FoodVisionEstimator {
           apikey: this.options.anonKey,
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ photo: dataUrl, hints, day: this.options.getDay() }),
+        body: JSON.stringify({
+          photo: dataUrl,
+          hints,
+          day: this.options.getDay(),
+          model: await this.options.getModel(),
+        }),
       })
     } catch {
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false
@@ -78,7 +92,15 @@ export class ProxyEstimator implements FoodVisionEstimator {
     }
 
     const body = (await response.json().catch(() => null)) as
-      | { content?: string; model?: string; trial?: TrialState; error?: string; used?: number; allowance?: number }
+      | {
+          content?: string
+          model?: string
+          trial?: TrialState
+          downgraded?: boolean
+          error?: string
+          used?: number
+          allowance?: number
+        }
       | null
 
     if (response.status === 402 && body?.error === 'trial_exhausted') {
@@ -106,6 +128,7 @@ export class ProxyEstimator implements FoodVisionEstimator {
 
     if (body.model) this.model = body.model
     if (body.trial) this.trial = body.trial
+    this.downgraded = Boolean(body.downgraded)
 
     let parsed: unknown
     try {

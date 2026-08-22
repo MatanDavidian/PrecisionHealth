@@ -12,6 +12,7 @@ const options = (fetchImpl: typeof fetch, token: string | null = 'jwt-token') =>
   anonKey: 'sb_publishable_test',
   getAccessToken: async () => token ?? undefined,
   getDay: () => '2026-08-22',
+  getModel: async () => 'gpt-5.6-sol',
   fetchImpl,
 })
 
@@ -38,6 +39,8 @@ describe('analysis through our own server', () => {
     // The DAY travels with the request: a daily cap has to mean the user's
     // day, not the server's (D7).
     expect(sent.day).toBe('2026-08-22')
+    // The model is a REQUEST, not a decision — the server clamps it.
+    expect(sent.model).toBe('gpt-5.6-sol')
     expect((captured!.init!.headers as Record<string, string>).Authorization).toBe('Bearer jwt-token')
 
     expect(result.items).toHaveLength(2)
@@ -114,5 +117,25 @@ describe('when the owner runs out of budget', () => {
     const error = await new ProxyEstimator(options(fetchImpl)).estimate(photo, {}).catch((e) => e)
     expect((error as EstimateError).kind).toBe('QUOTA')
     expect((error as Error).message).toMatch(/own OpenAI key/i)
+  })
+})
+
+describe('when the best model\'s budget is spent', () => {
+  it('reports that a different model actually ran, rather than hiding it', async () => {
+    const fetchImpl = (async () =>
+      reply({
+        content: JSON.stringify(SAMPLE_REPLY),
+        model: 'gpt-5.6-terra',
+        downgraded: true,
+        trial: { used: 5, allowance: 10, solUsed: 4, solAllowance: 4 },
+      })) as unknown as typeof fetch
+
+    const estimator = new ProxyEstimator(options(fetchImpl))
+    const result = await estimator.estimate(photo, {})
+
+    // Asked for sol, got terra — and the app knows, so it can say so.
+    expect(result.model).toBe('gpt-5.6-terra')
+    expect(estimator.downgraded).toBe(true)
+    expect(estimator.trial?.solUsed).toBe(4)
   })
 })

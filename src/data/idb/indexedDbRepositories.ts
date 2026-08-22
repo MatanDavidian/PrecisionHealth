@@ -136,6 +136,7 @@ export function createIndexedDbRepositories(
           apiKey: value('apiKey') || undefined,
           model: value('model') || DEFAULT_SETTINGS.model,
           autoAnalyze: value('autoAnalyze') !== 'false',
+          trialModel: value('trialModel') || undefined,
         }
       },
       save: async (patch) => {

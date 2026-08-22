@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '@/config'
 import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { useDataRevision } from '../DataProvider'
+import { TrialModelPicker } from '../components/TrialModelPicker'
 import { signOut } from '@/data/session'
 import type { AppSettings } from '@/data/repositories'
 
@@ -15,7 +16,7 @@ const field =
 type TestState = { kind: 'idle' | 'testing' } | { kind: 'done'; ok: boolean; message: string }
 
 export function Settings() {
-  const { session, authAvailable } = useDataRevision()
+  const { session, authAvailable, trial, refreshTrial } = useDataRevision()
   const [settings, setSettings] = useState<AppSettings>()
   const [keyInput, setKeyInput] = useState('')
   const [test, setTest] = useState<TestState>({ kind: 'idle' })
@@ -254,6 +255,23 @@ export function Settings() {
             </p>
           </div>
         </Card>
+
+        {trial && !trial.exhausted && (
+          <Card label="Accuracy or speed">
+            <p className="pb-3 text-sm text-ink-muted">
+              More accurate models look harder at a crowded plate and take longer. Choose per
+              your patience — you can change this any time.
+            </p>
+            <TrialModelPicker
+              trial={trial}
+              selected={settings.trialModel}
+              onSelect={(model) => {
+                void update({ trialModel: model })
+                refreshTrial()
+              }}
+            />
+          </Card>
+        )}
 
         <Card label="Analysis">
           <div className="pb-4">

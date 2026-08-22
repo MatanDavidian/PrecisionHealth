@@ -86,5 +86,40 @@ export function costMicros(model: string, inputTokens: number, outputTokens: num
 /** What a trial is worth: ten analyses, once, for the life of the account. */
 export const TRIAL_ANALYSES = 10
 
-/** The model a trial runs on — the best one, because the trial is the pitch. */
-export const TRIAL_MODEL = 'gpt-5.6-sol'
+/**
+ * How many of those ten may run on the best model.
+ *
+ * The trial opens on sol so the first impression is the app at its best, but
+ * sol costs ~$0.11 and takes the better part of a minute — spending the whole
+ * trial there is expensive and slow. Four is enough to prove what the app can
+ * do; the rest run on terra, which is fast, cheap and still good.
+ */
+export const TRIAL_SOL_ANALYSES = 4
+
+/**
+ * After this many, the app moves itself to terra and says so.
+ *
+ * Not at four: switching only when the budget is gone would make the change
+ * feel like a wall. Switching at two, with two still in reserve, makes it an
+ * offer — the user has seen the best, is told what changed, and can go back
+ * for the meals where accuracy actually matters.
+ */
+export const TRIAL_SOL_NUDGE_AT = 2
+
+export const MODEL_SOL = 'gpt-5.6-sol'
+export const MODEL_TERRA = 'gpt-5.6-terra'
+export const MODEL_LUNA = 'gpt-5.6-luna'
+
+/** The only models a trial may run. Anything else is refused server-side. */
+export const TRIAL_MODELS = [MODEL_SOL, MODEL_TERRA, MODEL_LUNA] as const
+export type TrialModel = (typeof TRIAL_MODELS)[number]
+
+/** Where a trial starts: the best one. */
+export const TRIAL_MODEL = MODEL_SOL
+
+/** What each model is FOR, in the user's terms rather than the vendor's. */
+export const MODEL_LABELS: Record<string, { name: string; detail: string }> = {
+  [MODEL_SOL]: { name: 'Most accurate', detail: 'Reads a crowded plate carefully. Up to a minute.' },
+  [MODEL_TERRA]: { name: 'Balanced', detail: 'Good estimates in about fifteen seconds.' },
+  [MODEL_LUNA]: { name: 'Fastest', detail: 'Quick and rough. Best for simple, obvious meals.' },
+}

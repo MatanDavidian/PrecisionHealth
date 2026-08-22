@@ -258,10 +258,17 @@ you actually look at each week.
   fixes the model (that is what the tier is). On BYOK, the existing model
   picker stays exactly as it is — including sol, which is the cheapest way to
   run sol.
-- **Log screen**: no setup card for new signed-in users — the trial means
-  photo analysis just works, which is the whole point. Quota/trial exhaustion
-  is a friendly card with the two doors, photo kept.
-- A small usage line ("6 of 10 today") near the analyze action once on a plan.
+- **Log screen**: no setup card and **no counter** for new signed-in users —
+  the app simply works. The trial is deliberately invisible while it lasts: a
+  visible "7 of 10 left" turns a gift into a countdown and makes someone ration
+  a thing they have not yet learned to value. They photograph meals like any
+  user, and the subject comes up exactly once, when it becomes actionable.
+- **The wall is the first mention**, so it explains rather than reports: what
+  happened ("the first 10 were on us"), what it costs to continue (a fraction
+  of a cent a photo), and two doors — connect a key, or log by hand. The photo
+  is kept either way.
+- A usage line belongs with PLANS, where a cap is a purchased quantity the
+  buyer is entitled to see — not with a trial they never agreed to.
 
 ## 6. Order of work (each step ships alone)
 

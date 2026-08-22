@@ -75,7 +75,14 @@ export function Log() {
     try {
       const result = await getEstimator().estimate(photo.blob, hints())
       setPhase({ kind: 'result', result })
-      // A free analysis was just spent; keep the counter honest.
+      /**
+       * Re-read the trial after each analysis.
+       *
+       * Nothing on screen shows the number — a countdown turns a gift into a
+       * warning — but the app still has to know when the free analyses run
+       * out, so it can switch to the user's own key at exactly the right
+       * moment rather than one photo late.
+       */
       if (trial) refreshTrial()
     } catch (error) {
       const known = error instanceof EstimateError
@@ -204,25 +211,20 @@ export function Log() {
         </p>
       )}
 
-      {trial && trial.remaining > 0 && !preview && (
-        <p className="pt-3 text-xs text-ink-muted">
-          {trial.remaining} free {trial.remaining === 1 ? 'analysis' : 'analyses'} left — no API key
-          needed.
-        </p>
-      )}
-
       {phase.kind === 'exhausted' && (
-        <Card label="Free analyses used up">
-          <p className="text-sm text-ink-muted">
-            You have used all {trial?.allowance ?? 10}. To carry on, add your own OpenAI key —
-            analysing a photo costs a fraction of a cent, and the key stays on this device.
+        <Card>
+          <h2 className="font-display text-xl">That was the last one on us</h2>
+          <p className="pt-1 text-sm text-ink-muted">
+            The first {trial?.allowance ?? 10} photos were analysed on our account, so you could
+            try the app without setting anything up. To keep going, connect your own OpenAI key —
+            it takes a couple of minutes, and analysing a photo costs a fraction of a cent.
           </p>
-          <div className="flex flex-wrap gap-3 pt-3">
+          <div className="flex flex-wrap gap-3 pt-4">
             <Link
               to="/settings"
               className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
             >
-              Add my key
+              Connect my key
             </Link>
             <Link
               to="/nutrition"
@@ -232,7 +234,7 @@ export function Log() {
             </Link>
           </div>
           <p className="pt-3 text-xs text-ink-muted">
-            Your photo is still here — adding a key and pressing Analyze picks up where you left
+            Your photo is still here — connect a key and press Analyze to pick up where you left
             off.
           </p>
         </Card>

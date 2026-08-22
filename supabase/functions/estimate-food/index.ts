@@ -135,7 +135,24 @@ Deno.serve(async (request) => {
   }
 
   if (!response.ok) {
+    const detail = await response.text().catch(() => '')
     await record({ model, key_source: 'MASTER_TRIAL', outcome: 'PROVIDER_ERROR' })
+
+    /**
+     * The owner's budget is spent, not the user's trial.
+     *
+     * A monthly spend cap turns every call into a 429, and "the analysis
+     * service could not complete this" would send the user hunting for a fault
+     * on their side. This says the free analyses are unavailable and points at
+     * the door that still works — their own key — while the ledger records
+     * PROVIDER_ERROR, so the failed attempt does NOT consume a trial (only
+     * outcome='OK' counts).
+     */
+    const outOfBudget = /insufficient_quota|billing_hard_limit|exceeded your current quota/i.test(detail)
+    if (outOfBudget || response.status === 429) {
+      return json({ error: 'free_analysis_unavailable' }, 503)
+    }
+
     // The provider's own message could name the owner's account; never relay it.
     return json({ error: 'provider_error', status: response.status }, 502)
   }

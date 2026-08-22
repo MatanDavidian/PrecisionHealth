@@ -106,3 +106,13 @@ describe('analysis through our own server', () => {
     })
   })
 })
+
+describe('when the owner runs out of budget', () => {
+  it('says free analysis is unavailable rather than blaming the user', async () => {
+    const fetchImpl = (async () =>
+      reply({ error: 'free_analysis_unavailable' }, 503)) as unknown as typeof fetch
+    const error = await new ProxyEstimator(options(fetchImpl)).estimate(photo, {}).catch((e) => e)
+    expect((error as EstimateError).kind).toBe('QUOTA')
+    expect((error as Error).message).toMatch(/own OpenAI key/i)
+  })
+})

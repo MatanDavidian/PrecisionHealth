@@ -189,6 +189,15 @@ happens server-side.
    → Settings → Limits. Per-user quotas bound the normal case; the cap is the
    backstop for everything else, and it is the cheapest insurance there is.
 
+   Sizing it: a trial costs ~$0.70 (10 analyses on sol), so **$10 covers about
+   fourteen people trying the app**. Two things follow from that. The cap is
+   **organisation-wide**, so trial users exhausting it also stops the owner's
+   own key from working — watch `admin_daily_cost` before inviting a crowd.
+   And when it is reached, OpenAI fails every call with 429: the function
+   recognises that, tells the user free analyses are unavailable and points
+   them at their own key, and records the attempt as PROVIDER_ERROR — so a
+   budget failure never consumes somebody's trial.
+
 3. **Store the master key as a function secret** — never an environment
    variable the client build can see:
 

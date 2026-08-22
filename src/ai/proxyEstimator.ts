@@ -86,6 +86,15 @@ export class ProxyEstimator implements FoodVisionEstimator {
     }
     if (response.status === 401) throw new EstimateError('NO_KEY', 'Session expired — sign in again')
     if (!response.ok || !body?.content) {
+      if (body?.error === 'free_analysis_unavailable') {
+        // The owner's budget, not the user's trial — and their own key still
+        // works, so say that rather than leaving them looking for a fault.
+        throw new EstimateError(
+          'QUOTA',
+          'Free analyses are unavailable right now — add your own OpenAI key to carry on',
+          body,
+        )
+      }
       throw new EstimateError(
         'PROVIDER',
         body?.error === 'master_key_missing'

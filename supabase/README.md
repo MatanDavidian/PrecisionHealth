@@ -198,23 +198,48 @@ happens server-side.
    them at their own key, and records the attempt as PROVIDER_ERROR — so a
    budget failure never consumes somebody's trial.
 
-3. **Store the master key as a function secret** — never an environment
-   variable the client build can see:
+3. **Split the OpenAI account into projects, one per audience.** This is the
+   step that actually isolates spend, and it is easy to get wrong: separate
+   *keys* in one organisation still share one budget. Separate **projects** do
+   not — a project's hard limit applies only to that project's traffic.
+
+   At [platform.openai.com](https://platform.openai.com) → Projects, create:
+
+   | Project | Key | Who spends it |
+   |---|---|---|
+   | `precisionhealth-trial` | `OPENAI_TRIAL_KEY` | new users' first 10 analyses |
+   | `precisionhealth-admin` | `OPENAI_ADMIN_KEY` | you, unlimited, on your own app |
+   | `precisionhealth-plans` | (later) | paying users, when plans exist |
+
+   ⚠️ **Set each project's limit as a HARD limit, not a notification.** A
+   plain monthly budget on OpenAI only emails you; requests keep going
+   through. The hard limit is the one that makes calls fail at the ceiling,
+   and it is the entire reason for doing this.
+
+4. **Store the keys as function secrets** — never environment variables the
+   client build can see:
 
    ```bash
    npx supabase login
    npx supabase link --project-ref <your-ref>
-   npx supabase secrets set OPENAI_MASTER_KEY=sk-...
+   npx supabase secrets set OPENAI_TRIAL_KEY=sk-proj-...
+   npx supabase secrets set OPENAI_ADMIN_KEY=sk-proj-...
    npx supabase functions deploy estimate-food
    ```
 
    `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are
-   provided to functions automatically — do not set them.
+   provided to functions automatically — do not set them. (`OPENAI_MASTER_KEY`
+   is still read as a fallback, so an earlier deployment keeps working.)
 
-4. **Check it**: sign in, and the Log screen should say "10 free analyses left"
-   with no setup card. Take a photo; the count drops by one.
+5. **Check it**: sign in and photograph something. It should simply work, with
+   no key configured and nothing on screen about a trial — that is deliberate.
+   A row appears in `usage`; the eleventh photo is refused with the explanation.
 
-If the migration is not applied, the app quietly stays in bring-your-own-key
+Anyone listed in `app_admins` analyses on `OPENAI_ADMIN_KEY` with no quota at
+all, and their usage is recorded as `MASTER_ADMIN` so it never inflates the
+cost-of-trial figures.
+
+If the migrations are not applied, the app quietly stays in bring-your-own-key
 mode rather than advertising a trial it cannot honour.
 
 ### Watching what it costs

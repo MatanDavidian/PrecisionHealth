@@ -47,7 +47,16 @@ Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
-  const masterKey = Deno.env.get('OPENAI_MASTER_KEY')
+  /**
+   * One key per audience, each scoped to its own OpenAI PROJECT with its own
+   * hard spend limit — so trial users exhausting their budget cannot stop the
+   * owner from logging their own dinner.
+   *
+   * OPENAI_MASTER_KEY is still read as a fallback so an existing deployment
+   * keeps working after this rename.
+   */
+  const trialKey = Deno.env.get('OPENAI_TRIAL_KEY') ?? Deno.env.get('OPENAI_MASTER_KEY')
+  const adminKey = Deno.env.get('OPENAI_ADMIN_KEY') ?? trialKey
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
@@ -62,6 +71,16 @@ Deno.serve(async (request) => {
   if (userError || !user) return json({ error: 'not_signed_in' }, 401)
 
   const admin = createClient(supabaseUrl, serviceRole)
+
+  // Owners analyse without a quota, on their own key.
+  const { data: adminRow } = await admin
+    .from('app_admins')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const isAdmin = Boolean(adminRow)
+  const keySource = isAdmin ? 'MASTER_ADMIN' : 'MASTER_TRIAL'
+  const apiKey = isAdmin ? adminKey : trialKey
 
   let body: RequestBody
   try {
@@ -79,31 +98,31 @@ Deno.serve(async (request) => {
       ...fields,
     })
 
-  if (!masterKey) {
+  if (!apiKey) {
     // Misconfiguration, not the user's fault — say so rather than blaming them.
-    await record({ model: TRIAL_MODEL, key_source: 'MASTER_TRIAL', outcome: 'REFUSED_NO_KEY' })
+    await record({ model: TRIAL_MODEL, key_source: keySource, outcome: 'REFUSED_NO_KEY' })
     return json({ error: 'master_key_missing' }, 503)
   }
 
   // --- entitlement -----------------------------------------------------------
   // Step 1 has one entitlement: the lifetime trial. Plans land in step 3 and
   // slot in here, which is why the ledger already records key_source.
-  const { count, error: countError } = await admin
-    .from('usage')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('key_source', 'MASTER_TRIAL')
-    .eq('outcome', 'OK')
+  let used = 0
+  if (!isAdmin) {
+    const { count, error: countError } = await admin
+      .from('usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('key_source', 'MASTER_TRIAL')
+      .eq('outcome', 'OK')
 
-  if (countError) return json({ error: 'ledger_unavailable' }, 503)
+    if (countError) return json({ error: 'ledger_unavailable' }, 503)
 
-  const used = count ?? 0
-  if (used >= TRIAL_ANALYSES) {
-    await record({ model: TRIAL_MODEL, key_source: 'MASTER_TRIAL', outcome: 'REFUSED_QUOTA' })
-    return json(
-      { error: 'trial_exhausted', used, allowance: TRIAL_ANALYSES },
-      402,
-    )
+    used = count ?? 0
+    if (used >= TRIAL_ANALYSES) {
+      await record({ model: TRIAL_MODEL, key_source: 'MASTER_TRIAL', outcome: 'REFUSED_QUOTA' })
+      return json({ error: 'trial_exhausted', used, allowance: TRIAL_ANALYSES }, 402)
+    }
   }
 
   // --- the call --------------------------------------------------------------
@@ -112,7 +131,7 @@ Deno.serve(async (request) => {
   try {
     response = await fetch(OPENAI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${masterKey}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model,
         messages: [
@@ -130,13 +149,13 @@ Deno.serve(async (request) => {
       }),
     })
   } catch {
-    await record({ model, key_source: 'MASTER_TRIAL', outcome: 'PROVIDER_ERROR' })
+    await record({ model, key_source: keySource, outcome: 'PROVIDER_ERROR' })
     return json({ error: 'provider_unreachable' }, 502)
   }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '')
-    await record({ model, key_source: 'MASTER_TRIAL', outcome: 'PROVIDER_ERROR' })
+    await record({ model, key_source: keySource, outcome: 'PROVIDER_ERROR' })
 
     /**
      * The owner's budget is spent, not the user's trial.
@@ -165,7 +184,7 @@ Deno.serve(async (request) => {
   if (!content) {
     await record({
       model,
-      key_source: 'MASTER_TRIAL',
+      key_source: keySource,
       outcome: 'UNREADABLE',
       input_tokens: inputTokens,
       output_tokens: outputTokens,
@@ -179,7 +198,7 @@ Deno.serve(async (request) => {
   // call, and does not grow a second copy of the rules.
   await record({
     model,
-    key_source: 'MASTER_TRIAL',
+    key_source: keySource,
     outcome: 'OK',
     input_tokens: inputTokens,
     output_tokens: outputTokens,
@@ -189,6 +208,7 @@ Deno.serve(async (request) => {
   return json({
     content,
     model,
-    trial: { used: used + 1, allowance: TRIAL_ANALYSES },
+    // Admins have no allowance to report.
+    trial: isAdmin ? undefined : { used: used + 1, allowance: TRIAL_ANALYSES },
   })
 })

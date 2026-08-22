@@ -76,8 +76,18 @@ becomes moot for signed-in users.
 ## 3. Feature 2 — the free trial
 
 - New signed-in users get **10 analyses total** on the master key — a
-  lifetime allowance, not a daily one. Simple to explain, simple to count,
-  and it costs the owner about 30 cents per person who tries the app.
+  lifetime allowance, not a daily one. Simple to explain, simple to count.
+- It runs on **sol**, because the trial is the pitch and should show the app at
+  its best. Measured cost: **~$1.11 per person** who uses the whole trial, and
+  ~45 seconds per photo. Both are worth knowing before inviting a crowd: a $10
+  spend cap covers about **nine** people, not fourteen.
+- **The latency is the open question.** Sol thinks for the better part of a
+  minute; terra returned in ~13 seconds in the same conditions and costs about
+  a fifth as much. A first-time user waiting 45 seconds on their first-ever
+  photo may conclude the app is broken before it ever answers. The waiting
+  state now says the model thinks for up to a minute, which helps; switching
+  the trial to terra would help more, at the cost of showing the app at
+  slightly less than its best.
 - Counted server-side in an **append-only usage ledger** (D4 applied to
   metering): `usage(id, user_id, day, model, created_at)`, RLS so users see
   their own rows, INSERT only via the function's service role.
@@ -97,14 +107,37 @@ models is 20x — so it has to be visible in the price rather than absorbed.
 
 ### The cost that sets the price
 
-Per photo ≈ ~2.5k input tokens (1280px image + prompt) + ~2k output (JSON plus
-hidden reasoning), at Aug 2026 prices:
+**Measured, not estimated** (Aug 2026, one real call through the deployed
+function on a busy photo — a grocery display resolving to 25 items):
+
+| | |
+|---|---|
+| Input | 1,776 tokens |
+| Output | **3,398 tokens** — sol reasons at length, and reasoning is billed |
+| Cost | **$0.1108** |
+| Latency | **45 seconds** |
+
+That is ~58% above the estimate below, entirely on the output side: the
+estimate assumed ~2k output tokens and reasoning models spend more than that
+thinking. A single plate should land lower — output scales with the number of
+items — but **$0.11 is the number to plan against, not $0.07**, and a 10-analysis
+trial therefore costs about **$1.11 per person**, not $0.70.
+
+Re-measure whenever the model or the prompt changes; the ledger records real
+token counts precisely so this never has to be guessed again.
+
+Estimated per-photo figures for the other models (not yet measured):
 
 | Model | $/photo | Daily cap | Worst-case month | Realistic (3-4 meals/day) |
 |---|---|---|---|---|
-| **luna** ($0.20/$1.20) | ~$0.003 | 20/day | ~$1.80 | ~$0.35 |
-| **terra** ($2/$12) | ~$0.03 | 10/day | ~$9 | ~$3-4 |
-| **sol** ($5/$30) | ~$0.07 | — | — | ~$7-8 |
+| **luna** ($0.20/$1.20) | ~$0.005 | 20/day | ~$3 | ~$0.50 |
+| **terra** ($2/$12) | ~$0.05 | 10/day | ~$15 | ~$5-6 |
+| **sol** ($5/$30) | **$0.11 measured** | 5/day | ~$16.50 | ~$11 |
+
+Those revisions matter for the plan prices: **Accurate at $9 no longer covers a
+maxed terra month (~$15)**, and Precision at $15 barely covers a maxed sol
+month (~$16.50). Either the caps come down, or the prices go up — a decision
+for whenever billing is actually built, made against measured numbers by then.
 
 The daily cap is the abuse control: worst case is bounded by design, so a
 plan cannot run away from its price.

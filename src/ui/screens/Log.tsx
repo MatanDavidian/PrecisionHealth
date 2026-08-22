@@ -353,7 +353,12 @@ export function Log() {
             </button>
           )}
           {phase.kind === 'analyzing' && (
-            <span className="py-2 text-sm text-ink-muted">Analyzing the photo…</span>
+            <span className="py-2 text-sm text-ink-muted">
+              Reading your photo…{' '}
+              <span className="text-xs">
+                the most accurate model thinks for up to a minute
+              </span>
+            </span>
           )}
           <button
             type="button"

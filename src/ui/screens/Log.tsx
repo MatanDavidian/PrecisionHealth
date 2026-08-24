@@ -1,19 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getEstimator, estimatorRequiresKey, getRepositories } from '@/data'
-import { describePhoto, downscale } from '@/ai/photo'
-import {
-  ESTIMATE_ERROR_TEXT,
-  EstimateError,
-  type EstimateHints,
-  type EstimateResult,
-  type PhotoMeta,
-} from '@/ai/estimator'
-import { buildFailedInference, buildPhotoMeal } from '@/data/photoMeal'
+import { estimatorRequiresKey, getRepositories } from '@/data'
+import type { EstimateHints, EstimateResult } from '@/ai/estimator'
+import { buildPhotoMeal } from '@/data/photoMeal'
 import { deviceZone, suggestSlot } from '@/data/newRecords'
 import { useDataRevision } from '../DataProvider'
+import { formatElapsed, useAnalysis, useElapsed } from '../AnalysisProvider'
 import { useActions } from '../useHealthData'
-import { TrialExhaustedError } from '@/ai/proxyEstimator'
 import { OneTimeNotice } from '../components/OneTimeNotice'
 import { UsualsPanel } from '../components/UsualsPanel'
 import { readUsuals, type Usuals } from '@/data/usuals'
@@ -28,16 +21,18 @@ const field =
   'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm outline-none focus:border-accent'
 const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
 
-type Phase =
-  | { kind: 'idle' }
-  | { kind: 'analyzing' }
-  | { kind: 'result'; result: EstimateResult; downgraded?: boolean }
-  | { kind: 'error'; message: string; retryable: boolean }
-  | { kind: 'exhausted' }
-  | { kind: 'saved' }
-
-/** Only the estimators that call a provider on the user's behalf need a key. */
+/** How the docked bar names this meal while it is being read. */
+/** Only estimators that call a provider on the user's behalf need a key. */
 const keyMissing = (settings: AppSettings): boolean => estimatorRequiresKey() && !settings.apiKey
+
+/** How the docked bar names this meal while it is being read. */
+const SLOT_LABEL: Record<MealSlot, string> = {
+  NIGHT: 'night meal',
+  BREAKFAST: 'breakfast',
+  LUNCH: 'lunch',
+  DINNER: 'dinner',
+  SNACK: 'snack',
+}
 
 const hhmm = (date: Date) =>
   `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
@@ -49,18 +44,19 @@ const hhmm = (date: Date) =>
  * written anywhere (spec §3) — Retry reuses it, saving or clearing drops it.
  */
 export function Log() {
-  const { runWrite, trial, refreshTrial, revision } = useDataRevision()
+  const { runWrite, trial, revision } = useDataRevision()
   const { logRepeat, logFoods, undoMeal } = useActions()
   const [usuals, setUsuals] = useState<Usuals>()
   /** The meal just logged from a usual, kept so it can be taken back. */
   const [justLogged, setJustLogged] = useState<{ meal: Meal; label: string }>()
   const [logging, setLogging] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
-  const photoRef = useRef<{ blob: Blob; meta: PhotoMeta } | null>(null)
+  const { analysis, start, retry, clear } = useAnalysis()
+  const running = analysis?.status === 'running'
+  const elapsed = useElapsed(analysis?.startedAt, running)
 
   const [settings, setSettings] = useState<AppSettings>()
-  const [preview, setPreview] = useState<string>()
-  const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
+  const [saved, setSaved] = useState(false)
   const [foodName, setFoodName] = useState('')
   const [grams, setGrams] = useState('')
   const [time, setTime] = useState(hhmm(new Date()))
@@ -82,94 +78,24 @@ export function Log() {
     }
   }, [slot, revision])
 
-  // Object URLs are the one browser resource here that leaks if ignored.
-  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
-
   const hints = (): EstimateHints => ({
     foodName: foodName.trim() || undefined,
     totalGrams: grams.trim() ? Number(grams) : undefined,
   })
 
-  async function analyze() {
-    const photo = photoRef.current
-    if (!photo) return
-    setPhase({ kind: 'analyzing' })
-    try {
-      const estimatorUsed = getEstimator()
-      const result = await estimatorUsed.estimate(photo.blob, hints())
-      setPhase({
-        kind: 'result',
-        result,
-        // The server ran a different model than we asked for. Surfaced, not
-        // swallowed — a quietly weaker answer is worse than a slower one.
-        downgraded: 'downgraded' in estimatorUsed ? Boolean(estimatorUsed.downgraded) : false,
-      })
-      /**
-       * Re-read the trial after each analysis.
-       *
-       * Nothing on screen shows the number — a countdown turns a gift into a
-       * warning — but the app still has to know when the free analyses run
-       * out, so it can switch to the user's own key at exactly the right
-       * moment rather than one photo late.
-       */
-      if (trial) refreshTrial()
-    } catch (error) {
-      const known = error instanceof EstimateError
-      const kind = known ? error.kind : 'UNREADABLE'
-      // A failed attempt is part of the audit trail too (spec §6). Written on
-      // a best-effort basis and deliberately NOT surfaced: this runs inside the
-      // error handler, and a failure to record the failure must not replace the
-      // message explaining what actually went wrong.
-      try {
-        await getRepositories().inferences.add(
-          buildFailedInference(currentUserId(), {
-            at: new Date(),
-            model: getEstimator().model,
-            hints: hints(),
-            photo: photo.meta,
-            kind,
-            message: error instanceof Error ? error.message : 'Unknown failure',
-            raw: known ? error.raw : undefined,
-          }),
-        )
-      } catch {
-        // Nothing useful to do here; the estimate error below is the real news.
-      }
-      if (error instanceof TrialExhaustedError) {
-        // Not a failure — the trial did its job. Re-read so the UI switches to
-        // the user's own key from here on.
-        refreshTrial()
-        setPhase({ kind: 'exhausted' })
-        return
-      }
-      setPhase({
-        kind: 'error',
-        message: ESTIMATE_ERROR_TEXT[kind],
-        retryable: kind !== 'NO_KEY',
-      })
-    }
-  }
-
   async function onPhotoChosen(file: File) {
-    if (preview) URL.revokeObjectURL(preview)
-    setPhase({ kind: 'idle' })
-    const blob = await downscale(file)
-    photoRef.current = { blob, meta: await describePhoto(blob) }
-    setPreview(URL.createObjectURL(blob))
-    if (settings && !keyMissing(settings) && settings.autoAnalyze) void analyze()
+    setSaved(false)
+    await start(file, hints(), slot, SLOT_LABEL[slot])
   }
 
   function clearPhoto() {
-    if (preview) URL.revokeObjectURL(preview)
-    photoRef.current = null
-    setPreview(undefined)
-    setPhase({ kind: 'idle' })
+    clear()
     setFoodName('')
     setGrams('')
   }
 
   async function save() {
-    if (phase.kind !== 'result' || !photoRef.current) return
+    if (!analysis?.result) return
     const [hours, minutes] = time.split(':').map(Number)
     const at = new Date()
     at.setHours(hours, minutes, 0, 0)
@@ -178,20 +104,20 @@ export function Log() {
       slot,
       at,
       zone: deviceZone(),
-      hints: hints(),
-      photo: photoRef.current.meta,
-      result: phase.result,
+      hints: analysis.hints,
+      photo: analysis.photoMeta,
+      result: analysis.result,
     })
-    const saved = await runWrite('this meal', async () => {
+    const ok = await runWrite('this meal', async () => {
       await getRepositories().inferences.add(inference)
       await getRepositories().meals.add(meal)
     })
     // The photo is only discarded once the save actually landed, so a retry
     // still has something to retry with.
-    if (!saved) return
+    if (!ok) return
     clearPhoto()
-    setPhase({ kind: 'saved' })
-    setTimeout(() => setPhase({ kind: 'idle' }), 2500)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
   }
 
   const needsKey = settings ? keyMissing(settings) : false
@@ -208,7 +134,7 @@ export function Log() {
         choice exists; the switch to a faster model is announced rather than
         done quietly behind their back.
       */}
-      {trial && !trial.exhausted && trial.used === 0 && (
+      {trial && !trial.exhausted && trial.used === 0 && !analysis && (
         <OneTimeNotice
           id="model-tradeoff"
           title="Accuracy or speed — your choice"
@@ -266,7 +192,7 @@ export function Log() {
         and photographing the same breakfast again costs a minute of waiting and
         a fraction of a cent to be told what you already knew.
       */}
-      {usuals && !preview && (
+      {usuals && !analysis && (
         <UsualsPanel
           usuals={usuals}
           slot={slot}
@@ -310,7 +236,7 @@ export function Log() {
         }}
       />
 
-      {!preview && (
+      {!analysis && (
         <button
           type="button"
           onClick={() => fileInput.current?.click()}
@@ -322,19 +248,42 @@ export function Log() {
         </button>
       )}
 
-      {preview && (
-        <div className="overflow-hidden rounded-card">
-          <img src={preview} alt="The meal you photographed" className="w-full object-cover" />
+      {analysis && (
+        <div className="relative overflow-hidden rounded-card">
+          <img
+            src={analysis.photoUrl}
+            alt="The meal you photographed"
+            className={`w-full object-cover transition-opacity ${running ? 'opacity-60' : ''}`}
+          />
+          {/*
+            The photo IS the progress. On a phone the preview fills the screen,
+            so a status line underneath is simply not visible — which is how
+            "I took a picture and nothing happened" happens.
+          */}
+          {running && (
+            <div className="absolute inset-x-0 bottom-0 bg-ink/75 px-4 py-3 text-surface">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <span className="size-2 animate-pulse rounded-full bg-surface" />
+                Reading your plate…
+                <span className="tabular font-normal opacity-80">
+                  {formatElapsed(elapsed)} · usually about 15 seconds
+                </span>
+              </p>
+              <p className="pt-0.5 text-xs opacity-75">
+                You can leave — it keeps going, and the bar below stays until it's done.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
-      {phase.kind === 'saved' && (
+      {saved && (
         <p className="pt-4 text-sm text-leaf">
           Saved. <Link to="/today" className="underline">See today</Link>.
         </p>
       )}
 
-      {phase.kind === 'exhausted' && (
+      {analysis?.error?.exhausted && (
         <Card>
           <h2 className="font-display text-xl">That was the last one on us</h2>
           <p className="pt-1 text-sm text-ink-muted">
@@ -386,7 +335,7 @@ export function Log() {
         </Card>
       )}
 
-      {preview && (
+      {analysis && (
         <div className="pt-4">
           <button
             type="button"
@@ -464,24 +413,16 @@ export function Log() {
         </div>
       )}
 
-      {preview && phase.kind !== 'result' && (
+      {analysis && !analysis.result && !analysis.error?.exhausted && (
         <div className="flex flex-wrap gap-3 pt-4">
-          {phase.kind !== 'analyzing' && !needsKey && (
+          {!running && (
             <button
               type="button"
-              onClick={() => void analyze()}
+              onClick={retry}
               className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface"
             >
-              {phase.kind === 'error' ? 'Try again' : 'Analyze'}
+              {analysis.error ? 'Try again' : 'Analyze'}
             </button>
-          )}
-          {phase.kind === 'analyzing' && (
-            <span className="py-2 text-sm text-ink-muted">
-              Reading your photo…{' '}
-              <span className="text-xs">
-                the most accurate model thinks for up to a minute
-              </span>
-            </span>
           )}
           <button
             type="button"
@@ -493,10 +434,10 @@ export function Log() {
         </div>
       )}
 
-      {phase.kind === 'error' && (
+      {analysis?.error && !analysis.error.exhausted && (
         <Card>
-          <p className="text-sm text-accent">{phase.message}</p>
-          {phase.retryable && (
+          <p className="text-sm text-accent">{analysis.error.message}</p>
+          {analysis.error.retryable && (
             <p className="pt-1 text-xs text-ink-muted">
               Your photo and details are still here — retry, or{' '}
               <Link to="/nutrition" className="underline">
@@ -508,10 +449,10 @@ export function Log() {
         </Card>
       )}
 
-      {phase.kind === 'result' && (
+      {analysis?.result && (
         <ResultCard
-          result={phase.result}
-          downgraded={phase.downgraded}
+          result={analysis.result}
+          downgraded={analysis.downgraded}
           onSave={() => void save()}
           onDiscard={clearPhoto}
         />

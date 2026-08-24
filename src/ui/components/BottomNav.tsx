@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useAnalysis } from '../AnalysisProvider'
 
 /**
  * Mobile navigation, added with slice 2.
@@ -15,6 +16,19 @@ const ITEMS = [
 ]
 
 export function BottomNav() {
+  const { analysis } = useAnalysis()
+  /**
+   * A dot on the Log tab: terracotta while a photo is being read, sage once a
+   * result is waiting. Small enough to ignore, present enough to answer "did
+   * that actually do anything?" without opening the tab.
+   */
+  const dot =
+    analysis?.status === 'running'
+      ? 'bg-accent'
+      : analysis?.status === 'done'
+        ? 'bg-leaf'
+        : undefined
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
       {ITEMS.map(({ to, label, icon: Icon }) => (
@@ -27,7 +41,16 @@ export function BottomNav() {
             }`
           }
         >
-          <Icon />
+          <span className="relative">
+            <Icon />
+            {to === '/log' && dot && (
+              <span
+                className={`absolute -right-1.5 -top-0.5 size-2 rounded-full ${dot} ${
+                  dot === 'bg-accent' ? 'animate-pulse' : ''
+                }`}
+              />
+            )}
+          </span>
           {label}
         </NavLink>
       ))}

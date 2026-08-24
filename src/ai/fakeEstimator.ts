@@ -37,9 +37,20 @@ export class FakeEstimator implements FoodVisionEstimator {
   constructor(
     private readonly reply: unknown = SAMPLE_REPLY,
     private readonly failWith?: Error,
+    /**
+     * Pretend to think.
+     *
+     * The real models take fifteen to forty-five seconds, and everything
+     * interesting about the waiting experience — the progress on the photo,
+     * the docked bar, the tab dot — only exists during that window. An
+     * estimator that answers instantly makes all of it unobservable, so
+     * `?fake=1&slow=6000` buys six seconds to look at it.
+     */
+    private readonly delayMs = 0,
   ) {}
 
   async estimate(_photo: Blob, hints: EstimateHints): Promise<EstimateResult> {
+    if (this.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, this.delayMs))
     if (this.failWith) throw this.failWith
     const validated = validateEstimate(this.reply, this.model)
     return applyGramsHint(validated, hints.totalGrams)

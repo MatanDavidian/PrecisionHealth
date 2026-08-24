@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
 import { WriteFailureBanner } from './components/WriteFailureBanner'
+import { AnalysisBar } from './components/AnalysisBar'
 
 const TRACK = [
   { to: '/log', label: 'Log' },
@@ -53,6 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* pb-20 keeps the last card clear of the mobile bar. */}
       <main className="flex-1 overflow-y-auto px-6 py-8 pb-20 md:px-10 md:pb-8">{children}</main>
       <BottomNav />
+      <AnalysisBar />
       <WriteFailureBanner />
     </div>
   )

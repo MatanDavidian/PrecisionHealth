@@ -73,6 +73,12 @@ export const ensureSeeded = (): Promise<boolean> => {
 const useFake = (): boolean =>
   typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('fake')
 
+/** `?fake=1&slow=6000` makes the fake take its time, so waiting states are visible. */
+const fakeDelay = (): number =>
+  typeof window === 'undefined'
+    ? 0
+    : Number(new URLSearchParams(window.location.search).get('slow') ?? 0) || 0
+
 /**
  * Whether the active estimator needs the user to supply a key.
  *
@@ -85,7 +91,9 @@ const directEstimator = new OpenAiEstimator({
   getModel: async () => (await localRepositories.settings.get()).model,
 })
 
-let activeEstimator: FoodVisionEstimator = useFake() ? new FakeEstimator() : directEstimator
+let activeEstimator: FoodVisionEstimator = useFake()
+  ? new FakeEstimator(undefined, undefined, fakeDelay())
+  : directEstimator
 
 /**
  * Whether the ACTIVE estimator needs the user to supply a key.
@@ -118,7 +126,7 @@ export function selectEstimatorFor(options: {
 }): FoodVisionEstimator {
   if (useFake()) {
     requiresKey = false
-    activeEstimator = new FakeEstimator()
+    activeEstimator = new FakeEstimator(undefined, undefined, fakeDelay())
     return activeEstimator
   }
 

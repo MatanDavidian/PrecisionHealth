@@ -364,3 +364,35 @@ against a mocked provider. Settings also loads the account's own model list
 via `/v1/models` into a datalist: `/v1/models` reports ids but not
 capabilities, so vision support cannot be filtered for and the field stays
 free text with the account list as suggestions.
+
+
+## 13. Making the wait visible (Aug 2026)
+
+The reported symptom: *"on the phone, sometimes when I take a picture I don't
+see that the model started working."* Not a perception problem — a layout one.
+The analysing line was rendered BELOW the photo, and on a phone the preview
+fills the screen, so the only sign that anything was happening was off-screen.
+With sol taking the better part of a minute, silence reads as broken.
+
+Four changes, from the design's own artboard:
+
+- **The photo becomes the progress.** The preview dims and carries the status
+  itself — "Reading your plate… 0:07 · usually about 15 seconds" — where the
+  eyes already are. The elapsed count matters: a number that moves is proof of
+  life in a way a static line is not.
+- **The analysis outlived the screen.** It moved from the Log screen into an
+  app-level provider, because people put the phone down and look at something
+  else. Owned by the screen, a navigation cancelled the work and they came back
+  to nothing.
+- **A bar docks above the tab bar** and follows to any tab: "Analyzing your
+  lunch · 0:04 · View", becoming "lunch estimated · 711 kcal · Review". Tapping
+  it returns to the result.
+- **The Log tab keeps a dot** — terracotta while working, sage when a result is
+  waiting — so the answer to "did that do anything?" needs no tap at all.
+
+Plus **one short buzz on start and finish**, feature-tested: iOS Safari does not
+implement the Vibration API, so this is an Android-only nicety and is written
+not to promise otherwise.
+
+`?fake=1&slow=6000` makes the fake estimator take its time, since every one of
+these states only exists during a window an instant estimator does not have.

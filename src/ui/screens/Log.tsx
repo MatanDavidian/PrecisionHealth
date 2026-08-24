@@ -11,10 +11,14 @@ import {
 } from '@/ai/estimator'
 import { buildFailedInference, buildPhotoMeal } from '@/data/photoMeal'
 import { deviceZone, suggestSlot } from '@/data/newRecords'
-import { currentUserId } from '@/data/session'
 import { useDataRevision } from '../DataProvider'
+import { useActions } from '../useHealthData'
 import { TrialExhaustedError } from '@/ai/proxyEstimator'
 import { OneTimeNotice } from '../components/OneTimeNotice'
+import { UsualsPanel } from '../components/UsualsPanel'
+import { readUsuals, type Usuals } from '@/data/usuals'
+import { currentUserId } from '@/data/session'
+import type { Meal, UsualFood, UsualMeal } from '@/domain'
 import { MODEL_LABELS, MODEL_TERRA } from '../../../supabase/functions/_shared/prompt'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
@@ -45,7 +49,12 @@ const hhmm = (date: Date) =>
  * written anywhere (spec §3) — Retry reuses it, saving or clearing drops it.
  */
 export function Log() {
-  const { runWrite, trial, refreshTrial } = useDataRevision()
+  const { runWrite, trial, refreshTrial, revision } = useDataRevision()
+  const { logRepeat, logFoods, undoMeal } = useActions()
+  const [usuals, setUsuals] = useState<Usuals>()
+  /** The meal just logged from a usual, kept so it can be taken back. */
+  const [justLogged, setJustLogged] = useState<{ meal: Meal; label: string }>()
+  const [logging, setLogging] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const photoRef = useRef<{ blob: Blob; meta: PhotoMeta } | null>(null)
 
@@ -61,6 +70,17 @@ export function Log() {
   useEffect(() => {
     void getRepositories().settings.get().then(setSettings)
   }, [])
+
+  // What this person usually eats at this time of day.
+  useEffect(() => {
+    let cancelled = false
+    void readUsuals(currentUserId(), slot)
+      .then((found) => !cancelled && setUsuals(found))
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [slot, revision])
 
   // Object URLs are the one browser resource here that leaks if ignored.
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
@@ -211,6 +231,70 @@ export function Log() {
           minute, and still good. You have {trial.solRemaining} analyses left on the most accurate
           one; save them for a crowded plate.
         </OneTimeNotice>
+      )}
+
+      {justLogged && (
+        <div className="mb-4 rounded-card border border-leaf-soft bg-leaf-soft p-3">
+          <p className="text-sm">
+            <span className="font-medium">{justLogged.label} logged</span> — no photo, no estimate
+            to review.
+          </p>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                void undoMeal(justLogged.meal)
+                setJustLogged(undefined)
+              }}
+              className="rounded-full border border-hairline bg-surface px-3 py-1.5 text-xs"
+            >
+              Undo
+            </button>
+            <button
+              type="button"
+              onClick={() => setJustLogged(undefined)}
+              className="rounded-full px-3 py-1.5 text-xs text-ink-muted"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/*
+        The repeat comes BEFORE the camera on purpose: most days are not novel,
+        and photographing the same breakfast again costs a minute of waiting and
+        a fraction of a cent to be told what you already knew.
+      */}
+      {usuals && !preview && (
+        <UsualsPanel
+          usuals={usuals}
+          slot={slot}
+          busy={logging}
+          onRepeatMeal={(usual: UsualMeal) => {
+            setLogging(true)
+            void logRepeat(usual, slot)
+              .then((meal) => {
+                if (meal) {
+                  setJustLogged({
+                    meal,
+                    label: usual.template.items.map((i) => i.name).join(', '),
+                  })
+                }
+              })
+              .finally(() => setLogging(false))
+          }}
+          onLogFoods={(foods: UsualFood[]) => {
+            setLogging(true)
+            void logFoods(foods, slot)
+              .then((meal) => {
+                if (meal) {
+                  setJustLogged({ meal, label: foods.map((f) => f.name).join(', ') })
+                }
+              })
+              .finally(() => setLogging(false))
+          }}
+        />
       )}
 
       <input

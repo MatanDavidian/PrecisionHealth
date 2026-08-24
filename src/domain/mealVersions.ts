@@ -28,6 +28,16 @@ const byMeal = (meals: readonly Meal[]): Map<MealId, Meal[]> => {
 }
 
 /**
+ * Retracting a meal: a new version marked as not having happened.
+ *
+ * The alternative — deleting the row — would break the property that makes
+ * syncing safe (D4) and would lose the fact that it was logged at all.
+ */
+export function retractMeal(meal: Meal, newId: IdFactory): Meal {
+  return { ...meal, recordId: newId(), version: meal.version + 1, retracted: true }
+}
+
+/**
  * What to display: the newest version of each meal.
  *
  * When several records tie at the top version the meal is in conflict; this
@@ -36,7 +46,11 @@ const byMeal = (meals: readonly Meal[]): Map<MealId, Meal[]> => {
  * beats showing nothing.
  */
 export function latestVersions(meals: readonly Meal[]): Meal[] {
-  return [...byMeal(meals).values()].map((group) => group[0])
+  return [...byMeal(meals).values()]
+    .map((group) => group[0])
+    // A meal whose newest version is a retraction did not happen. Its earlier
+    // versions stay on disk; they simply stop being part of the day.
+    .filter((meal) => !meal.retracted)
 }
 
 export interface MealConflict {

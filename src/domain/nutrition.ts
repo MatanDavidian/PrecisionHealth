@@ -74,6 +74,14 @@ export interface Meal {
   items: FoodItem[]
   photoId?: AttachmentId
   notes?: string
+  /**
+   * True when this meal was taken back — logged by mistake, or undone.
+   *
+   * Records are append-only (D4), so a meal cannot be deleted; retracting
+   * appends a version that says it did not happen. Readers skip it, history
+   * keeps it, and "I logged this twice" finally has an answer (Q7).
+   */
+  retracted?: boolean
   provenance: Provenance
 }
 

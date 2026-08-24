@@ -11,7 +11,8 @@
  * `crypto.randomUUID()`. That difference — free, already there, needing no
  * flag — is what keeps the demo day out of your account (Q5).
  */
-import type { CalendarDate, Meal, Observation, UserId } from '@/domain'
+import { addDays, dayKey, type CalendarDate, type Meal, type Observation, type UserId } from '@/domain'
+import { deviceZone } from './newRecords'
 import type { HealthRepositories } from './repositories'
 
 /** A generated id, as opposed to a hand-written one in the seed data. */
@@ -34,13 +35,20 @@ export interface AdoptionResult {
 /** How far back to look. A year of days is a cheap scan locally and plenty. */
 const LOOKBACK_DAYS = 400
 
+/**
+ * The user's own days, not UTC's.
+ *
+ * Records are filed under the local calendar day (D7), so a range built from
+ * `toISOString()` is a different calendar east of Greenwich: between midnight
+ * and the UTC offset, "today" locally is still tomorrow in UTC and the most
+ * recent day falls outside the window entirely. Someone signing in at 00:30
+ * would have silently left that day behind.
+ */
 const daysEndingToday = (count: number): CalendarDate[] => {
+  const zone = deviceZone()
+  const today = dayKey(new Date().toISOString(), zone)
   const days: CalendarDate[] = []
-  const cursor = new Date()
-  for (let i = 0; i < count; i += 1) {
-    days.push(cursor.toISOString().slice(0, 10) as CalendarDate)
-    cursor.setUTCDate(cursor.getUTCDate() - 1)
-  }
+  for (let i = 0; i < count; i += 1) days.push(addDays(today, -i))
   return days
 }
 

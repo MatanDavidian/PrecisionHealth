@@ -153,7 +153,24 @@ anticipates.
 **Needs deciding by.** Slice 3, by definition.
 **Files.** `src/data/mock/seed.ts` (`DEMO_USER_ID`), `src/ui/useHealthData.ts`.
 
-## Q7 — No delete, anywhere
+## Q7 — No delete, anywhere · **settled: retraction**
+
+**Decided (Aug 2026), by Undo needing it.** A meal cannot be deleted — D4
+forbids it and sync depends on it — so taking one back appends a version
+marked `retracted`. Readers skip it, history keeps it, and "I logged that by
+mistake" finally has an answer.
+
+It arrived as the honest way to build Undo on a one-tap repeat: a button that
+adds a meal in a single tap needs a way back, and deleting the row was never
+available. The mechanism generalises — a delete affordance anywhere in the app
+is now the same append.
+
+**Files.** `src/domain/mealVersions.ts` (`retractMeal`), `latestVersions`
+filters retracted meals out.
+
+---
+
+### Original note
 
 **Assumed.** You can add a meal and correct an estimate, but you cannot delete
 anything. D4 says records are append-only, and nothing in the UI removes one.

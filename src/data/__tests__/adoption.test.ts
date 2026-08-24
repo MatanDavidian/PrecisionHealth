@@ -72,6 +72,27 @@ describe('deciding what belongs in an account', () => {
     expect(found.observations).toEqual([])
   })
 
+  it('finds a meal logged just after local midnight', async () => {
+    // The bug this pins: the lookback range was built from toISOString(),
+    // which is UTC. East of Greenwich, between midnight and the offset, the
+    // local day is a day AHEAD of UTC — so "today" fell outside the window and
+    // the most recent day was silently left behind on sign-in.
+    const local = await localStore()
+    const justAfterMidnight = new Date()
+    justAfterMidnight.setHours(0, 30, 0, 0)
+
+    await local.meals.add(
+      buildMeal(LOCAL_USER_ID, {
+        slot: 'NIGHT',
+        at: justAfterMidnight,
+        items: [{ name: 'Midnight toast', amount: 60, energyKcal: 150, proteinG: 4, carbsG: 28, fatG: 2 }],
+      }),
+    )
+
+    const found = await findAdoptableRecords(local, LOCAL_USER_ID)
+    expect(found.meals.map((m) => m.items[0].name)).toContain('Midnight toast')
+  })
+
   it('finds meals the user actually logged', async () => {
     const local = await localStore()
     await local.meals.add(

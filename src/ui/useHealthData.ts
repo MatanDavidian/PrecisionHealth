@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getRepositories } from '@/data'
 import { currentUserId } from '@/data/session'
-import { buildMeal, newId, type MealInput } from '@/data/newRecords'
+import { buildMeal, deviceZone, newId, type MealInput } from '@/data/newRecords'
 import {
   effectiveObservation,
   observationConflict,
@@ -11,6 +11,9 @@ import {
 import {
   confirmFoodItem,
   confirmObservation,
+  mealFromFoods,
+  repeatMeal,
+  retractMeal,
   detectMealConflicts,
   latestVersions,
   nextVersion,
@@ -19,6 +22,9 @@ import {
   type Conflict,
   type FoodItem,
   type MealConflict,
+  type MealSlot,
+  type UsualFood,
+  type UsualMeal,
   type Goal,
   type Meal,
   type Nutrients,
@@ -179,5 +185,62 @@ export function useActions() {
     [runWrite],
   )
 
-  return { addMeal, resolveConflict, confirmEstimate, resolveMealVersion }
+  /**
+   * Logs a meal you have eaten before.
+   *
+   * No photo, no model, no estimate to review — the numbers were already
+   * settled the first time. Returns the meal so the caller can offer Undo.
+   */
+  const logRepeat = useCallback(
+    async (usual: UsualMeal, slot: MealSlot): Promise<Meal | undefined> => {
+      const meal = repeatMeal(usual.template, currentUserId(), {
+        at: new Date(),
+        zone: deviceZone(),
+        slot,
+        newId,
+      })
+      const ok = await runWrite('this meal', () => getRepositories().meals.add(meal))
+      return ok ? meal : undefined
+    },
+    [runWrite],
+  )
+
+  /** Logs several single foods as one meal. */
+  const logFoods = useCallback(
+    async (foods: UsualFood[], slot: MealSlot): Promise<Meal | undefined> => {
+      const meal = mealFromFoods(foods, currentUserId(), {
+        at: new Date(),
+        zone: deviceZone(),
+        slot,
+        newId,
+      })
+      const ok = await runWrite('these foods', () => getRepositories().meals.add(meal))
+      return ok ? meal : undefined
+    },
+    [runWrite],
+  )
+
+  /**
+   * Takes a meal back.
+   *
+   * Records are append-only (D4), so this appends a version marked retracted
+   * rather than deleting anything — readers skip it, history keeps it, and a
+   * mis-tap is recoverable (Q7).
+   */
+  const undoMeal = useCallback(
+    async (meal: Meal) => {
+      await runWrite('that change', () => getRepositories().meals.add(retractMeal(meal, newId)))
+    },
+    [runWrite],
+  )
+
+  return {
+    addMeal,
+    resolveConflict,
+    confirmEstimate,
+    resolveMealVersion,
+    logRepeat,
+    logFoods,
+    undoMeal,
+  }
 }

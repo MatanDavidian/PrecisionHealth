@@ -198,3 +198,92 @@ describe('logging a repeat', () => {
     expect(combined.slot).toBe('SNACK')
   })
 })
+
+describe('repeating a whole day', () => {
+  const yesterday = [
+    meal('2026-08-24', 'BREAKFAST', ['Eggs', 'Oats']),
+    meal('2026-08-24', 'LUNCH', ['Chicken', 'Rice']),
+    meal('2026-08-24', 'DINNER', ['Salmon', 'Potatoes']),
+  ]
+  // Each seeded meal is at 07:00 UTC; give them distinct local times.
+  const timed = [
+    { ...yesterday[0], time: { kind: 'instant' as const, at: '2026-08-24T04:38:00.000Z', zone: ZONE } },
+    { ...yesterday[1], time: { kind: 'instant' as const, at: '2026-08-24T10:10:00.000Z', zone: ZONE } },
+    { ...yesterday[2], time: { kind: 'instant' as const, at: '2026-08-24T16:40:00.000Z', zone: ZONE } },
+  ]
+
+  it('lands each meal at the time of day it was eaten before', async () => {
+    const { repeatDay, timeOfDay } = await import('../usuals')
+    // Late evening: the whole day has already happened.
+    const now = new Date('2026-08-25T20:00:00.000Z')
+    const { meals, skipped } = repeatDay(timed, USER, {
+      onDate: '2026-08-25',
+      zone: ZONE,
+      now,
+      newId,
+    })
+
+    expect(skipped).toEqual([])
+    expect(meals.map((m) => timeOfDay(m, ZONE))).toEqual(['07:38', '13:10', '19:40'])
+    // Stacking them all onto this minute would make the day's shape a lie.
+    expect(new Set(meals.map((m) => m.time.kind === 'instant' && m.time.at)).size).toBe(3)
+  })
+
+  it('refuses to log a meal whose hour has not come round yet', async () => {
+    const { repeatDay } = await import('../usuals')
+    // Two in the afternoon: breakfast and lunch have happened, dinner has not.
+    const now = new Date('2026-08-25T11:00:00.000Z')
+    const { meals, skipped } = repeatDay(timed, USER, {
+      onDate: '2026-08-25',
+      zone: ZONE,
+      now,
+      newId,
+    })
+
+    // Counting tonight's dinner at two in the afternoon would add protein for
+    // food nobody has eaten — confidently wrong, which is worse than absent.
+    expect(meals).toHaveLength(2)
+    expect(skipped).toHaveLength(1)
+    expect(skipped[0].slot).toBe('DINNER')
+  })
+
+  it('keeps each meal in its own slot', async () => {
+    const { repeatDay } = await import('../usuals')
+    const { meals } = repeatDay(timed, USER, {
+      onDate: '2026-08-25',
+      zone: ZONE,
+      now: new Date('2026-08-25T20:00:00.000Z'),
+      newId,
+    })
+    expect(meals.map((m) => m.slot)).toEqual(['BREAKFAST', 'LUNCH', 'DINNER'])
+  })
+
+  it('skips a meal that was taken back', async () => {
+    const { repeatDay } = await import('../usuals')
+    const { retractMeal } = await import('../mealVersions')
+    const withUndo = [...timed, retractMeal(timed[0], newId)]
+    const { meals } = repeatDay(withUndo, USER, {
+      onDate: '2026-08-25',
+      zone: ZONE,
+      now: new Date('2026-08-25T20:00:00.000Z'),
+      newId,
+    })
+    // The retraction itself must not be replayed as a meal.
+    expect(meals).toHaveLength(3)
+  })
+})
+
+describe('searching what you have logged', () => {
+  it('matches on any food in the meal, ignoring case', async () => {
+    const { matchesQuery } = await import('../usuals')
+    expect(matchesQuery(['Eggs', 'Oats'], 'oat')).toBe(true)
+    expect(matchesQuery(['Eggs', 'Oats'], 'EGG')).toBe(true)
+    expect(matchesQuery(['Eggs', 'Oats'], 'chicken')).toBe(false)
+  })
+
+  it('treats an empty query as no filter at all', async () => {
+    const { matchesQuery } = await import('../usuals')
+    expect(matchesQuery(['Eggs'], '')).toBe(true)
+    expect(matchesQuery(['Eggs'], '   ')).toBe(true)
+  })
+})

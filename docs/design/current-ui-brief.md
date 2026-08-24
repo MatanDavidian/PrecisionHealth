@@ -16,7 +16,7 @@ assumed.
 
 | Route | What it is |
 |---|---|
-| `/log` | **Default.** Camera-first: one capture button, then an estimate, then Save |
+| `/log` | **Default.** What you usually eat, then the camera; then an estimate, then Save |
 | `/today` | The dashboard: nutrition, activity, recovery, body, meals, one AI card |
 | `/nutrition` | Day totals, a manual meal form, the logged list with confirmations |
 | `/settings` | Account, API key, accuracy/speed, analysis, photos, storage |
@@ -27,11 +27,44 @@ assumed.
 App → Settings); a bottom bar on mobile (Log · Today · Food · Settings). The
 phone is the primary device — it holds the camera.
 
+## The Log screen, above the camera
+
+The camera is no longer the first thing on the screen. Repeats are, because
+most days are not novel and photographing the same breakfast again costs
+fifteen seconds and about eleven cents to learn nothing.
+
+**Usuals card** — heading "Usual for breakfast" (the current slot, in words),
+then up to three rows: the food names, a subline of "Yesterday, 07:38 · 200 g ·
+logged 4× recently", and calories on the right. One tap logs it. A row whose
+estimate was never confirmed says so.
+
+**See all usuals** — a text link that swaps the card to "Everything you log"
+and reveals a **search field** ("Search anything you've logged before")
+matching across every meal and food ever logged.
+
+**Yesterday** — a small-caps section listing yesterday's meals with the time
+each was eaten, and one button: **"Repeat the day · 3 meals"**. When some of
+yesterday's meals are still ahead of the clock the button reads **"Repeat today
+so far · 2 meals"** and a line underneath explains: "Later meals are left out
+until their time comes round." Designing this omission as visible rather than
+silent is the point — counting tonight's dinner at lunchtime would be
+confidently wrong.
+
+**Single foods, tap to add** — pill chips of one-item meals with their
+calories. Multi-select, then "2 selected · 310 kcal → Log them". This is the
+apple-and-a-coffee path that was never one meal.
+
+The whole card is absent for a new user with no history — nothing to repeat
+yet, so the camera is the first thing after all.
+
+Every repeat confirms with the same line and an **Undo**, which covers a whole
+day's batch as one action.
+
 ## The Log screen, state by state
 
 Six states, all worth designing:
 
-1. **Idle** — a dashed camera panel: "Take a photo / or choose one from your library".
+1. **Idle** — a dashed camera panel below the usuals: "Take a photo / or choose one from your library".
 2. **Analyzing** — "Reading your photo… the most accurate model thinks for up to a minute." Honest about the wait; the best model really does take ~45 seconds.
 3. **Result** — totals (calories, protein, carbs, fat), then per item: name, grams, `53P · 0C · 6F`, and a **confidence pill** (`72%`). Below that the model's assumptions as a bulleted list ("Assumed cooked weights", "No added oil visible"), a low-confidence warning under 50%, then **Save meal / Discard**.
 4. **Exhausted** — "That was the last one on us." Explains the first 10 were free, offers *Connect my key* or *Log by hand instead*, and promises the photo is kept.
@@ -63,6 +96,12 @@ app itself rather than a generic tracker:
   day pretending nothing was logged.
 - **One-time notices** — the accuracy/speed choice on first arrival, and the
   switch to a faster model when it happens.
+- **Progress that survives leaving the screen** — the photo dims with "Reading
+  your plate… 0:07 · usually about 15 seconds / You can leave — it keeps going",
+  and a **docked bar** above the bottom nav follows you to any other screen:
+  "Analyzing your lunch · 0:12 · View", then "Lunch estimated · 640 kcal ·
+  Review". Built because on a phone the wait was invisible and looked like
+  nothing had happened.
 
 ## Settings, in order
 

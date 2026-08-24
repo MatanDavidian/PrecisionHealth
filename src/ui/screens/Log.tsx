@@ -45,10 +45,10 @@ const hhmm = (date: Date) =>
  */
 export function Log() {
   const { runWrite, trial, revision } = useDataRevision()
-  const { logRepeat, logFoods, undoMeal } = useActions()
+  const { logRepeat, logFoods, logDay, undoMeal, undoMeals } = useActions()
   const [usuals, setUsuals] = useState<Usuals>()
   /** The meal just logged from a usual, kept so it can be taken back. */
-  const [justLogged, setJustLogged] = useState<{ meal: Meal; label: string }>()
+  const [justLogged, setJustLogged] = useState<{ meals: Meal[]; label: string }>()
   const [logging, setLogging] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const { analysis, start, retry, clear } = useAnalysis()
@@ -169,7 +169,9 @@ export function Log() {
             <button
               type="button"
               onClick={() => {
-                void undoMeal(justLogged.meal)
+                void (justLogged.meals.length === 1
+                  ? undoMeal(justLogged.meals[0])
+                  : undoMeals(justLogged.meals))
                 setJustLogged(undefined)
               }}
               className="rounded-full border border-hairline bg-surface px-3 py-1.5 text-xs"
@@ -203,8 +205,21 @@ export function Log() {
               .then((meal) => {
                 if (meal) {
                   setJustLogged({
-                    meal,
+                    meals: [meal],
                     label: usual.template.items.map((i) => i.name).join(', '),
+                  })
+                }
+              })
+              .finally(() => setLogging(false))
+          }}
+          onRepeatDay={(source: Meal[]) => {
+            setLogging(true)
+            void logDay(source)
+              .then((meals) => {
+                if (meals.length > 0) {
+                  setJustLogged({
+                    meals,
+                    label: `${meals.length} meal${meals.length === 1 ? '' : 's'} from yesterday`,
                   })
                 }
               })
@@ -215,7 +230,7 @@ export function Log() {
             void logFoods(foods, slot)
               .then((meal) => {
                 if (meal) {
-                  setJustLogged({ meal, label: foods.map((f) => f.name).join(', ') })
+                  setJustLogged({ meals: [meal], label: foods.map((f) => f.name).join(', ') })
                 }
               })
               .finally(() => setLogging(false))

@@ -11,6 +11,7 @@ import {
   addDays,
   dayKey,
   type MealSlot,
+  type Meal,
   type UsualFood,
   type UsualMeal,
   type UserId,
@@ -22,6 +23,8 @@ import { deviceZone } from './newRecords'
 export const USUALS_WINDOW_DAYS = 60
 
 export interface Usuals {
+  /** Yesterday's meals as they were eaten, for repeating the whole day. */
+  yesterdayMeals: Meal[]
   /** Meals usually eaten at the slot being logged now. */
   forThisSlot: UsualMeal[]
   /** Everything repeatable, whatever the slot — for "see all". */
@@ -48,6 +51,7 @@ export async function readUsuals(userId: UserId, slot: MealSlot): Promise<Usuals
   })
 
   return {
+    yesterdayMeals,
     forThisSlot: findUsualMeals(history, { slot, limit: 3 }),
     all: findUsualMeals(history, { limit: 20 }),
     foods: findUsualFoods(history, { limit: 8 }),

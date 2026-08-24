@@ -12,8 +12,10 @@ import {
   confirmFoodItem,
   confirmObservation,
   mealFromFoods,
+  repeatDay,
   repeatMeal,
   retractMeal,
+  dayKey,
   detectMealConflicts,
   latestVersions,
   nextVersion,
@@ -221,6 +223,30 @@ export function useActions() {
   )
 
   /**
+   * Repeats a whole day of meals, each at the time of day it was eaten.
+   *
+   * Returns what was written so the caller can offer Undo over all of it —
+   * one tap in, one tap out.
+   */
+  const logDay = useCallback(
+    async (source: Meal[]): Promise<Meal[]> => {
+      const zone = deviceZone()
+      const now = new Date()
+      const { meals } = repeatDay(source, currentUserId(), {
+        onDate: dayKey(now.toISOString(), zone),
+        zone,
+        now,
+        newId,
+      })
+      const ok = await runWrite('these meals', async () => {
+        for (const meal of meals) await getRepositories().meals.add(meal)
+      })
+      return ok ? meals : []
+    },
+    [runWrite],
+  )
+
+  /**
    * Takes a meal back.
    *
    * Records are append-only (D4), so this appends a version marked retracted
@@ -234,6 +260,16 @@ export function useActions() {
     [runWrite],
   )
 
+  /** Takes back everything a whole-day repeat wrote. */
+  const undoMeals = useCallback(
+    async (meals: Meal[]) => {
+      await runWrite('that change', async () => {
+        for (const meal of meals) await getRepositories().meals.add(retractMeal(meal, newId))
+      })
+    },
+    [runWrite],
+  )
+
   return {
     addMeal,
     resolveConflict,
@@ -241,6 +277,8 @@ export function useActions() {
     resolveMealVersion,
     logRepeat,
     logFoods,
+    logDay,
     undoMeal,
+    undoMeals,
   }
 }

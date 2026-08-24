@@ -153,3 +153,18 @@ export function zonedTimeToUtc(date: CalendarDate, timeOfDay: string, zone: Iana
 
 /** Shift a calendar date by whole days. */
 export const addDays = (date: CalendarDate, days: number): CalendarDate => shiftDate(date, days)
+
+/**
+ * Whole calendar days from one date to another — negative if `to` is earlier.
+ *
+ * Counted on the calendar rather than in elapsed hours, so a meal five hours
+ * ago is "yesterday" if midnight fell in between. Calendar dates carry no
+ * zone, so UTC arithmetic on them is exact and DST cannot skew the count.
+ */
+export function daysBetween(from: CalendarDate, to: CalendarDate): number {
+  const asUtc = (date: CalendarDate): number => {
+    const [year, month, day] = date.split('-').map(Number)
+    return Date.UTC(year, month - 1, day)
+  }
+  return Math.round((asUtc(to) - asUtc(from)) / 86_400_000)
+}

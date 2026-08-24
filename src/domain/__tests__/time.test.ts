@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayKey, dayKeyOf, zonedTimeToUtc } from '../time'
+import { dayKey, dayKeyOf, daysBetween, zonedTimeToUtc } from '../time'
 
 const JERUSALEM = 'Asia/Jerusalem'
 const NEW_YORK = 'America/New_York'
@@ -60,5 +60,21 @@ describe('zonedTimeToUtc', () => {
 
   it('agrees with a different zone on the same wall time', () => {
     expect(zonedTimeToUtc('2026-08-18', '13:05', NEW_YORK)).toBe('2026-08-18T17:05:00.000Z')
+  })
+})
+
+describe('daysBetween', () => {
+  it('counts calendar days, not elapsed hours', () => {
+    expect(daysBetween('2026-08-24', '2026-08-25')).toBe(1)
+  })
+
+  it('is zero within one day and negative going back', () => {
+    expect(daysBetween('2026-08-25', '2026-08-25')).toBe(0)
+    expect(daysBetween('2026-08-25', '2026-08-18')).toBe(-7)
+  })
+
+  it('is unaffected by a DST change in between', () => {
+    // Clocks go back in Europe on 25 Oct 2026; that day is 25 hours long.
+    expect(daysBetween('2026-10-24', '2026-10-26')).toBe(2)
   })
 })

@@ -123,6 +123,25 @@ Full plan: [`features/ai-access-plans.md`](features/ai-access-plans.md).
 **Ships:** photo analysis that works the moment you sign in, without anyone
 pasting a key.
 
+## Slice 3.6 — Repeat what you usually eat ✅ built
+
+Inserted between AI access and Garmin, on the owner's call: the fastest photo
+in the world is still slower than not taking one. Usual meals for the current
+slot, single-food chips that combine into a snack, search across everything
+ever logged, and a whole-day repeat that places each meal at the time of day it
+was eaten — skipping the ones whose hour has not come round yet.
+
+Full plan: [`features/repeat-meals.md`](features/repeat-meals.md).
+
+**Proved:** that the append-only model makes a repeat trivial — a repeat is
+just another meal record, so versioning, conflicts and Undo needed no special
+case. The provenance rule did need thought: a repeated *confirmed* meal is a
+user entry, a repeated *estimate* is still an estimate.
+**Ships:** logging a familiar day in one tap, and the end of photographing the
+same breakfast every morning.
+
+Estimate-from-text is the one part of this family still unbuilt.
+
 ## Slice 4 — Import from Garmin
 
 Sleep, HRV, resting heart rate, steps, weight. The first time two sources

@@ -12,7 +12,7 @@
 import type { FoodItem, Meal, MealId, MealSlot } from './nutrition'
 import type { IdFactory } from './corrections'
 import type { CanonicalQuantity } from './units'
-import type { IanaZone } from './time'
+import { zonedTimeToUtc, type CalendarDate, type IanaZone } from './time'
 import type { UserId } from './user'
 import { needsConfirmation, userEntered, type Provenance } from './provenance'
 import { liveItems } from './corrections'
@@ -227,6 +227,67 @@ export function mealFromFoods(
     items: foods.map((food) => copyItem(food.template, mealId, at, options.newId)),
     provenance: userEntered(at),
   }
+}
+
+/** The local wall-clock time a meal was eaten, as "HH:MM". */
+export function timeOfDay(meal: Meal, zone: IanaZone): string {
+  const at = instantOf(meal)
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: zone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date(at))
+}
+
+export interface RepeatDayResult {
+  /** Meals ready to log, each at the time of day it was eaten before. */
+  meals: Meal[]
+  /** Meals left out because their hour has not come round yet today. */
+  skipped: Meal[]
+}
+
+/**
+ * Repeats a whole day — the days that look like every other day.
+ *
+ * Each meal lands at the time of day it was eaten before, not all at once:
+ * breakfast at 07:38 belongs at 07:38, and stacking three meals onto this
+ * minute would make the day's shape a lie.
+ *
+ * Meals whose hour has NOT yet come round are deliberately left out. Copying
+ * tonight's dinner at two in the afternoon would add calories and protein to a
+ * total for food nobody has eaten, and a tracker that counts meals in advance
+ * is worse than useless — it is confidently wrong. Repeat again after dinner
+ * and it is one more tap.
+ */
+export function repeatDay(
+  source: readonly Meal[],
+  userId: UserId,
+  options: { onDate: CalendarDate; zone: IanaZone; now: Date; newId: IdFactory },
+): RepeatDayResult {
+  const meals: Meal[] = []
+  const skipped: Meal[] = []
+
+  for (const meal of [...source].sort((a, b) => instantOf(a).localeCompare(instantOf(b)))) {
+    if (meal.retracted) continue
+    const at = new Date(zonedTimeToUtc(options.onDate, timeOfDay(meal, options.zone), options.zone))
+    if (at.getTime() > options.now.getTime()) {
+      skipped.push(meal)
+      continue
+    }
+    meals.push(
+      repeatMeal(meal, userId, { at, zone: options.zone, slot: meal.slot, newId: options.newId }),
+    )
+  }
+
+  return { meals, skipped }
+}
+
+/** Free-text match over what a meal or food is called. */
+export const matchesQuery = (names: readonly string[], query: string): boolean => {
+  const needle = normalise(query)
+  if (!needle) return true
+  return names.some((name) => normalise(name).includes(needle))
 }
 
 /** Totals for a set of chosen foods, for the "2 selected · 600 kcal" line. */

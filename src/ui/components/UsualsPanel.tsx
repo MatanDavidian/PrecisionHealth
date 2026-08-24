@@ -1,5 +1,17 @@
 import { useState } from 'react'
-import { convert, type UsualFood, type UsualMeal, type MealSlot } from '@/domain'
+import {
+  convert,
+  dayKey,
+  daysBetween,
+  matchesQuery,
+  timeOfDay,
+  type IanaZone,
+  type Meal,
+  type MealSlot,
+  type UsualFood,
+  type UsualMeal,
+} from '@/domain'
+import { deviceZone } from '@/data/newRecords'
 import type { Usuals } from '@/data/usuals'
 import { Card } from './Card'
 
@@ -20,10 +32,13 @@ const grams = (meal: UsualMeal): number =>
   Math.round(meal.template.items.reduce((sum, i) => sum + convert(i.amount, 'g'), 0))
 
 /** "Yesterday, 07:38" · "Tuesday" · "3 weeks ago" — how a person would say it. */
-function when(iso: string): string {
+function when(iso: string, zone: IanaZone): string {
   const then = new Date(iso)
-  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000)
   const time = then.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  // Calendar days apart, not hours apart: last night's dinner is "yesterday"
+  // when you open the app after midnight, however few hours ago it was.
+  const today = dayKey(new Date().toISOString(), zone)
+  const days = daysBetween(dayKey(iso, zone), today)
   if (days <= 0) return `Today, ${time}`
   if (days === 1) return `Yesterday, ${time}`
   if (days < 7) return then.toLocaleDateString(undefined, { weekday: 'long' })
@@ -42,18 +57,44 @@ export function UsualsPanel({
   slot,
   onRepeatMeal,
   onLogFoods,
+  onRepeatDay,
   busy,
 }: {
   usuals: Usuals
   slot: MealSlot
   onRepeatMeal: (usual: UsualMeal) => void
   onLogFoods: (foods: UsualFood[]) => void
+  onRepeatDay: (meals: Meal[]) => void
   busy: boolean
 }) {
   const [selected, setSelected] = useState<UsualFood[]>([])
   const [showAll, setShowAll] = useState(false)
+  const [query, setQuery] = useState('')
 
-  const suggestions = showAll ? usuals.all : usuals.forThisSlot
+  const zone = deviceZone()
+  // Search applies only in the "everything" view — the slot list is three rows.
+  const search = showAll ? query : ''
+  const suggestions = (showAll ? usuals.all : usuals.forThisSlot).filter((usual) =>
+    matchesQuery(
+      usual.template.items.map((item) => item.name),
+      search,
+    ),
+  )
+  const foods = usuals.foods.filter((food) => matchesQuery([food.name], search))
+
+  /**
+   * Yesterday's meals whose hour has already come round today.
+   *
+   * The rest are left out on purpose: counting tonight's dinner at two in the
+   * afternoon would add protein for food nobody has eaten.
+   */
+  const now = new Date()
+  const dueFromYesterday = usuals.yesterdayMeals.filter((meal) => {
+    const [h, m] = timeOfDay(meal, zone).split(':').map(Number)
+    const then = new Date(now)
+    then.setHours(h, m, 0, 0)
+    return then.getTime() <= now.getTime()
+  })
   const nothingYet = usuals.all.length === 0 && usuals.foods.length === 0
   if (nothingYet) return null
 
@@ -92,7 +133,7 @@ export function UsualsPanel({
                       {usual.template.items.map((i) => i.name).join(', ')}
                     </span>
                     <span className="block pt-0.5 text-xs text-ink-muted">
-                      {when(usual.lastAt)}
+                      {when(usual.lastAt, zone)}
                       {/* Weight is worth showing only when it was recorded. */}
                       {grams(usual) > 0 && ` · ${grams(usual)} g`}
                       {usual.count > 1 && ` · logged ${usual.count}× recently`}
@@ -109,20 +150,70 @@ export function UsualsPanel({
         {usuals.all.length > usuals.forThisSlot.length && (
           <button
             type="button"
-            onClick={() => setShowAll((v) => !v)}
+            onClick={() => {
+              setShowAll((v) => !v)
+              setQuery('')
+            }}
             className="pt-3 text-xs text-ink-muted underline"
           >
             {showAll ? `Back to ${SLOT_WORD[slot]}` : 'See all usuals'}
           </button>
         )}
 
-        {usuals.foods.length > 0 && (
+        {showAll && (
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search anything you've logged before"
+            className="mt-3 w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+          />
+        )}
+
+        {dueFromYesterday.length > 0 && !showAll && (
+          <div className="pt-4">
+            <p className="pb-2 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+              Yesterday
+            </p>
+            <div className="space-y-1">
+              {dueFromYesterday.map((meal) => (
+                <div key={meal.recordId} className="flex items-baseline justify-between gap-3 text-xs">
+                  <span className="min-w-0 truncate text-ink-muted">
+                    <span className="font-medium text-ink">
+                      {meal.slot.charAt(0) + meal.slot.slice(1).toLowerCase()}
+                    </span>{' '}
+                    · {meal.items.map((i) => i.name).join(', ')}
+                  </span>
+                  <span className="tabular shrink-0 text-ink-muted">
+                    {timeOfDay(meal, zone)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onRepeatDay(dueFromYesterday)}
+              className="mt-3 rounded-full border border-hairline px-4 py-1.5 text-xs transition-colors hover:bg-card-soft disabled:opacity-40"
+            >
+              Repeat {dueFromYesterday.length === usuals.yesterdayMeals.length ? 'the day' : 'today so far'} ·{' '}
+              {dueFromYesterday.length} meal{dueFromYesterday.length === 1 ? '' : 's'}
+            </button>
+            {dueFromYesterday.length < usuals.yesterdayMeals.length && (
+              <p className="pt-1 text-xs text-ink-muted">
+                Later meals are left out until their time comes round.
+              </p>
+            )}
+          </div>
+        )}
+
+        {foods.length > 0 && (
           <div className="pt-4">
             <p className="pb-2 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">
               Single foods, tap to add
             </p>
             <div className="flex flex-wrap gap-2">
-              {usuals.foods.map((food) => {
+              {foods.map((food) => {
                 const on = selected.some((f) => f.name === food.name)
                 return (
                   <button

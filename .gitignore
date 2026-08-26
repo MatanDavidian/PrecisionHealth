@@ -9,3 +9,6 @@ dist/
 
 # Supabase project credentials
 .env.local
+
+# Supabase CLI scratch state, per machine
+supabase/.temp/

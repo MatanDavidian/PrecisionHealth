@@ -38,6 +38,18 @@ export function retractMeal(meal: Meal, newId: IdFactory): Meal {
 }
 
 /**
+ * Undeleting: another version, saying it happened after all.
+ *
+ * The mirror of `retractMeal`, and it has to exist for the same reason. A
+ * delete that cannot be taken back within a few seconds is a trap on a phone,
+ * where the button is a thumb's width from the one next to it — and reviving
+ * the old record in place would be the one thing D4 forbids.
+ */
+export function restoreMeal(meal: Meal, newId: IdFactory): Meal {
+  return { ...meal, recordId: newId(), version: meal.version + 1, retracted: false }
+}
+
+/**
  * What to display: the newest version of each meal.
  *
  * When several records tie at the top version the meal is in conflict; this

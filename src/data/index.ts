@@ -19,7 +19,7 @@ import { dayKey } from '@/domain'
 import { FakeEstimator } from '@/ai/fakeEstimator'
 import { OpenAiEstimator } from '@/ai/openaiEstimator'
 import { ProxyEstimator } from '@/ai/proxyEstimator'
-import type { FoodVisionEstimator } from '@/ai/estimator'
+import type { FoodEstimator } from '@/ai/estimator'
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase/client'
 import { deviceZone } from './newRecords'
 import type { Session } from './session'
@@ -91,7 +91,7 @@ const directEstimator = new OpenAiEstimator({
   getModel: async () => (await localRepositories.settings.get()).model,
 })
 
-let activeEstimator: FoodVisionEstimator = useFake()
+let activeEstimator: FoodEstimator = useFake()
   ? new FakeEstimator(undefined, undefined, fakeDelay())
   : directEstimator
 
@@ -106,7 +106,7 @@ let requiresKey = !useFake()
 export const estimatorRequiresKey = (): boolean => requiresKey
 
 /** Read through this — the estimator changes with the session, like the store. */
-export const getEstimator = (): FoodVisionEstimator => activeEstimator
+export const getEstimator = (): FoodEstimator => activeEstimator
 
 /**
  * Chooses who pays for analysis.
@@ -123,7 +123,7 @@ export function selectEstimatorFor(options: {
   getAccessToken: () => Promise<string | undefined>
   /** What the app should ask for when the user has expressed no preference. */
   suggestedModel?: string
-}): FoodVisionEstimator {
+}): FoodEstimator {
   if (useFake()) {
     requiresKey = false
     activeEstimator = new FakeEstimator(undefined, undefined, fakeDelay())

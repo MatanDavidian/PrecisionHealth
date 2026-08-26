@@ -240,7 +240,7 @@ against — which is also what makes AI regressions detectable.
 provider directly from the browser with an API key the user supplies in
 Settings. The key is stored on-device only, sent to exactly one host (the
 provider's API), never synced, never exported. Behind a
-`FoodVisionEstimator` port — the same seam pattern as D3 — so a server-proxy
+`FoodEstimator` port — the same seam pattern as D3 — so a server-proxy
 adapter can slot in later without touching the UI.
 
 **Why.** This is what unblocks AI before the backend exists: no server, no
@@ -259,8 +259,17 @@ Settings.
 **Revisit when** slice 3 ships the server proxy (BYOK becomes one of two
 modes), or if the app ever becomes multi-user on shared machines.
 
+**Since** (Aug 2026) the port carries a second input: `estimateFromText`
+alongside `estimate`, because a photo and a sentence are the same question with
+different evidence. It cost one method on three adapters and one branch in the
+edge function; everything downstream — validation, entitlement, the ledger, the
+result card, the audit record — was already input-agnostic. That is the return
+the seam was bought for, and it is why the port is now `FoodEstimator` rather
+than `FoodVisionEstimator` (kept as an alias).
+
 **Amends** D9 step 3. **Planned in**
-`docs/features/photo-meal-logging.md`.
+`docs/features/photo-meal-logging.md` and
+`docs/features/log-modes-and-meal-edits.md`.
 
 ## D15 — Aggregates are versioned, not rewritten
 
@@ -283,6 +292,14 @@ the false-conflict rate for a family-sized app.
 
 **Must precede sync** (D16). Afterwards it is a live data-loss bug rather than a
 latent one. **Planned in** `docs/OPEN_QUESTIONS.md` Q3.
+
+**Cashed in** (Aug 2026). For a year this bought only Confirm and Undo — the
+edit path it was designed for did not exist in the UI. It does now:
+`applyMealEdit` writes the next version with each changed food superseding the
+old one inside it, and `restoreMeal` un-deletes by appending a version saying
+the meal happened after all. No new mechanism was needed, which is the whole
+argument for having modelled it early (D12's reasoning, applied to meals).
+**Built in** `docs/features/log-modes-and-meal-edits.md`.
 
 ## D16 — Supabase for the backend, online-first, real accounts from day one
 

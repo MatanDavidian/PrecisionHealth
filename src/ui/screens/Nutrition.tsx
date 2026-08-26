@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Card } from '../components/Card'
 import { MealForm } from '../components/MealForm'
+import { MealEditor } from '../components/MealEditor'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
 import { show, showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
@@ -7,16 +9,44 @@ import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
 import { DataUnavailable } from '../components/DataUnavailable'
 import { evaluateGoal } from '@/data/analytics'
-import { convert, needsConfirmation, type Meal, type MealConflict } from '@/domain'
+import {
+  convert,
+  needsConfirmation,
+  type Meal,
+  type MealConflict,
+  type MealEdit,
+  type MealId,
+} from '@/domain'
 import { MealConflictNotice } from '../components/MealConflictNotice'
 import { useDataRevision } from '../DataProvider'
+
+/** A meal just deleted, kept only long enough to offer Undo. */
+interface JustDeleted {
+  /** The retraction record — putting the meal back needs the version that removed it. */
+  retraction: Meal
+  slot: string
+  kcal: number
+}
 
 export function Nutrition() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
-  const { addMeal, confirmEstimate, resolveMealVersion } = useActions()
+  const { addMeal, confirmEstimate, resolveMealVersion, editMeal, deleteMeal, undeleteMeal } =
+    useActions()
   const { session } = useDataRevision()
+  const [editing, setEditing] = useState<MealId>()
+  const [deleted, setDeleted] = useState<JustDeleted>()
+
+  /*
+    Both belong to the day you were looking at. Carried onto another day, the
+    Undo would restore a meal that is not on screen while claiming it came off
+    "today's total", and an open editor would point at a meal from elsewhere.
+  */
+  useEffect(() => {
+    setEditing(undefined)
+    setDeleted(undefined)
+  }, [day])
 
   if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
   if (!data) return <p className="text-sm text-ink-muted">Loading…</p>
@@ -24,6 +54,13 @@ export function Nutrition() {
   const { nutrients, meals, goals } = data
   const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
   const progress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
+
+  const remove = async (meal: Meal) => {
+    const retraction = await deleteMeal(meal)
+    if (!retraction) return
+    setEditing(undefined)
+    setDeleted({ retraction, slot: slotWord(meal), kcal: mealKcal(meal) })
+  }
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -70,25 +107,88 @@ export function Nutrition() {
         )}
 
         <Card label={`Logged (${meals.length})`}>
-          {meals.length === 0 && (
+          {/*
+            The undo sits where the meal was, and says what it cost the day's
+            total. A delete you cannot take back is a trap on a phone, where
+            the button is a thumb's width from the one beside it (Q7).
+          */}
+          {deleted && (
+            <div className="my-2 flex flex-wrap items-center gap-3 rounded-card border border-hairline bg-surface p-3">
+              <p className="min-w-0 flex-1 text-sm text-ink-muted">
+                <span className="text-ink">{deleted.slot} deleted</span> ·{' '}
+                <span className="tabular">{deleted.kcal} kcal</span> came off {isToday ? "today's" : "the day's"}{' '}
+                total
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  void undeleteMeal(deleted.retraction)
+                  setDeleted(undefined)
+                }}
+                className="rounded-full border border-hairline px-4 py-1.5 text-xs font-medium transition-colors hover:bg-card-soft"
+              >
+                Undo
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleted(undefined)}
+                className="rounded-full px-2 py-1.5 text-xs text-ink-muted"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {meals.length === 0 && !deleted && (
             <p className="py-2 text-sm text-ink-muted">
               {isToday ? 'Nothing logged yet.' : 'Nothing was logged on this day.'}
             </p>
           )}
-          {meals.map((meal) => (
-            <MealRow
-              key={meal.id}
-              meal={meal}
-              onConfirm={confirmEstimate}
-              conflict={data.mealConflicts.find((c) => c.mealId === meal.id)}
-              onResolve={resolveMealVersion}
-            />
-          ))}
+
+          {meals.map((meal) =>
+            editing === meal.id ? (
+              <MealEditor
+                /*
+                  Keyed on the RECORD, not the meal: if another device writes a
+                  new version while this form is open, the form is rebuilt from
+                  it. Dropping unsaved keystrokes is bad; saving numbers
+                  computed against a version that is no longer the newest is
+                  worse, because it looks like it worked.
+                */
+                key={meal.recordId}
+                meal={meal}
+                onCancel={() => setEditing(undefined)}
+                onDelete={() => void remove(meal)}
+                onSave={async (edit: MealEdit) => {
+                  await editMeal(meal, edit)
+                  setEditing(undefined)
+                }}
+              />
+            ) : (
+              <MealRow
+                key={meal.id}
+                meal={meal}
+                onConfirm={confirmEstimate}
+                conflict={data.mealConflicts.find((c) => c.mealId === meal.id)}
+                onResolve={resolveMealVersion}
+                onEdit={() => {
+                  setDeleted(undefined)
+                  setEditing(meal.id)
+                }}
+                onDelete={() => void remove(meal)}
+              />
+            ),
+          )}
         </Card>
       </div>
     </div>
   )
 }
+
+const slotWord = (meal: Meal): string => meal.slot.charAt(0) + meal.slot.slice(1).toLowerCase()
+
+const mealKcal = (meal: Meal): number =>
+  Math.round(meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0))
 
 function Total({ name, value, good }: { name: string; value: string; good?: boolean }) {
   return (
@@ -104,21 +204,35 @@ function MealRow({
   onConfirm,
   conflict,
   onResolve,
+  onEdit,
+  onDelete,
 }: {
   meal: Meal
   onConfirm: (meal: Meal, item: Meal['items'][number]) => Promise<void>
   conflict?: MealConflict
   onResolve: (chosen: Meal, conflict: MealConflict) => Promise<void>
+  onEdit: () => void
+  onDelete: () => void
 }) {
-  const kcal = meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0)
-
   return (
     <div className="border-t border-hairline py-3 first:border-t-0">
       <div className="flex items-baseline justify-between gap-4">
-        <span className="text-sm font-medium">
-          {meal.slot.charAt(0) + meal.slot.slice(1).toLowerCase()}
+        <span className="text-sm font-medium">{slotWord(meal)}</span>
+        <span className="flex items-center gap-2.5">
+          <span className="tabular text-sm">{mealKcal(meal)} kcal</span>
+          <span className="flex gap-1">
+            <IconButton label={`Edit ${slotWord(meal).toLowerCase()}`} onClick={onEdit}>
+              <PencilIcon />
+            </IconButton>
+            <IconButton
+              label={`Delete ${slotWord(meal).toLowerCase()}`}
+              onClick={onDelete}
+              tone="danger"
+            >
+              <TrashIcon />
+            </IconButton>
+          </span>
         </span>
-        <span className="tabular text-sm">{Math.round(kcal)} kcal</span>
       </div>
       {conflict && (
         <MealConflictNotice
@@ -149,5 +263,66 @@ function MealRow({
         </div>
       ))}
     </div>
+  )
+}
+
+/**
+ * Small, round, and labelled for screen readers.
+ *
+ * Icon-only because the row is already carrying a name and a number, and a
+ * third and fourth word of chrome on every meal would bury both.
+ */
+function IconButton({
+  label,
+  onClick,
+  tone,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  tone?: 'danger'
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`flex size-7 items-center justify-center rounded-full border border-hairline text-ink-muted transition-colors ${
+        tone === 'danger'
+          ? 'hover:border-accent-soft hover:bg-accent-soft hover:text-accent'
+          : 'hover:bg-card-soft hover:text-ink'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+const iconProps = {
+  width: 13,
+  height: 13,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2.25,
+  'aria-hidden': true,
+} as const
+
+function PencilIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M4 20h4l10-10-4-4L4 16z" />
+      <path d="m14.5 5.5 4 4" />
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" />
+    </svg>
   )
 }

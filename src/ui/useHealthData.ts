@@ -9,6 +9,7 @@ import {
   unconfirmedItems,
 } from '@/data/analytics'
 import {
+  applyMealEdit,
   confirmFoodItem,
   confirmObservation,
   mealFromFoods,
@@ -20,10 +21,12 @@ import {
   latestVersions,
   nextVersion,
   resolveMealConflict,
+  restoreMeal,
   liveItems,
   type Conflict,
   type FoodItem,
   type MealConflict,
+  type MealEdit,
   type MealSlot,
   type UsualFood,
   type UsualMeal,
@@ -247,25 +250,56 @@ export function useActions() {
   )
 
   /**
+   * The user corrected a meal they had already logged.
+   *
+   * One write, whatever changed: `applyMealEdit` turns the form into the next
+   * version of the meal, with corrected foods superseding the originals inside
+   * it (D4, D15). Nothing is overwritten, so an edit is as recoverable as
+   * everything else here.
+   */
+  const editMeal = useCallback(
+    async (meal: Meal, edit: MealEdit) => {
+      const next = applyMealEdit(meal, edit, new Date().toISOString(), newId)
+      await runWrite('your changes', () => getRepositories().meals.add(next))
+    },
+    [runWrite],
+  )
+
+  /**
    * Takes a meal back.
    *
    * Records are append-only (D4), so this appends a version marked retracted
    * rather than deleting anything — readers skip it, history keeps it, and a
    * mis-tap is recoverable (Q7).
+   *
+   * Returns the retraction so the caller can offer Undo: putting the meal back
+   * needs the record that took it away, not the one the user was looking at.
    */
-  const undoMeal = useCallback(
-    async (meal: Meal) => {
-      await runWrite('that change', () => getRepositories().meals.add(retractMeal(meal, newId)))
+  const deleteMeal = useCallback(
+    async (meal: Meal): Promise<Meal | undefined> => {
+      const retraction = retractMeal(meal, newId)
+      const ok = await runWrite('that change', () => getRepositories().meals.add(retraction))
+      return ok ? retraction : undefined
     },
     [runWrite],
   )
 
   /** Takes back everything a whole-day repeat wrote. */
-  const undoMeals = useCallback(
+  const deleteMeals = useCallback(
     async (meals: Meal[]) => {
       await runWrite('that change', async () => {
         for (const meal of meals) await getRepositories().meals.add(retractMeal(meal, newId))
       })
+    },
+    [runWrite],
+  )
+
+  /** Undoes a delete: another version, saying the meal happened after all. */
+  const undeleteMeal = useCallback(
+    async (retraction: Meal) => {
+      await runWrite('that change', () =>
+        getRepositories().meals.add(restoreMeal(retraction, newId)),
+      )
     },
     [runWrite],
   )
@@ -275,10 +309,12 @@ export function useActions() {
     resolveConflict,
     confirmEstimate,
     resolveMealVersion,
+    editMeal,
     logRepeat,
     logFoods,
     logDay,
-    undoMeal,
-    undoMeals,
+    deleteMeal,
+    deleteMeals,
+    undeleteMeal,
   }
 }

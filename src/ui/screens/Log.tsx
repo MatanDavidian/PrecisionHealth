@@ -1,14 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { estimatorRequiresKey, getRepositories } from '@/data'
-import type { EstimateHints, EstimateResult } from '@/ai/estimator'
-import { buildPhotoMeal } from '@/data/photoMeal'
+import type { EstimateHints } from '@/ai/estimator'
+import { buildEstimatedMeal } from '@/data/estimatedMeal'
 import { deviceZone, suggestSlot } from '@/data/newRecords'
+import {
+  forgetDescription,
+  readRecentDescriptions,
+  rememberDescription,
+} from '@/data/descriptions'
 import { useDataRevision } from '../DataProvider'
-import { formatElapsed, useAnalysis, useElapsed } from '../AnalysisProvider'
+import { useAnalysis, useElapsed } from '../AnalysisProvider'
 import { useActions } from '../useHealthData'
 import { OneTimeNotice } from '../components/OneTimeNotice'
 import { UsualsPanel } from '../components/UsualsPanel'
+import { ModeTabs, modeTabId, type ModeTab } from '../components/ModeTabs'
+import { PhotoPanel } from '../components/log/PhotoPanel'
+import { WritePanel } from '../components/log/WritePanel'
+import { InputPreview } from '../components/log/InputPreview'
+import { EstimateCard } from '../components/log/EstimateCard'
 import { readUsuals, type Usuals } from '@/data/usuals'
 import { currentUserId } from '@/data/session'
 import type { Meal, UsualFood, UsualMeal } from '@/domain'
@@ -21,7 +31,6 @@ const field =
   'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm outline-none focus:border-accent'
 const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
 
-/** How the docked bar names this meal while it is being read. */
 /** Only estimators that call a provider on the user's behalf need a key. */
 const keyMissing = (settings: AppSettings): boolean => estimatorRequiresKey() && !settings.apiKey
 
@@ -38,27 +47,62 @@ const hhmm = (date: Date) =>
   `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 
 /**
- * The app's front door: photograph food, tap save.
+ * The three ways in.
  *
- * The photo lives in a ref for the duration of this screen and is never
+ * Photo is first because it is the one that needs the camera in your hand;
+ * Write is for the meal you have already eaten or never photographed; Again is
+ * for the boring days, which are most of them.
+ */
+export type LogMode = 'photo' | 'write' | 'again'
+
+const MODES: readonly ModeTab<LogMode>[] = [
+  { value: 'photo', label: 'Photo', description: 'Photograph what you are eating' },
+  { value: 'write', label: 'Write', description: 'Describe what you ate in words' },
+  { value: 'again', label: 'Again', description: 'Log something you have eaten before' },
+]
+
+const isMode = (value: string | null): value is LogMode =>
+  value === 'photo' || value === 'write' || value === 'again'
+
+/**
+ * The app's front door: photograph food, describe it, or repeat it.
+ *
+ * The mode lives in the URL so the tab survives a reload and can be linked to
+ * — "log by hand instead" and the Again link both need somewhere to point.
+ *
+ * A photo lives in memory for the duration of the analysis and is never
  * written anywhere (spec §3) — Retry reuses it, saving or clearing drops it.
  */
 export function Log() {
   const { runWrite, trial, revision } = useDataRevision()
-  const { logRepeat, logFoods, logDay, undoMeal, undoMeals } = useActions()
+  const { logRepeat, logFoods, logDay, deleteMeal, deleteMeals } = useActions()
+  const [params, setParams] = useSearchParams()
+  const mode: LogMode = isMode(params.get('mode')) ? (params.get('mode') as LogMode) : 'photo'
+  const setMode = (next: LogMode) => {
+    const updated = new URLSearchParams(params)
+    if (next === 'photo') updated.delete('mode')
+    else updated.set('mode', next)
+    setParams(updated, { replace: true })
+  }
+
   const [usuals, setUsuals] = useState<Usuals>()
   /** The meal just logged from a usual, kept so it can be taken back. */
   const [justLogged, setJustLogged] = useState<{ meals: Meal[]; label: string }>()
   const [logging, setLogging] = useState(false)
-  const fileInput = useRef<HTMLInputElement>(null)
-  const { analysis, start, retry, clear } = useAnalysis()
+  const { analysis, start, startText, retry, clear } = useAnalysis()
   const running = analysis?.status === 'running'
   const elapsed = useElapsed(analysis?.startedAt, running)
 
   const [settings, setSettings] = useState<AppSettings>()
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [foodName, setFoodName] = useState('')
   const [grams, setGrams] = useState('')
+  /** Free text sent with a photo — what the camera cannot see. */
+  const [note, setNote] = useState('')
+  /** The sentence being written in Write mode. */
+  const [description, setDescription] = useState('')
+  const [recent, setRecent] = useState<string[]>(() => readRecentDescriptions())
   const [time, setTime] = useState(hhmm(new Date()))
   const [slot, setSlot] = useState<MealSlot>(suggestSlot(new Date()))
   const [showDetails, setShowDetails] = useState(false)
@@ -81,6 +125,7 @@ export function Log() {
   const hints = (): EstimateHints => ({
     foodName: foodName.trim() || undefined,
     totalGrams: grams.trim() ? Number(grams) : undefined,
+    note: note.trim() || undefined,
   })
 
   async function onPhotoChosen(file: File) {
@@ -88,45 +133,63 @@ export function Log() {
     await start(file, hints(), slot, SLOT_LABEL[slot])
   }
 
-  function clearPhoto() {
+  async function onDescribed() {
+    setSaved(false)
+    setRecent(rememberDescription(description))
+    await startText(description, hints(), slot, SLOT_LABEL[slot])
+  }
+
+  /** Drops the input and every hint that belonged to it. */
+  function clearInput() {
     clear()
     setFoodName('')
     setGrams('')
+    setNote('')
   }
 
   async function save() {
-    if (!analysis?.result) return
+    if (!analysis?.result || !analysis.input) return
     const [hours, minutes] = time.split(':').map(Number)
     const at = new Date()
     at.setHours(hours, minutes, 0, 0)
 
-    const { meal, inference } = buildPhotoMeal(currentUserId(), {
+    const { meal, inference } = buildEstimatedMeal(currentUserId(), {
       slot,
       at,
       zone: deviceZone(),
       hints: analysis.hints,
-      photo: analysis.photoMeta,
+      source:
+        analysis.input.kind === 'photo'
+          ? { kind: 'photo', photo: analysis.input.meta }
+          : { kind: 'text', description: analysis.input.description },
       result: analysis.result,
     })
+
+    setSaving(true)
     const ok = await runWrite('this meal', async () => {
       await getRepositories().inferences.add(inference)
       await getRepositories().meals.add(meal)
-    })
-    // The photo is only discarded once the save actually landed, so a retry
+    }).finally(() => setSaving(false))
+
+    // The input is only discarded once the save actually landed, so a retry
     // still has something to retry with.
     if (!ok) return
-    clearPhoto()
+    clearInput()
+    setDescription('')
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
 
   const needsKey = settings ? keyMissing(settings) : false
+  const fromText = analysis?.input.kind === 'text'
+  /** The single most-repeated meal for this hour, offered beside the camera. */
+  const usualNow = usuals?.forThisSlot[0]
 
   return (
     <div className="mx-auto max-w-xl">
       <header className="pb-5">
         <h1 className="font-display text-4xl">Log</h1>
-        <p className="pt-1 text-sm text-ink-muted">Photograph your food — the numbers follow.</p>
+        <p className="pt-1 text-sm text-ink-muted">Three ways in. Photo is the default.</p>
       </header>
 
       {/*
@@ -170,8 +233,8 @@ export function Log() {
               type="button"
               onClick={() => {
                 void (justLogged.meals.length === 1
-                  ? undoMeal(justLogged.meals[0])
-                  : undoMeals(justLogged.meals))
+                  ? deleteMeal(justLogged.meals[0])
+                  : deleteMeals(justLogged.meals))
                 setJustLogged(undefined)
               }}
               className="rounded-full border border-hairline bg-surface px-3 py-1.5 text-xs"
@@ -190,28 +253,51 @@ export function Log() {
       )}
 
       {/*
-        The repeat comes BEFORE the camera on purpose: most days are not novel,
-        and photographing the same breakfast again costs a minute of waiting and
-        a fraction of a cent to be told what you already knew.
+        The tabs step aside once something is being estimated: at that point
+        there is one thing on screen and one decision to make about it.
       */}
-      {usuals && !analysis && (
+      {!analysis && (
+        <ModeTabs tabs={MODES} value={mode} onChange={setMode} label="How to log this meal" />
+      )}
+
+      {!analysis && (
+        <div role="tabpanel" aria-labelledby={modeTabId(mode)}>
+      {mode === 'photo' && (
+        <PhotoPanel
+          note={note}
+          onNoteChange={setNote}
+          onPhoto={(file) => void onPhotoChosen(file)}
+          usualNow={usualNow}
+          slot={slot}
+          busy={logging}
+          onSeeAll={() => setMode('again')}
+          onLogUsual={(usual) => logUsual(usual)}
+        />
+      )}
+
+      {mode === 'write' && (
+        <WritePanel
+          value={description}
+          onChange={setDescription}
+          onEstimate={() => void onDescribed()}
+          recent={recent}
+          onForgetRecent={(entry) => setRecent(forgetDescription(entry))}
+          busy={logging}
+        />
+      )}
+
+      {/*
+        The repeat is a mode rather than a card above the camera: most days are
+        not novel, and photographing the same breakfast again costs a minute of
+        waiting and a fraction of a cent to be told what you already knew.
+      */}
+      {mode === 'again' && usuals && (
         <UsualsPanel
           usuals={usuals}
           slot={slot}
           busy={logging}
-          onRepeatMeal={(usual: UsualMeal) => {
-            setLogging(true)
-            void logRepeat(usual, slot)
-              .then((meal) => {
-                if (meal) {
-                  setJustLogged({
-                    meals: [meal],
-                    label: usual.template.items.map((i) => i.name).join(', '),
-                  })
-                }
-              })
-              .finally(() => setLogging(false))
-          }}
+          searchFirst
+          onRepeatMeal={(usual: UsualMeal) => logUsual(usual)}
           onRepeatDay={(source: Meal[]) => {
             setLogging(true)
             void logDay(source)
@@ -238,58 +324,22 @@ export function Log() {
         />
       )}
 
-      <input
-        ref={fileInput}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) void onPhotoChosen(file)
-          e.target.value = ''
-        }}
-      />
-
-      {!analysis && (
-        <button
-          type="button"
-          onClick={() => fileInput.current?.click()}
-          className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-card border border-dashed border-hairline bg-card text-ink-muted transition-colors hover:bg-card-soft"
-        >
-          <CameraIcon />
-          <span className="text-sm font-medium text-ink">Take a photo</span>
-          <span className="text-xs">or choose one from your library</span>
-        </button>
+      {mode === 'again' && !usuals && (
+        <p className="text-sm text-ink-muted">Looking through what you have logged…</p>
+      )}
+        </div>
       )}
 
       {analysis && (
-        <div className="relative overflow-hidden rounded-card">
-          <img
-            src={analysis.photoUrl}
-            alt="The meal you photographed"
-            className={`w-full object-cover transition-opacity ${running ? 'opacity-60' : ''}`}
-          />
-          {/*
-            The photo IS the progress. On a phone the preview fills the screen,
-            so a status line underneath is simply not visible — which is how
-            "I took a picture and nothing happened" happens.
-          */}
-          {running && (
-            <div className="absolute inset-x-0 bottom-0 bg-ink/75 px-4 py-3 text-surface">
-              <p className="flex items-center gap-2 text-sm font-medium">
-                <span className="size-2 animate-pulse rounded-full bg-surface" />
-                Reading your plate…
-                <span className="tabular font-normal opacity-80">
-                  {formatElapsed(elapsed)} · usually about 15 seconds
-                </span>
-              </p>
-              <p className="pt-0.5 text-xs opacity-75">
-                You can leave — it keeps going, and the bar below stays until it's done.
-              </p>
-            </div>
-          )}
-        </div>
+        <InputPreview
+          analysis={analysis}
+          elapsed={elapsed}
+          onEdit={() => {
+            setDescription(analysis.input.kind === 'text' ? analysis.input.description : '')
+            clearInput()
+            setMode('write')
+          }}
+        />
       )}
 
       {saved && (
@@ -302,9 +352,9 @@ export function Log() {
         <Card>
           <h2 className="font-display text-xl">That was the last one on us</h2>
           <p className="pt-1 text-sm text-ink-muted">
-            The first {trial?.allowance ?? 10} photos were analysed on our account, so you could
-            try the app without setting anything up. To keep going, connect your own OpenAI key —
-            it takes a couple of minutes, and analysing a photo costs a fraction of a cent.
+            The first {trial?.allowance ?? 10} analyses were run on our account, so you could try
+            the app without setting anything up. To keep going, connect your own OpenAI key — it
+            takes a couple of minutes, and analysing a meal costs a fraction of a cent.
           </p>
           <div className="flex flex-wrap gap-3 pt-4">
             <Link
@@ -321,17 +371,18 @@ export function Log() {
             </Link>
           </div>
           <p className="pt-3 text-xs text-ink-muted">
-            Your photo is still here — connect a key and press Analyze to pick up where you left
-            off.
+            {fromText
+              ? 'What you wrote is still here — connect a key and press Try again.'
+              : 'Your photo is still here — connect a key and press Analyze to pick up where you left off.'}
           </p>
         </Card>
       )}
 
-      {needsKey && !trial?.remaining && (
+      {needsKey && !trial?.remaining && !analysis && (
         <Card label="One-time setup">
           <p className="text-sm text-ink-muted">
-            Photo analysis runs on your own OpenAI key, so add one to switch it on. A photo costs a
-            fraction of a cent to analyze.
+            Photo and text estimates run on your own OpenAI key, so add one to switch them on. A
+            meal costs a fraction of a cent to analyze.
           </p>
           <div className="flex flex-wrap gap-3 pt-3">
             <Link
@@ -436,15 +487,18 @@ export function Log() {
               onClick={retry}
               className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface"
             >
-              {analysis.error ? 'Try again' : 'Analyze'}
+              {analysis.error ? 'Try again' : fromText ? 'Estimate' : 'Analyze'}
             </button>
           )}
           <button
             type="button"
-            onClick={clearPhoto}
+            onClick={() => {
+              clearInput()
+              if (fromText) setMode('write')
+            }}
             className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
           >
-            Discard photo
+            {fromText ? 'Start over' : 'Discard photo'}
           </button>
         </div>
       )}
@@ -454,7 +508,7 @@ export function Log() {
           <p className="text-sm text-accent">{analysis.error.message}</p>
           {analysis.error.retryable && (
             <p className="pt-1 text-xs text-ink-muted">
-              Your photo and details are still here — retry, or{' '}
+              {fromText ? 'What you wrote is' : 'Your photo and details are'} still here — retry, or{' '}
               <Link to="/nutrition" className="underline">
                 log it by hand
               </Link>
@@ -465,143 +519,32 @@ export function Log() {
       )}
 
       {analysis?.result && (
-        <ResultCard
+        <EstimateCard
           result={analysis.result}
           downgraded={analysis.downgraded}
+          fromText={fromText}
+          saving={saving}
           onSave={() => void save()}
-          onDiscard={clearPhoto}
+          onDiscard={() => {
+            clearInput()
+            if (fromText) setMode('write')
+          }}
         />
       )}
     </div>
   )
-}
 
-function ResultCard({
-  result,
-  downgraded,
-  onSave,
-  onDiscard,
-}: {
-  result: EstimateResult
-  downgraded?: boolean
-  onSave: () => void
-  onDiscard: () => void
-}) {
-  if (result.refusal) {
-    return (
-      <Card>
-        <p className="text-sm">{result.refusal}</p>
-        <button
-          type="button"
-          onClick={onDiscard}
-          className="mt-3 rounded-full border border-hairline px-4 py-2 text-sm"
-        >
-          Try another photo
-        </button>
-      </Card>
-    )
+  function logUsual(usual: UsualMeal) {
+    setLogging(true)
+    void logRepeat(usual, slot)
+      .then((meal) => {
+        if (meal) {
+          setJustLogged({
+            meals: [meal],
+            label: usual.template.items.map((i) => i.name).join(', '),
+          })
+        }
+      })
+      .finally(() => setLogging(false))
   }
-
-  const total = result.items.reduce(
-    (sum, item) => ({
-      kcal: sum.kcal + item.energyKcal,
-      protein: sum.protein + item.proteinG,
-      carbs: sum.carbs + item.carbsG,
-      fat: sum.fat + item.fatG,
-    }),
-    { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-  )
-  const lowConfidence = result.overallConfidence < 0.5
-
-  return (
-    <div className="pt-4">
-      <Card label="Estimate">
-        <div className="flex flex-wrap gap-x-6 gap-y-2 pb-3">
-          <Figure name="Calories" value={Math.round(total.kcal).toLocaleString()} />
-          <Figure name="Protein" value={`${Math.round(total.protein)} g`} />
-          <Figure name="Carbs" value={`${Math.round(total.carbs)} g`} />
-          <Figure name="Fat" value={`${Math.round(total.fat)} g`} />
-        </div>
-
-        {result.items.map((item, index) => (
-          <div
-            key={`${item.name}-${index}`}
-            className="flex flex-wrap items-baseline justify-between gap-2 border-t border-hairline py-2"
-          >
-            <span className="text-sm">
-              {item.name}
-              <span className="text-ink-muted"> · {Math.round(item.amountG)} g</span>
-            </span>
-            <span className="flex items-baseline gap-3">
-              <span className="tabular text-xs text-ink-muted">
-                {Math.round(item.proteinG)}P · {Math.round(item.carbsG)}C · {Math.round(item.fatG)}F
-              </span>
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-medium text-accent">
-                {Math.round(item.confidence * 100)}%
-              </span>
-            </span>
-          </div>
-        ))}
-
-        {result.assumptions.length > 0 && (
-          <ul className="list-disc space-y-0.5 pl-4 pt-3 text-xs text-ink-muted">
-            {result.assumptions.map((assumption) => (
-              <li key={assumption}>{assumption}</li>
-            ))}
-          </ul>
-        )}
-
-        {lowConfidence && (
-          <p className="pt-3 text-xs text-accent">
-            Low confidence — worth checking the numbers before you trust them.
-          </p>
-        )}
-
-        {downgraded && (
-          <p className="pt-3 text-xs text-accent">
-            Read by the quicker model — your most-accurate analyses are used up.
-          </p>
-        )}
-
-        <p className="pt-3 text-xs text-ink-muted">
-          Saved as an estimate you can confirm or correct in Nutrition.
-        </p>
-
-        <div className="flex flex-wrap gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onSave}
-            className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface"
-          >
-            Save meal
-          </button>
-          <button
-            type="button"
-            onClick={onDiscard}
-            className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
-          >
-            Discard
-          </button>
-        </div>
-      </Card>
-    </div>
-  )
-}
-
-function Figure({ name, value }: { name: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">{name}</p>
-      <p className="tabular pt-0.5 text-lg font-medium">{value}</p>
-    </div>
-  )
-}
-
-function CameraIcon() {
-  return (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-      <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.8a1 1 0 0 0 .8-.4l1-1.3a1 1 0 0 1 .8-.4h4.2a1 1 0 0 1 .8.4l1 1.3a1 1 0 0 0 .8.4h1.8A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z" />
-      <circle cx="12" cy="12.5" r="3.5" />
-    </svg>
-  )
 }

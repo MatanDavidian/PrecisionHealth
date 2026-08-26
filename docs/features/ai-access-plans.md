@@ -23,19 +23,22 @@ None of these three features can live in the client:
 - A master key shipped in the bundle is extracted in minutes and drained.
   It must live **server-side only**, used by code the user cannot read.
 - A quota enforced by the client is a suggestion. "10 photos/day" must be
-  counted and refused **server-side**, tied to the authenticated user.
+  counted and refused **server-side**, tied to the authenticated user. (Since
+  Aug 2026 a written meal is the same call: same quota, same ledger row, same
+  model clamp — from the payer's side there is no difference.)
 - A subscription must be provable: payment webhooks land on a server and
   entitlements must be stored where the client cannot write them.
 
 So all three features are one feature: **the server-side AI proxy** — the
-"second mode" D14 explicitly reserved space for. The `FoodVisionEstimator`
-port was built for exactly this: a `ProxyEstimator` is one new adapter behind
-the same interface, chosen in the composition root. No screen changes.
+"second mode" D14 explicitly reserved space for. The `FoodEstimator` port
+(named `FoodVisionEstimator` when this was written) was built for exactly this:
+a `ProxyEstimator` is one new adapter behind the same interface, chosen in the
+composition root. No screen changes.
 
 The proxy is a Supabase Edge Function (`estimate-food`):
 
 ```
-browser ──(photo + hints, JWT)──▶ edge function ──▶ OpenAI
+browser ──(photo OR text + hints, JWT)──▶ edge function ──▶ OpenAI
                                      │
                                      ├─ verifies the Supabase JWT
                                      ├─ picks the key:

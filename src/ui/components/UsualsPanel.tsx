@@ -46,11 +46,15 @@ function when(iso: string, zone: IanaZone): string {
 }
 
 /**
- * What you usually eat, offered before the camera.
+ * What you usually eat.
  *
  * Most days are not novel. Photographing the same breakfast again costs a
  * minute of waiting and a fraction of a cent to be told what you already knew —
- * so the repeat comes first, and the camera is for food that is actually new.
+ * so this is a way in of its own, and the camera is for food that is new.
+ *
+ * `searchFirst` is what the Again tab passes: the box is at the top and typing
+ * in it searches everything ever logged, not just this hour's three rows. Off,
+ * the panel is the compact form the Photo tab shows beside the camera.
  */
 export function UsualsPanel({
   usuals,
@@ -59,6 +63,7 @@ export function UsualsPanel({
   onLogFoods,
   onRepeatDay,
   busy,
+  searchFirst = false,
 }: {
   usuals: Usuals
   slot: MealSlot
@@ -66,15 +71,20 @@ export function UsualsPanel({
   onLogFoods: (foods: UsualFood[]) => void
   onRepeatDay: (meals: Meal[]) => void
   busy: boolean
+  searchFirst?: boolean
 }) {
   const [selected, setSelected] = useState<UsualFood[]>([])
   const [showAll, setShowAll] = useState(false)
   const [query, setQuery] = useState('')
 
   const zone = deviceZone()
-  // Search applies only in the "everything" view — the slot list is three rows.
-  const search = showAll ? query : ''
-  const suggestions = (showAll ? usuals.all : usuals.forThisSlot).filter((usual) =>
+  const searching = query.trim().length > 0
+  // A query means the slot filter is in the way: someone searching "porridge"
+  // at seven in the evening wants the porridge, not to be told there is none
+  // for dinner.
+  const everything = showAll || (searchFirst && searching)
+  const search = everything ? query : ''
+  const suggestions = (everything ? usuals.all : usuals.forThisSlot).filter((usual) =>
     matchesQuery(
       usual.template.items.map((item) => item.name),
       search,
@@ -109,10 +119,26 @@ export function UsualsPanel({
 
   return (
     <div className="pb-4">
-      <Card label={showAll ? 'Everything you log' : `Usual for ${SLOT_WORD[slot]}`}>
+      {searchFirst && (
+        <label className="mb-4 flex items-center gap-3 rounded-full border border-hairline bg-surface px-4 py-2.5">
+          <SearchIcon />
+          <span className="sr-only">Search anything you have logged</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search anything you've logged"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-muted"
+          />
+        </label>
+      )}
+
+      <Card label={everything ? 'Everything you log' : `Usual for ${SLOT_WORD[slot]}`}>
         {suggestions.length === 0 ? (
           <p className="py-1 text-sm text-ink-muted">
-            Nothing usual for {SLOT_WORD[slot]} yet — photograph one and it will be here next time.
+            {searching
+              ? `Nothing logged matches "${query.trim()}".`
+              : `Nothing usual for ${SLOT_WORD[slot]} yet — photograph one and it will be here next time.`}
           </p>
         ) : (
           <>
@@ -147,7 +173,7 @@ export function UsualsPanel({
           </>
         )}
 
-        {usuals.all.length > usuals.forThisSlot.length && (
+        {usuals.all.length > usuals.forThisSlot.length && !searching && (
           <button
             type="button"
             onClick={() => {
@@ -160,7 +186,7 @@ export function UsualsPanel({
           </button>
         )}
 
-        {showAll && (
+        {showAll && !searchFirst && (
           <input
             type="search"
             value={query}
@@ -170,7 +196,7 @@ export function UsualsPanel({
           />
         )}
 
-        {dueFromYesterday.length > 0 && !showAll && (
+        {dueFromYesterday.length > 0 && !everything && (
           <div className="pt-4">
             <p className="pb-2 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">
               Yesterday
@@ -262,5 +288,23 @@ export function UsualsPanel({
         )}
       </Card>
     </div>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      className="shrink-0 text-ink-muted"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.6-3.6" />
+    </svg>
   )
 }

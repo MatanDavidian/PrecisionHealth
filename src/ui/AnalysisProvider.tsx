@@ -14,6 +14,25 @@ import { TrialExhaustedError } from '@/ai/proxyEstimator'
 import type { MealSlot } from '@/domain'
 
 /**
+ * What is being estimated.
+ *
+ * A photo and a written description are two kinds of evidence for the same
+ * question, so they live in one union rather than two providers: everything
+ * after the answer arrives — the docked bar, the result card, Save, Retry — is
+ * identical, and duplicating it would be duplicating the interesting half.
+ */
+export type AnalysisInput =
+  | {
+      kind: 'photo'
+      /** Object URL for the preview. Revoked when the analysis is cleared. */
+      url: string
+      meta: PhotoMeta
+      /** Kept in memory only, so Retry has something to retry with (spec §3). */
+      blob: Blob
+    }
+  | { kind: 'text'; description: string }
+
+/**
  * An analysis in flight.
  *
  * It lives here rather than in the Log screen because it outlives the screen:
@@ -30,9 +49,7 @@ export interface Analysis {
   slot: MealSlot
   /** What to call it in the docked bar: "lunch", "breakfast". */
   label: string
-  photoUrl: string
-  photoMeta: PhotoMeta
-  photoBlob: Blob
+  input: AnalysisInput
   hints: EstimateHints
   result?: EstimateResult
   downgraded?: boolean
@@ -44,20 +61,32 @@ interface AnalysisContextValue {
   analysis?: Analysis
   /** Downscales, starts the estimate, and returns as soon as it is under way. */
   start: (file: Blob, hints: EstimateHints, slot: MealSlot, label: string) => Promise<void>
+  /** The same, from a sentence the user typed. */
+  startText: (
+    description: string,
+    hints: EstimateHints,
+    slot: MealSlot,
+    label: string,
+  ) => Promise<void>
   retry: () => void
-  /** Amends the hints and analyses the same photo again. */
+  /** Amends the hints and analyses the same input again. */
   restartWith: (hints: EstimateHints) => void
   clear: () => void
 }
 
 const AnalysisContext = createContext<AnalysisContextValue>({
   start: async () => {},
+  startText: async () => {},
   retry: () => {},
   restartWith: () => {},
   clear: () => {},
 })
 
 export const useAnalysis = () => useContext(AnalysisContext)
+
+/** Convenience for the screens: the photo preview, when there is one. */
+export const photoUrlOf = (analysis?: Analysis): string | undefined =>
+  analysis?.input.kind === 'photo' ? analysis.input.url : undefined
 
 /**
  * A short buzz on start and finish.
@@ -83,11 +112,12 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const runId = useRef(0)
 
   // Object URLs outlive the component that made them unless revoked.
+  const photoUrl = photoUrlOf(analysis)
   useEffect(
     () => () => {
-      if (analysis?.photoUrl) URL.revokeObjectURL(analysis.photoUrl)
+      if (photoUrl) URL.revokeObjectURL(photoUrl)
     },
-    [analysis?.photoUrl],
+    [photoUrl],
   )
 
   const run = useCallback(
@@ -97,7 +127,10 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
       try {
         const estimator = getEstimator()
-        const result = await estimator.estimate(base.photoBlob, base.hints)
+        const result =
+          base.input.kind === 'photo'
+            ? await estimator.estimate(base.input.blob, base.hints)
+            : await estimator.estimateFromText(base.input.description, base.hints)
         if (runId.current !== id) return
         buzz([15, 60, 15])
         setAnalysis((current) =>
@@ -124,7 +157,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
                 status: 'failed',
                 finishedAt: Date.now(),
                 error: {
-                  message: known ? cause.message : 'Something went wrong reading the photo',
+                  message: known
+                    ? cause.message
+                    : base.input.kind === 'photo'
+                      ? 'Something went wrong reading the photo'
+                      : 'Something went wrong reading your description',
                   retryable: !known || cause.kind !== 'NO_KEY',
                   exhausted,
                 },
@@ -145,9 +182,24 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         {
           slot,
           label,
-          photoUrl: URL.createObjectURL(blob),
-          photoMeta: meta,
-          photoBlob: blob,
+          input: { kind: 'photo', url: URL.createObjectURL(blob), meta, blob },
+          hints,
+          model: getEstimator().model,
+        },
+        id,
+      )
+    },
+    [run],
+  )
+
+  const startText = useCallback(
+    async (description: string, hints: EstimateHints, slot: MealSlot, label: string) => {
+      const id = ++runId.current
+      await run(
+        {
+          slot,
+          label,
+          input: { kind: 'text', description: description.trim() },
           hints,
           model: getEstimator().model,
         },
@@ -181,13 +233,14 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => {
     runId.current += 1
     setAnalysis((current) => {
-      if (current?.photoUrl) URL.revokeObjectURL(current.photoUrl)
+      const url = photoUrlOf(current)
+      if (url) URL.revokeObjectURL(url)
       return undefined
     })
   }, [])
 
   return (
-    <AnalysisContext.Provider value={{ analysis, start, retry, restartWith, clear }}>
+    <AnalysisContext.Provider value={{ analysis, start, startText, retry, restartWith, clear }}>
       {children}
     </AnalysisContext.Provider>
   )

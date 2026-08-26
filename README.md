@@ -5,8 +5,10 @@ measurements, wearable data and clinical information in one timeline — with AI
 layered on top of a structured model rather than replacing it.
 
 Built from [`docs/requirements/AI_Driven_Health_App_Product_Roadmap.docx`](docs/requirements/AI_Driven_Health_App_Product_Roadmap.docx).
-UI direction comes from the Timeline mockups in Claude Design (link in
-[`docs/design/claude_design.txt`](docs/design/claude_design.txt)).
+UI direction comes from the Timeline mockups in Claude Design (links in
+[`docs/design/claude_design.txt`](docs/design/claude_design.txt)); what the app
+actually looks like today is
+[`docs/design/current-ui-brief.md`](docs/design/current-ui-brief.md).
 
 ## Getting started
 
@@ -63,9 +65,10 @@ data sources → normalized health model → analytics/goal engine → AI tools 
 | `src/data/repositories.ts` | Interfaces the UI depends on. Async by design. |
 | `src/data/index.ts` | Composition root — the one place the active store is named. |
 | `src/data/idb/` | IndexedDB store (slice 1, v2 in slice 2). Swapped in without touching a screen. |
-| `src/ai/` | The food-vision port, validator, OpenAI adapter and a fake. Photos stay in memory. |
+| `src/ai/` | The food-estimate port (photo *and* text), validator, OpenAI adapter and a fake. Photos stay in memory. |
 | `src/data/mock/seed.ts` | The sample day, built for whatever date you open it on. |
 | `src/data/analytics.ts` | Derived values, never written back onto records. |
+| `src/domain/mealEdits.ts` | Correcting a logged meal: re-portion by ratio, supersede, remove. |
 | `src/ui/` | Screens and components; reaches data only through repositories. |
 
 ## Status
@@ -95,6 +98,17 @@ and your data follows you between devices; signed out it stays in the browser
 exactly as before. Planned in
 [`docs/features/supabase-sync.md`](docs/features/supabase-sync.md); hosting in
 [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
+**Slice 3.7 built** — three ways to log, and a meal you can fix
+([spec](docs/features/log-modes-and-meal-edits.md)). Log is three modes now:
+**Photo** (with an optional note that goes to the model — "no oil", "half
+portion"), **Write** (describe a meal in words and get the same estimate,
+honestly less certain because nothing was seen), and **Again** (search and
+repeat what you have logged before). Every logged meal gained **Edit** and
+**Delete**: change the grams and the macros follow by ratio, remove a food,
+move it to another slot — or delete it, with Undo. Neither overwrites anything;
+an edit is a new meal version, a delete is a version saying it did not happen
+(D4, D15).
 
 Next: **slice 4** — importing from Garmin, the first time two sources describe
 the same day. See [`docs/ROADMAP.md`](docs/ROADMAP.md).

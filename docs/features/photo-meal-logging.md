@@ -117,7 +117,7 @@ which is what makes this slice possible before auth exists.
 ### The estimator port — same pattern as D3
 
 ```
-src/ai/estimator.ts        FoodVisionEstimator (interface) + result types
+src/ai/estimator.ts        FoodEstimator (interface) + result types
 src/ai/openaiEstimator.ts  the OpenAI adapter (fetch, prompt, parsing)
 src/ai/validate.ts         response validation: unknown JSON -> EstimateResult
 ```
@@ -128,10 +128,16 @@ server-proxy adapter implements the same interface and BYOK becomes one of two
 modes rather than a rewrite. A `FakeEstimator` implements it for tests.
 
 ```ts
-interface FoodVisionEstimator {
+interface FoodEstimator {
   estimate(photo: Blob, hints: EstimateHints): Promise<EstimateResult>
+  // Added Aug 2026 with the Log modes: the same question from a sentence.
+  estimateFromText(description: string, hints: EstimateHints): Promise<EstimateResult>
 }
-interface EstimateHints { foodName?: string; totalGrams?: number }
+interface EstimateHints {
+  foodName?: string
+  totalGrams?: number
+  note?: string                 // free text sent with the photo: "no oil"
+}
 interface EstimateResult {
   items: EstimatedItem[]        // name, amountG, energyKcal, proteinG, carbsG, fatG, fiberG?, confidence
   overallConfidence: number     // 0..1
@@ -139,6 +145,11 @@ interface EstimateResult {
   raw: unknown                  // verbatim model output, kept for audit
 }
 ```
+
+The port was called `FoodVisionEstimator` while a photo was the only way in;
+`FoodVisionEstimator` survives as a type alias, since it is quoted throughout
+these specs. Text estimation is specified in
+[`log-modes-and-meal-edits.md`](log-modes-and-meal-edits.md).
 
 ### Data flow
 
@@ -289,7 +300,7 @@ Status: 1-6 done, 7 outstanding (needs a hosting decision).
 **Files.** `src/ai/` holds the port (`estimator.ts`), the validator
 (`validate.ts`), the OpenAI adapter (`openaiEstimator.ts`), the fake
 (`fakeEstimator.ts`) and in-memory photo handling (`photo.ts`).
-`src/data/photoMeal.ts` turns an estimate into a `Meal` plus its `AIInference`.
+`src/data/estimatedMeal.ts` turns an estimate into a `Meal` plus its `AIInference`.
 `src/ui/screens/Log.tsx` is the front door; `Settings.tsx` holds the key;
 `components/BottomNav.tsx` is the mobile navigation.
 
@@ -396,3 +407,21 @@ not to promise otherwise.
 
 `?fake=1&slow=6000` makes the fake estimator take its time, since every one of
 these states only exists during a window an instant estimator does not have.
+
+## 14. What changed when Log grew tabs (Aug 2026)
+
+Photo logging is now one of three modes rather than the whole screen — see
+[`log-modes-and-meal-edits.md`](log-modes-and-meal-edits.md). Three things in
+this spec moved:
+
+- **The port takes text too.** `FoodEstimator.estimateFromText` sits beside
+  `estimate`, on a sibling prompt that assumes ordinary portions and says so.
+  Everything after the reply — validation, the docked bar, the result card,
+  Save, the audit record — is shared, which is what the port existed for.
+- **Hints gained a note.** `EstimateHints.note` is free text sent with the
+  photo and treated as ground truth: "no oil", "half portion". The cheapest
+  accuracy in the product, because a photo cannot show either.
+- **§3's "out" list is unchanged.** The photo is still never stored. A written
+  description *is* stored, on the `AIInference` — none of the reasons in §3
+  apply to a sentence the user typed, and it is what makes the estimate
+  explainable later.

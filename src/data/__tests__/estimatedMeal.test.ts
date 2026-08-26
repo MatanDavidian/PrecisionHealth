@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { deleteDB, openDB, type IDBPDatabase } from 'idb'
 import { createIndexedDbRepositories, seedOnce } from '../idb/indexedDbRepositories'
 import { DB_NAME, openHealthDB, type HealthDB } from '../idb/schema'
-import { buildFailedInference, buildPhotoMeal } from '../photoMeal'
+import { buildEstimatedMeal, buildFailedInference } from '../estimatedMeal'
 import { newId } from '../newRecords'
 import { goals, meals, observations, profile, sleep, workouts } from '../mock/seed'
 import { FakeEstimator, SAMPLE_REPLY } from '@/ai/fakeEstimator'
@@ -40,12 +40,12 @@ beforeEach(async () => {
   await deleteDB(DB_NAME)
 })
 
-const photoMealInput = (overrides: Partial<Parameters<typeof buildPhotoMeal>[1]> = {}) => ({
+const photoMealInput = (overrides: Partial<Parameters<typeof buildEstimatedMeal>[1]> = {}) => ({
   slot: 'LUNCH' as const,
   at: new Date('2026-08-20T12:30:00'),
   zone: 'Asia/Jerusalem',
   hints: {},
-  photo: PHOTO,
+  source: { kind: 'photo' as const, photo: PHOTO },
   ...overrides,
 })
 
@@ -53,7 +53,7 @@ describe('photo estimate becomes domain records', () => {
   it('writes a meal whose items are unconfirmed AI estimates linked to the inference', async () => {
     const { repos } = await fresh()
     const result = await new FakeEstimator().estimate(new Blob(), {})
-    const { meal, inference } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    const { meal, inference } = buildEstimatedMeal(USER, { ...photoMealInput(), result })
 
     await repos.inferences.add(inference)
     await repos.meals.add(meal)
@@ -76,7 +76,7 @@ describe('photo estimate becomes domain records', () => {
   it('records what the photo was without keeping the photo', async () => {
     const { repos } = await fresh()
     const result = await new FakeEstimator().estimate(new Blob(), {})
-    const { inference } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    const { inference } = buildEstimatedMeal(USER, { ...photoMealInput(), result })
     await repos.inferences.add(inference)
 
     const audit = await repos.inferences.get(inference.id)
@@ -87,13 +87,13 @@ describe('photo estimate becomes domain records', () => {
 
   it('never sets photoId, because there is no stored attachment', async () => {
     const result = await new FakeEstimator().estimate(new Blob(), {})
-    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    const { meal } = buildEstimatedMeal(USER, { ...photoMealInput(), result })
     expect(meal.photoId).toBeUndefined()
   })
 
   it('honours the grams hint end to end', async () => {
     const result = await new FakeEstimator().estimate(new Blob(), { totalGrams: 900 })
-    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), hints: { totalGrams: 900 }, result })
+    const { meal } = buildEstimatedMeal(USER, { ...photoMealInput(), hints: { totalGrams: 900 }, result })
     const total = meal.items.reduce((sum, item) => sum + convert(item.amount, 'g'), 0)
     expect(total).toBeCloseTo(900, 6)
   })
@@ -101,7 +101,7 @@ describe('photo estimate becomes domain records', () => {
   it('lets the slice-1 confirm flow settle an estimate', async () => {
     const { repos } = await fresh()
     const result = await new FakeEstimator().estimate(new Blob(), {})
-    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    const { meal } = buildEstimatedMeal(USER, { ...photoMealInput(), result })
     await repos.meals.add(meal)
 
     const { confirmFoodItem } = await import('@/domain')
@@ -122,7 +122,7 @@ describe('meal versioning through storage (D15)', () => {
   it('appends a version instead of overwriting, and shows the newest', async () => {
     const { repos } = await fresh()
     const result = await new FakeEstimator().estimate(new Blob(), {})
-    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    const { meal } = buildEstimatedMeal(USER, { ...photoMealInput(), result })
     await repos.meals.add(meal)
 
     // Confirm an estimate: an item supersedes (D4) inside a new version (D15).
@@ -146,7 +146,7 @@ describe('meal versioning through storage (D15)', () => {
   it('surfaces a same-version collision written by two devices', async () => {
     const { repos } = await fresh()
     const result = await new FakeEstimator().estimate(new Blob(), {})
-    const { meal } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    const { meal } = buildEstimatedMeal(USER, { ...photoMealInput(), result })
     await repos.meals.add(meal)
 
     // What sync will produce: two devices editing v1 without seeing each other.
@@ -214,7 +214,7 @@ describe('no image bytes are ever persisted', () => {
     const { db, repos } = await fresh()
     await seedOnce(db, seed)
     const result = await new FakeEstimator().estimate(new Blob(), {})
-    const { meal, inference } = buildPhotoMeal(USER, { ...photoMealInput(), result })
+    const { meal, inference } = buildEstimatedMeal(USER, { ...photoMealInput(), result })
     await repos.inferences.add(inference)
     await repos.meals.add(meal)
 

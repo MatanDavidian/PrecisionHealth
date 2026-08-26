@@ -140,7 +140,29 @@ user entry, a repeated *estimate* is still an estimate.
 **Ships:** logging a familiar day in one tap, and the end of photographing the
 same breakfast every morning.
 
-Estimate-from-text is the one part of this family still unbuilt.
+## Slice 3.7 — Three ways in, and a meal you can fix ✅ built
+
+Two things the app was missing, with one cause: whatever you came to Log to do,
+it was below something else, and once a meal was logged it was final.
+
+The Log screen becomes three modes — **Photo** (with an optional note that goes
+to the model: "no oil", "half portion"), **Write** (describe it and get the same
+estimate), **Again** (search and repeat). Each holds one input and nothing else.
+And every logged meal gains Edit and Delete: change the grams and the macros
+follow by ratio, remove a food, move it to another slot — or delete it, with
+Undo.
+
+Full plan:
+[`features/log-modes-and-meal-edits.md`](features/log-modes-and-meal-edits.md).
+
+**Proved:** both seams paid out. Adding a second input to the estimator port
+cost one method on three adapters and one branch in the edge function —
+validation, entitlement, the ledger and the whole result UI were already
+input-agnostic (D14). And editing needed no new storage mechanism at all:
+versioning (D15) and item supersession (D4) had been carrying the weight since
+before anything used them.
+**Ships:** logging the meal you already ate, and fixing the portion the model
+got wrong instead of confirming a number you know is off.
 
 ## Slice 4 — Import from Garmin
 

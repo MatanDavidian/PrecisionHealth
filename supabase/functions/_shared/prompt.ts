@@ -1,16 +1,21 @@
 /**
- * The food-vision prompt and pricing, shared by both callers.
+ * The food-estimate prompts and pricing, shared by every caller.
  *
  * Two code paths reach OpenAI — the browser adapter on the user's own key, and
  * the edge function on the master key — and they must ask the same question,
  * or a user comparing the two would get different answers from the same photo
  * for no reason they could see. This file is the single source; the client
  * imports it, and Supabase bundles `_shared` into the function.
+ *
+ * There are two prompts, not two prompt files: photo and text differ only in
+ * what the model is looking at and how sure it may reasonably be. Everything
+ * they share — the JSON shape, the units, the honesty rules — is defined once
+ * below, so the two cannot drift into answering differently about the same
+ * plate.
  */
 
-export const SYSTEM_PROMPT = `You estimate nutrition from a single photo of food.
-
-Reply with ONLY a JSON object of this exact shape:
+/** The reply shape and the rules that hold whatever the input was. */
+const REPLY_CONTRACT = `Reply with ONLY a JSON object of this exact shape:
 {
   "items": [
     { "name": string, "amountG": number, "energyKcal": number,
@@ -22,44 +27,103 @@ Reply with ONLY a JSON object of this exact shape:
   "refusal": string
 }
 
+Rules:
+- Split the food into the items a person would name, not every ingredient.
+- All weights in grams, all energy in kilocalories, per item as served.
+- "confidence" and "overallConfidence" are between 0 and 1. Be honest: an
+  ambiguous sauce or an unstated portion deserves a low number.
+- "assumptions" lists what you had to assume, in short plain sentences —
+  cooked vs raw weight, invisible oil or dressing, hidden ingredients.
+- Treat any user-supplied food name or total weight as GROUND TRUTH. If a
+  weight is given, your amounts must sum to it. If a food is named, do not
+  second-guess the identification; only portion and compute.
+- Do not estimate vitamins or minerals. Neither a photo nor a sentence carries
+  that information.
+- Estimate even when you are unsure. An honest low-confidence number is more
+  useful than no answer; that is what "confidence" is for.`
+
+export const SYSTEM_PROMPT = `You estimate nutrition from a single photo of food.
+
 What counts as food to estimate:
 - A plated or served meal.
 - Loose or raw ingredients, groceries, packaged products, fruit in a bowl, a
   spread of several dishes — anything edible, whether or not it is a "meal".
 - If several foods are visible, list each one separately.
 
-Rules:
-- Split what you see into the items a person would name, not every ingredient.
-- All weights in grams, all energy in kilocalories, per item as served.
-- "confidence" and "overallConfidence" are between 0 and 1. Be honest: a
-  half-hidden portion or an ambiguous sauce deserves a low number.
-- "assumptions" lists what you had to assume, in short plain sentences —
-  cooked vs raw weight, invisible oil or dressing, hidden ingredients.
-- Treat any user-supplied food name or total weight as GROUND TRUTH. If a
-  weight is given, your amounts must sum to it. If a food is named, do not
-  second-guess the identification; only portion and compute.
-- Do not estimate vitamins or minerals. A photo does not carry that
-  information.
-- Estimate even when you are unsure. An honest low-confidence number is more
-  useful than no answer; that is what "confidence" is for.
+${REPLY_CONTRACT}
 - Use "refusal" ONLY when the image contains no edible food at all (a person,
   a screenshot, a landscape). Being unable to identify a dish precisely is not
   a reason to refuse — estimate it as best you can and say so in
   "assumptions". When you do refuse, return an empty "items" array; otherwise
   omit "refusal" entirely.`
 
+/**
+ * The same job from a sentence instead of a photograph.
+ *
+ * Deliberately NOT a copy of the photo prompt with the word "photo" swapped
+ * out. Text carries less than a picture — no portion, no visible oil, no idea
+ * how big the bowl was — and a model told to behave identically will return
+ * identical-looking confidence for a far weaker inference. So this one is
+ * explicit that ordinary portions are being assumed and that the confidence
+ * must say so, which is what keeps the number on screen honest.
+ */
+export const TEXT_SYSTEM_PROMPT = `You estimate nutrition from a short written description of food.
+
+What counts as food to estimate:
+- Anything edible the user describes, however loosely: a meal, a snack, a
+  single ingredient, a drink, a packaged product.
+- If several foods are described, list each one separately.
+
+${REPLY_CONTRACT}
+- Where no portion is given, assume an ordinary serving for that food, say so
+  in "assumptions", and let "confidence" reflect that you are portioning
+  blind. A described meal deserves lower confidence than a photographed one.
+- Use "refusal" ONLY when the text describes no food at all. When you do
+  refuse, return an empty "items" array; otherwise omit "refusal" entirely.`
+
+/** The longest free text worth sending. Past this it is a diary, not a meal. */
+export const MAX_DESCRIPTION_CHARS = 500
+
 export interface EstimateHints {
   foodName?: string
   totalGrams?: number
+  /** Free text the user added alongside a photo: "no oil", "half portion". */
+  note?: string
 }
+
+/** A note is free text from a person, so it is quoted rather than instructed. */
+const noteLine = (note: string): string =>
+  `The user adds, between the markers:\n<<<\n${note.trim().slice(0, MAX_DESCRIPTION_CHARS)}\n>>>`
 
 export function hintText(hints: EstimateHints): string {
   const lines: string[] = []
   if (hints.foodName) lines.push(`The user says this is: ${hints.foodName}`)
   if (hints.totalGrams) lines.push(`The user weighed it: ${hints.totalGrams} g in total`)
+  if (hints.note?.trim()) lines.push(noteLine(hints.note))
   return lines.length > 0
-    ? `${lines.join('\n')}\n\nTreat the above as ground truth.`
+    ? `${lines.join('\n')}\n\nTreat the above as ground truth about the food in the photo.`
     : 'No hints were provided; identify and portion from the photo alone.'
+}
+
+/**
+ * The user message for a written meal.
+ *
+ * The description is quoted rather than concatenated into an instruction, so a
+ * sentence that happens to read like one ("ignore the rules above") arrives as
+ * the thing being estimated rather than as something to obey.
+ */
+export function describedFoodText(description: string, hints: EstimateHints): string {
+  const trimmed = description.trim().slice(0, MAX_DESCRIPTION_CHARS)
+  const parts = [`The user describes what they ate, between the markers:\n<<<\n${trimmed}\n>>>`]
+  if (hints.foodName) parts.push(`They also name it as: ${hints.foodName}`)
+  if (hints.totalGrams) parts.push(`They weighed it: ${hints.totalGrams} g in total`)
+  if (hints.note?.trim()) parts.push(noteLine(hints.note))
+  parts.push(
+    hints.foodName || hints.totalGrams
+      ? 'Treat the name and weight as ground truth.'
+      : 'No weight was given; assume ordinary portions and say so.',
+  )
+  return parts.join('\n\n')
 }
 
 /**

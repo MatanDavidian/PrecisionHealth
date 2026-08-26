@@ -16,9 +16,9 @@ assumed.
 
 | Route | What it is |
 |---|---|
-| `/log` | **Default.** What you usually eat, then the camera; then an estimate, then Save |
+| `/log` | **Default.** Three tabs — Photo, Write, Again — then an estimate, then Save |
 | `/today` | The dashboard: nutrition, activity, recovery, body, meals, one AI card |
-| `/nutrition` | Day totals, a manual meal form, the logged list with confirmations |
+| `/nutrition` | Day totals, a manual meal form, the logged list with confirm, edit and delete |
 | `/settings` | Account, API key, accuracy/speed, analysis, photos, storage |
 | `/signin` | Emailed sign-in link. No passwords |
 | `/training` `/recovery` `/body` `/health` | Still stubs, labelled with the slice that fills them |
@@ -27,23 +27,62 @@ assumed.
 App → Settings); a bottom bar on mobile (Log · Today · Food · Settings). The
 phone is the primary device — it holds the camera.
 
-## The Log screen, above the camera
+## The Log screen: three modes
 
-The camera is no longer the first thing on the screen. Repeats are, because
-most days are not novel and photographing the same breakfast again costs
-fifteen seconds and about eleven cents to learn nothing.
+A second row of tabs under the app's own navigation, and in this one case that
+is the point. Photograph, describe and repeat are the same job with different
+evidence, so putting them side by side lets each panel hold **one input and
+nothing else**. What it replaced was a single screen stacking a repeat list
+above a camera above a details form, where the thing you wanted was always
+below the fold — and on a phone, often below the screen.
 
-**Usuals card** — heading "Usual for breakfast" (the current slot, in words),
-then up to three rows: the food names, a subline of "Yesterday, 07:38 · 200 g ·
-logged 4× recently", and calories on the right. One tap logs it. A row whose
-estimate was never confirmed says so.
+The tabs are a pill segmented control: **Photo · Write · Again**, Photo
+selected by default. They disappear the moment something is being estimated.
+The mode is in the URL (`/log?mode=write`), so it survives a reload and can be
+linked to.
 
-**See all usuals** — a text link that swaps the card to "Everything you log"
-and reveals a **search field** ("Search anything you've logged before")
-matching across every meal and food ever logged.
+Subtitle under the title: "Three ways in. Photo is the default."
 
-**Yesterday** — a small-caps section listing yesterday's meals with the time
-each was eaten, and one button: **"Repeat the day · 3 meals"**. When some of
+### Photo
+
+1. The dashed camera panel, 4:3: "Take a photo / or choose one from your library".
+2. An **"+ Add a note"** pill, and beside it: *"Optional, and it goes to the
+   model with the photo — 'no oil', 'half portion'."* Tapping it opens a small
+   textarea. This is the cheapest accuracy in the app: a photo cannot show how
+   something was cooked or how much came back.
+3. One repeat row — **"USUAL NOW · Eggs and oats · 560 kcal"** with a round
+   terracotta **+** — then a line: *"The one thing you eat at this hour most
+   often — one tap, no camera. Everything else you repeat is under Again."*
+   One row is a shortcut; six rows were a decision.
+
+### Write
+
+A textarea placeheld with "two eggs on toast and a black coffee", a terracotta
+**Estimate** button, and *"A couple of seconds, and a wider margin than a
+photo."* Below, the last five things this device described, as chips with a
+small × to forget one: *"Things you've described before, ready to send again.
+Kept on this device only."*
+
+The result is the same card as a photo's, with three honest differences: the
+label reads **"Estimate from your words"**, item weights read *"assumed 170 g"*,
+and a line says *"Confidence is lower than a photo's — nothing was seen, so
+portions were assumed."* Above the card, the sentence sits in a pill with an
+**Edit** button beside it.
+
+### Again
+
+Search first: a rounded field at the top, *"Search anything you've logged"*.
+Typing searches everything ever logged rather than this hour's three rows.
+Below it the usuals card ("Usual for breakfast"), the Yesterday section with
+"Repeat the day · 3 meals", and the single-food chips — all as before.
+
+**Usuals card** — up to three rows: the food names, a subline of "Yesterday,
+07:38 · 200 g · logged 4× recently", and calories on the right. One tap logs
+it. A row whose estimate was never confirmed says so. Empty search says
+*Nothing logged matches "…"*.
+
+**Yesterday** — small-caps section listing yesterday's meals with the time each
+was eaten, and one button: **"Repeat the day · 3 meals"**. When some of
 yesterday's meals are still ahead of the clock the button reads **"Repeat today
 so far · 2 meals"** and a line underneath explains: "Later meals are left out
 until their time comes round." Designing this omission as visible rather than
@@ -54,26 +93,55 @@ confidently wrong.
 calories. Multi-select, then "2 selected · 310 kcal → Log them". This is the
 apple-and-a-coffee path that was never one meal.
 
-The whole card is absent for a new user with no history — nothing to repeat
-yet, so the camera is the first thing after all.
-
 Every repeat confirms with the same line and an **Undo**, which covers a whole
 day's batch as one action.
 
 ## The Log screen, state by state
 
-Six states, all worth designing:
+Beyond the three input panels, six states, all worth designing:
 
-1. **Idle** — a dashed camera panel below the usuals: "Take a photo / or choose one from your library".
-2. **Analyzing** — "Reading your photo… the most accurate model thinks for up to a minute." Honest about the wait; the best model really does take ~45 seconds.
-3. **Result** — totals (calories, protein, carbs, fat), then per item: name, grams, `53P · 0C · 6F`, and a **confidence pill** (`72%`). Below that the model's assumptions as a bulleted list ("Assumed cooked weights", "No added oil visible"), a low-confidence warning under 50%, then **Save meal / Discard**.
-4. **Exhausted** — "That was the last one on us." Explains the first 10 were free, offers *Connect my key* or *Log by hand instead*, and promises the photo is kept.
-5. **Error** — plain sentence plus retry; the photo and details survive.
-6. **Saved** — brief confirmation with a link to Today.
+1. **Analyzing** — the photo dims and carries the status itself: "Reading your
+   plate… 0:07 · usually about 15 seconds / You can leave — it keeps going".
+   Honest about the wait; the best model really does take ~45 seconds. Text
+   gets the same treatment in miniature: the sentence in its pill, a pulsing
+   dot, "Working it out… 0:02".
+2. **Result** — totals (calories, protein, carbs, fat), then per item: name,
+   grams, `53P · 0C · 6F`, and a **confidence pill** (`72%`). Below that the
+   model's assumptions as a bulleted list, a low-confidence warning under 50%,
+   then **Save meal / Discard**.
+3. **Exhausted** — "That was the last one on us." Explains the first 10 were
+   free, offers *Connect my key* or *Log by hand instead*, and promises the
+   input is kept.
+4. **Error** — plain sentence plus retry; the photo, or what you wrote, survives.
+5. **Saved** — brief confirmation with a link to Today.
+6. **No key yet** — one-time setup card, only when nothing is being estimated.
 
-**Optional details** (collapsed by default, under the photo): what it is, total
-grams, time, meal slot. Grams is the single biggest accuracy lever, and the UI
-says so.
+**Optional details** (collapsed, under the input): what it is, total grams,
+time, meal slot. Grams is the single biggest accuracy lever, and the UI says so.
+
+## The Nutrition screen: fixing what you logged
+
+Every logged meal carries two small round icon buttons beside its calories —
+**pencil** and **trash**, hairline-bordered, 26px, the trash turning terracotta
+on hover.
+
+**Editing** opens a form in place of the row, on `surface` inside the card:
+
+- Header: "Editing breakfast" · right-aligned "Logged 07:20, entered by hand"
+  (or "estimated, not yet confirmed" / "from an estimate you confirmed").
+- Per food: **Food**, then **Grams · Calories · Protein g · Carbs g · Fat g**.
+  Changing Grams re-scales the rest by ratio and outlines the grams field in
+  terracotta; the line underneath says *"Change the grams and the rest follows
+  by ratio. Type over any number to break the link."* A "Remove this food" text
+  link per item.
+- Then **Meal** and **Time** for the meal itself.
+- **Save changes** (terracotta) · **Cancel** · and pushed to the right,
+  **Delete meal** in terracotta outline.
+
+**Deleted** replaces the row with a quiet strip: *"**Breakfast deleted** · 560
+kcal came off today's total"* with **Undo** and **Dismiss**. Nothing leaves the
+database — it is a new version saying the meal did not happen — but the copy
+speaks in the user's terms, not the model's.
 
 ## Concepts the original mockups could not have anticipated
 
@@ -88,6 +156,14 @@ app itself rather than a generic tracker:
   the user picks, and their choice becomes the truth.
 - **"This meal was edited in two places"** — the same meal edited on two
   devices; both versions offered, neither destroyed.
+- **Re-portioning by ratio** — change a logged meal's grams and its calories
+  and macros follow, with the grams field outlined to say which numbers moved.
+  Typing over any of them breaks the link; there is no mode to leave.
+- **Delete that is really a new version** — "Breakfast deleted · 560 kcal came
+  off today's total · Undo". Nothing leaves the database, and the copy says
+  what the user cares about rather than what the storage does.
+- **An estimate from words, labelled as weaker** — "assumed 170 g", lower
+  confidence pills, and one line saying nothing was seen.
 - **"Bring your data with you"** — after first sign-in, offers to move what the
   browser holds into the account.
 - **Write failure banner** — "Couldn't save this meal… Try again", pinned above
@@ -123,9 +199,11 @@ When the best model's budget is spent it shows `used up` and greys out.
 ## Voice
 
 The copy is plain, specific and admits limits — that is the product's
-character, not an accident. "That was the last one on us." "Not built yet."
-"Nothing was lost — try again." "Showing Scale until you confirm one." Design
-should leave room for sentences like these; they are load-bearing.
+character, not an accident. "That was the last one on us." "Nothing was lost —
+try again." "Showing Scale until you confirm one." "Confidence is lower than a
+photo's — nothing was seen." "Later meals are left out until their time comes
+round." Design should leave room for sentences like these; they are
+load-bearing.
 
 ## Tokens, exactly
 

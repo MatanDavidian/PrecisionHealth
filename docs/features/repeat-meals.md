@@ -5,7 +5,8 @@
 with no photo, no waiting and no estimate to review.
 
 Status: **built** (Aug 2026). Search and whole-day repeat completed the
-picture; estimate-from-text is the one part of the repeat family still unbuilt.
+picture; estimate-from-text landed with the Log modes and closed the last gap —
+see [`log-modes-and-meal-edits.md`](log-modes-and-meal-edits.md).
 
 ---
 
@@ -16,10 +17,11 @@ waiting and roughly eleven cents of model spend to be told what the app already
 knew. The habit that kills a food tracker is friction on the boring days, and
 the boring days are most of them.
 
-So the Log screen leads with repeats and keeps the camera for food that is
-actually new. This is the cheapest feature in the product on every axis at
-once: fewer taps, no wait, no API call, and an estimate that was already
-reviewed once.
+So repeats are a way in of their own — the **Again** tab — and the camera is
+for food that is actually new. This is the cheapest feature in the product on
+every axis at once: fewer taps, no wait, no API call, and an estimate that was
+already reviewed once. Photo mode still carries the single most-repeated meal
+for the current hour, because one row is a shortcut where six were a decision.
 
 ## 2. What counts as "usual"
 
@@ -30,7 +32,10 @@ grouped by **signature**: the item names, normalised and sorted, joined. So
 same usual as 200 g.
 
 Ranked by count first, then recency. The slot being logged now filters the
-first list; "See all usuals" drops the filter and reveals a search box.
+first list; "See all usuals" drops the filter, and in the **Again** tab the
+search box sits at the top and searches everything ever logged — someone
+searching "porridge" at seven in the evening wants the porridge, not to be told
+there is none for dinner.
 
 Single-item meals additionally become **food chips**, which multi-select into
 one snack — the path for "an apple and a coffee" that was never one meal.
@@ -75,10 +80,16 @@ Undo covers the whole batch: one tap in, one tap out.
 elapsed. Opening the app at 00:40 and being told last night's dinner was
 "Today" was wrong in the only way a time label can be.
 
-## 6. Still to build
+## 6. Estimate from text — built
 
-**Estimate from text.** Type "two eggs and a slice of sourdough" and get the
-same estimate the camera would give. It shares the proxy, the prompt and the
-confirm flow with photo logging; only the input differs. It is the last gap in
-the repeat family, because the meal you eat often but have never photographed
-has no other cheap way in.
+The gap this spec named is closed. Type "two eggs and a slice of sourdough" in
+the **Write** tab and the same estimate comes back, through the same proxy,
+prompt family and Confirm flow; only the input differs, and the confidence is
+honestly lower because nothing was seen. Details in
+[`log-modes-and-meal-edits.md`](log-modes-and-meal-edits.md) §3.
+
+## 7. Still to build
+
+**Ranking that learns from what you skip.** A suggestion offered and ignored
+twenty times should stop being offered. Count-then-recency is predictable,
+which is why it was chosen, but it cannot notice that you have moved on.

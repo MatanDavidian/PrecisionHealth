@@ -1,1 +1,12 @@
+Design canvas (editable, Claude Design):
 https://claude.ai/design/p/47ebc5f6-c175-46c9-a885-7490b797527d?file=Health+App+Mockups.dc.html
+
+Published mockup — the pass that added the Log modes and meal editing
+(Aug 2026). Sidebar picks a screen; the strip above the window switches that
+screen's states, including Log's Photo/Write/Again and Nutrition's
+"Editing a meal" and "Deleted · undo":
+https://claude.ai/code/artifact/00a40a8f-7275-4d4b-b0b7-9952aa32e52d
+
+What was built from it: docs/features/log-modes-and-meal-edits.md
+The map back the other way, for regenerating mockups from the real UI:
+docs/design/current-ui-brief.md

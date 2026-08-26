@@ -51,7 +51,14 @@ would fill in; a lookup becomes a new provenance source, not a schema change.
 (see `features/photo-meal-logging.md`). The AI estimate is the fast path; a
 database remains the correction path — and the only credible route to
 micronutrients (Q9).
-**Files.** `src/ui/components/MealForm.tsx`.
+
+**Narrowed further (Aug 2026).** Three ways in now, and only one of them is
+typing: photograph it, describe it in words, or repeat it. Hand entry is the
+floor rather than the path — kept because an estimate you cannot override is
+worse than one you can. The correction path also stopped being retype-the-whole-meal:
+editing a logged meal re-scales macros from the grams, which is the correction
+people actually make (`features/log-modes-and-meal-edits.md`).
+**Files.** `src/ui/components/MealForm.tsx`, `src/ui/components/MealEditor.tsx`.
 
 ## Q3 — Are aggregate rows append-only? · **settled: versioned meal records**
 
@@ -165,8 +172,15 @@ adds a meal in a single tap needs a way back, and deleting the row was never
 available. The mechanism generalises — a delete affordance anywhere in the app
 is now the same append.
 
-**Files.** `src/domain/mealVersions.ts` (`retractMeal`), `latestVersions`
-filters retracted meals out.
+**Generalised (Aug 2026).** Nutrition now has a real Delete on every logged
+meal, and it is the same append. Undoing that delete needed a mirror,
+`restoreMeal`, which appends yet another version saying the meal happened after
+all — a delete you cannot take back is a trap on a phone, where the button is a
+thumb's width from the one beside it. Neither direction removes anything from
+disk.
+
+**Files.** `src/domain/mealVersions.ts` (`retractMeal`, `restoreMeal`),
+`latestVersions` filters retracted meals out.
 
 ---
 

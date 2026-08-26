@@ -1,25 +1,33 @@
 /**
- * Photo analysis on the owner's key — the server-side proxy D14 reserved
- * space for.
+ * Food analysis on the owner's key — the server-side proxy D14 reserved space
+ * for.
  *
  * Everything here exists because it cannot be done in a browser: a master key
  * shipped to the client is extracted in minutes, and a quota the client counts
  * is a suggestion. So the key lives as a function secret, the count comes from
  * the ledger, and the refusal happens here.
  *
+ * Takes a photo OR a written description. They are the same call as far as
+ * entitlement is concerned — one of the owner's analyses either way — so the
+ * quota, the ledger and the model clamp are shared, and only the message sent
+ * to OpenAI differs.
+ *
  * What this function does NOT do: store the photo (Q10 — it exists in memory
- * for one request), or return the master key in any form.
+ * for one request), store the description, or return the master key in any
+ * form.
  */
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   MODEL_SOL,
   MODEL_TERRA,
   SYSTEM_PROMPT,
+  TEXT_SYSTEM_PROMPT,
   TRIAL_ANALYSES,
   TRIAL_MODEL,
   TRIAL_MODELS,
   TRIAL_SOL_ANALYSES,
   costMicros,
+  describedFoodText,
   hintText,
   type EstimateHints,
 } from '../_shared/prompt.ts'
@@ -41,7 +49,9 @@ const json = (body: unknown, status = 200) =>
 
 interface RequestBody {
   /** Data URL of the downscaled photo. Held in memory, never stored. */
-  photo: string
+  photo?: string
+  /** What the user wrote instead, when there is no photo. Also never stored. */
+  text?: string
   hints?: EstimateHints
   /** The user's local day, so a daily cap means their day and not UTC (D7). */
   day: string
@@ -94,7 +104,10 @@ Deno.serve(async (request) => {
   } catch {
     return json({ error: 'bad_request' }, 400)
   }
-  if (!body?.photo || !body?.day) return json({ error: 'bad_request' }, 400)
+  // One input or the other, never neither. A photo wins if both arrive, since
+  // it is the stronger evidence and sending both is a client bug, not a mode.
+  const described = typeof body?.text === 'string' ? body.text.trim() : ''
+  if ((!body?.photo && !described) || !body?.day) return json({ error: 'bad_request' }, 400)
 
   const record = (fields: Record<string, unknown>) =>
     admin.from('usage').insert({
@@ -181,13 +194,15 @@ Deno.serve(async (request) => {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: body.photo ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT },
           {
             role: 'user',
-            content: [
-              { type: 'text', text: hintText(body.hints ?? {}) },
-              { type: 'image_url', image_url: { url: body.photo, detail: 'auto' } },
-            ],
+            content: body.photo
+              ? [
+                  { type: 'text', text: hintText(body.hints ?? {}) },
+                  { type: 'image_url', image_url: { url: body.photo, detail: 'auto' } },
+                ]
+              : describedFoodText(described, body.hints ?? {}),
           },
         ],
         response_format: { type: 'json_object' },

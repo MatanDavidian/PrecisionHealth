@@ -158,7 +158,13 @@ export const needsConfirmation = (p: Provenance): boolean =>
 export interface AIInference {
   id: AIInferenceId
   userId: string
-  purpose: 'FOOD_PHOTO_ESTIMATE' | 'HEALTH_SCAN' | 'PLAN_GENERATION' | 'DOCUMENT_EXTRACTION'
+  purpose:
+    | 'FOOD_PHOTO_ESTIMATE'
+    /** The same estimate from a sentence the user typed rather than a photo. */
+    | 'FOOD_TEXT_ESTIMATE'
+    | 'HEALTH_SCAN'
+    | 'PLAN_GENERATION'
+    | 'DOCUMENT_EXTRACTION'
   model: string
   modelVersion: string
   createdAt: Instant

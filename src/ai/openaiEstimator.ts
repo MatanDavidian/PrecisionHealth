@@ -8,13 +8,18 @@ import {
   EstimateError,
   type EstimateHints,
   type EstimateResult,
-  type FoodVisionEstimator,
+  type FoodEstimator,
 } from './estimator'
 import { toDataUrl } from './photo'
 // One prompt, shared with the edge function: two paths to the same provider
 // must ask the same question, or the same photo answers differently depending
 // on whose key paid for it.
-import { SYSTEM_PROMPT, hintText } from '../../supabase/functions/_shared/prompt'
+import {
+  SYSTEM_PROMPT,
+  TEXT_SYSTEM_PROMPT,
+  describedFoodText,
+  hintText,
+} from '../../supabase/functions/_shared/prompt'
 import { applyGramsHint, validateEstimate } from './validate'
 
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions'
@@ -35,7 +40,7 @@ export interface OpenAiEstimatorOptions {
   fetchImpl?: typeof fetch
 }
 
-export class OpenAiEstimator implements FoodVisionEstimator {
+export class OpenAiEstimator implements FoodEstimator {
   /**
    * Filled in on the first call; the audit row records what actually ran.
    * Deliberately not defaulted to a model name here — the default belongs to
@@ -46,13 +51,46 @@ export class OpenAiEstimator implements FoodVisionEstimator {
   constructor(private readonly options: OpenAiEstimatorOptions) {}
 
   async estimate(photo: Blob, hints: EstimateHints): Promise<EstimateResult> {
+    const dataUrl = await toDataUrl(photo)
+    return this.ask(
+      SYSTEM_PROMPT,
+      [
+        { type: 'text', text: hintText(hints) },
+        // 'auto' rather than 'low': a 512px thumbnail is too coarse to judge a
+        // portion from, and portion size is most of the estimate. The photo is
+        // already downscaled to 1280px before it gets here.
+        { type: 'image_url', image_url: { url: dataUrl, detail: 'auto' } },
+      ],
+      hints,
+    )
+  }
+
+  async estimateFromText(description: string, hints: EstimateHints): Promise<EstimateResult> {
+    if (!description.trim()) {
+      throw new EstimateError('UNREADABLE', 'There is nothing written to estimate')
+    }
+    return this.ask(TEXT_SYSTEM_PROMPT, describedFoodText(description, hints), hints)
+  }
+
+  /**
+   * One question, however it was asked.
+   *
+   * Photo and text differ only in the system prompt and the user content; the
+   * awkward parts — which dialect of token limit this model speaks, whether it
+   * knows JSON mode, the single repair attempt — are the same for both and
+   * live here rather than in two near-identical copies.
+   */
+  private async ask(
+    systemPrompt: string,
+    userContent: unknown,
+    hints: EstimateHints,
+  ): Promise<EstimateResult> {
     const apiKey = await this.options.getApiKey()
     if (!apiKey) throw new EstimateError('NO_KEY', 'No API key configured')
 
     const model = (await this.options.getModel())?.trim()
     if (!model) throw new EstimateError('PROVIDER', 'No model configured')
     this.model = model
-    const dataUrl = await toDataUrl(photo)
     const doFetch = this.options.fetchImpl ?? fetch
 
     /**
@@ -66,17 +104,8 @@ export class OpenAiEstimator implements FoodVisionEstimator {
 
     const call = async (extraInstruction?: string) => {
       const messages = [
-        { role: 'system', content: SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: hintText(hints) },
-            // 'auto' rather than 'low': a 512px thumbnail is too coarse to
-            // judge a portion from, and portion size is most of the estimate.
-            // The photo is already downscaled to 1280px before it gets here.
-            { type: 'image_url', image_url: { url: dataUrl, detail: 'auto' } },
-          ],
-        },
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
         ...(extraInstruction ? [{ role: 'user', content: extraInstruction }] : []),
       ]
 

@@ -1,20 +1,22 @@
 /**
- * Photo analysis through our own server, on the owner's key.
+ * Food analysis — photo or description — through our own server, on the
+ * owner's key.
  *
  * The second estimator mode D14 reserved space for. It implements the same
  * port as the OpenAI adapter, so the Log screen cannot tell which one it is
  * holding — the whole reason that port exists.
  *
  * The browser never sees the master key, never counts the quota and never
- * decides entitlement: it sends a photo and gets either an estimate or a
- * refusal it can explain. Validation stays here, reusing exactly the rules the
- * direct adapter uses, so both paths produce identically-shaped results.
+ * decides entitlement: it sends a photo or a sentence and gets either an
+ * estimate or a refusal it can explain. Validation stays here, reusing exactly
+ * the rules the direct adapter uses, so both paths produce identically-shaped
+ * results.
  */
 import {
   EstimateError,
   type EstimateHints,
   type EstimateResult,
-  type FoodVisionEstimator,
+  type FoodEstimator,
 } from './estimator'
 import { toDataUrl } from './photo'
 import { applyGramsHint, validateEstimate } from './validate'
@@ -47,7 +49,7 @@ export class TrialExhaustedError extends EstimateError {
   }
 }
 
-export class ProxyEstimator implements FoodVisionEstimator {
+export class ProxyEstimator implements FoodEstimator {
   /** Reported by the server after each call; the client never chooses it. */
   model = 'server'
   /** Latest trial state the server reported, for the UI to show. */
@@ -61,11 +63,32 @@ export class ProxyEstimator implements FoodVisionEstimator {
   constructor(private readonly options: ProxyEstimatorOptions) {}
 
   async estimate(photo: Blob, hints: EstimateHints): Promise<EstimateResult> {
+    return this.send({ photo: await toDataUrl(photo) }, hints)
+  }
+
+  async estimateFromText(description: string, hints: EstimateHints): Promise<EstimateResult> {
+    if (!description.trim()) {
+      throw new EstimateError('UNREADABLE', 'There is nothing written to estimate')
+    }
+    return this.send({ text: description.trim() }, hints)
+  }
+
+  /**
+   * One request, whichever input it carries.
+   *
+   * The server decides everything that matters — which model, whose key, and
+   * whether this call is allowed at all — so photo and text differ here by a
+   * single field and nothing else. The trial counts both the same way, because
+   * from the payer's side they are the same call.
+   */
+  private async send(
+    input: { photo: string } | { text: string },
+    hints: EstimateHints,
+  ): Promise<EstimateResult> {
     const token = await this.options.getAccessToken()
     if (!token) throw new EstimateError('NO_KEY', 'Not signed in')
 
     const doFetch = this.options.fetchImpl ?? fetch
-    const dataUrl = await toDataUrl(photo)
 
     let response: Response
     try {
@@ -77,7 +100,7 @@ export class ProxyEstimator implements FoodVisionEstimator {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          photo: dataUrl,
+          ...input,
           hints,
           day: this.options.getDay(),
           model: await this.options.getModel(),

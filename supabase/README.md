@@ -234,6 +234,8 @@ happens server-side.
 5. **Check it**: sign in and photograph something. It should simply work, with
    no key configured and nothing on screen about a trial — that is deliberate.
    A row appears in `usage`; the eleventh photo is refused with the explanation.
+   The Log screen's **Write** tab exercises the same function with `{ text }`
+   instead of `{ photo }` — one input or the other, counted identically.
 
 Anyone listed in `app_admins` analyses on `OPENAI_ADMIN_KEY` with no quota at
 all, and their usage is recorded as `MASTER_ADMIN` so it never inflates the

@@ -1,13 +1,8 @@
 import { useState } from 'react'
 import type { EstimateResult } from '@/ai/estimator'
-import { scaleTo } from '@/domain'
-import {
-  correctionsFrom,
-  correctsAnything,
-  type EstimateCorrection,
-} from '@/data/estimatedMeal'
+import { correctsAnything, type EstimateCorrection } from '@/data/estimatedMeal'
 import { Card } from '../Card'
-import { NumberField, fieldClass, labelClass } from '../NumberField'
+import { fieldClass } from '../NumberField'
 import { useT } from '../../i18n'
 
 /**
@@ -31,6 +26,8 @@ export function EstimateCard({
   onSave,
   onDiscard,
   onAnswer,
+  rows,
+  onAdjust,
 }: {
   result: EstimateResult
   downgraded?: boolean
@@ -42,6 +39,10 @@ export function EstimateCard({
   onDiscard: () => void
   /** Absent once the follow-up allowance is spent; the question then stops being offered. */
   onAnswer?: (answer: string) => void
+  /** The rows as they currently stand, owned by the screen so Adjust can share them. */
+  rows: EstimateCorrection[]
+  /** Opens the adjust screen. */
+  onAdjust: () => void
 }) {
   const t = useT()
   if (result.refusal) {
@@ -59,31 +60,13 @@ export function EstimateCard({
     )
   }
 
-  const [editing, setEditing] = useState(false)
-  const [rows, setRows] = useState<EstimateCorrection[]>(() => correctionsFrom(result))
-  /** Which rows moved on their own because their weight changed. */
-  const [scaled, setScaled] = useState<number[]>([])
   const [answer, setAnswer] = useState('')
   /** Dismissing the question is per-question, so a second one still gets asked. */
   const [skipped, setSkipped] = useState<string>()
 
   const kept = rows.filter((row) => !row.removed)
   const corrected = correctsAnything(result, rows)
-  /** What is on screen: the model's numbers, or the user's corrections of them. */
-  const shown = editing || corrected ? kept : correctionsFrom(result)
-
-  const update = (index: number, patch: Partial<EstimateCorrection>) =>
-    setRows((current) =>
-      current.map((row) => (row.index === index ? { ...row, ...patch } : row)),
-    )
-
-  /** Changing the weight carries the numbers with it, and says which ones moved. */
-  const reportion = (index: number, amountG: number) => {
-    setRows((current) =>
-      current.map((row) => (row.index === index ? scaleTo(row, amountG) : row)),
-    )
-    setScaled((current) => (current.includes(index) ? current : [...current, index]))
-  }
+  const shown = kept
 
   const total = shown.reduce(
     (sum, item) => ({
@@ -152,144 +135,56 @@ export function EstimateCard({
           <Figure name={t('estimate.fat')} value={`${Math.round(total.fat)} g`} />
         </div>
 
-        {editing
-          ? rows.map((row) => {
-              const item = result.items[row.index]
-              const gone = Boolean(row.removed)
-              return (
-                <div
-                  key={row.index}
-                  className={`border-t border-hairline py-3 ${gone ? 'opacity-50' : ''}`}
-                >
-                  <div className="grid gap-3 sm:grid-cols-4">
-                    <div className="sm:col-span-4">
-                      <label className={labelClass} htmlFor={`e-name-${row.index}`}>
-                        {t('estimate.food')}
-                      </label>
-                      <input
-                        id={`e-name-${row.index}`}
-                        className={fieldClass}
-                        value={row.name}
-                        disabled={gone}
-                        onChange={(e) => update(row.index, { name: e.target.value })}
-                      />
-                    </div>
-                    <NumberField
-                      id={`e-grams-${row.index}`}
-                      label={t('estimate.grams')}
-                      value={row.amountG}
-                      disabled={gone}
-                      highlight={scaled.includes(row.index)}
-                      onChange={(amountG) => reportion(row.index, amountG)}
-                    />
-                    <NumberField
-                      id={`e-kcal-${row.index}`}
-                      label={t('estimate.calories')}
-                      value={row.energyKcal}
-                      disabled={gone}
-                      onChange={(energyKcal) => update(row.index, { energyKcal })}
-                    />
-                    <NumberField
-                      id={`e-protein-${row.index}`}
-                      label={t('estimate.proteinG')}
-                      value={row.proteinG}
-                      disabled={gone}
-                      onChange={(proteinG) => update(row.index, { proteinG })}
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <NumberField
-                        id={`e-carbs-${row.index}`}
-                        label={t('estimate.carbsG')}
-                        value={row.carbsG}
-                        disabled={gone}
-                        onChange={(carbsG) => update(row.index, { carbsG })}
-                      />
-                      <NumberField
-                        id={`e-fat-${row.index}`}
-                        label={t('estimate.fatG')}
-                        value={row.fatG}
-                        disabled={gone}
-                        onChange={(fatG) => update(row.index, { fatG })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-baseline justify-between gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => update(row.index, { removed: !gone })}
-                      className="text-xs text-ink-muted underline"
-                    >
-                      {gone ? t('estimate.keepFood') : t('estimate.removeFood')}
-                    </button>
-                    {item && (
-                      <span className="text-xs text-ink-muted">
-                        {t('estimate.modelSaid', {
-                          grams: Math.round(item.amountG),
-                          kcal: Math.round(item.energyKcal),
-                        })}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })
-          : shown.map((row) => {
-              const item = result.items[row.index]
-              const wasChanged = item !== undefined && correctsAnything(result, [row])
-              return (
-                <div
-                  key={row.index}
-                  className="flex flex-wrap items-baseline justify-between gap-2 border-t border-hairline py-2"
-                >
-                  <span className="text-sm" dir="auto">
-                    {row.name}
-                    <span className="text-ink-muted">
-                      {' '}
-                      · {fromText && !wasChanged ? `${t('estimate.assumed')} ` : ''}
-                      {Math.round(row.amountG)} g
-                    </span>
+        {shown.map((row) => {
+          const item = result.items[row.index]
+          const wasChanged = item !== undefined && correctsAnything(result, [row])
+          return (
+            <div
+              key={row.index}
+              className="flex flex-wrap items-baseline justify-between gap-2 border-t border-hairline py-2"
+            >
+              <span className="text-sm" dir="auto">
+                {row.name}
+                <span className="text-ink-muted">
+                  {' '}
+                  · {fromText && !wasChanged ? `${t('estimate.assumed')} ` : ''}
+                  {Math.round(row.amountG)} g
+                </span>
+              </span>
+              <span className="flex items-baseline gap-3">
+                {/* Pinned LTR: bidi would otherwise reorder the pieces around
+                    the separators and make this unreadable. */}
+                <span className="tabular ltr-nums text-xs text-ink-muted">
+                  {Math.round(row.proteinG)}P · {Math.round(row.carbsG)}C ·{' '}
+                  {Math.round(row.fatG)}F
+                </span>
+                {wasChanged ? (
+                  <span className="rounded-full bg-leaf-soft px-2 py-0.5 text-[0.65rem] font-medium text-leaf">
+                    {t('estimate.yours')}
                   </span>
-                  <span className="flex items-baseline gap-3">
-                    {/* Pinned LTR: bidi would otherwise reorder the pieces
-                        around the separators and make this unreadable. */}
-                    <span className="tabular ltr-nums text-xs text-ink-muted">
-                      {Math.round(row.proteinG)}P · {Math.round(row.carbsG)}C ·{' '}
-                      {Math.round(row.fatG)}F
-                    </span>
-                    {wasChanged ? (
-                      <span className="rounded-full bg-leaf-soft px-2 py-0.5 text-[0.65rem] font-medium text-leaf">
-                        {t('estimate.yours')}
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-medium text-accent">
-                        {Math.round((item?.confidence ?? 0) * 100)}%
-                      </span>
-                    )}
+                ) : (
+                  <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-medium text-accent">
+                    {Math.round((item?.confidence ?? 0) * 100)}%
                   </span>
-                </div>
-              )
-            })}
+                )}
+              </span>
+            </div>
+          )
+        })}
 
         {/*
-          Editing is offered, not imposed. Most estimates are accepted as they
-          are, so the numbers stay read-only until someone says otherwise.
+          Adjusting is a screen of its own, not a mode this card slips into.
+          The numbers there get a stepper each and the whole width to sit in,
+          which a card already carrying totals, assumptions and two buttons
+          cannot give them.
         */}
         <button
           type="button"
-          onClick={() => setEditing((open) => !open)}
+          onClick={onAdjust}
           className="pt-3 text-xs text-ink-muted underline"
         >
-          {editing
-            ? t('estimate.doneAdjusting')
-            : corrected
-              ? t('estimate.adjustAgain')
-              : t('estimate.adjust')}
+          {corrected ? t('estimate.adjustAgain') : t('estimate.adjust')}
         </button>
-
-        {editing && (
-          <p className="pt-2 text-xs text-ink-muted">{t('estimate.adjustHint')}</p>
-        )}
 
         {result.assumptions.length > 0 && (
           <ul className="list-disc space-y-0.5 ps-4 pt-3 text-xs text-ink-muted">

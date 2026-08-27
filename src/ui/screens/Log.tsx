@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { estimatorRequiresKey, getRepositories } from '@/data'
 import type { EstimateHints } from '@/ai/estimator'
-import { buildEstimatedMeal, type EstimateCorrection } from '@/data/estimatedMeal'
+import {
+  buildEstimatedMeal,
+  correctionsFrom,
+  correctsAnything,
+  type EstimateCorrection,
+} from '@/data/estimatedMeal'
 import { deviceZone, suggestSlot } from '@/data/newRecords'
 import {
   forgetDescription,
@@ -10,7 +15,7 @@ import {
   rememberDescription,
 } from '@/data/descriptions'
 import { useDataRevision } from '../DataProvider'
-import { useAnalysis, useElapsed } from '../AnalysisProvider'
+import { photoUrlOf, useAnalysis, useElapsed } from '../AnalysisProvider'
 import { useActions } from '../useHealthData'
 import { OneTimeNotice, hasSeenNotice, markNoticeSeen } from '../components/OneTimeNotice'
 import { UsualsPanel } from '../components/UsualsPanel'
@@ -19,6 +24,7 @@ import { PhotoPanel } from '../components/log/PhotoPanel'
 import { WritePanel } from '../components/log/WritePanel'
 import { InputPreview } from '../components/log/InputPreview'
 import { EstimateCard } from '../components/log/EstimateCard'
+import { AdjustPanel } from '../components/log/AdjustPanel'
 import { readUsuals, type Usuals } from '@/data/usuals'
 import { currentUserId } from '@/data/session'
 import type { Meal, UsualFood, UsualMeal } from '@/domain'
@@ -123,6 +129,22 @@ export function Log() {
   const [time, setTime] = useState(hhmm(new Date()))
   const [slot, setSlot] = useState<MealSlot>(suggestSlot(new Date()))
   const [showDetails, setShowDetails] = useState(false)
+  /**
+   * The corrections in progress, owned here rather than in either card.
+   *
+   * Adjusting is a screen of its own now, so the numbers have to survive
+   * moving between it and the estimate — and re-seed whenever a new result
+   * arrives, since a revision's rows are not the previous revision's.
+   */
+  const [adjusting, setAdjusting] = useState(false)
+  const [rows, setRows] = useState<EstimateCorrection[]>([])
+  const resultKey = analysis?.result ? `${analysis.id}:${analysis.answers.length}` : undefined
+  const [rowsFor, setRowsFor] = useState<string>()
+  if (analysis?.result && resultKey !== rowsFor) {
+    setRowsFor(resultKey)
+    setRows(correctionsFrom(analysis.result))
+    setAdjusting(false)
+  }
 
   useEffect(() => {
     void getRepositories().settings.get().then(setSettings)
@@ -352,7 +374,7 @@ export function Log() {
         </div>
       )}
 
-      {analysis && (
+      {analysis && !adjusting && (
         <InputPreview
           analysis={analysis}
           elapsed={elapsed}
@@ -454,7 +476,7 @@ export function Log() {
         </Card>
       )}
 
-      {analysis && !runningPhoto && (
+      {analysis && !runningPhoto && !adjusting && (
         <div className="pt-4">
           <button
             type="button"
@@ -574,14 +596,36 @@ export function Log() {
         </Card>
       )}
 
-      {analysis?.result && (
+      {analysis?.result && adjusting && (
+        <AdjustPanel
+          result={analysis.result}
+          photoUrl={photoUrlOf(analysis)}
+          rows={rows}
+          onChange={setRows}
+          saving={saving}
+          onSave={() => void save(correctsAnything(analysis.result!, rows) ? rows : undefined)}
+          onBack={() => {
+            setRows(correctionsFrom(analysis.result!))
+            setAdjusting(false)
+          }}
+          onAsk={
+            analysis.result.question && analysis.answers.length < MAX_FOLLOW_UPS
+              ? () => setAdjusting(false)
+              : undefined
+          }
+        />
+      )}
+
+      {analysis?.result && !adjusting && (
         <EstimateCard
           result={analysis.result}
           downgraded={analysis.downgraded}
           fromText={fromText}
           saving={saving}
+          rows={rows}
+          onAdjust={() => setAdjusting(true)}
           onAnswer={analysis.answers.length < MAX_FOLLOW_UPS ? answerQuestion : undefined}
-          onSave={(corrections) => void save(corrections)}
+          onSave={() => void save(correctsAnything(analysis.result!, rows) ? rows : undefined)}
           onDiscard={() => {
             clearInput()
             if (fromText) setMode('write')

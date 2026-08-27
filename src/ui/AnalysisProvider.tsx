@@ -17,6 +17,7 @@ import {
   type PhotoMeta,
 } from '@/ai/estimator'
 import { MAX_FOLLOW_UPS } from '../../supabase/functions/_shared/prompt'
+import { useT } from './i18n'
 import { TrialExhaustedError } from '@/ai/proxyEstimator'
 import type { MealSlot } from '@/domain'
 
@@ -132,6 +133,7 @@ const buzz = (pattern: number | number[]): void => {
 }
 
 export function AnalysisProvider({ children }: { children: ReactNode }) {
+  const t = useT()
   const [analysis, setAnalysis] = useState<Analysis>()
   /** Only the newest run may write results; an abandoned retry must not. */
   const runId = useRef(0)
@@ -214,9 +216,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
               error: {
                 message: known
                   ? cause.message
-                  : input.kind === 'photo'
-                    ? 'Something went wrong reading the photo'
-                    : 'Something went wrong reading your description',
+                  : t(input.kind === 'photo' ? 'log.error.photo' : 'log.error.text'),
                 retryable: !known || cause.kind !== 'NO_KEY',
                 exhausted,
               },
@@ -224,7 +224,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           : current,
       )
     }
-  }, [])
+  }, [t])
 
   const start = useCallback(
     async (file: Blob, hints: EstimateHints, slot: MealSlot, label: string) => {

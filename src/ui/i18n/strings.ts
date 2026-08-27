@@ -119,10 +119,6 @@ const en = {
   'estimate.yours': 'yours',
   'estimate.adjust': 'Adjust these numbers',
   'estimate.adjustAgain': 'Adjust again',
-  'estimate.doneAdjusting': 'Done adjusting',
-  'estimate.adjustHint':
-    'Change the grams and the rest follows by ratio. Type over any number to break the link. What you change is saved as your own figure, not an estimate to confirm later.',
-  'estimate.modelSaid': 'the model said {grams} g · {kcal} kcal',
   'estimate.food': 'Food',
   'estimate.grams': 'Grams',
   'estimate.proteinG': 'Protein g',
@@ -187,11 +183,8 @@ const en = {
   'nutrition.title': 'Nutrition',
   'nutrition.todaysTotal': "Today's total",
   'nutrition.logAMeal': 'Log a meal',
-  'nutrition.meal': 'Meal',
   'nutrition.addAnotherFood': 'Add another food',
-  'nutrition.saveMeal': 'Save meal',
   'nutrition.confirm': 'Confirm',
-  'nutrition.aiEstimate': 'AI estimate',
   'nutrition.editMeal': 'Edit {slot}',
   'nutrition.deleteMeal': 'Delete {slot}',
   'nutrition.nothingLogged': 'Nothing logged for this day yet.',
@@ -211,7 +204,6 @@ const en = {
   'editor.delete': 'Delete meal',
 
   // --------------------------------------------------------------- today ----
-  'today.title': 'Today',
   'today.nutrition': 'Nutrition',
   'today.activity': 'Activity',
   'today.recovery': 'Recovery',
@@ -232,7 +224,6 @@ const en = {
   'settings.analysis': 'Analysis',
   'settings.photos': 'Photos',
   'settings.storage': 'Where your data is saved',
-  'settings.save': 'Save',
   'settings.saved': 'Saved',
 
   // --------------------------------------------------------------- common ---
@@ -471,6 +462,29 @@ const en = {
   'seed.salmonPotatoesSalad': 'Salmon, potatoes, salad',
   'seed.benchPress': 'Bench press',
   'seed.barbellRow': 'Barbell row',
+
+  // ------------------------------------------------------------- adjusting --
+  'adjust.readFromPhoto': 'Read from your photo a moment ago.',
+  'adjust.lead':
+    'Change the weights before this becomes a meal — nutrients follow whatever you set, and nothing is saved yet.',
+  'adjust.yourNumbers': 'Your numbers',
+  'adjust.unchanged': 'unchanged',
+  'adjust.deltaKcal': '{sign}{count} kcal vs the estimate',
+  'adjust.asEstimated': 'as estimated',
+  'adjust.deltaGrams': '{sign}{count} g',
+  'adjust.sureOfThis': '{count}% sure of this one',
+  'adjust.notOnPlate': 'Not on the plate',
+  'adjust.putBack': 'Put it back',
+  'adjust.somethingMissed': 'Something it missed',
+  'adjust.newFoodName': 'What was it?',
+  'adjust.ratios':
+    'Your weights, the model’s ratios: setting 200 g of chicken scales that row’s protein, carbs and fat by the same amount. The confidence figure stays the model’s — it does not follow your edit.',
+  'adjust.backToEstimate': 'Back to the estimate',
+  'adjust.letItAsk': 'Let it ask instead',
+  'adjust.grams': 'Grams of {food}',
+  'adjust.less': 'Less {food}',
+  'adjust.more': 'More {food}',
+
 } as const
 
 /** Every key the app may ask for, and the shape its value must have. */
@@ -566,10 +580,6 @@ const he: Dictionary = {
   'estimate.yours': 'שלכם',
   'estimate.adjust': 'תיקון המספרים',
   'estimate.adjustAgain': 'תיקון נוסף',
-  'estimate.doneAdjusting': 'סיימתי לתקן',
-  'estimate.adjustHint':
-    'שינוי הגרמים גורר את השאר ביחס ישר. הקלדה על מספר כלשהו מנתקת אותו מהחישוב. מה שתשנו יישמר כנתון שלכם, ולא כהערכה שצריך לאשר בהמשך.',
-  'estimate.modelSaid': 'המודל אמר {grams} גרם · {kcal} קלוריות',
   'estimate.food': 'מזון',
   'estimate.grams': 'גרם',
   'estimate.proteinG': 'חלבון בגרמים',
@@ -632,11 +642,8 @@ const he: Dictionary = {
   'nutrition.title': 'תזונה',
   'nutrition.todaysTotal': 'הסך הכל להיום',
   'nutrition.logAMeal': 'רישום ארוחה',
-  'nutrition.meal': 'ארוחה',
   'nutrition.addAnotherFood': 'הוספת מזון נוסף',
-  'nutrition.saveMeal': 'שמירת הארוחה',
   'nutrition.confirm': 'אישור',
-  'nutrition.aiEstimate': 'הערכת AI',
   'nutrition.editMeal': 'עריכת {slot}',
   'nutrition.deleteMeal': 'מחיקת {slot}',
   'nutrition.nothingLogged': 'עוד לא נרשם דבר ליום הזה.',
@@ -656,7 +663,6 @@ const he: Dictionary = {
   'editor.delete': 'מחיקת הארוחה',
 
   // --------------------------------------------------------------- today ----
-  'today.title': 'היום',
   'today.nutrition': 'תזונה',
   'today.activity': 'פעילות',
   'today.recovery': 'התאוששות',
@@ -677,7 +683,6 @@ const he: Dictionary = {
   'settings.analysis': 'ניתוח',
   'settings.photos': 'תמונות',
   'settings.storage': 'איפה הנתונים שלכם נשמרים',
-  'settings.save': 'שמירה',
   'settings.saved': 'נשמר',
 
   // --------------------------------------------------------------- common ---
@@ -913,6 +918,29 @@ const he: Dictionary = {
   'seed.salmonPotatoesSalad': 'סלמון, תפוחי אדמה, סלט',
   'seed.benchPress': 'לחיצת חזה',
   'seed.barbellRow': 'חתירה עם מוט',
+
+  // ------------------------------------------------------------- adjusting --
+  'adjust.readFromPhoto': 'נקרא מהתמונה שלכם לפני רגע.',
+  'adjust.lead':
+    'שנו את המשקלים לפני שזה הופך לארוחה — הערכים התזונתיים עוקבים אחרי מה שתקבעו, ושום דבר עוד לא נשמר.',
+  'adjust.yourNumbers': 'המספרים שלכם',
+  'adjust.unchanged': 'ללא שינוי',
+  'adjust.deltaKcal': '{sign}{count} קלוריות מול ההערכה',
+  'adjust.asEstimated': 'כפי שהוערך',
+  'adjust.deltaGrams': '{sign}{count} גרם',
+  'adjust.sureOfThis': 'בטוח ב-{count}% לגבי זה',
+  'adjust.notOnPlate': 'לא היה בצלחת',
+  'adjust.putBack': 'להחזיר',
+  'adjust.somethingMissed': 'משהו שהוא פספס',
+  'adjust.newFoodName': 'מה זה היה?',
+  'adjust.ratios':
+    'המשקלים שלכם, היחסים של המודל: קביעת 200 גרם עוף משנה את החלבון, הפחמימות והשומן של אותה שורה באותו יחס. רמת הביטחון נשארת של המודל — היא לא עוקבת אחרי העריכה שלכם.',
+  'adjust.backToEstimate': 'חזרה להערכה',
+  'adjust.letItAsk': 'שהוא ישאל במקום',
+  'adjust.grams': 'גרמים של {food}',
+  'adjust.less': 'פחות {food}',
+  'adjust.more': 'יותר {food}',
+
 }
 
 export const STRINGS: Record<Lang, Dictionary> = { en, he }

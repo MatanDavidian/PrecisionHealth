@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { estimatorRequiresKey, getRepositories } from '@/data'
 import type { EstimateHints } from '@/ai/estimator'
-import { buildEstimatedMeal } from '@/data/estimatedMeal'
+import { buildEstimatedMeal, type EstimateCorrection } from '@/data/estimatedMeal'
 import { deviceZone, suggestSlot } from '@/data/newRecords'
 import {
   forgetDescription,
@@ -167,7 +167,7 @@ export function Log() {
     setNote('')
   }
 
-  async function save() {
+  async function save(corrections?: EstimateCorrection[]) {
     if (!analysis?.result || !analysis.input) return
     const [hours, minutes] = time.split(':').map(Number)
     const at = new Date()
@@ -183,6 +183,7 @@ export function Log() {
           ? { kind: 'photo', photo: analysis.input.meta }
           : { kind: 'text', description: analysis.input.description },
       result: analysis.result,
+      corrections,
     })
 
     setSaving(true)
@@ -582,7 +583,7 @@ export function Log() {
           downgraded={analysis.downgraded}
           fromText={fromText}
           saving={saving}
-          onSave={() => void save()}
+          onSave={(corrections) => void save(corrections)}
           onDiscard={() => {
             clearInput()
             if (fromText) setMode('write')

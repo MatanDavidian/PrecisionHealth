@@ -17,6 +17,7 @@ import {
   type MealSlot,
 } from '@/domain'
 import { deviceZone } from '@/data/newRecords'
+import { NumberField, fieldClass as field, labelClass as label } from './NumberField'
 
 /**
  * The zone the meal was logged in, not the one the phone is in now.
@@ -26,10 +27,6 @@ import { deviceZone } from '@/data/newRecords'
  */
 const zoneOf = (meal: Meal): IanaZone =>
   meal.time.kind === 'instant' ? meal.time.zone : deviceZone()
-
-const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
-const field =
-  'w-full rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm outline-none focus:border-accent'
 
 const slotWord = (slot: MealSlot) => slot.charAt(0) + slot.slice(1).toLowerCase()
 
@@ -282,41 +279,6 @@ export function MealEditor({
 function atOn(meal: Meal, hhmm: string): string {
   if (meal.time.kind !== 'instant') return new Date().toISOString()
   return zonedTimeToUtc(dayKey(meal.time.at, meal.time.zone), hhmm, meal.time.zone)
-}
-
-function NumberField({
-  id,
-  label: text,
-  value,
-  onChange,
-  disabled,
-  highlight,
-}: {
-  id: string
-  label: string
-  value: number
-  onChange: (value: number) => void
-  disabled?: boolean
-  highlight?: boolean
-}) {
-  return (
-    <div>
-      <label className={label} htmlFor={id}>
-        {text}
-      </label>
-      <input
-        id={id}
-        type="number"
-        min={0}
-        step="any"
-        disabled={disabled}
-        className={`${field} tabular ${highlight ? 'border-accent' : ''}`}
-        value={value === 0 ? '' : value}
-        placeholder="0"
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-      />
-    </div>
-  )
 }
 
 function TrashIcon() {

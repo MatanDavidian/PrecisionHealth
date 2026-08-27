@@ -3,7 +3,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { deleteDB, openDB, type IDBPDatabase } from 'idb'
 import { createIndexedDbRepositories, seedOnce } from '../idb/indexedDbRepositories'
 import { DB_NAME, openHealthDB, type HealthDB } from '../idb/schema'
-import { buildEstimatedMeal, buildFailedInference } from '../estimatedMeal'
+import {
+  buildEstimatedMeal,
+  buildFailedInference,
+  correctionsFrom,
+  correctsAnything,
+  type EstimateCorrection,
+} from '../estimatedMeal'
 import { newId } from '../newRecords'
 import { goals, meals, observations, profile, sleep, workouts } from '../mock/seed'
 import { FakeEstimator, SAMPLE_REPLY } from '@/ai/fakeEstimator'
@@ -17,6 +23,7 @@ import {
   needsConfirmation,
   nextVersion,
   resolveMealConflict,
+  scaleTo,
   type UserId,
 } from '@/domain'
 
@@ -330,5 +337,88 @@ describe('migrating a slice-1 database forward', () => {
     const both = await repos.meals.listByDay(USER, '2026-08-19')
     expect(both).toHaveLength(2)
     expect(latestVersions(both)[0].slot).toBe('LUNCH')
+  })
+})
+
+describe('correcting an estimate before it is saved', () => {
+  const corrected = async (edit: Partial<EstimateCorrection> & { index: number }) => {
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const rows = correctionsFrom(result)
+    const corrections = rows.map((row) =>
+      row.index === edit.index ? { ...row, ...edit } : row,
+    )
+    return { result, ...buildEstimatedMeal(USER, { ...photoMealInput(), result, corrections }) }
+  }
+
+  it('seeds the form with exactly what the model said', async () => {
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    expect(correctionsFrom(result)).toEqual([
+      { index: 0, name: 'Grilled chicken breast', amountG: 170, energyKcal: 281, proteinG: 53, carbsG: 0, fatG: 6 },
+      { index: 1, name: 'Rice and vegetables', amountG: 280, energyKcal: 430, proteinG: 11, carbsG: 86, fatG: 5 },
+    ])
+  })
+
+  it('leaves an untouched estimate exactly as it was', async () => {
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const rows = correctionsFrom(result)
+    expect(correctsAnything(result, rows)).toBe(false)
+
+    const { meal } = buildEstimatedMeal(USER, { ...photoMealInput(), result, corrections: rows })
+    expect(meal.items.every((item) => needsConfirmation(item.provenance))).toBe(true)
+    expect(meal.items.map((i) => convert(i.amount, 'g'))).toEqual([170, 280])
+  })
+
+  it('re-portions by ratio, and the corrected item becomes the user\'s own figure', async () => {
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const halved = scaleTo(correctionsFrom(result)[0], 85)
+    expect(halved).toMatchObject({ amountG: 85, energyKcal: 140.5, proteinG: 26.5, fatG: 3 })
+
+    const { meal } = await corrected(halved)
+    const [chicken, rice] = meal.items
+    // Corrected: a human said what this should be, so it needs no confirming.
+    expect(needsConfirmation(chicken.provenance)).toBe(false)
+    expect(chicken.provenance.source).toBe('USER')
+    expect(convert(chicken.nutrients.protein, 'g')).toBe(26.5)
+    // Untouched: still the model's guess, still awaiting confirmation.
+    expect(needsConfirmation(rice.provenance)).toBe(true)
+    expect(rice.provenance.source).toBe('AI_ESTIMATE')
+  })
+
+  it('drops a food the user removed, and keeps the rest estimated', async () => {
+    const { meal } = await corrected({ index: 1, removed: true })
+    expect(meal.items).toHaveLength(1)
+    expect(meal.items[0].name).toBe('Grilled chicken breast')
+    expect(needsConfirmation(meal.items[0].provenance)).toBe(true)
+  })
+
+  it('renaming a food is a correction too', async () => {
+    const { meal } = await corrected({ index: 0, name: 'Chicken thigh' })
+    expect(meal.items[0].name).toBe('Chicken thigh')
+    expect(meal.items[0].provenance.source).toBe('USER')
+  })
+
+  it('records the overrides in the audit trail beside what the model said', async () => {
+    const { result, inference } = await corrected({ index: 0, energyKcal: 200 })
+    const output = inference.output as { raw: unknown; corrections?: EstimateCorrection[] }
+    // The model's own words are untouched...
+    expect(output.raw).toEqual(SAMPLE_REPLY)
+    expect(result.items[0].energyKcal).toBe(281)
+    // ...and what the human changed them to is recorded next to it.
+    expect(output.corrections?.[0]).toMatchObject({ index: 0, energyKcal: 200 })
+  })
+
+  it('does not clutter the audit row when nothing was actually changed', async () => {
+    const result = await new FakeEstimator().estimate(new Blob(), {})
+    const { inference } = buildEstimatedMeal(USER, {
+      ...photoMealInput(),
+      result,
+      corrections: correctionsFrom(result),
+    })
+    expect(inference.output).not.toHaveProperty('corrections')
+  })
+
+  it('keeps the meal itself an estimate, because that is how it began', async () => {
+    const { meal } = await corrected({ index: 0, energyKcal: 200 })
+    expect(meal.provenance.source).toBe('AI_ESTIMATE')
   })
 })

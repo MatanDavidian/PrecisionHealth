@@ -21,16 +21,27 @@ import type { FoodItem, FoodItemId, Meal, MealSlot } from './nutrition'
 import { canonical, convert, type CanonicalQuantity } from './units'
 import type { Instant } from './time'
 
-/** One live item as the user edited it — plain numbers, converted here (D8). */
-export interface FoodItemEdit {
-  id: FoodItemId
-  name: string
+/**
+ * Anything with a weight and the numbers that scale with it.
+ *
+ * Named separately from `FoodItemEdit` because the same arithmetic applies
+ * before a meal exists at all: an AI estimate on the Log screen is re-portioned
+ * by exactly the rule below, and it has no record id to carry. Structural, so
+ * neither caller has to declare a relationship to the other.
+ */
+export interface Portioned {
   /** Grams. */
   amountG: number
   energyKcal: number
   proteinG: number
   carbsG: number
   fatG: number
+}
+
+/** One live item as the user edited it — plain numbers, converted here (D8). */
+export interface FoodItemEdit extends Portioned {
+  id: FoodItemId
+  name: string
 }
 
 export interface MealEdit {
@@ -71,7 +82,7 @@ const round = (value: number): number => Math.round(value * 10) / 10
  * A zero-weight item cannot be scaled (nothing to scale from), so its numbers
  * are returned untouched rather than zeroed.
  */
-export function scaleTo(edit: FoodItemEdit, amountG: number): FoodItemEdit {
+export function scaleTo<T extends Portioned>(edit: T, amountG: number): T {
   if (edit.amountG <= 0 || amountG < 0) return { ...edit, amountG }
   const ratio = amountG / edit.amountG
   return {

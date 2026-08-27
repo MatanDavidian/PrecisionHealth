@@ -12,7 +12,7 @@ import {
 import { useDataRevision } from '../DataProvider'
 import { useAnalysis, useElapsed } from '../AnalysisProvider'
 import { useActions } from '../useHealthData'
-import { OneTimeNotice } from '../components/OneTimeNotice'
+import { OneTimeNotice, hasSeenNotice, markNoticeSeen } from '../components/OneTimeNotice'
 import { UsualsPanel } from '../components/UsualsPanel'
 import { ModeTabs, modeTabId, type ModeTab } from '../components/ModeTabs'
 import { PhotoPanel } from '../components/log/PhotoPanel'
@@ -91,7 +91,27 @@ export function Log() {
   const [logging, setLogging] = useState(false)
   const { analysis, start, startText, retry, clear } = useAnalysis()
   const running = analysis?.status === 'running'
+  const runningPhoto = running && analysis?.input.kind === 'photo'
   const elapsed = useElapsed(analysis?.startedAt, running)
+
+  /**
+   * The rationale card under a running photo, said once and never again.
+   *
+   * Shown for the whole run once it appears, independent of `useElapsed`'s
+   * per-second re-renders — reading `hasSeenNotice` straight from render
+   * would flip it off mid-wait the instant the effect below marks it seen.
+   */
+  const [showAnalyzingExplainer, setShowAnalyzingExplainer] = useState(false)
+  useEffect(() => {
+    if (!runningPhoto) {
+      setShowAnalyzingExplainer(false)
+      return
+    }
+    if (!hasSeenNotice('analyzing-explainer')) {
+      setShowAnalyzingExplainer(true)
+      markNoticeSeen('analyzing-explainer')
+    }
+  }, [runningPhoto])
 
   const [settings, setSettings] = useState<AppSettings>()
   const [saved, setSaved] = useState(false)
@@ -342,6 +362,44 @@ export function Log() {
         />
       )}
 
+      {/*
+        While a photo is being read there is nothing to Analyze (it started
+        itself) and nothing to add details to (the hints already went with
+        it) — so the generic button row and the details form below both stay
+        hidden, and this pair takes their place: give up on it, or go do
+        something else while it keeps working.
+      */}
+      {runningPhoto && (
+        <div className="flex flex-wrap gap-3 pt-4">
+          <button
+            type="button"
+            onClick={clearInput}
+            className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+          >
+            Cancel
+          </button>
+          <Link
+            to="/today"
+            className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+          >
+            Leave this open
+          </Link>
+        </div>
+      )}
+
+      {showAnalyzingExplainer && (
+        <div className="mt-4 rounded-card bg-leaf-soft p-5">
+          <p className="pb-2 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-leaf">
+            Why this looks like this
+          </p>
+          <p className="text-sm leading-relaxed text-ink-muted">
+            The wait is put where your eyes already are — on the photo — rather than in a line of
+            small text under it. Leaving the screen doesn't cancel anything: the work carries on
+            and a bar stays docked above the tab bar until it's done.
+          </p>
+        </div>
+      )}
+
       {saved && (
         <p className="pt-4 text-sm text-leaf">
           Saved. <Link to="/today" className="underline">See today</Link>.
@@ -401,7 +459,7 @@ export function Log() {
         </Card>
       )}
 
-      {analysis && (
+      {analysis && !runningPhoto && (
         <div className="pt-4">
           <button
             type="button"
@@ -479,7 +537,7 @@ export function Log() {
         </div>
       )}
 
-      {analysis && !analysis.result && !analysis.error?.exhausted && (
+      {analysis && !analysis.result && !analysis.error?.exhausted && !runningPhoto && (
         <div className="flex flex-wrap gap-3 pt-4">
           {!running && (
             <button

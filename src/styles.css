@@ -41,3 +41,26 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * The highlight sweeping down a photo while it is being read (Log, analyzing
+ * state). Accent fading up into surface, like light passing over the plate.
+ */
+.scan-sweep {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-accent) 0%, transparent) 0%,
+    color-mix(in srgb, var(--color-accent) 55%, transparent) 60%,
+    color-mix(in srgb, var(--color-surface) 85%, transparent) 100%
+  );
+  animation: scan-sweep 2.6s ease-in-out infinite;
+}
+
+@keyframes scan-sweep {
+  0% {
+    transform: translateY(-110%);
+  }
+  100% {
+    transform: translateY(420%);
+  }
+}

@@ -172,12 +172,19 @@ app itself rather than a generic tracker:
   day pretending nothing was logged.
 - **One-time notices** — the accuracy/speed choice on first arrival, and the
   switch to a faster model when it happens.
-- **Progress that survives leaving the screen** — the photo dims with "Reading
-  your plate… 0:07 · usually about 15 seconds / You can leave — it keeps going",
-  and a **docked bar** above the bottom nav follows you to any other screen:
-  "Analyzing your lunch · 0:12 · View", then "Lunch estimated · 640 kcal ·
-  Review". Built because on a phone the wait was invisible and looked like
-  nothing had happened.
+- **Progress that survives leaving the screen** — the photo is replaced, not
+  dimmed: a solid dark card with a spinning ring, "Reading your plate…", the
+  elapsed time against "usually about 15 seconds", and a highlight sweeping
+  down through it. **Cancel** and **Leave this open** sit right below (the
+  latter goes to Today); a one-time leaf-toned card explains why the wait
+  looks like this, the first time only. A **docked bar** above the bottom nav
+  then follows you to any other screen: "Analyzing your lunch · 0:12 · View",
+  then "Lunch estimated · 640 kcal · Review". Built because on a phone the
+  running state didn't appear until you tapped something else — the file
+  input's `change` handler was firing, but the screen showed nothing until the
+  photo had been downscaled and hashed, both of which can stall for a beat
+  right after the camera hands back control; the running state now shows
+  immediately, on the photo as captured, before any of that work starts.
 
 ## Settings, in order
 

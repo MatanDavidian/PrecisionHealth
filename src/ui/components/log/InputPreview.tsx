@@ -1,5 +1,35 @@
 import { formatElapsed, type Analysis } from '../../AnalysisProvider'
 
+/** A ring, spinning, drawn about 43% open — same geometry as the design. */
+function ProgressRing() {
+  const r = 24
+  const circumference = 2 * Math.PI * r
+  return (
+    <svg
+      width="56"
+      height="56"
+      viewBox="0 0 56 56"
+      className="animate-spin"
+      style={{ animationDuration: '1.1s' }}
+      aria-hidden
+    >
+      <circle cx="28" cy="28" r={r} fill="none" strokeWidth="4" className="stroke-surface/30" />
+      <circle
+        cx="28"
+        cy="28"
+        r={r}
+        fill="none"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={circumference * 0.57}
+        transform="rotate(-90 28 28)"
+        className="stroke-surface"
+      />
+    </svg>
+  )
+}
+
 /**
  * What is being read, and how far it has got.
  *
@@ -48,25 +78,24 @@ export function InputPreview({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-card">
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-card">
       <img
         src={analysis.input.url}
         alt="The meal you photographed"
-        className={`w-full object-cover transition-opacity ${running ? 'opacity-60' : ''}`}
+        className="absolute inset-0 size-full object-cover"
       />
       {running && (
-        <div className="absolute inset-x-0 bottom-0 bg-ink/75 px-4 py-3 text-surface">
-          <p className="flex items-center gap-2 text-sm font-medium">
-            <span className="size-2 animate-pulse rounded-full bg-surface" />
-            Reading your plate…
-            <span className="tabular font-normal opacity-80">
+        <>
+          {/* Solid, not dimmed: the wait lives here, not the photo underneath. */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-ink">
+            <ProgressRing />
+            <p className="text-sm font-medium text-surface">Reading your plate…</p>
+            <p className="tabular text-xs text-surface/70">
               {formatElapsed(elapsed)} · usually about 15 seconds
-            </span>
-          </p>
-          <p className="pt-0.5 text-xs opacity-75">
-            You can leave — it keeps going, and the bar below stays until it's done.
-          </p>
-        </div>
+            </p>
+          </div>
+          <div className="scan-sweep pointer-events-none absolute inset-x-0 top-0 h-1/4" />
+        </>
       )}
     </div>
   )

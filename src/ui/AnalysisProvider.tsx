@@ -120,93 +120,105 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     [photoUrl],
   )
 
-  const run = useCallback(
-    async (base: Omit<Analysis, 'status' | 'startedAt' | 'id'>, id: number) => {
-      setAnalysis({ ...base, id: String(id), status: 'running', startedAt: Date.now() })
-      buzz(15)
+  /**
+   * Puts the running state on screen. The only thing that may happen before
+   * this call is choosing the file — no decode, no downscale, no hash — so
+   * the screen changes the instant the camera hands back a photo. Gating the
+   * first paint on that work is what "I took a photo and nothing happened"
+   * turned out to be: canvas decode/encode can stall for a beat right after
+   * the native camera UI closes, and a phone left showing the idle screen
+   * during that stall looks broken rather than busy.
+   */
+  const beginRun = useCallback((base: Omit<Analysis, 'status' | 'startedAt' | 'id'>, id: number) => {
+    setAnalysis({ ...base, id: String(id), status: 'running', startedAt: Date.now() })
+    buzz(15)
+  }, [])
 
-      try {
-        const estimator = getEstimator()
-        const result =
-          base.input.kind === 'photo'
-            ? await estimator.estimate(base.input.blob, base.hints)
-            : await estimator.estimateFromText(base.input.description, base.hints)
-        if (runId.current !== id) return
-        buzz([15, 60, 15])
-        setAnalysis((current) =>
-          current && current.id === String(id)
-            ? {
-                ...current,
-                status: 'done',
-                finishedAt: Date.now(),
-                result,
-                model: estimator.model,
-                downgraded: 'downgraded' in estimator ? Boolean(estimator.downgraded) : false,
-              }
-            : current,
-        )
-      } catch (cause) {
-        if (runId.current !== id) return
-        const known = cause instanceof EstimateError
-        const exhausted = cause instanceof TrialExhaustedError
-        buzz(15)
-        setAnalysis((current) =>
-          current && current.id === String(id)
-            ? {
-                ...current,
-                status: 'failed',
-                finishedAt: Date.now(),
-                error: {
-                  message: known
-                    ? cause.message
-                    : base.input.kind === 'photo'
-                      ? 'Something went wrong reading the photo'
-                      : 'Something went wrong reading your description',
-                  retryable: !known || cause.kind !== 'NO_KEY',
-                  exhausted,
-                },
-              }
-            : current,
-        )
-      }
-    },
-    [],
-  )
+  /** Calls the estimator and writes the result or error. The running state must already be showing. */
+  const finish = useCallback(async (input: AnalysisInput, hints: EstimateHints, id: number) => {
+    try {
+      const estimator = getEstimator()
+      const result =
+        input.kind === 'photo'
+          ? await estimator.estimate(input.blob, hints)
+          : await estimator.estimateFromText(input.description, hints)
+      if (runId.current !== id) return
+      buzz([15, 60, 15])
+      setAnalysis((current) =>
+        current && current.id === String(id)
+          ? {
+              ...current,
+              status: 'done',
+              finishedAt: Date.now(),
+              result,
+              model: estimator.model,
+              downgraded: 'downgraded' in estimator ? Boolean(estimator.downgraded) : false,
+            }
+          : current,
+      )
+    } catch (cause) {
+      if (runId.current !== id) return
+      const known = cause instanceof EstimateError
+      const exhausted = cause instanceof TrialExhaustedError
+      buzz(15)
+      setAnalysis((current) =>
+        current && current.id === String(id)
+          ? {
+              ...current,
+              status: 'failed',
+              finishedAt: Date.now(),
+              error: {
+                message: known
+                  ? cause.message
+                  : input.kind === 'photo'
+                    ? 'Something went wrong reading the photo'
+                    : 'Something went wrong reading your description',
+                retryable: !known || cause.kind !== 'NO_KEY',
+                exhausted,
+              },
+            }
+          : current,
+      )
+    }
+  }, [])
 
   const start = useCallback(
     async (file: Blob, hints: EstimateHints, slot: MealSlot, label: string) => {
-      const blob = await downscale(file)
-      const meta = await describePhoto(blob)
       const id = ++runId.current
-      await run(
+      // The photo as captured, before any processing — this is what the
+      // running state shows until the downscale below replaces it.
+      const capturedUrl = URL.createObjectURL(file)
+      beginRun(
         {
           slot,
           label,
-          input: { kind: 'photo', url: URL.createObjectURL(blob), meta, blob },
+          input: { kind: 'photo', url: capturedUrl, meta: { width: 0, height: 0, bytes: file.size, sha256: '' }, blob: file },
           hints,
           model: getEstimator().model,
         },
         id,
       )
+
+      const blob = await downscale(file)
+      const meta = await describePhoto(blob)
+      if (runId.current !== id) return
+      // Swapping `input.url` here retires `capturedUrl`; the effect above
+      // revokes whichever url was current whenever it changes.
+      const input: AnalysisInput = { kind: 'photo', url: URL.createObjectURL(blob), meta, blob }
+      setAnalysis((current) => (current && current.id === String(id) ? { ...current, input } : current))
+      await finish(input, hints, id)
     },
-    [run],
+    [beginRun, finish],
   )
 
   const startText = useCallback(
     async (description: string, hints: EstimateHints, slot: MealSlot, label: string) => {
       const id = ++runId.current
-      await run(
-        {
-          slot,
-          label,
-          input: { kind: 'text', description: description.trim() },
-          hints,
-          model: getEstimator().model,
-        },
-        id,
-      )
+      const input: AnalysisInput = { kind: 'text', description: description.trim() }
+      beginRun({ slot, label, input, hints, model: getEstimator().model }, id)
+      await finish(input, hints, id)
     },
-    [run],
+    [beginRun, finish],
   )
 
   const restartWith = useCallback(
@@ -214,21 +226,26 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setAnalysis((current) => {
         if (!current) return current
         const id = ++runId.current
-        void run({ ...current, hints, result: undefined, error: undefined }, id)
+        beginRun({ slot: current.slot, label: current.label, input: current.input, hints, model: current.model }, id)
+        void finish(current.input, hints, id)
         return current
       })
     },
-    [run],
+    [beginRun, finish],
   )
 
   const retry = useCallback(() => {
     setAnalysis((current) => {
       if (!current) return current
       const id = ++runId.current
-      void run({ ...current, result: undefined, error: undefined }, id)
+      beginRun(
+        { slot: current.slot, label: current.label, input: current.input, hints: current.hints, model: current.model },
+        id,
+      )
+      void finish(current.input, current.hints, id)
       return current
     })
-  }, [run])
+  }, [beginRun, finish])
 
   const clear = useCallback(() => {
     runId.current += 1

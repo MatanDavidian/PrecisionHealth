@@ -7,9 +7,16 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { getEstimator } from '@/data'
+import { getEstimator, setConversationId } from '@/data'
 import { describePhoto, downscale } from '@/ai/photo'
-import { EstimateError, type EstimateHints, type EstimateResult, type PhotoMeta } from '@/ai/estimator'
+import {
+  EstimateError,
+  type EstimateHints,
+  type EstimateResult,
+  type FollowUp,
+  type PhotoMeta,
+} from '@/ai/estimator'
+import { MAX_FOLLOW_UPS } from '../../supabase/functions/_shared/prompt'
 import { TrialExhaustedError } from '@/ai/proxyEstimator'
 import type { MealSlot } from '@/domain'
 
@@ -55,6 +62,15 @@ export interface Analysis {
   downgraded?: boolean
   error?: { message: string; retryable: boolean; exhausted: boolean }
   model: string
+  /**
+   * Which meal this is, across every round of questions about it.
+   *
+   * The server charges a conversation once and counts follow-ups against this
+   * id, so it has to survive answering rather than being minted per call.
+   */
+  conversationId: string
+  /** The questions the model asked and what the user said back, oldest first. */
+  answers: FollowUp[]
 }
 
 interface AnalysisContextValue {
@@ -71,6 +87,8 @@ interface AnalysisContextValue {
   retry: () => void
   /** Amends the hints and analyses the same input again. */
   restartWith: (hints: EstimateHints) => void
+  /** Sends the user's reply to the model's question and re-estimates. */
+  answerQuestion: (answer: string) => void
   clear: () => void
 }
 
@@ -79,6 +97,7 @@ const AnalysisContext = createContext<AnalysisContextValue>({
   startText: async () => {},
   retry: () => {},
   restartWith: () => {},
+  answerQuestion: () => {},
   clear: () => {},
 })
 
@@ -96,6 +115,12 @@ export const photoUrlOf = (analysis?: Analysis): string | undefined =>
  * which does not implement the Vibration API — hence the feature test rather
  * than a promise the platform will not keep.
  */
+/** Identifies one meal across every round of questions about it. */
+const newConversationId = (): string =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `c-${Date.now()}-${Math.random().toString(36).slice(2)}`
+
 const buzz = (pattern: number | number[]): void => {
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
@@ -110,6 +135,18 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [analysis, setAnalysis] = useState<Analysis>()
   /** Only the newest run may write results; an abandoned retry must not. */
   const runId = useRef(0)
+  /**
+   * The current analysis, readable from a callback without re-creating it.
+   *
+   * Retry, restart and answering all need to know what is on screen in order
+   * to run it again. Reading that inside a `setAnalysis` updater and starting
+   * a new run from there looks tempting and is wrong: an updater must be pure,
+   * React may call it twice under StrictMode, and a `setState` made from
+   * inside one is not reliably applied — which is exactly why answering a
+   * question appeared to do nothing at all.
+   */
+  const latest = useRef<Analysis>()
+  latest.current = analysis
 
   // Object URLs outlive the component that made them unless revoked.
   const photoUrl = photoUrlOf(analysis)
@@ -130,18 +167,25 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
    * during that stall looks broken rather than busy.
    */
   const beginRun = useCallback((base: Omit<Analysis, 'status' | 'startedAt' | 'id'>, id: number) => {
+    // Told before the call, so the proxy bills this round to the right meal.
+    setConversationId(base.conversationId)
     setAnalysis({ ...base, id: String(id), status: 'running', startedAt: Date.now() })
     buzz(15)
   }, [])
 
   /** Calls the estimator and writes the result or error. The running state must already be showing. */
-  const finish = useCallback(async (input: AnalysisInput, hints: EstimateHints, id: number) => {
+  const finish = useCallback(async (
+    input: AnalysisInput,
+    hints: EstimateHints,
+    id: number,
+    answers: FollowUp[] = [],
+  ) => {
     try {
       const estimator = getEstimator()
       const result =
         input.kind === 'photo'
-          ? await estimator.estimate(input.blob, hints)
-          : await estimator.estimateFromText(input.description, hints)
+          ? await estimator.estimate(input.blob, hints, answers)
+          : await estimator.estimateFromText(input.description, hints, answers)
       if (runId.current !== id) return
       buzz([15, 60, 15])
       setAnalysis((current) =>
@@ -195,6 +239,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           input: { kind: 'photo', url: capturedUrl, meta: { width: 0, height: 0, bytes: file.size, sha256: '' }, blob: file },
           hints,
           model: getEstimator().model,
+          conversationId: newConversationId(),
+          answers: [],
         },
         id,
       )
@@ -215,49 +261,90 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     async (description: string, hints: EstimateHints, slot: MealSlot, label: string) => {
       const id = ++runId.current
       const input: AnalysisInput = { kind: 'text', description: description.trim() }
-      beginRun({ slot, label, input, hints, model: getEstimator().model }, id)
+      beginRun(
+        {
+          slot,
+          label,
+          input,
+          hints,
+          model: getEstimator().model,
+          conversationId: newConversationId(),
+          answers: [],
+        },
+        id,
+      )
       await finish(input, hints, id)
+    },
+    [beginRun, finish],
+  )
+
+  /** Runs the same input again with whatever is currently known about it. */
+  const rerun = useCallback(
+    (from: Analysis, changes: { hints?: EstimateHints; answers?: FollowUp[] }) => {
+      const id = ++runId.current
+      const hints = changes.hints ?? from.hints
+      const answers = changes.answers ?? from.answers
+      beginRun(
+        {
+          slot: from.slot,
+          label: from.label,
+          input: from.input,
+          hints,
+          model: from.model,
+          // Kept, not regenerated: this is still the same meal, and the server
+          // charges it once.
+          conversationId: from.conversationId,
+          answers,
+        },
+        id,
+      )
+      void finish(from.input, hints, id, answers)
     },
     [beginRun, finish],
   )
 
   const restartWith = useCallback(
     (hints: EstimateHints) => {
-      setAnalysis((current) => {
-        if (!current) return current
-        const id = ++runId.current
-        beginRun({ slot: current.slot, label: current.label, input: current.input, hints, model: current.model }, id)
-        void finish(current.input, hints, id)
-        return current
-      })
+      if (latest.current) rerun(latest.current, { hints })
     },
-    [beginRun, finish],
+    [rerun],
   )
 
   const retry = useCallback(() => {
-    setAnalysis((current) => {
-      if (!current) return current
-      const id = ++runId.current
-      beginRun(
-        { slot: current.slot, label: current.label, input: current.input, hints: current.hints, model: current.model },
-        id,
-      )
-      void finish(current.input, current.hints, id)
-      return current
-    })
-  }, [beginRun, finish])
+    if (latest.current) rerun(latest.current, {})
+  }, [rerun])
+
+  /**
+   * The user answers the model's question, and the estimate is made again with
+   * that taken as fact.
+   *
+   * Capped at `MAX_FOLLOW_UPS` because each round re-sends the photo and pays
+   * for it. Past the cap the question simply stops being offered — nothing
+   * fails, and the estimate on screen was always usable anyway.
+   */
+  const answerQuestion = useCallback(
+    (answer: string) => {
+      const said = answer.trim()
+      const current = latest.current
+      const question = current?.result?.question
+      if (!said || !current || !question || current.answers.length >= MAX_FOLLOW_UPS) return
+      rerun(current, { answers: [...current.answers, { question, answer: said }] })
+    },
+    [rerun],
+  )
 
   const clear = useCallback(() => {
     runId.current += 1
-    setAnalysis((current) => {
-      const url = photoUrlOf(current)
-      if (url) URL.revokeObjectURL(url)
-      return undefined
-    })
+    setConversationId(undefined)
+    const url = photoUrlOf(latest.current)
+    if (url) URL.revokeObjectURL(url)
+    setAnalysis(undefined)
   }, [])
 
   return (
-    <AnalysisContext.Provider value={{ analysis, start, startText, retry, restartWith, clear }}>
+    <AnalysisContext.Provider
+      value={{ analysis, start, startText, retry, restartWith, answerQuestion, clear }}
+    >
       {children}
     </AnalysisContext.Provider>
   )

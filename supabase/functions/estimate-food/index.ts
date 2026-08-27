@@ -18,6 +18,7 @@
  */
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
+  MAX_FOLLOW_UPS,
   MODEL_SOL,
   MODEL_TERRA,
   SYSTEM_PROMPT,
@@ -28,8 +29,10 @@ import {
   TRIAL_SOL_ANALYSES,
   costMicros,
   describedFoodText,
+  followUpText,
   hintText,
   type EstimateHints,
+  type FollowUp,
 } from '../_shared/prompt.ts'
 
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
@@ -57,6 +60,14 @@ interface RequestBody {
   day: string
   /** Which model the user asked for. Validated here; never trusted. */
   model?: string
+  /** The exchange so far, when the model asked something and the user replied. */
+  answers?: FollowUp[]
+  /**
+   * Which meal this call is about. Claimed by the client, verified here
+   * against the ledger — a follow-up is only free if there is a conversation
+   * to be following up on.
+   */
+  conversationId?: string
 }
 
 Deno.serve(async (request) => {
@@ -109,13 +120,48 @@ Deno.serve(async (request) => {
   const described = typeof body?.text === 'string' ? body.text.trim() : ''
   if ((!body?.photo && !described) || !body?.day) return json({ error: 'bad_request' }, 400)
 
+  const conversationId =
+    typeof body.conversationId === 'string' && body.conversationId.length > 0
+      ? body.conversationId.slice(0, 64)
+      : undefined
+
   const record = (fields: Record<string, unknown>) =>
     admin.from('usage').insert({
       id: crypto.randomUUID(),
       user_id: user.id,
       day: body.day,
+      conversation_id: conversationId ?? null,
       ...fields,
     })
+
+  /**
+   * Is this a free follow-up, or another analysis?
+   *
+   * Free requires a conversation that actually exists in the ledger and has
+   * not already had its allowance of questions. A client claiming a follow-up
+   * with no prior row is claiming a discount on a purchase it never made, and
+   * is simply charged; so is one past the cap, which never blocks the user —
+   * it just stops being free.
+   */
+  const answers: FollowUp[] = Array.isArray(body.answers) ? body.answers.slice(0, MAX_FOLLOW_UPS) : []
+  let isFollowUp = false
+  if (answers.length > 0 && conversationId) {
+    const { count: priorTotal } = await admin
+      .from('usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('conversation_id', conversationId)
+      .in('outcome', ['OK', 'OK_FOLLOWUP'])
+    const { count: priorFollowUps } = await admin
+      .from('usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('conversation_id', conversationId)
+      .eq('outcome', 'OK_FOLLOWUP')
+    isFollowUp = (priorTotal ?? 0) > 0 && (priorFollowUps ?? 0) < MAX_FOLLOW_UPS
+  }
+  /** What a successful call records. The whole of the follow-up discount. */
+  const okOutcome = isFollowUp ? 'OK_FOLLOWUP' : 'OK'
 
   if (!apiKey) {
     // Misconfiguration, not the user's fault — say so rather than blaming them.
@@ -148,7 +194,13 @@ Deno.serve(async (request) => {
     if (countError) return json({ error: 'ledger_unavailable' }, 503)
 
     used = count ?? 0
-    if (used >= TRIAL_ANALYSES) {
+    /**
+     * A follow-up is part of an analysis already paid for, so the wall does not
+     * apply to it — otherwise the tenth photo could ask a question the user is
+     * then refused permission to answer, which would be a strange way to spend
+     * someone's last free analysis.
+     */
+    if (used >= TRIAL_ANALYSES && !isFollowUp) {
       await record({ model: TRIAL_MODEL, key_source: 'MASTER_TRIAL', outcome: 'REFUSED_QUOTA' })
       return json({ error: 'trial_exhausted', used, allowance: TRIAL_ANALYSES }, 402)
     }
@@ -204,6 +256,10 @@ Deno.serve(async (request) => {
                 ]
               : describedFoodText(described, body.hints ?? {}),
           },
+          // The API is stateless, so the exchange is re-sent with the evidence.
+          ...(answers.length > 0
+            ? [{ role: 'user', content: followUpText(answers) }]
+            : []),
         ],
         response_format: { type: 'json_object' },
         max_completion_tokens: MAX_COMPLETION_TOKENS,
@@ -260,23 +316,27 @@ Deno.serve(async (request) => {
   await record({
     model,
     key_source: keySource,
-    outcome: 'OK',
+    outcome: okOutcome,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
     cost_micros: costMicros(model, inputTokens, outputTokens),
   })
 
+  /** A free follow-up spends nothing, so the counts it reports do not move. */
+  const spent = isFollowUp ? 0 : 1
+
   return json({
     content,
     model,
     downgraded,
+    followUp: isFollowUp,
     // Admins have no allowance to report.
     trial: isAdmin
       ? undefined
       : {
-          used: used + 1,
+          used: used + spent,
           allowance: TRIAL_ANALYSES,
-          solUsed: model === MODEL_SOL ? solUsed + 1 : solUsed,
+          solUsed: model === MODEL_SOL ? solUsed + spent : solUsed,
           solAllowance: TRIAL_SOL_ANALYSES,
         },
   })

@@ -24,6 +24,7 @@ const REPLY_CONTRACT = `Reply with ONLY a JSON object of this exact shape:
   ],
   "overallConfidence": number,
   "assumptions": [string],
+  "question": string,
   "refusal": string
 }
 
@@ -40,7 +41,18 @@ Rules:
 - Do not estimate vitamins or minerals. Neither a photo nor a sentence carries
   that information.
 - Estimate even when you are unsure. An honest low-confidence number is more
-  useful than no answer; that is what "confidence" is for.`
+  useful than no answer; that is what "confidence" is for.
+
+Asking a question:
+- You may include ONE short "question" when a single fact you cannot see
+  would materially change the numbers — fried or grilled, whole or skimmed
+  milk, how large the bowl was, whether the dressing was eaten.
+- A question NEVER replaces the estimate. Always return your best items and
+  confidence as well; the user must be able to ignore the question entirely
+  and still have a usable answer.
+- Ask only when the answer is worth the interruption. Omit "question"
+  entirely when nothing material is unclear, which is most of the time.
+- Never ask for something the user already told you in the hints.`
 
 export const SYSTEM_PROMPT = `You estimate nutrition from a single photo of food.
 
@@ -124,6 +136,41 @@ export function describedFoodText(description: string, hints: EstimateHints): st
       : 'No weight was given; assume ordinary portions and say so.',
   )
   return parts.join('\n\n')
+}
+
+/**
+ * How many follow-up answers a single meal may buy without spending another
+ * analysis.
+ *
+ * A conversation about one breakfast is one analysis; a user who answers two
+ * questions has not used three of their ten free photos. Bounded because each
+ * round re-sends the photo and pays for it again — generous, not unlimited.
+ */
+export const MAX_FOLLOW_UPS = 2
+
+/** One question the model asked, and what the user said back. */
+export interface FollowUp {
+  question: string
+  answer: string
+}
+
+/**
+ * The exchange so far, appended to the original request.
+ *
+ * The provider's API is stateless, so every round re-sends the original
+ * evidence and the conversation with it. The answer is quoted between markers
+ * for the same reason a note is: it is text from a person, and a sentence that
+ * reads like an instruction must arrive as data.
+ */
+export function followUpText(answers: readonly FollowUp[]): string {
+  if (answers.length === 0) return ''
+  const rounds = answers.map(
+    (round) =>
+      `You asked: ${JSON.stringify(round.question)}\n` +
+      `The user answers, between the markers:\n<<<\n` +
+      `${round.answer.trim().slice(0, MAX_DESCRIPTION_CHARS)}\n>>>`,
+  )
+  return `${rounds.join('\n\n')}\n\nRe-estimate with these answers taken as ground truth. Do not ask again about anything already answered.`
 }
 
 /**

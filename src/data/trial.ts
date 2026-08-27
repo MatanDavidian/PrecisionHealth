@@ -7,6 +7,12 @@
  * refuses.
  *
  * Advisory only. The server refuses; this just lets the app say so first.
+ *
+ * Both counts below match outcome = 'OK' exactly, which is what makes a
+ * conversation cost one analysis: follow-up rounds are written as
+ * 'OK_FOLLOWUP' and fall outside the filter, so they are metered and costed
+ * without being counted. Widening either match to a prefix would silently
+ * start charging for answered questions.
  */
 import {
   MODEL_SOL,

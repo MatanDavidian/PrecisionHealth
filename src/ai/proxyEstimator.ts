@@ -16,6 +16,7 @@ import {
   EstimateError,
   type EstimateHints,
   type EstimateResult,
+  type FollowUp,
   type FoodEstimator,
 } from './estimator'
 import { toDataUrl } from './photo'
@@ -38,6 +39,11 @@ export interface ProxyEstimatorOptions {
   getDay: () => string
   /** Which model to ask for. The server clamps it to what is actually allowed. */
   getModel: () => Promise<string | undefined>
+  /**
+   * Which meal this call is about, so the server can charge a conversation
+   * once. Read per call because it changes with every new photo.
+   */
+  getConversationId?: () => string | undefined
   fetchImpl?: typeof fetch
 }
 
@@ -62,15 +68,23 @@ export class ProxyEstimator implements FoodEstimator {
 
   constructor(private readonly options: ProxyEstimatorOptions) {}
 
-  async estimate(photo: Blob, hints: EstimateHints): Promise<EstimateResult> {
-    return this.send({ photo: await toDataUrl(photo) }, hints)
+  async estimate(
+    photo: Blob,
+    hints: EstimateHints,
+    answers: readonly FollowUp[] = [],
+  ): Promise<EstimateResult> {
+    return this.send({ photo: await toDataUrl(photo) }, hints, answers)
   }
 
-  async estimateFromText(description: string, hints: EstimateHints): Promise<EstimateResult> {
+  async estimateFromText(
+    description: string,
+    hints: EstimateHints,
+    answers: readonly FollowUp[] = [],
+  ): Promise<EstimateResult> {
     if (!description.trim()) {
       throw new EstimateError('UNREADABLE', 'There is nothing written to estimate')
     }
-    return this.send({ text: description.trim() }, hints)
+    return this.send({ text: description.trim() }, hints, answers)
   }
 
   /**
@@ -84,6 +98,7 @@ export class ProxyEstimator implements FoodEstimator {
   private async send(
     input: { photo: string } | { text: string },
     hints: EstimateHints,
+    answers: readonly FollowUp[] = [],
   ): Promise<EstimateResult> {
     const token = await this.options.getAccessToken()
     if (!token) throw new EstimateError('NO_KEY', 'Not signed in')
@@ -104,6 +119,10 @@ export class ProxyEstimator implements FoodEstimator {
           hints,
           day: this.options.getDay(),
           model: await this.options.getModel(),
+          // The server counts follow-ups against the conversation, not the
+          // trial — so it has to be able to tell which meal this belongs to.
+          ...(answers.length > 0 ? { answers } : {}),
+          conversationId: this.options.getConversationId?.(),
         }),
       })
     } catch {

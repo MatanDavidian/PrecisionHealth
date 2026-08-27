@@ -8,6 +8,7 @@ import {
   EstimateError,
   type EstimateHints,
   type EstimateResult,
+  type FollowUp,
   type FoodEstimator,
 } from './estimator'
 import { toDataUrl } from './photo'
@@ -18,6 +19,7 @@ import {
   SYSTEM_PROMPT,
   TEXT_SYSTEM_PROMPT,
   describedFoodText,
+  followUpText,
   hintText,
 } from '../../supabase/functions/_shared/prompt'
 import { applyGramsHint, validateEstimate } from './validate'
@@ -50,7 +52,11 @@ export class OpenAiEstimator implements FoodEstimator {
 
   constructor(private readonly options: OpenAiEstimatorOptions) {}
 
-  async estimate(photo: Blob, hints: EstimateHints): Promise<EstimateResult> {
+  async estimate(
+    photo: Blob,
+    hints: EstimateHints,
+    answers: readonly FollowUp[] = [],
+  ): Promise<EstimateResult> {
     const dataUrl = await toDataUrl(photo)
     return this.ask(
       SYSTEM_PROMPT,
@@ -62,14 +68,19 @@ export class OpenAiEstimator implements FoodEstimator {
         { type: 'image_url', image_url: { url: dataUrl, detail: 'auto' } },
       ],
       hints,
+      answers,
     )
   }
 
-  async estimateFromText(description: string, hints: EstimateHints): Promise<EstimateResult> {
+  async estimateFromText(
+    description: string,
+    hints: EstimateHints,
+    answers: readonly FollowUp[] = [],
+  ): Promise<EstimateResult> {
     if (!description.trim()) {
       throw new EstimateError('UNREADABLE', 'There is nothing written to estimate')
     }
-    return this.ask(TEXT_SYSTEM_PROMPT, describedFoodText(description, hints), hints)
+    return this.ask(TEXT_SYSTEM_PROMPT, describedFoodText(description, hints), hints, answers)
   }
 
   /**
@@ -84,6 +95,7 @@ export class OpenAiEstimator implements FoodEstimator {
     systemPrompt: string,
     userContent: unknown,
     hints: EstimateHints,
+    answers: readonly FollowUp[] = [],
   ): Promise<EstimateResult> {
     const apiKey = await this.options.getApiKey()
     if (!apiKey) throw new EstimateError('NO_KEY', 'No API key configured')
@@ -103,9 +115,11 @@ export class OpenAiEstimator implements FoodEstimator {
     const shape = { tokenParam: 'max_completion_tokens' as 'max_completion_tokens' | 'max_tokens', jsonMode: true }
 
     const call = async (extraInstruction?: string) => {
+      const conversation = followUpText(answers)
       const messages = [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },
+        ...(conversation ? [{ role: 'user', content: conversation }] : []),
         ...(extraInstruction ? [{ role: 'user', content: extraInstruction }] : []),
       ]
 

@@ -29,6 +29,7 @@ export function EstimateCard({
   saving,
   onSave,
   onDiscard,
+  onAnswer,
 }: {
   result: EstimateResult
   downgraded?: boolean
@@ -38,6 +39,8 @@ export function EstimateCard({
   /** Corrections are passed back so the caller can record what was overridden. */
   onSave: (corrections?: EstimateCorrection[]) => void
   onDiscard: () => void
+  /** Absent once the follow-up allowance is spent; the question then stops being offered. */
+  onAnswer?: (answer: string) => void
 }) {
   if (result.refusal) {
     return (
@@ -58,6 +61,9 @@ export function EstimateCard({
   const [rows, setRows] = useState<EstimateCorrection[]>(() => correctionsFrom(result))
   /** Which rows moved on their own because their weight changed. */
   const [scaled, setScaled] = useState<number[]>([])
+  const [answer, setAnswer] = useState('')
+  /** Dismissing the question is per-question, so a second one still gets asked. */
+  const [skipped, setSkipped] = useState<string>()
 
   const kept = rows.filter((row) => !row.removed)
   const corrected = correctsAnything(result, rows)
@@ -91,6 +97,53 @@ export function EstimateCard({
   return (
     <div className="pt-4">
       <Card label={fromText ? 'Estimate from your words' : 'Estimate'}>
+        {/*
+          The question sits above the numbers because it is the one thing here
+          that expires — but it is phrased so that ignoring it is obviously
+          allowed. The estimate below is complete either way; answering only
+          makes it firmer, and the model was told never to withhold one.
+        */}
+        {result.question && onAnswer && skipped !== result.question && (
+          <div className="mb-4 rounded-card border border-hairline bg-surface p-4">
+            <p className="text-sm font-medium">{result.question}</p>
+            <p className="pt-1 text-xs text-ink-muted">
+              Answering sharpens the numbers below. Skipping keeps them as they are — this is not
+              a question you have to answer.
+            </p>
+            <form
+              className="flex flex-wrap items-center gap-2 pt-3"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!answer.trim()) return
+                onAnswer(answer)
+                setAnswer('')
+              }}
+            >
+              <input
+                className={`${fieldClass} min-w-0 flex-1`}
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="Grilled, no oil"
+                aria-label="Your answer"
+              />
+              <button
+                type="submit"
+                disabled={!answer.trim()}
+                className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface disabled:opacity-40"
+              >
+                Send answer
+              </button>
+              <button
+                type="button"
+                onClick={() => setSkipped(result.question)}
+                className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+              >
+                Skip
+              </button>
+            </form>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-x-6 gap-y-2 pb-3">
           <Figure name="Calories" value={Math.round(total.kcal).toLocaleString()} />
           <Figure name="Protein" value={`${Math.round(total.protein)} g`} />

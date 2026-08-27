@@ -182,7 +182,12 @@ happens server-side.
 ### Deploying it
 
 1. **Apply the migrations** (SQL Editor, in order):
-   `0003_usage_ledger.sql` then `0004_admin_views.sql`.
+   `0003_usage_ledger.sql`, `0004_admin_views.sql`, `0005_admin_key_source.sql`,
+   then `0006_conversation_followups.sql`.
+
+   The last one adds `conversation_id` and the `OK_FOLLOWUP` outcome, which is
+   how a meal the model asked a question about still costs one analysis rather
+   than three. Until it is applied, answering a question fails.
 
 2. **Set a hard spend cap on the OpenAI organisation** before the key is ever
    used by anyone but you — [platform.openai.com](https://platform.openai.com)

@@ -22,7 +22,7 @@ import { EstimateCard } from '../components/log/EstimateCard'
 import { readUsuals, type Usuals } from '@/data/usuals'
 import { currentUserId } from '@/data/session'
 import type { Meal, UsualFood, UsualMeal } from '@/domain'
-import { MODEL_LABELS, MODEL_TERRA } from '../../../supabase/functions/_shared/prompt'
+import { MAX_FOLLOW_UPS, MODEL_LABELS, MODEL_TERRA } from '../../../supabase/functions/_shared/prompt'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
@@ -89,7 +89,7 @@ export function Log() {
   /** The meal just logged from a usual, kept so it can be taken back. */
   const [justLogged, setJustLogged] = useState<{ meals: Meal[]; label: string }>()
   const [logging, setLogging] = useState(false)
-  const { analysis, start, startText, retry, clear } = useAnalysis()
+  const { analysis, start, startText, retry, clear, answerQuestion } = useAnalysis()
   const running = analysis?.status === 'running'
   const runningPhoto = running && analysis?.input.kind === 'photo'
   const elapsed = useElapsed(analysis?.startedAt, running)
@@ -583,6 +583,7 @@ export function Log() {
           downgraded={analysis.downgraded}
           fromText={fromText}
           saving={saving}
+          onAnswer={analysis.answers.length < MAX_FOLLOW_UPS ? answerQuestion : undefined}
           onSave={(corrections) => void save(corrections)}
           onDiscard={() => {
             clearInput()

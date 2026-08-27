@@ -140,3 +140,48 @@ select case when count(*) = 1 then 'PASS: user sees only their own usage'
 from public.usage;
 
 reset role;
+
+\echo '== a conversation costs one analysis =='
+set role postgres;
+
+-- One photo, then two answers about it. The photo counts; the answers do not.
+insert into public.usage (id, user_id, day, model, key_source, outcome, conversation_id)
+values ('conv-1-initial', '11111111-1111-1111-1111-111111111111', '2026-08-22',
+        'gpt-5.6-sol', 'MASTER_TRIAL', 'OK',          'conv-1'),
+       ('conv-1-follow-a', '11111111-1111-1111-1111-111111111111', '2026-08-22',
+        'gpt-5.6-sol', 'MASTER_TRIAL', 'OK_FOLLOWUP', 'conv-1'),
+       ('conv-1-follow-b', '11111111-1111-1111-1111-111111111111', '2026-08-22',
+        'gpt-5.6-sol', 'MASTER_TRIAL', 'OK_FOLLOWUP', 'conv-1');
+
+-- This is the query BOTH trial counters run, unchanged by the feature.
+select case when count(*) = 2
+  then 'PASS: three calls about two meals count as two analyses'
+  else 'FAIL: trial counted ' || count(*) || ' analyses, expected 2' end
+from public.usage
+where user_id = '11111111-1111-1111-1111-111111111111'
+  and key_source = 'MASTER_TRIAL' and outcome = 'OK';
+
+-- ...while every round is still metered, costed and auditable.
+select case when count(*) = 3
+  then 'PASS: all three rounds are still on the ledger'
+  else 'FAIL: ledger holds ' || count(*) || ' rounds, expected 3' end
+from public.usage where conversation_id = 'conv-1';
+
+-- The cap the edge function enforces is a count over this index.
+select case when count(*) = 2
+  then 'PASS: follow-ups on a conversation are countable'
+  else 'FAIL: counted ' || count(*) || ' follow-ups, expected 2' end
+from public.usage where conversation_id = 'conv-1' and outcome = 'OK_FOLLOWUP';
+
+do $$
+begin
+  insert into public.usage (id, user_id, day, model, key_source, outcome)
+  values ('bad-outcome', '11111111-1111-1111-1111-111111111111', '2026-08-22',
+          'gpt-5.6-sol', 'MASTER_TRIAL', 'DEFINITELY_NOT_AN_OUTCOME');
+  raise exception 'FAIL: an unknown outcome was accepted';
+exception
+  when check_violation then raise notice 'PASS: outcome is still constrained';
+end
+$$;
+
+reset role;

@@ -3,7 +3,7 @@
  * development when no API key is configured and `?fake=1` is set, so the flow
  * can be exercised without spending anything.
  */
-import type { EstimateHints, EstimateResult, FoodEstimator } from './estimator'
+import type { EstimateHints, EstimateResult, FollowUp, FoodEstimator } from './estimator'
 import { applyGramsHint, validateEstimate } from './validate'
 
 export const SAMPLE_REPLY = {
@@ -29,6 +29,7 @@ export const SAMPLE_REPLY = {
   ],
   overallConfidence: 0.67,
   assumptions: ['Assumed cooked weights.', 'No added oil visible.'],
+  question: 'Was the chicken grilled dry, or cooked in oil or butter?',
 }
 
 export class FakeEstimator implements FoodEstimator {
@@ -49,8 +50,12 @@ export class FakeEstimator implements FoodEstimator {
     private readonly delayMs = 0,
   ) {}
 
-  async estimate(_photo: Blob, hints: EstimateHints): Promise<EstimateResult> {
-    return this.answer(hints)
+  async estimate(
+    _photo: Blob,
+    hints: EstimateHints,
+    answers: readonly FollowUp[] = [],
+  ): Promise<EstimateResult> {
+    return this.answer(hints, answers)
   }
 
   /**
@@ -60,8 +65,12 @@ export class FakeEstimator implements FoodEstimator {
    * a developer most needs to see in the text flow is that the numbers arrive
    * less certain than a photo's — which is what the UI says out loud.
    */
-  async estimateFromText(_description: string, hints: EstimateHints): Promise<EstimateResult> {
-    const result = await this.answer(hints)
+  async estimateFromText(
+    _description: string,
+    hints: EstimateHints,
+    answers: readonly FollowUp[] = [],
+  ): Promise<EstimateResult> {
+    const result = await this.answer(hints, answers)
     return {
       ...result,
       overallConfidence: Math.max(0, result.overallConfidence - 0.15),
@@ -73,10 +82,35 @@ export class FakeEstimator implements FoodEstimator {
     }
   }
 
-  private async answer(hints: EstimateHints): Promise<EstimateResult> {
+  /**
+   * Answering the question tightens the estimate, exactly as a real one would.
+   *
+   * The fake asks on the first pass and stops once answered, so the whole
+   * conversation — question, answer, a firmer second estimate — can be walked
+   * through without spending anything. Confidence rises because the model now
+   * knows the thing it said it was guessing at.
+   */
+  private async answer(
+    hints: EstimateHints,
+    answers: readonly FollowUp[],
+  ): Promise<EstimateResult> {
     if (this.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, this.delayMs))
     if (this.failWith) throw this.failWith
     const validated = validateEstimate(this.reply, this.model)
-    return applyGramsHint(validated, hints.totalGrams)
+    const result = applyGramsHint(validated, hints.totalGrams)
+    if (answers.length === 0) return result
+    return {
+      ...result,
+      question: undefined,
+      overallConfidence: Math.min(1, result.overallConfidence + 0.2),
+      items: result.items.map((item) => ({
+        ...item,
+        confidence: Math.min(1, item.confidence + 0.2),
+      })),
+      assumptions: [
+        ...result.assumptions,
+        `You said: ${answers[answers.length - 1].answer}`,
+      ],
+    }
   }
 }

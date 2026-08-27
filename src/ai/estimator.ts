@@ -13,6 +13,11 @@
  * audit record — is written once.
  */
 
+// The conversation shape lives with the prompt, so the client and the edge
+// function cannot disagree about what a follow-up round looks like.
+import type { FollowUp } from '../../supabase/functions/_shared/prompt'
+export type { FollowUp }
+
 /** Optional user input. The model must treat these as ground truth, not suggestions. */
 export interface EstimateHints {
   /** "cottage cheese 5%", "2 eggs" — identification is then given, not guessed. */
@@ -58,6 +63,13 @@ export interface EstimateResult {
   assumptions: string[]
   /** Set when the model says the image is not food. Then `items` is empty. */
   refusal?: string
+  /**
+   * One thing the model could not see and would like to know.
+   *
+   * Never instead of an estimate — the items above are always usable, and
+   * answering is always optional. Absent most of the time.
+   */
+  question?: string
   /** Non-fatal audit notes, e.g. MACRO_ARITHMETIC_MISMATCH. */
   flags: string[]
   /** The model's reply exactly as received, kept for the AIInference row. */
@@ -68,7 +80,13 @@ export interface EstimateResult {
 export interface FoodEstimator {
   /** The name that goes into the audit record. */
   readonly model: string
-  estimate(photo: Blob, hints: EstimateHints): Promise<EstimateResult>
+  /**
+   * `answers` carries the conversation so far, when the model asked something
+   * and the user replied. An extra parameter rather than a second method: the
+   * question is a refinement of the same request, on the same evidence, and
+   * modelling it as a separate call would duplicate every adapter.
+   */
+  estimate(photo: Blob, hints: EstimateHints, answers?: readonly FollowUp[]): Promise<EstimateResult>
   /**
    * The same estimate from a sentence: "two eggs on toast and a black coffee".
    *
@@ -76,7 +94,11 @@ export interface FoodEstimator {
    * you already ate. Cheaper and faster than a photo, and honestly less
    * certain — the confidence that comes back says so.
    */
-  estimateFromText(description: string, hints: EstimateHints): Promise<EstimateResult>
+  estimateFromText(
+    description: string,
+    hints: EstimateHints,
+    answers?: readonly FollowUp[],
+  ): Promise<EstimateResult>
 }
 
 /**

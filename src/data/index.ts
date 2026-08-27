@@ -109,6 +109,20 @@ export const estimatorRequiresKey = (): boolean => requiresKey
 export const getEstimator = (): FoodEstimator => activeEstimator
 
 /**
+ * Which meal the next call is about.
+ *
+ * Only the proxy cares — it is how the server charges a conversation once
+ * rather than once per question — so this is set here rather than threaded
+ * through the port, which would leak a billing concept into an interface the
+ * direct adapter has no use for. Read per call, exactly like the key and the
+ * model, so it always reflects the analysis actually on screen.
+ */
+let conversationId: string | undefined
+export const setConversationId = (id: string | undefined): void => {
+  conversationId = id
+}
+
+/**
  * Chooses who pays for analysis.
  *
  * Signed in with free analyses left → our server, on the owner's key: the
@@ -142,6 +156,7 @@ export function selectEstimatorFor(options: {
       getDay: () => dayKey(new Date().toISOString(), deviceZone()),
       getModel: async () =>
         (await localRepositories.settings.get()).trialModel ?? options.suggestedModel,
+      getConversationId: () => conversationId,
     })
   } else {
     requiresKey = true

@@ -1,6 +1,7 @@
 import type { Conflict, Observation, Unit } from '@/domain'
-import { sourceLabel } from './ProvenanceBadge'
+import { sourceKey } from './ProvenanceBadge'
 import { showNumber } from '../format'
+import { useT } from '../i18n'
 
 /**
  * Two sources disagreed by more than the metric's tolerance, so the app asks
@@ -19,13 +20,14 @@ export function ConflictNotice({
   dp?: number
   onChoose: (chosen: Observation) => void
 }) {
+  const t = useT()
   const options = [conflict.effective, ...conflict.competing]
 
   return (
     <div className="mt-3 rounded-xl border border-accent-soft bg-accent-soft/40 p-3">
-      <p className="text-xs font-medium text-accent">Two sources disagree</p>
+      <p className="text-xs font-medium text-accent">{t('conflict.twoSources')}</p>
       <p className="pt-1 text-xs text-ink-muted">
-        Showing {sourceLabel(conflict.effective.provenance.source)} until you confirm one.
+        {t('conflict.showing', { source: t(sourceKey(conflict.effective.provenance.source)) })}
       </p>
       <div className="flex flex-wrap gap-2 pt-2">
         {options.map((option) => (
@@ -35,8 +37,10 @@ export function ConflictNotice({
             onClick={() => onChoose(option)}
             className="rounded-full border border-hairline bg-surface px-3 py-1 text-xs transition-colors hover:bg-card-soft"
           >
-            <span className="tabular font-medium">{showNumber(option.value, unit, dp)}</span>{' '}
-            <span className="text-ink-muted">{sourceLabel(option.provenance.source)}</span>
+            <span className="tabular ltr-nums font-medium">
+              {showNumber(option.value, unit, dp)}
+            </span>{' '}
+            <span className="text-ink-muted">{t(sourceKey(option.provenance.source))}</span>
           </button>
         ))}
       </div>

@@ -13,7 +13,7 @@ import { createIndexedDbRepositories, seedOnce } from './idb/indexedDbRepositori
 import { openHealthDB } from './idb/schema'
 import { createSupabaseRepositories } from './supabase/supabaseRepositories'
 import { getSupabaseClient, isSupabaseConfigured } from './supabase/client'
-import { buildSeed } from './mock/seed'
+import { buildSeed, type SeedNames } from './mock/seed'
 import type { HealthRepositories } from './repositories'
 import { dayKey } from '@/domain'
 import { FakeEstimator } from '@/ai/fakeEstimator'
@@ -57,10 +57,10 @@ export async function selectRepositoriesFor(session: Session): Promise<HealthRep
  * Local only: a signed-in account is never seeded, and the demo day is left
  * behind when local data is adopted (its fixed ids give it away).
  */
-export const ensureSeeded = (): Promise<boolean> => {
+export const ensureSeeded = (names?: SeedNames): Promise<boolean> => {
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
   const todayLocal = dayKey(new Date().toISOString(), zone)
-  return seedOnce(dbPromise, buildSeed(todayLocal, zone))
+  return seedOnce(dbPromise, buildSeed(todayLocal, zone, names))
 }
 
 /**

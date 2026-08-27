@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../i18n'
 
 /**
  * Something worth saying once, and never again.
@@ -39,6 +40,7 @@ export function OneTimeNotice({
   actionLabel?: string
   actionTo?: string
 }) {
+  const t = useT()
   const [dismissed, setDismissed] = useState(() => hasSeenNotice(id))
   if (dismissed) return null
 
@@ -66,7 +68,7 @@ export function OneTimeNotice({
           onClick={dismiss}
           className="rounded-full border border-hairline px-3 py-1.5 text-xs"
         >
-          Got it
+          {t('common.gotIt')}
         </button>
       </div>
     </div>

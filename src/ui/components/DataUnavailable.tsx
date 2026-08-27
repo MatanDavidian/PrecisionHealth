@@ -1,4 +1,5 @@
 import { Card } from './Card'
+import { useT } from '../i18n'
 
 /**
  * A read that failed, said plainly.
@@ -16,14 +17,13 @@ export function DataUnavailable({
   onRetry: () => void
   signedIn: boolean
 }) {
+  const t = useT()
   return (
     <div className="mx-auto max-w-md">
       <Card>
-        <h2 className="font-display text-xl">Can’t reach your data</h2>
+        <h2 className="font-display text-xl">{t('unavailable.title')}</h2>
         <p className="pt-1 text-sm text-ink-muted">
-          {signedIn
-            ? 'Your records are in your account, and this device could not load them. Nothing is lost.'
-            : 'This browser would not give up its stored data. Nothing is lost.'}
+          {signedIn ? t('unavailable.signedIn') : t('unavailable.local')}
         </p>
         <p className="pt-2 text-xs text-ink-muted">{error}</p>
         <button
@@ -31,7 +31,7 @@ export function DataUnavailable({
           onClick={onRetry}
           className="mt-4 rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface"
         >
-          Try again
+          {t('common.retry')}
         </button>
       </Card>
     </div>

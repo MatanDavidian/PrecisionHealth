@@ -1,4 +1,5 @@
 import { useDataRevision } from '../DataProvider'
+import { useT } from '../i18n'
 
 /**
  * A write that failed, said out loud.
@@ -7,6 +8,7 @@ import { useDataRevision } from '../DataProvider'
  * quietly regardless of where it was triggered from.
  */
 export function WriteFailureBanner() {
+  const t = useT()
   const { failure, dismissFailure } = useDataRevision()
   if (!failure) return null
 
@@ -15,9 +17,11 @@ export function WriteFailureBanner() {
       role="alert"
       className="fixed inset-x-3 bottom-20 z-20 mx-auto max-w-md rounded-xl border border-accent-soft bg-surface p-3 shadow-lg md:bottom-4"
     >
-      <p className="text-sm font-medium text-accent">Couldn’t save {failure.what}</p>
+      <p className="text-sm font-medium text-accent">
+        {t('write.failed', { what: failure.what })}
+      </p>
       <p className="pt-0.5 text-xs text-ink-muted">
-        {failure.message}. Nothing was lost — try again.
+        {t('write.failedBody', { message: failure.message })}
       </p>
       <div className="flex gap-2 pt-2">
         <button
@@ -25,14 +29,14 @@ export function WriteFailureBanner() {
           onClick={failure.retry}
           className="rounded-full bg-accent px-4 py-1.5 text-xs font-medium text-surface"
         >
-          Try again
+          {t('common.retry')}
         </button>
         <button
           type="button"
           onClick={dismissFailure}
           className="rounded-full border border-hairline px-3 py-1.5 text-xs"
         >
-          Dismiss
+          {t('usuals.dismiss')}
         </button>
       </div>
     </div>

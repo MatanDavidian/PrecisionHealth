@@ -9,6 +9,7 @@ import {
   LOCAL_SESSION,
   type Session,
 } from '@/data/session'
+import { useT } from './i18n'
 
 /** A write that failed, kept with the means to try it again. */
 export interface WriteFailure {
@@ -60,6 +61,7 @@ export const useDataRevision = () => useContext(DataContext)
  * appears.
  */
 export function DataProvider({ children }: { children: ReactNode }) {
+  const t = useT()
   const [revision, setRevision] = useState(0)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string>()
@@ -102,7 +104,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
       await selectRepositoriesFor(current)
       await applyEstimator(current)
       // Only the signed-out, local store carries sample data.
-      if (!current.authenticated) await ensureSeeded()
+      /*
+        The sample day is written in whatever language is active at first run,
+        and stays that way. That is the honest behaviour: once written it is a
+        record like any other, exactly as a meal logged in English stays
+        English when you later switch.
+      */
+      if (!current.authenticated) {
+        await ensureSeeded({
+          eggsAndOats: t('seed.eggsAndOats'),
+          grilledChicken: t('seed.grilledChicken'),
+          riceAndVegetables: t('seed.riceAndVegetables'),
+          salmonPotatoesSalad: t('seed.salmonPotatoesSalad'),
+          benchPress: t('seed.benchPress'),
+          barbellRow: t('seed.barbellRow'),
+        })
+      }
       setReady(true)
     }
 
@@ -120,7 +137,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setRevision((r) => r + 1)
       })
     })
-  }, [applyEstimator])
+  }, [applyEstimator, t])
 
   const refreshTrial = useCallback(() => {
     void applyEstimator(session)
@@ -153,15 +170,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   if (error) {
     return (
       <div className="p-8">
-        <h1 className="font-display text-2xl">Storage unavailable</h1>
+        <h1 className="font-display text-2xl">{t('app.storageUnavailable')}</h1>
         <p className="pt-2 text-sm text-ink-muted">
-          This app stores your data in the browser, and the browser refused. {error}
+          {t('app.storageUnavailableBody', { error })}
         </p>
       </div>
     )
   }
 
-  if (!ready) return <p className="p-8 text-sm text-ink-muted">Opening your data…</p>
+  if (!ready) return <p className="p-8 text-sm text-ink-muted">{t('app.opening')}</p>
 
   return (
     <DataContext.Provider

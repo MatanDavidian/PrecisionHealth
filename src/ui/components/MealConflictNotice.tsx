@@ -1,5 +1,6 @@
 import { convert, type Meal, type MealConflict } from '@/domain'
-import { sourceLabel } from './ProvenanceBadge'
+import { sourceKey } from './ProvenanceBadge'
+import { useT } from '../i18n'
 
 /**
  * Two devices edited the same meal from the same base version (D15).
@@ -15,14 +16,12 @@ export function MealConflictNotice({
   conflict: MealConflict
   onChoose: (chosen: Meal) => void
 }) {
+  const t = useT()
   return (
     <div className="mt-3 rounded-xl border border-accent-soft bg-accent-soft/40 p-3">
-      <p className="text-xs font-medium text-accent">
-        This meal was edited in two places
-      </p>
+      <p className="text-xs font-medium text-accent">{t('conflict.mealTwoPlaces')}</p>
       <p className="pt-1 text-xs text-ink-muted">
-        Both edits started from version {conflict.version - 1}. Pick the one to keep — the other
-        stays in your history either way.
+        {t('conflict.mealBoth', { version: conflict.version - 1 })}
       </p>
 
       <div className="space-y-2 pt-2">
@@ -35,9 +34,9 @@ export function MealConflictNotice({
           >
             <span className="flex items-baseline justify-between gap-3">
               <span className="text-xs font-medium">
-                {candidate.items.length} item{candidate.items.length === 1 ? '' : 's'}
+                {t('conflict.itemCount', { count: candidate.items.length })}
               </span>
-              <span className="tabular text-xs text-ink-muted">
+              <span className="tabular ltr-nums text-xs text-ink-muted">
                 {Math.round(
                   candidate.items.reduce(
                     (sum, item) => sum + convert(item.nutrients.energy, 'kcal'),
@@ -48,9 +47,9 @@ export function MealConflictNotice({
               </span>
             </span>
             <span className="block truncate pt-0.5 text-xs text-ink-muted">
-              {candidate.items.map((item) => item.name).join(', ') || 'No items'}
+              {candidate.items.map((item) => item.name).join(', ') || t('conflict.noItems')}
               {' · '}
-              {sourceLabel(candidate.provenance.source)}
+              {t(sourceKey(candidate.provenance.source))}
             </span>
           </button>
         ))}

@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { convert } from '@/domain'
 import { formatElapsed, useAnalysis, useElapsed } from '../AnalysisProvider'
+import { useT } from '../i18n'
 
 /**
  * The analysis, following you around.
@@ -13,6 +14,7 @@ import { formatElapsed, useAnalysis, useElapsed } from '../AnalysisProvider'
  * Hidden on the Log screen itself, where the photo IS the progress.
  */
 export function AnalysisBar() {
+  const t = useT()
   const { analysis } = useAnalysis()
   const navigate = useNavigate()
   const location = useLocation()
@@ -39,14 +41,23 @@ export function AnalysisBar() {
       />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">
-          {running ? `Analyzing your ${analysis.label}` : `${analysis.label} estimated`}
-          {running && <span className="tabular font-normal text-ink-muted"> · {formatElapsed(elapsed)}</span>}
+          {running
+            ? t('bar.analyzing', { label: analysis.label })
+            : t('bar.estimated', { label: analysis.label })}
+          {running && (
+            <span className="tabular ltr-nums font-normal text-ink-muted">
+              {' '}
+              · {formatElapsed(elapsed)}
+            </span>
+          )}
           {!running && kcal != null && (
-            <span className="tabular font-normal text-ink-muted"> · {kcal} kcal</span>
+            <span className="tabular ltr-nums font-normal text-ink-muted"> · {kcal} kcal</span>
           )}
         </span>
       </span>
-      <span className="shrink-0 text-xs font-medium text-accent">{running ? 'View' : 'Review'}</span>
+      <span className="shrink-0 text-xs font-medium text-accent">
+        {running ? t('bar.view') : t('bar.review')}
+      </span>
     </button>
   )
 }

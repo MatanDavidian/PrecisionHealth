@@ -11,6 +11,7 @@ import {
 import { LOCAL_USER_ID } from '@/data/session'
 import { useDataRevision } from '../DataProvider'
 import { Card } from './Card'
+import { useT } from '../i18n'
 
 type State =
   | { kind: 'checking' }
@@ -28,6 +29,7 @@ type State =
  * never sees this.
  */
 export function AdoptionPrompt() {
+  const t = useT()
   const { session, refresh } = useDataRevision()
   const [state, setState] = useState<State>({ kind: 'checking' })
 
@@ -73,14 +75,18 @@ export function AdoptionPrompt() {
       <div className="pb-4">
         <Card>
           <p className="text-sm text-leaf">
-            Moved {meals} meal{meals === 1 ? '' : 's'}
-            {observations > 0 && ` and ${observations} measurement${observations === 1 ? '' : 's'}`}{' '}
-            into your account.
-            {skipped > 0 && ` ${skipped} were already there.`}
+            {t('adopt.moved', {
+              what:
+                observations > 0
+                  ? t('adopt.and', {
+                      meals: t('adopt.mealCount', { count: meals }),
+                      measurements: t('adopt.measurementCount', { count: observations }),
+                    })
+                  : t('adopt.mealCount', { count: meals }),
+            })}
+            {skipped > 0 && ` ${t('adopt.alreadyThere', { count: skipped })}`}
           </p>
-          <p className="pt-1 text-xs text-ink-muted">
-            The copies in this browser are left untouched.
-          </p>
+          <p className="pt-1 text-xs text-ink-muted">{t('adopt.untouched')}</p>
         </Card>
       </div>
     )
@@ -92,20 +98,26 @@ export function AdoptionPrompt() {
   return (
     <div className="pb-4">
       <Card>
-        <h2 className="font-display text-xl">Bring your data with you</h2>
+        <h2 className="font-display text-xl">{t('adopt.title')}</h2>
         <p className="pt-1 text-sm text-ink-muted">
           {state.kind === 'moving'
-            ? 'Moving your records…'
-            : `This browser holds ${count} record${count === 1 ? '' : 's'} you logged${
-                records && records.days.length > 0 ? ` across ${records.days.length} day${records.days.length === 1 ? '' : 's'}` : ''
-              }. Move them into your account so they follow you between devices?`}
+            ? t('adopt.moving')
+            : t('adopt.offer', {
+                records: t('adopt.recordCount', { count }),
+                days:
+                  records && records.days.length > 0
+                    ? t('adopt.acrossDays', {
+                        days: t('adopt.dayCount', { count: records.days.length }),
+                      })
+                    : '',
+              })}
         </p>
         {state.kind === 'failed' && (
-          <p className="pt-2 text-xs text-accent">{state.message} — nothing was lost, try again.</p>
+          <p className="pt-2 text-xs text-accent">
+            {t('adopt.failed', { message: state.message })}
+          </p>
         )}
-        <p className="pt-2 text-xs text-ink-muted">
-          The sample day stays behind, and your local copies are not deleted.
-        </p>
+        <p className="pt-2 text-xs text-ink-muted">{t('adopt.sampleStays')}</p>
         <div className="flex flex-wrap gap-3 pt-3">
           <button
             type="button"
@@ -113,7 +125,7 @@ export function AdoptionPrompt() {
             onClick={() => records && void move(records)}
             className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
           >
-            {state.kind === 'moving' ? 'Moving…' : 'Move my data'}
+            {state.kind === 'moving' ? t('adopt.movingButton') : t('adopt.move')}
           </button>
           {state.kind !== 'moving' && (
             <button
@@ -124,7 +136,7 @@ export function AdoptionPrompt() {
               }}
               className="rounded-full border border-hairline px-4 py-2 text-sm"
             >
-              Not now
+              {t('adopt.notNow')}
             </button>
           )}
         </div>

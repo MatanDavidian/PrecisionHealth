@@ -48,7 +48,35 @@ export const DEMO_DAY = '2026-08-18'
  * install opens on a populated TODAY instead of an empty screen with the data
  * two days in the past. Tests use the fixed export below.
  */
-export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
+/**
+ * What the sample day's foods and lifts are called.
+ *
+ * Passed in rather than looked up, so the mock stays free of the UI layer.
+ * English by default, which keeps every existing caller and test unchanged.
+ */
+export interface SeedNames {
+  eggsAndOats: string
+  grilledChicken: string
+  riceAndVegetables: string
+  salmonPotatoesSalad: string
+  benchPress: string
+  barbellRow: string
+}
+
+export const DEFAULT_SEED_NAMES: SeedNames = {
+  eggsAndOats: 'Eggs and oats',
+  grilledChicken: 'Grilled chicken breast',
+  riceAndVegetables: 'Rice and vegetables',
+  salmonPotatoesSalad: 'Salmon, potatoes, salad',
+  benchPress: 'Bench press',
+  barbellRow: 'Barbell row',
+}
+
+export function buildSeed(
+  day: CalendarDate = DEMO_DAY,
+  zone: IanaZone = ZONE,
+  names: SeedNames = DEFAULT_SEED_NAMES,
+) {
   const utc = (localHHMM: string, dayOffset = 0): string =>
     zonedTimeToUtc(addDays(day, dayOffset), localHHMM, zone)
   const DEMO_DAY = day
@@ -158,7 +186,7 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
       {
         id: asId<'FoodItem'>('food-eggs') as FoodItemId,
         mealId: asId<'Meal'>('meal-breakfast') as MealId,
-        name: 'Eggs and oats',
+        name: names.eggsAndOats,
         amount: canonical(320, 'g'),
         nutrients: {
           energy: canonical(560, 'kcal'),
@@ -183,7 +211,7 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
         // The roadmap's own worked example: 170 g chicken at 0.72 confidence.
         id: asId<'FoodItem'>('food-chicken') as FoodItemId,
         mealId: asId<'Meal'>('meal-lunch') as MealId,
-        name: 'Grilled chicken breast',
+        name: names.grilledChicken,
         amount: canonical(170, 'g'),
         nutrients: {
           energy: canonical(281, 'kcal'),
@@ -196,7 +224,7 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
       {
         id: asId<'FoodItem'>('food-rice') as FoodItemId,
         mealId: asId<'Meal'>('meal-lunch') as MealId,
-        name: 'Rice and vegetables',
+        name: names.riceAndVegetables,
         amount: canonical(280, 'g'),
         nutrients: {
           energy: canonical(430, 'kcal'),
@@ -220,7 +248,7 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
       {
         id: asId<'FoodItem'>('food-salmon') as FoodItemId,
         mealId: asId<'Meal'>('meal-dinner') as MealId,
-        name: 'Salmon, potatoes, salad',
+        name: names.salmonPotatoesSalad,
         amount: canonical(430, 'g'),
         nutrients: {
           energy: canonical(859, 'kcal'),
@@ -248,7 +276,7 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
       {
         id: asId<'Exercise'>('ex-bench') as ExerciseId,
         workoutId: asId<'Workout'>('workout-1') as WorkoutId,
-        name: 'Bench press',
+        name: names.benchPress,
         sets: [
           { reps: 8, weight: canonical(70, 'kg'), rpe: 7 },
           { reps: 8, weight: canonical(75, 'kg'), rpe: 8 },
@@ -258,7 +286,7 @@ export function buildSeed(day: CalendarDate = DEMO_DAY, zone: IanaZone = ZONE) {
       {
         id: asId<'Exercise'>('ex-row') as ExerciseId,
         workoutId: asId<'Workout'>('workout-1') as WorkoutId,
-        name: 'Barbell row',
+        name: names.barbellRow,
         sets: [
           { reps: 10, weight: canonical(60, 'kg'), rpe: 7 },
           { reps: 10, weight: canonical(60, 'kg'), rpe: 8 },

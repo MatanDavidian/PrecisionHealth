@@ -34,7 +34,10 @@ export function StatRow({
   return (
     <div className="flex items-baseline justify-between gap-4 py-1.5">
       <span className="text-sm text-ink-muted">{name}</span>
-      <span className={`tabular text-sm font-medium ${tone === 'good' ? 'text-leaf' : ''}`}>
+      {/* "72.8 kg" must not be reordered to "kg 72.8" in an RTL page. */}
+      <span
+        className={`tabular ltr-nums text-sm font-medium ${tone === 'good' ? 'text-leaf' : ''}`}
+      >
         {value}
       </span>
     </div>

@@ -12,6 +12,7 @@ import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
 import { convert } from '@/domain'
 import { useT } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 
 export function Today() {
   const t = useT()
@@ -34,7 +35,7 @@ export function Today() {
     <div className="mx-auto max-w-5xl">
       <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
         <div>
-          <h1 className="font-display text-4xl">{dayLabel(day, today)}</h1>
+          <h1 className="font-display text-4xl">{dayLabel(day, today, t)}</h1>
           <p className="pt-1 text-sm text-ink-muted">{day}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -50,7 +51,7 @@ export function Today() {
             to="/log"
             className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
           >
-            Log a meal
+            {t('today.logAMeal')}
           </Link>
         </div>
       </header>
@@ -59,9 +60,9 @@ export function Today() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card label={t('today.nutrition')}>
-          <StatRow name="Calories" value={showNumber(nutrients.energy, 'kcal')} />
+          <StatRow name={t('estimate.calories')} value={showNumber(nutrients.energy, 'kcal')} />
           <StatRow
-            name="Protein"
+            name={t('estimate.protein')}
             value={
               proteinGoal
                 ? `${showNumber(nutrients.protein, 'g')} / ${showNumber(proteinGoal.target, 'g')} g`
@@ -69,14 +70,13 @@ export function Today() {
             }
             tone={proteinProgress?.attained ? 'good' : undefined}
           />
-          <StatRow name="Carbs" value={show(nutrients.carbs, 'g')} />
-          <StatRow name="Fat" value={show(nutrients.fat, 'g')} />
+          <StatRow name={t('estimate.carbs')} value={show(nutrients.carbs, 'g')} />
+          <StatRow name={t('estimate.fat')} value={show(nutrients.fat, 'g')} />
           {unconfirmed.length > 0 && (
             <p className="pt-3 text-xs text-ink-muted">
-              {unconfirmed.length === 1 ? 'One item is' : `${unconfirmed.length} items are`} an
-              unconfirmed AI estimate —{' '}
+              {t('today.unconfirmed', { count: unconfirmed.length })}{' '}
               <Link to="/nutrition" className="underline">
-                review in Nutrition
+                {t('today.reviewInNutrition')}
               </Link>
               .
             </p>
@@ -84,29 +84,42 @@ export function Today() {
         </Card>
 
         <Card label={t('today.activity')}>
-          <StatRow name="Steps" value={effective.STEPS ? showNumber(effective.STEPS.value, 'count') : '—'} />
           <StatRow
-            name="Workout"
-            value={workout ? `Strength · ${showNumber(workout.duration, 'min')} min` : 'Rest day'}
+            name={t('today.steps')}
+            value={effective.STEPS ? showNumber(effective.STEPS.value, 'count') : '—'}
           />
           <StatRow
-            name="Active kcal"
+            name={t('today.workout')}
+            value={
+              workout
+                ? t('today.strength', { minutes: showNumber(workout.duration, 'min') })
+                : t('today.restDay')
+            }
+          />
+          <StatRow
+            name={t('today.activeKcal')}
             value={effective.ACTIVE_ENERGY ? showNumber(effective.ACTIVE_ENERGY.value, 'kcal') : '—'}
           />
         </Card>
 
         <Card label={t('today.recovery')}>
-          <StatRow name="Sleep" value={sleep ? showDuration(sleep.duration) : '—'} />
-          <StatRow name="HRV" value={effective.HRV ? show(effective.HRV.value, 'ms') : '—'} />
+          <StatRow name={t('today.sleep')} value={sleep ? showDuration(sleep.duration) : '—'} />
+          <StatRow name={t('today.hrv')} value={effective.HRV ? show(effective.HRV.value, 'ms') : '—'} />
           <StatRow
-            name="Resting HR"
+            name={t('today.restingHr')}
             value={effective.RESTING_HEART_RATE ? show(effective.RESTING_HEART_RATE.value, 'bpm') : '—'}
           />
         </Card>
 
         <Card label={t('today.body')}>
-          <StatRow name="Weight" value={effective.WEIGHT ? show(effective.WEIGHT.value, 'kg', 1) : '—'} />
-          <StatRow name="Body fat" value={effective.BODY_FAT ? show(effective.BODY_FAT.value, '%', 1) : '—'} />
+          <StatRow
+            name={t('today.weight')}
+            value={effective.WEIGHT ? show(effective.WEIGHT.value, 'kg', 1) : '—'}
+          />
+          <StatRow
+            name={t('today.bodyFat')}
+            value={effective.BODY_FAT ? show(effective.BODY_FAT.value, '%', 1) : '—'}
+          />
           {weightConflict && (
             <ConflictNotice
               conflict={weightConflict}
@@ -119,7 +132,7 @@ export function Today() {
         <Card label={t('today.meals')}>
           {data.meals.length === 0 && (
             <p className="py-1.5 text-sm text-ink-muted">
-              {isToday ? 'Nothing logged yet today.' : 'Nothing was logged on this day.'}
+              {isToday ? t('today.nothingToday') : t('today.nothingThatDay')}
             </p>
           )}
           {data.meals.map((meal) => {
@@ -128,10 +141,12 @@ export function Today() {
             return (
               <div key={meal.id} className="flex items-baseline justify-between gap-4 py-1.5">
                 <span className="text-sm text-ink-muted">
-                  {meal.slot.charAt(0) + meal.slot.slice(1).toLowerCase()}
+                  {t(`common.slot.${meal.slot}` as StringKey)}
                   {estimate && <ProvenanceBadge provenance={estimate.provenance} />}
                 </span>
-                <span className="tabular text-sm font-medium">{Math.round(kcal)} kcal</span>
+                <span className="tabular ltr-nums text-sm font-medium">
+                  {Math.round(kcal)} kcal
+                </span>
               </div>
             )
           })}
@@ -139,10 +154,8 @@ export function Today() {
 
         <Card tone="leaf">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-leaf">AI</p>
-          <h2 className="pt-2 font-display text-xl">See what changed this week</h2>
-          <p className="pt-1 text-sm text-ink-muted">
-            Runs later, once there is enough history to compare against.
-          </p>
+          <h2 className="pt-2 font-display text-xl">{t('today.aiTitle')}</h2>
+          <p className="pt-1 text-sm text-ink-muted">{t('today.aiBody')}</p>
         </Card>
       </div>
     </div>

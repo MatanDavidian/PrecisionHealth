@@ -46,7 +46,7 @@ export function Settings() {
     })
   }, [])
 
-  if (!settings) return <p className="text-sm text-ink-muted">Loading…</p>
+  if (!settings) return <p className="text-sm text-ink-muted">{t('settings.loading')}</p>
 
   const update = async (patch: Partial<AppSettings>) => {
     await getRepositories().settings.save(patch)
@@ -88,9 +88,7 @@ export function Settings() {
     <div className="mx-auto max-w-2xl">
       <header className="pb-6">
         <h1 className="font-display text-4xl">{t('settings.title')}</h1>
-        <p className="pt-1 text-sm text-ink-muted">
-          Photo analysis runs on your own OpenAI account.
-        </p>
+        <p className="pt-1 text-sm text-ink-muted">{t('settings.subtitle')}</p>
       </header>
 
       <div className="grid gap-4">
@@ -122,36 +120,29 @@ export function Settings() {
 
         <Card label={t('settings.account')}>
           {!authAvailable ? (
-            <p className="text-sm text-ink-muted">
-              No backend is configured in this build, so everything stays in this browser.
-            </p>
+            <p className="text-sm text-ink-muted">{t('settings.noBackend')}</p>
           ) : session.authenticated ? (
             <>
               <p className="text-sm">
-                Signed in as <span className="font-medium">{session.email}</span>
+                {t('settings.signedInAs')} <span className="font-medium">{session.email}</span>
               </p>
-              <p className="pt-1 text-xs text-ink-muted">
-                Your data is saved to your account and follows you between devices.
-              </p>
+              <p className="pt-1 text-xs text-ink-muted">{t('settings.followsYou')}</p>
               <button
                 type="button"
                 onClick={() => void signOut()}
                 className="mt-3 rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
               >
-                Sign out
+                {t('settings.signOut')}
               </button>
             </>
           ) : (
             <>
-              <p className="text-sm text-ink-muted">
-                Not signed in. Everything you log stays in this browser — clearing your browsing
-                data erases it, and no other device can see it.
-              </p>
+              <p className="text-sm text-ink-muted">{t('settings.notSignedIn')}</p>
               <Link
                 to="/signin"
                 className="mt-3 inline-block rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
               >
-                Sign in
+                {t('settings.signIn')}
               </Link>
             </>
           )}
@@ -160,7 +151,7 @@ export function Settings() {
         <Card label={t('settings.apiKey')}>
           <div className="pb-3">
             <label className={label} htmlFor="apiKey">
-              Key
+              {t('settings.key')}
             </label>
             <input
               id="apiKey"
@@ -168,7 +159,7 @@ export function Settings() {
               autoComplete="off"
               spellCheck={false}
               className={field}
-              placeholder="sk-…"
+              placeholder={t('settings.keyPlaceholder')}
               value={keyInput}
               onChange={(e) => {
                 setKeyInput(e.target.value)
@@ -189,7 +180,7 @@ export function Settings() {
               }}
               className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
             >
-              Save key
+              {t('settings.saveKey')}
             </button>
             <button
               type="button"
@@ -197,14 +188,14 @@ export function Settings() {
               onClick={() => void runTest()}
               className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft disabled:opacity-40"
             >
-              {test.kind === 'testing' ? 'Testing…' : 'Test key'}
+              {test.kind === 'testing' ? t('settings.testing') : t('settings.testKey')}
             </button>
             {test.kind === 'done' && (
               <span className={`text-xs ${test.ok ? 'text-leaf' : 'text-accent'}`}>
                 {test.message}
               </span>
             )}
-            {saved && <span className="text-xs text-leaf">Saved.</span>}
+            {saved && <span className="text-xs text-leaf">{t('settings.saved')}</span>}
           </div>
 
           {/*
@@ -214,10 +205,10 @@ export function Settings() {
           */}
           {!settings.apiKey && (
             <div className="mt-4 rounded-xl border border-hairline p-3">
-              <p className="text-sm font-medium">Don't have a key yet?</p>
+              <p className="text-sm font-medium">{t('settings.noKeyTitle')}</p>
               <ol className="list-decimal space-y-1 ps-4 pt-2 text-xs leading-relaxed text-ink-muted">
                 <li>
-                  Open{' '}
+                  {t('settings.step1Open')}{' '}
                   <a
                     className="underline"
                     href="https://platform.openai.com/api-keys"
@@ -226,58 +217,51 @@ export function Settings() {
                   >
                     platform.openai.com/api-keys
                   </a>{' '}
-                  and sign in.
+                  {t('settings.step1')}
                 </li>
                 <li>
-                  Add credit under{' '}
+                  {t('settings.step2Add')}{' '}
                   <a
                     className="underline"
                     href="https://platform.openai.com/settings/organization/billing"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Billing
+                    {t('settings.billing')}
                   </a>{' '}
-                  — $5 is the minimum, and set a spending limit while you are there.
+                  {t('settings.step2Tail')}
                 </li>
-                <li>
-                  Create a new secret key and copy it straight away. OpenAI shows it once.
-                </li>
+                <li>{t('settings.step3')}</li>
               </ol>
               <p className="pt-2 text-xs leading-relaxed text-ink-muted">
-                <strong>A ChatGPT subscription does not include this.</strong> The API is a
-                separate product on separate billing, and paying for Plus grants no API access at
-                all. The upside is that it is cheap: analysing a photo costs a fraction of a cent,
-                so a few meals a day runs to pennies a month.
+                <strong>{t('settings.notIncludedBold')}</strong> {t('settings.notIncluded')}
               </p>
             </div>
           )}
 
           <div className="pt-4 text-xs leading-relaxed text-ink-muted">
             <p>
-              Your key is stored <strong>on this device only</strong>, in this browser. It is sent
-              to OpenAI and nowhere else, and it is never included in any backup or sync.
+              {t('settings.storedHead')} <strong>{t('settings.storedBold')}</strong>
+              {t('settings.storedTail')}
             </p>
             <p className="pt-2">
-              Anything able to run scripts in this browser could read it, so use a dedicated key
-              with a{' '}
+              {t('settings.scriptsHead')}{' '}
               <a
                 className="underline"
                 href="https://platform.openai.com/settings/organization/limits"
                 target="_blank"
                 rel="noreferrer"
               >
-                spending limit
+                {t('settings.spendingLimit')}
               </a>
-              , and avoid shared computers. Photos you analyze are handled
-              under{' '}
+              {t('settings.scriptsTail')}{' '}
               <a
                 className="underline"
                 href="https://openai.com/policies/api-data-usage-policies"
                 target="_blank"
                 rel="noreferrer"
               >
-                OpenAI's API data policies
+                {t('settings.dataPolicies')}
               </a>
               .
             </p>
@@ -286,10 +270,7 @@ export function Settings() {
 
         {trial && !trial.exhausted && (
           <Card label={t('settings.accuracyOrSpeed')}>
-            <p className="pb-3 text-sm text-ink-muted">
-              More accurate models look harder at a crowded plate and take longer. Choose per
-              your patience — you can change this any time.
-            </p>
+            <p className="pb-3 text-sm text-ink-muted">{t('settings.accuracyBody')}</p>
             <TrialModelPicker
               trial={trial}
               selected={settings.trialModel}
@@ -305,7 +286,7 @@ export function Settings() {
           <div className="pb-4">
             <div className="flex items-baseline justify-between gap-3 pb-1">
               <label className={label.replace(' pb-1', '')} htmlFor="model">
-                Model
+                {t('settings.model')}
               </label>
               {settings.apiKey && (
                 <button
@@ -314,7 +295,7 @@ export function Settings() {
                   disabled={loadingModels}
                   className="text-xs text-ink-muted underline disabled:opacity-40"
                 >
-                  {loadingModels ? 'Loading…' : 'Refresh list'}
+                  {loadingModels ? t('settings.loading') : t('settings.refreshList')}
                 </button>
               )}
             </div>
@@ -333,9 +314,9 @@ export function Settings() {
                 }}
               >
                 {!models.some((m) => m.id === settings.model) && (
-                  <option value="">{settings.model} (not in your account list)</option>
+                  <option value="">{t('settings.notInList', { model: settings.model })}</option>
                 )}
-                <optgroup label="Can read photos">
+                <optgroup label={t('settings.canRead')}>
                   {models
                     .filter((m) => m.vision)
                     .map((m) => (
@@ -347,7 +328,7 @@ export function Settings() {
                 </optgroup>
                 {/* Shown but unselectable: seeing why a model is missing beats
                     wondering where it went. */}
-                <optgroup label="Text only — cannot read photos">
+                <optgroup label={t('settings.textOnly')}>
                   {models
                     .filter((m) => !m.vision)
                     .map((m) => (
@@ -356,7 +337,7 @@ export function Settings() {
                       </option>
                     ))}
                 </optgroup>
-                <option value="__custom__">Type a model ID myself…</option>
+                <option value="__custom__">{t('settings.typeMyself')}</option>
               </select>
             ) : (
               <input
@@ -370,16 +351,18 @@ export function Settings() {
 
             <p className="pt-1 text-xs text-ink-muted">
               {loadingModels
-                ? 'Loading the models on your account…'
+                ? t('settings.loadingModels')
                 : modelsError
                   ? modelsError
                   : models.length > 0
-                    ? `${models.filter((m) => m.vision).length} of your ${models.length} chat models can read a photo. Capability is inferred from the name — OpenAI does not publish it — so a rejected model may just be mislabelled here.`
+                    ? t('settings.modelsCount', {
+                        vision: models.filter((m) => m.vision).length,
+                        total: models.length,
+                      })
                     : settings.apiKey
-                      ? 'Save your key and hit Refresh list to load the models on your account.'
-                      : 'Add a key above to load the models on your account.'}{' '}
-              Default is {DEFAULT_SETTINGS.model}. A larger model reads a plate more carefully and costs
-              more per photo.
+                      ? t('settings.saveThenRefresh')
+                      : t('settings.addKeyToLoad')}{' '}
+              {t('settings.defaultIs', { model: DEFAULT_SETTINGS.model })}
             </p>
 
             {models.length > 0 && customModel && (
@@ -388,7 +371,7 @@ export function Settings() {
                 onClick={() => setCustomModel(false)}
                 className="pt-1 text-xs text-ink-muted underline"
               >
-                Pick from my account list instead
+                {t('settings.pickFromList')}
               </button>
             )}
           </div>
@@ -401,54 +384,38 @@ export function Settings() {
               onChange={(e) => void update({ autoAnalyze: e.target.checked })}
             />
             <span>
-              Analyze automatically after taking a photo
-              <span className="block text-xs text-ink-muted">
-                Off means one extra tap, and no request you did not ask for.
-              </span>
+              {t('settings.autoAnalyze')}
+              <span className="block text-xs text-ink-muted">{t('settings.autoAnalyzeHint')}</span>
             </span>
           </label>
         </Card>
 
         <Card label={t('settings.photos')}>
-          <p className="text-sm text-ink-muted">
-            Meal photos are never saved — not on this device, not anywhere else. Each photo is sent
-            for analysis once and then discarded. What is kept is the estimate, its confidence, and
-            a record of the photo's size and fingerprint.
-          </p>
+          <p className="text-sm text-ink-muted">{t('settings.photosBody')}</p>
         </Card>
 
         <Card label={t('settings.storage')}>
           {session.authenticated ? (
             <>
-              <p className="text-sm">
-                In your account. Every device you sign in on sees the same data, and it survives
-                clearing this browser.
-              </p>
-              <p className="pt-2 text-xs text-ink-muted">
-                Records are only ever added, never overwritten — corrections are new entries that
-                supersede old ones, so nothing you log can be silently lost or rewritten. Your
-                OpenAI key is the exception to all of this: it stays on this device and is never
-                sent to your account.
-              </p>
+              <p className="text-sm">{t('settings.storageAccount')}</p>
+              <p className="pt-2 text-xs text-ink-muted">{t('settings.storageAccountNote')}</p>
             </>
           ) : (
             <>
               <p className="text-sm">
-                In this browser only{usage ? `, currently ${usage}` : ''}.
+                {t('settings.storageLocal', {
+                  usage: usage ? t('settings.storageUsage', { usage }) : '',
+                })}
               </p>
-              <p className="pt-2 text-xs text-ink-muted">
-                Clearing your browsing data erases it, and no other device can see it. Signing in
-                copies it to your account and keeps it in step from then on.
-              </p>
+              <p className="pt-2 text-xs text-ink-muted">{t('settings.storageLocalNote')}</p>
             </>
           )}
 
           <p className="pt-3 text-xs text-ink-muted">
             <span className="rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-medium">
-              not built yet
+              {t('settings.notBuiltYet')}
             </span>{' '}
-            Exporting everything as a JSON file, so you hold a copy independently of both this
-            browser and the account.
+            {t('settings.exportNote')}
           </p>
         </Card>
       </div>

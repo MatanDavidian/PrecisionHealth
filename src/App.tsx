@@ -16,10 +16,10 @@ export function App() {
         <Route path="/log" element={<Log />} />
         <Route path="/today" element={<Today />} />
         <Route path="/nutrition" element={<Nutrition />} />
-        <Route path="/training" element={<Placeholder title="Training" phase="a later slice — workout logging" />} />
-        <Route path="/recovery" element={<Placeholder title="Recovery" phase="slice 4 — Garmin import" />} />
-        <Route path="/body" element={<Placeholder title="Body" phase="a later slice — body measurements" />} />
-        <Route path="/health" element={<Placeholder title="Health" phase="a later slice — clinical data" />} />
+        <Route path="/training" element={<Placeholder title="nav.training" phase="phase.training" />} />
+        <Route path="/recovery" element={<Placeholder title="nav.recovery" phase="phase.recovery" />} />
+        <Route path="/body" element={<Placeholder title="nav.body" phase="phase.body" />} />
+        <Route path="/health" element={<Placeholder title="nav.health" phase="phase.health" />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="*" element={<Navigate to="/log" replace />} />

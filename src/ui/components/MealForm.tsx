@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { suggestSlot, type FoodItemInput, type MealInput } from '@/data/newRecords'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
+import { useT } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 
 const emptyItem = (): FoodItemInput => ({
   name: '',
@@ -24,6 +26,7 @@ const field =
  * photo flow in slice 3 is what makes logging fast.
  */
 export function MealForm({ onSubmit }: { onSubmit: (input: MealInput) => Promise<void> }) {
+  const t = useT()
   const now = new Date()
   const [slot, setSlot] = useState<MealSlot>(suggestSlot(now))
   const [time, setTime] = useState(hhmm(now))
@@ -59,7 +62,7 @@ export function MealForm({ onSubmit }: { onSubmit: (input: MealInput) => Promise
       <div className="flex flex-wrap gap-3">
         <div className="w-40">
           <label className={label} htmlFor="slot">
-            Meal
+            {t('log.details.meal')}
           </label>
           <select
             id="slot"
@@ -69,14 +72,14 @@ export function MealForm({ onSubmit }: { onSubmit: (input: MealInput) => Promise
           >
             {MEAL_SLOTS.map((option) => (
               <option key={option} value={option}>
-                {option.charAt(0) + option.slice(1).toLowerCase()}
+                {t(`common.slot.${option}` as StringKey)}
               </option>
             ))}
           </select>
         </div>
         <div className="w-32">
           <label className={label} htmlFor="time">
-            Time
+            {t('log.details.time')}
           </label>
           <input id="time" type="time" className={field} value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
@@ -86,44 +89,44 @@ export function MealForm({ onSubmit }: { onSubmit: (input: MealInput) => Promise
         <div key={index} className="rounded-xl border border-hairline p-3">
           <div className="pb-3">
             <label className={label} htmlFor={`name-${index}`}>
-              Food
+              {t('estimate.food')}
             </label>
             <input
               id={`name-${index}`}
               className={field}
               value={item.name}
-              placeholder="Grilled chicken breast"
+              placeholder={t('form.foodPlaceholder')}
               onChange={(e) => update(index, { name: e.target.value })}
             />
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <NumberField
               id={`amount-${index}`}
-              label="Grams"
+              label={t('estimate.grams')}
               value={item.amount}
               onChange={(amount) => update(index, { amount })}
             />
             <NumberField
               id={`kcal-${index}`}
-              label="kcal"
+              label={t('form.kcal')}
               value={item.energyKcal}
               onChange={(energyKcal) => update(index, { energyKcal })}
             />
             <NumberField
               id={`protein-${index}`}
-              label="Protein g"
+              label={t('estimate.proteinG')}
               value={item.proteinG}
               onChange={(proteinG) => update(index, { proteinG })}
             />
             <NumberField
               id={`carbs-${index}`}
-              label="Carbs g"
+              label={t('estimate.carbsG')}
               value={item.carbsG}
               onChange={(carbsG) => update(index, { carbsG })}
             />
             <NumberField
               id={`fat-${index}`}
-              label="Fat g"
+              label={t('estimate.fatG')}
               value={item.fatG}
               onChange={(fatG) => update(index, { fatG })}
             />
@@ -137,14 +140,14 @@ export function MealForm({ onSubmit }: { onSubmit: (input: MealInput) => Promise
           onClick={() => setItems((current) => [...current, emptyItem()])}
           className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
         >
-          Add another food
+          {t('nutrition.addAnotherFood')}
         </button>
         <button
           type="submit"
           disabled={!valid || saving}
           className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
         >
-          {saving ? 'Saving…' : 'Save meal'}
+          {saving ? t('estimate.saving') : t('estimate.save')}
         </button>
       </div>
     </form>

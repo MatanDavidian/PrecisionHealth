@@ -5,6 +5,7 @@ import {
   MODEL_LUNA,
 } from '../../../supabase/functions/_shared/prompt'
 import type { TrialStatus } from '@/data/trial'
+import { useT } from '../i18n'
 
 const ORDER = [MODEL_SOL, MODEL_TERRA, MODEL_LUNA]
 
@@ -26,6 +27,7 @@ export function TrialModelPicker({
   selected?: string
   onSelect: (model: string) => void
 }) {
+  const t = useT()
   const effective = selected ?? trial.suggestedModel
 
   return (
@@ -58,19 +60,17 @@ export function TrialModelPicker({
                 {label.name}
                 {isSol && !locked && trial.solRemaining <= trial.solAllowance && (
                   <span className="ms-2 rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-normal text-accent">
-                    {trial.solRemaining} left
+                    {t('trial.left', { count: trial.solRemaining })}
                   </span>
                 )}
                 {locked && (
                   <span className="ms-2 rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-normal text-ink-muted">
-                    used up
+                    {t('trial.usedUp')}
                   </span>
                 )}
               </span>
               <span className="block pt-0.5 text-xs text-ink-muted">
-                {locked
-                  ? 'Available again with your own key, or on a plan later.'
-                  : label.detail}
+                {locked ? t('trial.availableAgain') : label.detail}
               </span>
             </span>
           </label>

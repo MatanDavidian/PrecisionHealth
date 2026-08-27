@@ -71,7 +71,7 @@ export function Nutrition() {
         <div>
           <h1 className="font-display text-4xl">{t('nutrition.title')}</h1>
           <p className="pt-1 text-sm text-ink-muted">
-            {dayLabel(day, today)} · {day}
+            {dayLabel(day, today, t)} · {day}
           </p>
         </div>
         <DayNav

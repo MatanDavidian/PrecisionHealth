@@ -253,6 +253,224 @@ const en = {
   'common.slotLabel.LUNCH': 'lunch',
   'common.slotLabel.DINNER': 'dinner',
   'common.slotLabel.SNACK': 'snack',
+
+  // ---------------------------------------------------------------- app ----
+  'app.storageUnavailable': 'Storage unavailable',
+  'app.storageUnavailableBody':
+    'This app stores your data in the browser, and the browser refused. {error}',
+  'app.opening': 'Opening your data…',
+  'app.notBuilt': 'Not built yet — {phase}.',
+  'phase.training': 'a later slice — workout logging',
+  'phase.recovery': 'slice 4 — Garmin import',
+  'phase.body': 'a later slice — body measurements',
+  'phase.health': 'a later slice — clinical data',
+
+  'day.today': 'Today',
+  'day.yesterday': 'Yesterday',
+
+  // ----------------------------------------------------------- docked bar --
+  'bar.analyzing': 'Analyzing your {label}',
+  'bar.estimated': '{label} estimated',
+  'bar.view': 'View',
+  'bar.review': 'Review',
+
+  // ------------------------------------------------------------ conflicts --
+  'conflict.twoSources': 'Two sources disagree',
+  'conflict.showing': 'Showing {source} until you confirm one.',
+  'conflict.mealTwoPlaces': 'This meal was edited in two places',
+  'conflict.mealBoth':
+    'Both edits started from version {version}. Pick the one to keep — the other stays in your history either way.',
+  'conflict.itemCount': { one: '{count} item', other: '{count} items' } as Plural,
+  'conflict.noItems': 'No items',
+
+  // ------------------------------------------------------------- failures --
+  'unavailable.title': 'Can’t reach your data',
+  'unavailable.signedIn':
+    'Your records are in your account, and this device could not load them. Nothing is lost.',
+  'unavailable.local': 'This browser would not give up its stored data. Nothing is lost.',
+  'write.failed': 'Couldn’t save {what}',
+  'write.failedBody': '{message}. Nothing was lost — try again.',
+
+  // ------------------------------------------------------------- sources ---
+  'source.USER': 'Manual',
+  'source.GARMIN': 'Garmin',
+  'source.APPLE_HEALTH': 'Apple Health',
+  'source.HEALTH_CONNECT': 'Health Connect',
+  'source.SMART_SCALE': 'Scale',
+  'source.AI_ESTIMATE': 'AI estimate',
+  'source.LAB_DOCUMENT': 'Lab report',
+
+  // ------------------------------------------------------------ adoption ---
+  'adopt.title': 'Bring your data with you',
+  'adopt.moving': 'Moving your records…',
+  'adopt.offer':
+    'This browser holds {records} you logged{days}. Move them into your account so they follow you between devices?',
+  'adopt.recordCount': { one: '{count} record', other: '{count} records' } as Plural,
+  'adopt.acrossDays': ' across {days}',
+  'adopt.dayCount': { one: '{count} day', other: '{count} days' } as Plural,
+  'adopt.sampleStays': 'The sample day stays behind, and your local copies are not deleted.',
+  'adopt.moved': 'Moved {what} into your account.',
+  'adopt.mealCount': { one: '{count} meal', other: '{count} meals' } as Plural,
+  'adopt.measurementCount': { one: '{count} measurement', other: '{count} measurements' } as Plural,
+  'adopt.and': '{meals} and {measurements}',
+  'adopt.alreadyThere': '{count} were already there.',
+  'adopt.untouched': 'The copies in this browser are left untouched.',
+  'adopt.move': 'Move my data',
+  'adopt.movingButton': 'Moving…',
+  'adopt.notNow': 'Not now',
+  'adopt.failed': '{message} — nothing was lost, try again.',
+
+  // ------------------------------------------------------- model picker ----
+  'trial.left': '{count} left',
+  'trial.usedUp': 'used up',
+  'trial.availableAgain': 'Available again with your own key, or on a plan later.',
+
+  // ---------------------------------------------------------- manual form --
+  'form.foodPlaceholder': 'Grilled chicken breast',
+  'form.kcal': 'kcal',
+
+  // ------------------------------------------------------------- sign in ---
+  'signin.title': 'Sign in',
+  'signin.subtitle': 'So your data follows you between devices instead of living in one browser.',
+  'signin.email': 'Email',
+  'signin.emailPlaceholder': 'you@example.com',
+  'signin.firstTime': 'First time signing in creates your account. No password to remember.',
+  'signin.sending': 'Sending…',
+  'signin.emailMeCode': 'Email me a code',
+  'signin.check': 'Check {email} and click the link — that signs you in on this device.',
+  'signin.closePage': 'You can close this page; the link brings you back signed in.',
+  'signin.orCode': 'Or enter a code, if your email shows one',
+  'signin.codePlaceholder': '123456',
+  'signin.checking': 'Checking…',
+  'signin.withCode': 'Sign in with code',
+  'signin.anotherEmail': 'Use another email',
+  'signin.signedOutNote':
+    'Signed out, the app still works — everything stays in this browser, and nothing is sent anywhere. Your API key never syncs either way.',
+  'signin.errSend': 'Could not send the code',
+  'signin.errCode': 'That code was not accepted',
+
+  // --------------------------------------------------------------- today ---
+  'today.logAMeal': 'Log a meal',
+  'today.steps': 'Steps',
+  'today.workout': 'Workout',
+  'today.strength': 'Strength · {minutes} min',
+  'today.restDay': 'Rest day',
+  'today.activeKcal': 'Active kcal',
+  'today.sleep': 'Sleep',
+  'today.hrv': 'HRV',
+  'today.restingHr': 'Resting HR',
+  'today.weight': 'Weight',
+  'today.bodyFat': 'Body fat',
+  'today.nothingToday': 'Nothing logged yet today.',
+  'today.nothingThatDay': 'Nothing was logged on this day.',
+  'today.unconfirmed': {
+    one: 'One item is an unconfirmed AI estimate —',
+    other: '{count} items are unconfirmed AI estimates —',
+  } as Plural,
+  'today.reviewInNutrition': 'review in Nutrition',
+  'today.aiTitle': 'See what changed this week',
+  'today.aiBody': 'Runs later, once there is enough history to compare against.',
+
+  // ------------------------------------------------------- log, remainder --
+  'log.notice.accuracyTitle': 'Accuracy or speed — your choice',
+  'log.notice.accuracyBody':
+    'Photos are read by the most accurate model to start with, which takes up to a minute. You can trade some accuracy for a much faster answer in Settings, any time.',
+  'log.notice.seeOptions': 'See the options',
+  'log.notice.switchedTitle': 'Switched to {model}',
+  'log.notice.switchedBody':
+    'Your next photos are read by a quicker model — about fifteen seconds instead of a minute, and still good. You have {count} analyses left on the most accurate one; save them for a crowded plate.',
+  'log.notice.changeIt': 'Change it',
+  'log.exhausted.title': 'That was the last one on us',
+  'log.exhausted.body':
+    'The first {count} analyses were run on our account, so you could try the app without setting anything up. To keep going, connect your own OpenAI key — it takes a couple of minutes, and analysing a meal costs a fraction of a cent.',
+  'log.exhausted.connectKey': 'Connect my key',
+  'log.exhausted.byHand': 'Log by hand instead',
+  'log.exhausted.stillText': 'What you wrote is still here — connect a key and press Try again.',
+  'log.exhausted.stillPhoto':
+    'Your photo is still here — connect a key and press Analyze to pick up where you left off.',
+  'log.setup.label': 'One-time setup',
+  'log.setup.body':
+    'Photo and text estimates run on your own OpenAI key, so add one to switch them on. A meal costs a fraction of a cent to analyze.',
+  'log.setup.addKey': 'Add API key',
+  'log.details.whatPlaceholder': 'Cottage cheese 5%',
+  'log.details.gramsPlaceholder': '250',
+
+  // ------------------------------------------------------------ settings ---
+  'settings.subtitle': 'Photo analysis runs on your own OpenAI account.',
+  'settings.noBackend': 'No backend is configured in this build, so everything stays in this browser.',
+  'settings.signedInAs': 'Signed in as',
+  'settings.followsYou': 'Your data is saved to your account and follows you between devices.',
+  'settings.signOut': 'Sign out',
+  'settings.notSignedIn':
+    'Not signed in. Everything you log stays in this browser — clearing your browsing data erases it, and no other device can see it.',
+  'settings.signIn': 'Sign in',
+  'settings.key': 'Key',
+  'settings.keyPlaceholder': 'sk-…',
+  'settings.saveKey': 'Save key',
+  'settings.testKey': 'Test key',
+  'settings.testing': 'Testing…',
+  'settings.noKeyTitle': 'Don’t have a key yet?',
+  'settings.step1': 'and sign in.',
+  'settings.step1Open': 'Open',
+  'settings.step2Add': 'Add credit under',
+  'settings.step2Tail': '— $5 is the minimum, and set a spending limit while you are there.',
+  'settings.billing': 'Billing',
+  'settings.step3': 'Create a new secret key and copy it straight away. OpenAI shows it once.',
+  'settings.notIncludedBold': 'A ChatGPT subscription does not include this.',
+  'settings.notIncluded':
+    'The API is a separate product on separate billing, and paying for Plus grants no API access at all. The upside is that it is cheap: analysing a photo costs a fraction of a cent, so a few meals a day runs to pennies a month.',
+  'settings.storedHead': 'Your key is stored',
+  'settings.storedBold': 'on this device only',
+  'settings.storedTail':
+    ', in this browser. It is sent to OpenAI and nowhere else, and it is never included in any backup or sync.',
+  'settings.scriptsHead':
+    'Anything able to run scripts in this browser could read it, so use a dedicated key with a',
+  'settings.spendingLimit': 'spending limit',
+  'settings.scriptsTail': ', and avoid shared computers. Photos you analyze are handled under',
+  'settings.dataPolicies': 'OpenAI’s API data policies',
+  'settings.accuracyBody':
+    'More accurate models look harder at a crowded plate and take longer. Choose per your patience — you can change this any time.',
+  'settings.model': 'Model',
+  'settings.refreshList': 'Refresh list',
+  'settings.loading': 'Loading…',
+  'settings.notInList': '{model} (not in your account list)',
+  'settings.canRead': 'Can read photos',
+  'settings.textOnly': 'Text only — cannot read photos',
+  'settings.typeMyself': 'Type a model ID myself…',
+  'settings.pickFromList': 'Pick from my account list instead',
+  'settings.loadingModels': 'Loading the models on your account…',
+  'settings.modelsCount':
+    '{vision} of your {total} chat models can read a photo. Capability is inferred from the name — OpenAI does not publish it — so a rejected model may just be mislabelled here.',
+  'settings.saveThenRefresh': 'Save your key and hit Refresh list to load the models on your account.',
+  'settings.addKeyToLoad': 'Add a key above to load the models on your account.',
+  'settings.defaultIs':
+    'Default is {model}. A larger model reads a plate more carefully and costs more per photo.',
+  'settings.autoAnalyze': 'Analyze automatically after taking a photo',
+  'settings.autoAnalyzeHint': 'Off means one extra tap, and no request you did not ask for.',
+  'settings.photosBody':
+    'Meal photos are never saved — not on this device, not anywhere else. Each photo is sent for analysis once and then discarded. What is kept is the estimate, its confidence, and a record of the photo’s size and fingerprint.',
+  'settings.storageAccount':
+    'In your account. Every device you sign in on sees the same data, and it survives clearing this browser.',
+  'settings.storageAccountNote':
+    'Records are only ever added, never overwritten — corrections are new entries that supersede old ones, so nothing you log can be silently lost or rewritten. Your OpenAI key is the exception to all of this: it stays on this device and is never sent to your account.',
+  'settings.storageLocal': 'In this browser only{usage}.',
+  'settings.storageUsage': ', currently {usage}',
+  'settings.storageLocalNote':
+    'Clearing your browsing data erases it, and no other device can see it. Signing in copies it to your account and keeps it in step from then on.',
+  'settings.notBuiltYet': 'not built yet',
+  'settings.exportNote':
+    'Exporting everything as a JSON file, so you hold a copy independently of both this browser and the account.',
+
+  // ------------------------------------------------------------ sample day --
+  // Written into the store once, on first run, so a fresh install has a day to
+  // look at. Frozen in whatever language was chosen then — which is correct:
+  // once written they are records like any other, exactly as a real meal is.
+  'seed.eggsAndOats': 'Eggs and oats',
+  'seed.grilledChicken': 'Grilled chicken breast',
+  'seed.riceAndVegetables': 'Rice and vegetables',
+  'seed.salmonPotatoesSalad': 'Salmon, potatoes, salad',
+  'seed.benchPress': 'Bench press',
+  'seed.barbellRow': 'Barbell row',
 } as const
 
 /** Every key the app may ask for, and the shape its value must have. */
@@ -480,6 +698,221 @@ const he: Dictionary = {
   'common.slotLabel.LUNCH': 'ארוחת צהריים',
   'common.slotLabel.DINNER': 'ארוחת ערב',
   'common.slotLabel.SNACK': 'חטיף',
+
+  // ---------------------------------------------------------------- app ----
+  'app.storageUnavailable': 'האחסון אינו זמין',
+  'app.storageUnavailableBody':
+    'האפליקציה שומרת את הנתונים שלכם בדפדפן, והדפדפן סירב. {error}',
+  'app.opening': 'פותחים את הנתונים שלכם…',
+  'app.notBuilt': 'עוד לא נבנה — {phase}.',
+  'phase.training': 'שלב מאוחר יותר — רישום אימונים',
+  'phase.recovery': 'שלב 4 — ייבוא מגרמין',
+  'phase.body': 'שלב מאוחר יותר — מדידות גוף',
+  'phase.health': 'שלב מאוחר יותר — נתונים קליניים',
+
+  'day.today': 'היום',
+  'day.yesterday': 'אתמול',
+
+  // ----------------------------------------------------------- docked bar --
+  'bar.analyzing': 'מנתחים את {label}',
+  'bar.estimated': '{label} הוערכה',
+  'bar.view': 'הצגה',
+  'bar.review': 'סקירה',
+
+  // ------------------------------------------------------------ conflicts --
+  'conflict.twoSources': 'שני מקורות חלוקים',
+  'conflict.showing': 'מוצג {source} עד שתאשרו אחד.',
+  'conflict.mealTwoPlaces': 'הארוחה הזו נערכה בשני מקומות',
+  'conflict.mealBoth':
+    'שתי העריכות יצאו מגרסה {version}. בחרו את זו שנשמרת — השנייה נשארת בהיסטוריה שלכם כך או כך.',
+  'conflict.itemCount': { one: 'פריט {count}', other: '{count} פריטים' },
+  'conflict.noItems': 'אין פריטים',
+
+  // ------------------------------------------------------------- failures --
+  'unavailable.title': 'לא מצליחים להגיע לנתונים שלכם',
+  'unavailable.signedIn':
+    'הרשומות שלכם נמצאות בחשבון, והמכשיר הזה לא הצליח לטעון אותן. שום דבר לא אבד.',
+  'unavailable.local': 'הדפדפן הזה לא מסר את הנתונים השמורים בו. שום דבר לא אבד.',
+  'write.failed': 'לא הצלחנו לשמור {what}',
+  'write.failedBody': '{message}. שום דבר לא אבד — אפשר לנסות שוב.',
+
+  // ------------------------------------------------------------- sources ---
+  'source.USER': 'ידני',
+  'source.GARMIN': 'גרמין',
+  'source.APPLE_HEALTH': 'Apple Health',
+  'source.HEALTH_CONNECT': 'Health Connect',
+  'source.SMART_SCALE': 'משקל',
+  'source.AI_ESTIMATE': 'הערכת AI',
+  'source.LAB_DOCUMENT': 'דוח מעבדה',
+
+  // ------------------------------------------------------------ adoption ---
+  'adopt.title': 'קחו את הנתונים שלכם אתכם',
+  'adopt.moving': 'מעבירים את הרשומות שלכם…',
+  'adopt.offer':
+    'בדפדפן הזה שמורות {records} שרשמתם{days}. להעביר אותן לחשבון שלכם כדי שילוו אתכם בין מכשירים?',
+  'adopt.recordCount': { one: 'רשומה {count}', other: '{count} רשומות' },
+  'adopt.acrossDays': ' על פני {days}',
+  'adopt.dayCount': { one: 'יום {count}', other: '{count} ימים' },
+  'adopt.sampleStays': 'יום הדוגמה נשאר מאחור, והעותקים המקומיים שלכם לא נמחקים.',
+  'adopt.moved': 'הועברו {what} לחשבון שלכם.',
+  'adopt.mealCount': { one: 'ארוחה {count}', other: '{count} ארוחות' },
+  'adopt.measurementCount': { one: 'מדידה {count}', other: '{count} מדידות' },
+  'adopt.and': '{meals} ו{measurements}',
+  'adopt.alreadyThere': '{count} כבר היו שם.',
+  'adopt.untouched': 'העותקים בדפדפן הזה נשארים כמו שהם.',
+  'adopt.move': 'להעביר את הנתונים שלי',
+  'adopt.movingButton': 'מעבירים…',
+  'adopt.notNow': 'לא עכשיו',
+  'adopt.failed': '{message} — שום דבר לא אבד, אפשר לנסות שוב.',
+
+  // ------------------------------------------------------- model picker ----
+  'trial.left': 'נותרו {count}',
+  'trial.usedUp': 'נוצל',
+  'trial.availableAgain': 'יהיה זמין שוב עם מפתח משלכם, או במסלול בהמשך.',
+
+  // ---------------------------------------------------------- manual form --
+  'form.foodPlaceholder': 'חזה עוף בגריל',
+  'form.kcal': 'קלוריות',
+
+  // ------------------------------------------------------------- sign in ---
+  'signin.title': 'כניסה',
+  'signin.subtitle': 'כדי שהנתונים שלכם ילוו אתכם בין מכשירים ולא יישארו בדפדפן אחד.',
+  'signin.email': 'אימייל',
+  'signin.emailPlaceholder': 'you@example.com',
+  'signin.firstTime': 'הכניסה הראשונה יוצרת לכם חשבון. אין סיסמה לזכור.',
+  'signin.sending': 'שולחים…',
+  'signin.emailMeCode': 'שלחו לי קוד במייל',
+  'signin.check': 'בדקו את {email} ולחצו על הקישור — זה מכניס אתכם במכשיר הזה.',
+  'signin.closePage': 'אפשר לסגור את הדף; הקישור יחזיר אתכם מחוברים.',
+  'signin.orCode': 'או הזינו קוד, אם הוא מופיע במייל',
+  'signin.codePlaceholder': '123456',
+  'signin.checking': 'בודקים…',
+  'signin.withCode': 'כניסה עם קוד',
+  'signin.anotherEmail': 'אימייל אחר',
+  'signin.signedOutNote':
+    'גם בלי כניסה האפליקציה עובדת — הכל נשאר בדפדפן הזה, ושום דבר לא נשלח לשום מקום. מפתח ה-API שלכם לא מסתנכרן בשום מצב.',
+  'signin.errSend': 'לא הצלחנו לשלוח את הקוד',
+  'signin.errCode': 'הקוד הזה לא התקבל',
+
+  // --------------------------------------------------------------- today ---
+  'today.logAMeal': 'רישום ארוחה',
+  'today.steps': 'צעדים',
+  'today.workout': 'אימון',
+  'today.strength': 'כוח · {minutes} דקות',
+  'today.restDay': 'יום מנוחה',
+  'today.activeKcal': 'קלוריות פעילות',
+  'today.sleep': 'שינה',
+  'today.hrv': 'HRV',
+  'today.restingHr': 'דופק במנוחה',
+  'today.weight': 'משקל',
+  'today.bodyFat': 'אחוז שומן',
+  'today.nothingToday': 'עוד לא נרשם דבר היום.',
+  'today.nothingThatDay': 'לא נרשם דבר ביום הזה.',
+  'today.unconfirmed': {
+    one: 'פריט אחד הוא הערכת AI לא מאושרת —',
+    other: '{count} פריטים הם הערכות AI לא מאושרות —',
+  },
+  'today.reviewInNutrition': 'לסקירה במסך התזונה',
+  'today.aiTitle': 'לראות מה השתנה השבוע',
+  'today.aiBody': 'ירוץ בהמשך, כשתהיה מספיק היסטוריה להשוות אליה.',
+
+  // ------------------------------------------------------- log, remainder --
+  'log.notice.accuracyTitle': 'דיוק או מהירות — אתם בוחרים',
+  'log.notice.accuracyBody':
+    'תמונות נקראות בהתחלה על ידי המודל המדויק ביותר, וזה לוקח עד דקה. אפשר להחליף קצת דיוק בתשובה הרבה יותר מהירה בהגדרות, בכל רגע.',
+  'log.notice.seeOptions': 'לראות את האפשרויות',
+  'log.notice.switchedTitle': 'עברנו ל{model}',
+  'log.notice.switchedBody':
+    'התמונות הבאות שלכם ייקראו על ידי מודל מהיר יותר — בערך חמש עשרה שניות במקום דקה, ועדיין טוב. נותרו לכם {count} ניתוחים במודל המדויק ביותר; שמרו אותם לצלחת עמוסה.',
+  'log.notice.changeIt': 'לשנות',
+  'log.exhausted.title': 'זו הייתה האחרונה על חשבוננו',
+  'log.exhausted.body':
+    '{count} הניתוחים הראשונים רצו על החשבון שלנו, כדי שתוכלו לנסות את האפליקציה בלי להגדיר שום דבר. כדי להמשיך, חברו מפתח OpenAI משלכם — זה לוקח כמה דקות, וניתוח ארוחה עולה שבריר סנט.',
+  'log.exhausted.connectKey': 'לחבר את המפתח שלי',
+  'log.exhausted.byHand': 'לרשום ידנית במקום',
+  'log.exhausted.stillText': 'מה שכתבתם עדיין כאן — חברו מפתח ולחצו על ניסיון נוסף.',
+  'log.exhausted.stillPhoto':
+    'התמונה שלכם עדיין כאן — חברו מפתח ולחצו על ניתוח כדי להמשיך מאיפה שהפסקתם.',
+  'log.setup.label': 'הגדרה חד־פעמית',
+  'log.setup.body':
+    'הערכות מתמונה ומטקסט רצות על מפתח OpenAI משלכם, אז הוסיפו אחד כדי להפעיל אותן. ניתוח ארוחה עולה שבריר סנט.',
+  'log.setup.addKey': 'הוספת מפתח API',
+  'log.details.whatPlaceholder': 'גבינת קוטג\' 5%',
+  'log.details.gramsPlaceholder': '250',
+
+  // ------------------------------------------------------------ settings ---
+  'settings.subtitle': 'ניתוח תמונות רץ על חשבון OpenAI שלכם.',
+  'settings.noBackend': 'לא הוגדר שרת בגרסה הזו, ולכן הכל נשאר בדפדפן הזה.',
+  'settings.signedInAs': 'מחוברים כ',
+  'settings.followsYou': 'הנתונים שלכם נשמרים בחשבון ומלווים אתכם בין מכשירים.',
+  'settings.signOut': 'התנתקות',
+  'settings.notSignedIn':
+    'לא מחוברים. כל מה שתרשמו נשאר בדפדפן הזה — ניקוי נתוני הגלישה מוחק אותו, ואף מכשיר אחר לא רואה אותו.',
+  'settings.signIn': 'כניסה',
+  'settings.key': 'מפתח',
+  'settings.keyPlaceholder': 'sk-…',
+  'settings.saveKey': 'שמירת המפתח',
+  'settings.testKey': 'בדיקת המפתח',
+  'settings.testing': 'בודקים…',
+  'settings.noKeyTitle': 'עוד אין לכם מפתח?',
+  'settings.step1': 'והתחברו.',
+  'settings.step1Open': 'פתחו את',
+  'settings.step2Add': 'הוסיפו אשראי תחת',
+  'settings.step2Tail': '— 5$ הוא המינימום, וכדאי להגדיר שם גם מגבלת הוצאה.',
+  'settings.billing': 'חיוב',
+  'settings.step3': 'צרו מפתח סודי חדש והעתיקו אותו מיד. OpenAI מציגה אותו פעם אחת בלבד.',
+  'settings.notIncludedBold': 'מנוי ChatGPT אינו כולל את זה.',
+  'settings.notIncluded':
+    'ה-API הוא מוצר נפרד עם חיוב נפרד, ותשלום על Plus אינו מקנה גישה ל-API כלל. הצד החיובי הוא שזה זול: ניתוח תמונה עולה שבריר סנט, כך שכמה ארוחות ביום מסתכמות בפרוטות בחודש.',
+  'settings.storedHead': 'המפתח שלכם נשמר',
+  'settings.storedBold': 'במכשיר הזה בלבד',
+  'settings.storedTail':
+    ', בדפדפן הזה. הוא נשלח ל-OpenAI ולשום מקום אחר, ואף פעם לא נכלל בגיבוי או בסנכרון.',
+  'settings.scriptsHead':
+    'כל דבר שיכול להריץ סקריפטים בדפדפן הזה יכול לקרוא אותו, אז השתמשו במפתח ייעודי עם',
+  'settings.spendingLimit': 'מגבלת הוצאה',
+  'settings.scriptsTail': ', והימנעו ממחשבים משותפים. תמונות שאתם מנתחים מטופלות תחת',
+  'settings.dataPolicies': 'מדיניות הנתונים של OpenAI ל-API',
+  'settings.accuracyBody':
+    'מודלים מדויקים יותר מסתכלים חזק יותר על צלחת עמוסה ולוקחים יותר זמן. בחרו לפי הסבלנות שלכם — אפשר לשנות בכל רגע.',
+  'settings.model': 'מודל',
+  'settings.refreshList': 'רענון הרשימה',
+  'settings.loading': 'טוענים…',
+  'settings.notInList': '{model} (לא ברשימת החשבון שלכם)',
+  'settings.canRead': 'יכולים לקרוא תמונות',
+  'settings.textOnly': 'טקסט בלבד — לא יכולים לקרוא תמונות',
+  'settings.typeMyself': 'להקליד מזהה מודל בעצמי…',
+  'settings.pickFromList': 'לבחור מרשימת החשבון שלי במקום',
+  'settings.loadingModels': 'טוענים את המודלים שבחשבון שלכם…',
+  'settings.modelsCount':
+    '{vision} מתוך {total} מודלי הצ׳אט שלכם יכולים לקרוא תמונה. היכולת מוסקת מהשם — OpenAI לא מפרסמת אותה — כך שמודל שנדחה עשוי פשוט להיות מסומן כאן לא נכון.',
+  'settings.saveThenRefresh': 'שמרו את המפתח ולחצו על רענון הרשימה כדי לטעון את המודלים שבחשבון.',
+  'settings.addKeyToLoad': 'הוסיפו מפתח למעלה כדי לטעון את המודלים שבחשבון שלכם.',
+  'settings.defaultIs':
+    'ברירת המחדל היא {model}. מודל גדול יותר קורא צלחת בקפידה רבה יותר ועולה יותר לכל תמונה.',
+  'settings.autoAnalyze': 'לנתח אוטומטית אחרי צילום התמונה',
+  'settings.autoAnalyzeHint': 'כיבוי משמעו הקשה אחת נוספת, ואף בקשה שלא ביקשתם.',
+  'settings.photosBody':
+    'תמונות של ארוחות אף פעם לא נשמרות — לא במכשיר הזה ולא בשום מקום אחר. כל תמונה נשלחת לניתוח פעם אחת ואז נזרקת. מה שנשמר הוא ההערכה, רמת הביטחון שלה, ורישום של גודל התמונה וטביעת האצבע שלה.',
+  'settings.storageAccount':
+    'בחשבון שלכם. כל מכשיר שתתחברו בו רואה את אותם נתונים, והם שורדים ניקוי של הדפדפן הזה.',
+  'settings.storageAccountNote':
+    'רשומות רק נוספות, אף פעם לא נדרסות — תיקונים הם רשומות חדשות שמחליפות ישנות, כך ששום דבר שתרשמו לא יכול ללכת לאיבוד או להישכתב בשקט. מפתח ה-OpenAI שלכם הוא היוצא מן הכלל: הוא נשאר במכשיר הזה ואף פעם לא נשלח לחשבון.',
+  'settings.storageLocal': 'בדפדפן הזה בלבד{usage}.',
+  'settings.storageUsage': ', כרגע {usage}',
+  'settings.storageLocalNote':
+    'ניקוי נתוני הגלישה מוחק אותם, ואף מכשיר אחר לא רואה אותם. כניסה לחשבון מעתיקה אותם לחשבון ושומרת על סנכרון מכאן ואילך.',
+  'settings.notBuiltYet': 'עוד לא נבנה',
+  'settings.exportNote':
+    'ייצוא של הכל כקובץ JSON, כדי שיהיה לכם עותק בלתי תלוי גם בדפדפן הזה וגם בחשבון.',
+
+  // ------------------------------------------------------------ sample day --
+  'seed.eggsAndOats': 'ביצים ושיבולת שועל',
+  'seed.grilledChicken': 'חזה עוף בגריל',
+  'seed.riceAndVegetables': 'אורז וירקות',
+  'seed.salmonPotatoesSalad': 'סלמון, תפוחי אדמה, סלט',
+  'seed.benchPress': 'לחיצת חזה',
+  'seed.barbellRow': 'חתירה עם מוט',
 }
 
 export const STRINGS: Record<Lang, Dictionary> = { en, he }

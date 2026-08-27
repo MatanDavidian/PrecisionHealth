@@ -221,25 +221,24 @@ export function Log() {
       {trial && !trial.exhausted && trial.used === 0 && !analysis && (
         <OneTimeNotice
           id="model-tradeoff"
-          title="Accuracy or speed — your choice"
-          actionLabel="See the options"
+          title={t('log.notice.accuracyTitle')}
+          actionLabel={t('log.notice.seeOptions')}
           actionTo="/settings"
         >
-          Photos are read by the most accurate model to start with, which takes up to a minute.
-          You can trade some accuracy for a much faster answer in Settings, any time.
+          {t('log.notice.accuracyBody')}
         </OneTimeNotice>
       )}
 
       {trial && !trial.exhausted && trial.pastNudge && trial.solRemaining > 0 && (
         <OneTimeNotice
           id="switched-to-terra"
-          title={`Switched to ${MODEL_LABELS[MODEL_TERRA].name.toLowerCase()}`}
-          actionLabel="Change it"
+          title={t('log.notice.switchedTitle', {
+            model: MODEL_LABELS[MODEL_TERRA].name.toLowerCase(),
+          })}
+          actionLabel={t('log.notice.changeIt')}
           actionTo="/settings"
         >
-          Your next photos are read by a quicker model — about fifteen seconds instead of a
-          minute, and still good. You have {trial.solRemaining} analyses left on the most accurate
-          one; save them for a crowded plate.
+          {t('log.notice.switchedBody', { count: trial.solRemaining })}
         </OneTimeNotice>
       )}
 
@@ -411,52 +410,45 @@ export function Log() {
 
       {analysis?.error?.exhausted && (
         <Card>
-          <h2 className="font-display text-xl">That was the last one on us</h2>
+          <h2 className="font-display text-xl">{t('log.exhausted.title')}</h2>
           <p className="pt-1 text-sm text-ink-muted">
-            The first {trial?.allowance ?? 10} analyses were run on our account, so you could try
-            the app without setting anything up. To keep going, connect your own OpenAI key — it
-            takes a couple of minutes, and analysing a meal costs a fraction of a cent.
+            {t('log.exhausted.body', { count: trial?.allowance ?? 10 })}
           </p>
           <div className="flex flex-wrap gap-3 pt-4">
             <Link
               to="/settings"
               className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
             >
-              Connect my key
+              {t('log.exhausted.connectKey')}
             </Link>
             <Link
               to="/nutrition"
               className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
             >
-              Log by hand instead
+              {t('log.exhausted.byHand')}
             </Link>
           </div>
           <p className="pt-3 text-xs text-ink-muted">
-            {fromText
-              ? 'What you wrote is still here — connect a key and press Try again.'
-              : 'Your photo is still here — connect a key and press Analyze to pick up where you left off.'}
+            {fromText ? t('log.exhausted.stillText') : t('log.exhausted.stillPhoto')}
           </p>
         </Card>
       )}
 
       {needsKey && !trial?.remaining && !analysis && (
-        <Card label="One-time setup">
-          <p className="text-sm text-ink-muted">
-            Photo and text estimates run on your own OpenAI key, so add one to switch them on. A
-            meal costs a fraction of a cent to analyze.
-          </p>
+        <Card label={t('log.setup.label')}>
+          <p className="text-sm text-ink-muted">{t('log.setup.body')}</p>
           <div className="flex flex-wrap gap-3 pt-3">
             <Link
               to="/settings"
               className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
             >
-              Add API key
+              {t('log.setup.addKey')}
             </Link>
             <Link
               to="/nutrition"
               className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
             >
-              Log by hand instead
+              {t('log.exhausted.byHand')}
             </Link>
           </div>
         </Card>
@@ -481,7 +473,7 @@ export function Log() {
                 <input
                   id="food"
                   className={field}
-                  placeholder="Cottage cheese 5%"
+                  placeholder={t('log.details.whatPlaceholder')}
                   value={foodName}
                   onChange={(e) => setFoodName(e.target.value)}
                 />
@@ -496,7 +488,7 @@ export function Log() {
                   type="number"
                   min={0}
                   className={`${field} tabular`}
-                  placeholder="250"
+                  placeholder={t('log.details.gramsPlaceholder')}
                   value={grams}
                   onChange={(e) => setGrams(e.target.value)}
                 />

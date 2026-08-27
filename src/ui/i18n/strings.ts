@@ -485,6 +485,30 @@ const en = {
   'adjust.less': 'Less {food}',
   'adjust.more': 'More {food}',
 
+  // ---------------------------------------------------------- conversation --
+  'ask.summaryKcal': '{kcal} kcal',
+  'ask.usable': 'A usable estimate already. One thing would sharpen it, and answering takes a tap.',
+  'ask.appName': 'Timeline',
+  'ask.justNow': 'just now',
+  'ask.ownWords': 'Or say it in your own words — anything about the plate helps',
+  'ask.send': 'Send',
+  'ask.skip': 'Skip — save as it is',
+  'ask.neverBlocks': 'Questions never block saving. Skipping keeps the estimate exactly as read.',
+  'ask.answerOrCorrect': 'Answer, correct me, or add something else',
+
+  'revised.label': 'Estimate · revision {count}',
+  'revised.updated': 'Updated from your answer',
+  'revised.unchanged': 'unchanged',
+  'revised.delta': '{sign}{count}',
+  'revised.deltaG': '{sign}{count} g',
+  'revised.addedFrom': 'Added from what you said',
+  'revised.noExtra': 'No extra item needed',
+  'revised.adjustByHand': 'Adjust by hand',
+  'revised.howItGotHere': 'How it got here',
+  'revised.oneConversation':
+    'Each answer re-estimates from the photo plus everything said so far — it is one conversation, not a new guess. Only the last revision is saved, with the exchange kept beside it.',
+
+
 } as const
 
 /** Every key the app may ask for, and the shape its value must have. */
@@ -940,6 +964,30 @@ const he: Dictionary = {
   'adjust.grams': 'גרמים של {food}',
   'adjust.less': 'פחות {food}',
   'adjust.more': 'יותר {food}',
+
+  // ---------------------------------------------------------- conversation --
+  'ask.summaryKcal': '{kcal} קלוריות',
+  'ask.usable': 'זו כבר הערכה שאפשר להשתמש בה. דבר אחד יחדד אותה, ותשובה לוקחת הקשה.',
+  'ask.appName': 'Timeline',
+  'ask.justNow': 'ממש עכשיו',
+  'ask.ownWords': 'או ספרו במילים שלכם — כל דבר על הצלחת עוזר',
+  'ask.send': 'שליחה',
+  'ask.skip': 'דילוג — לשמור כמו שזה',
+  'ask.neverBlocks': 'שאלות אף פעם לא חוסמות שמירה. דילוג משאיר את ההערכה בדיוק כפי שנקראה.',
+  'ask.answerOrCorrect': 'ענו, תקנו אותי, או הוסיפו משהו אחר',
+
+  'revised.label': 'הערכה · גרסה {count}',
+  'revised.updated': 'עודכן מהתשובה שלכם',
+  'revised.unchanged': 'ללא שינוי',
+  'revised.delta': '{sign}{count}',
+  'revised.deltaG': '{sign}{count} גרם',
+  'revised.addedFrom': 'נוסף ממה שאמרתם',
+  'revised.noExtra': 'לא נדרש פריט נוסף',
+  'revised.adjustByHand': 'תיקון ידני',
+  'revised.howItGotHere': 'איך הגענו לכאן',
+  'revised.oneConversation':
+    'כל תשובה מעריכה מחדש מהתמונה ומכל מה שנאמר עד כה — זו שיחה אחת, לא ניחוש חדש. רק הגרסה האחרונה נשמרת, עם חילופי הדברים לצדה.',
+
 
 }
 

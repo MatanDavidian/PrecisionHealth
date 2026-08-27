@@ -25,17 +25,39 @@ them type those things; the other lets the model ask for them.
 
 ## 2. Correcting the numbers
 
-"Adjust these numbers" turns the item rows into the same fields the meal editor
-uses: name, grams, calories, protein, carbs, fat, and "remove this food".
-Changing the grams re-portions the rest by ratio; typing over any single number
-breaks the link for that one. Each row shows what the model had said
-("the model said 170 g · 281 kcal"), so a correction reads as a correction.
+Adjusting is a **screen of its own**, and it argues with one number: weight.
+
+The first version put six fields on every food — name, grams, calories,
+protein, carbs, fat — inside a card already carrying totals, assumptions and
+two buttons. Correct, and about as far from a phone interface as a form can
+get. The model is usually right about *what* is on the plate and wrong about
+*how much*, so the one figure worth disputing now gets a thumb-sized stepper
+(±10 g) and the macros follow it by ratio. Typing straight into the box still
+works, because eight taps to reach 250 g would be its own kind of insult.
+
+Editing an individual macro is still possible **after** saving, in Nutrition —
+where a person is correcting a number rather than a portion. That split is the
+point: two different jobs, two different controls.
+
+What the screen shows:
+
+- A photo thumbnail beside "Read from your photo a moment ago."
+- Totals at display size with a badge: **"−33 kcal vs the estimate"**, or
+  "unchanged".
+- Per row: the macros read-only, a stepper, **"−20 g"** against "as estimated",
+  and the model's own confidence quoted next to it.
+- **"Not on the plate"** to drop a food, which dims the row rather than
+  deleting it, so it can come back.
+- **"+ Something it missed"** — the oil in the pan, the second slice. Added at
+  **zero grams with no nutrients**, deliberately: inventing numbers for it
+  would be exactly the guessing this screen exists to correct, so it waits for
+  a weight. "How many calories is that?" is a better question for the model
+  than for this form.
 
 **Reuse, not a second copy.** `scaleTo` in
 [`src/domain/mealEdits.ts`](../../src/domain/mealEdits.ts) was widened from
-`FoodItemEdit` to a structural `Portioned`, so the estimate rows and the saved
-meal share one piece of arithmetic and one set of tests. `NumberField` moved
-out of `MealEditor` into a component both use.
+`FoodItemEdit` to a structural `Portioned`, so the stepper and the saved-meal
+editor share one piece of arithmetic and one set of tests.
 
 ### Provenance is the decision worth getting right
 
@@ -80,8 +102,46 @@ The reply contract gains an optional `"question"`, and three rules:
 
 The second rule is what stops this becoming a dead end. The numbers on screen
 are always complete and always saveable, the copy says so out loud
-("this is not a question you have to answer"), and Skip is beside Send. A
-question that could block a save would be worse than no question at all.
+("Questions never block saving"), and **"Skip — save as it is"** sits beside
+the input. A question that could block a save would be worse than no question.
+
+### A question has to explain itself
+
+The contract asks for two more fields, and they are what make the difference
+between a question and an interrogation:
+
+- **`questionReason`** — one sentence naming *which* number is shaky and what
+  was assumed: "Fat is the number I am least sure of — 11 g assumes a dry pan."
+  Without it the user is asked to work for the model with no idea what it buys
+  them, and the honest answer to "why should I bother?" is missing.
+- **`questionOptions`** — two to four tappable answers in plain words. They are
+  shortcuts, never the whole answer space, so the free-text box sits directly
+  beneath them rather than behind a "something else" tap: the answer the model
+  did not anticipate is the one that matters most.
+
+Both are decoration on the question. If the model omits or mangles either, the
+question still stands — neither may ever fail an estimate.
+
+The card is shaped as a **message**, not a form: an accent avatar, "Timeline",
+"just now", and the question itself in the display serif. That is what it
+actually is — the model saying which of its own numbers it distrusts.
+
+### What an answer changed
+
+Answering produces a **revision**, and the revision leads with deltas:
+"Estimate · revision 2", a sage "Updated from your answer" badge, and each
+figure carrying "+40" or "unchanged" with the changed ones in accent. Plus an
+"Added from what you said" row naming any food the answer introduced.
+
+The deltas are the entire justification for having asked. "Fat 16 g" is a
+number; "Fat 16 g, +5" is the answer paying for itself — and without it a user
+has no way to judge whether replying was worth the tap, which decides whether
+they ever reply again.
+
+Below it, **"How it got here"**: the exchange as alternating message bubbles,
+with any further question inline. Once the meal is saved the numbers are all
+that survive into the day's totals, so this is the only place the reasoning
+behind them is visible while it still matters.
 
 ### The follow-up turn
 
@@ -155,8 +215,10 @@ this; only the browser could.
 - `buildEstimatedMeal` with corrections: changed → `USER`, untouched →
   `AI_ESTIMATE`, removed → absent, rename counts as a correction, the audit row
   carries both, and an unchanged form adds no clutter.
-- `validateEstimate` reads `question`, tolerates its absence, and treats a
-  non-string as no question rather than failing the whole estimate.
+- `validateEstimate` reads `question`, `questionReason` and `questionOptions`,
+  tolerates any of them being absent, caps the options at four, drops junk
+  entries rather than failing the estimate, and discards a reason or options
+  that arrive with no question to decorate.
 - `followUpText` quotes between markers, caps length, carries every round.
 - Both adapters append the exchange; the proxy sends `conversationId`.
 - Against real Postgres: three calls about two meals count as two analyses,
@@ -169,3 +231,10 @@ this; only the browser could.
 and lives only in memory, so answering on a different device starts a fresh
 analysis. Correct, if slightly wasteful; worth revisiting only if it ever
 happens in practice.
+
+**The exchange is not saved with the meal.** "How it got here" lives only as
+long as the analysis does; once saved, the meal keeps the final numbers and the
+`AIInference` row keeps the raw reply, but the questions and answers are gone.
+Keeping them would mean a place to put them — a conversation attached to a
+record, which is a schema decision rather than a UI one, and not one to make
+before anyone has missed it.

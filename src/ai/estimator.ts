@@ -78,6 +78,16 @@ export interface EstimateResult {
    * answering is always optional. Absent most of the time.
    */
   question?: string
+  /**
+   * Why it is asking — which number is shaky, and what was assumed.
+   *
+   * Without this a question is an interrogation: the user is asked to work
+   * for the model with no idea what it buys them. With it, they can judge
+   * whether answering is worth the tap.
+   */
+  questionReason?: string
+  /** Two to four tappable answers. Shortcuts, never the only options. */
+  questionOptions?: string[]
   /** Non-fatal audit notes, e.g. MACRO_ARITHMETIC_MISMATCH. */
   flags: string[]
   /** The model's reply exactly as received, kept for the AIInference row. */

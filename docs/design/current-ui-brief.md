@@ -186,7 +186,41 @@ app itself rather than a generic tracker:
   right after the camera hands back control; the running state now shows
   immediately, on the photo as captured, before any of that work starts.
 
-## The estimate card, now that it argues back
+## The estimate, in four views
+
+Only ever one of them is on screen. Which one is a question of what the user is
+being asked to do — answer something, look at what an answer changed, argue
+with the weights, or just save.
+
+**1 · Estimate** — totals, per-item rows with a confidence pill, assumptions,
+Save / Discard, and a quiet "Adjust these numbers" link.
+
+**2 · Question** — a photo thumbnail beside "711 kcal · 64P · 86C · 11F" and
+"A usable estimate already. One thing would sharpen it, and answering takes a
+tap." Then a card shaped like a **message**: terracotta avatar, "Timeline",
+"just now", the question in Fraunces at 21px, and underneath the reason it is
+asking — *"Fat is the number I am least sure of — 11 g assumes a dry pan."*
+Below that, tappable reply chips, a rounded input with a terracotta arrow
+button, then **"Skip — save as it is"** and "Questions never block saving."
+
+**3 · Revised** — "ESTIMATE · REVISION 2" with a sage **"Updated from your
+answer"** badge. The four figures each carry a delta beneath them — "+40",
+"unchanged", "+5 g" — and the ones that moved turn terracotta. A row reads
+"Added from what you said · Olive oil · 1 tsp". Save meal / Adjust by hand.
+Below, a second card: **"HOW IT GOT HERE"**, the exchange as alternating
+message bubbles (avatar left, the user's words in a sand bubble right), any
+further question inline with its own chips, and a closing line about it being
+one conversation rather than a new guess.
+
+**4 · Adjust** — a screen, not a mode. Photo thumbnail beside "Read from your
+photo a moment ago." Totals at 22px with a badge reading "−33 kcal vs the
+estimate". Each food is one row: name, its macros read-only, and a **pill
+stepper** — minus, the grams, plus. Under each, "−20 g" or "as estimated", and
+"72% sure of this one". "Not on the plate" dims the row rather than removing
+it. A dashed **"+ Something it missed"** pill adds a food the camera never saw.
+Then Save meal / Back to the estimate / Let it ask instead.
+
+## Older notes on the estimate card
 
 - **Editable in place** — "Adjust these numbers" turns the item rows into
   fields (food, grams, calories, protein, carbs, fat) plus "remove this food".

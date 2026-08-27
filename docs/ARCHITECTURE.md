@@ -357,6 +357,18 @@ question, because it turns a working flow into a modal one. So the prompt
 requires items and confidence in every reply, the UI says out loud that
 answering is optional, and Skip sits beside Send.
 
+**A question must justify itself.** The contract also asks for a reason —
+which number is shaky and what was assumed — and two to four tappable answers.
+Without the reason the user is being asked to work for the model with nothing
+said about what it buys them; without the options, answering costs a keyboard.
+Both are optional decoration on the question: a model that omits either still
+gets its question asked, because neither may cost anyone an estimate.
+
+**And an answer must show its work.** A revision leads with deltas against the
+previous one — "+40", "unchanged" — because that is the only evidence the user
+has that replying was worth the tap, and it decides whether they ever reply
+again.
+
 **Provenance consequence.** A corrected item is written as `USER` / `RAW`, not
 as a confirmed estimate: a human looked at the number and said what it should
 be, which is precisely confirmation. Items left alone stay `AI_ESTIMATE` and

@@ -168,3 +168,73 @@ describe('answering in the reader’s language', () => {
     expect(body).toContain('Reply in Hebrew')
   })
 })
+
+describe('a question that explains itself', () => {
+  const asked = {
+    ...SAMPLE_REPLY,
+    question: 'Was it fried?',
+    questionReason: 'Fat is the number I am least sure of.',
+    questionOptions: ['No', 'A little oil', 'Not sure'],
+  }
+
+  it('carries the reason and the tappable answers', () => {
+    const r = validateEstimate(asked, 'm')
+    expect(r.questionReason).toBe('Fat is the number I am least sure of.')
+    expect(r.questionOptions).toEqual(['No', 'A little oil', 'Not sure'])
+  })
+
+  it('caps the options, because five chips is a form', () => {
+    const many = { ...asked, questionOptions: ['a', 'b', 'c', 'd', 'e', 'f'] }
+    expect(validateEstimate(many, 'm').questionOptions).toHaveLength(4)
+  })
+
+  it('survives a model that gives neither', () => {
+    const { questionReason, questionOptions, ...rest } = SAMPLE_REPLY
+    const bare = { ...rest, question: 'Was it fried?' }
+    const r = validateEstimate(bare, 'm')
+    expect(r.question).toBe('Was it fried?')
+    expect(r.questionReason).toBeUndefined()
+    expect(r.questionOptions).toBeUndefined()
+  })
+
+  it('drops both when there is no question to decorate', () => {
+    // Otherwise a stale reason outlives the question it belonged to.
+    const orphaned = { ...SAMPLE_REPLY, question: '', questionReason: 'why', questionOptions: ['a'] }
+    const r = validateEstimate(orphaned, 'm')
+    expect(r.questionReason).toBeUndefined()
+    expect(r.questionOptions).toBeUndefined()
+  })
+
+  it('ignores junk in the options rather than failing the estimate', () => {
+    const junk = { ...asked, questionOptions: ['fine', 42, null, '  '] }
+    expect(validateEstimate(junk, 'm').questionOptions).toEqual(['fine'])
+    expect(validateEstimate(junk, 'm').items).toHaveLength(2)
+  })
+
+  it('asks for every question field in the reader’s language', () => {
+    const rule = languageRule('he')
+    for (const field of ['"question"', '"questionReason"', '"questionOptions"']) {
+      expect(rule).toContain(field)
+    }
+  })
+})
+
+describe('the fake answers an answer', () => {
+  it('adds the food the user named, so the delta is real', async () => {
+    const before = await new FakeEstimator().estimate(new Blob(), {})
+    const after = await new FakeEstimator().estimate(new Blob(), {}, [
+      { question: 'Oil?', answer: 'About a teaspoon' },
+    ])
+    expect(after.items).toHaveLength(before.items.length + 1)
+    expect(after.items.at(-1)?.name).toContain('Olive oil')
+    const fat = (r: typeof before) => r.items.reduce((s, i) => s + i.fatG, 0)
+    expect(fat(after)).toBe(fat(before) + 5)
+  })
+
+  it('does not add fat to a plate the user said had none', async () => {
+    const after = await new FakeEstimator().estimate(new Blob(), {}, [
+      { question: 'Oil?', answer: 'No oil or butter' },
+    ])
+    expect(after.items).toHaveLength(2)
+  })
+})

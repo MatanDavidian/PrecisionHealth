@@ -72,6 +72,10 @@ export function validateEstimate(raw: unknown, model: string): EstimateResult {
   // Optional by design, and a non-string is simply no question — a model that
   // returns `true` here should not cost anyone their estimate.
   const question = text(raw.question) || undefined
+  // Both are decoration on the question: if the model omits or mangles them
+  // the question still stands, so neither may fail an estimate.
+  const questionReason = question ? text(raw.questionReason) || undefined : undefined
+  const questionOptions = question ? stringList(raw.questionOptions).slice(0, 4) : []
 
   if (refusal) {
     // The model says this is not food. That is a valid answer, not a failure.
@@ -100,7 +104,17 @@ export function validateEstimate(raw: unknown, model: string): EstimateResult {
       ? items.reduce((sum, item) => sum + item.confidence, 0) / items.length
       : confidence(raw.overallConfidence)
 
-  return { items, overallConfidence: overall, assumptions, question, flags, raw, model }
+  return {
+    items,
+    overallConfidence: overall,
+    assumptions,
+    question,
+    questionReason,
+    ...(questionOptions.length > 0 ? { questionOptions } : {}),
+    flags,
+    raw,
+    model,
+  }
 }
 
 /**

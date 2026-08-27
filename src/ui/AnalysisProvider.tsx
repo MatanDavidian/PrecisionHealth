@@ -72,6 +72,13 @@ export interface Analysis {
   conversationId: string
   /** The questions the model asked and what the user said back, oldest first. */
   answers: FollowUp[]
+  /**
+   * The estimate as it stood before the latest answer.
+   *
+   * Kept so the new one can say what actually moved. "Fat 16 g" means little;
+   * "Fat 16 g, +5" is the whole point of having answered.
+   */
+  previous?: EstimateResult
 }
 
 interface AnalysisContextValue {
@@ -284,6 +291,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       const id = ++runId.current
       const hints = changes.hints ?? from.hints
       const answers = changes.answers ?? from.answers
+      // Only an answer produces a revision worth comparing against; a plain
+      // retry of a failed call is the same question asked twice.
+      const answering = changes.answers !== undefined
       beginRun(
         {
           slot: from.slot,
@@ -291,6 +301,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           input: from.input,
           hints,
           model: from.model,
+          previous: answering ? from.result : from.previous,
           // Kept, not regenerated: this is still the same meal, and the server
           // charges it once.
           conversationId: from.conversationId,

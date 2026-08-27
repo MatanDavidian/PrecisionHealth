@@ -25,6 +25,8 @@ import { WritePanel } from '../components/log/WritePanel'
 import { InputPreview } from '../components/log/InputPreview'
 import { EstimateCard } from '../components/log/EstimateCard'
 import { AdjustPanel } from '../components/log/AdjustPanel'
+import { QuestionCard } from '../components/log/QuestionCard'
+import { RevisedCard } from '../components/log/RevisedCard'
 import { readUsuals, type Usuals } from '@/data/usuals'
 import { currentUserId } from '@/data/session'
 import type { Meal, UsualFood, UsualMeal } from '@/domain'
@@ -137,6 +139,15 @@ export function Log() {
    * arrives, since a revision's rows are not the previous revision's.
    */
   const [adjusting, setAdjusting] = useState(false)
+  /** Set when the user dismisses a question, per question, so a later one still asks. */
+  const [skipped, setSkipped] = useState<string>()
+  /** Which of the four result views is showing, decided once. */
+  const revised = Boolean(analysis?.result) && (analysis?.answers.length ?? 0) > 0
+  const questionOpen =
+    Boolean(analysis?.result?.question) &&
+    !revised &&
+    skipped !== analysis?.result?.question &&
+    (analysis?.answers.length ?? 0) < MAX_FOLLOW_UPS
   const [rows, setRows] = useState<EstimateCorrection[]>([])
   const resultKey = analysis?.result ? `${analysis.id}:${analysis.answers.length}` : undefined
   const [rowsFor, setRowsFor] = useState<string>()
@@ -374,7 +385,7 @@ export function Log() {
         </div>
       )}
 
-      {analysis && !adjusting && (
+      {analysis && !adjusting && !questionOpen && !revised && (
         <InputPreview
           analysis={analysis}
           elapsed={elapsed}
@@ -476,7 +487,7 @@ export function Log() {
         </Card>
       )}
 
-      {analysis && !runningPhoto && !adjusting && (
+      {analysis && !runningPhoto && !adjusting && !questionOpen && !revised && (
         <div className="pt-4">
           <button
             type="button"
@@ -596,6 +607,14 @@ export function Log() {
         </Card>
       )}
 
+      {/*
+        Four views of one result, and only ever one of them.
+
+        Which appears is a question of what the user is being asked to do:
+        answer something, look at what an answer changed, argue with the
+        weights, or just save. Stacking them — as the first version did, with
+        the question wedged above the estimate — asked all four at once.
+      */}
       {analysis?.result && adjusting && (
         <AdjustPanel
           result={analysis.result}
@@ -616,7 +635,34 @@ export function Log() {
         />
       )}
 
-      {analysis?.result && !adjusting && (
+      {/* It asked something and is still waiting to hear back. */}
+      {analysis?.result && !adjusting && questionOpen && (
+          <QuestionCard
+            result={analysis.result}
+            photoUrl={photoUrlOf(analysis)}
+            onAnswer={answerQuestion}
+            onSkip={() => setSkipped(analysis.result!.question)}
+          />
+        )}
+
+      {/* Something was answered: show what it moved, and the exchange. */}
+      {analysis?.result && !adjusting && revised && (
+        <RevisedCard
+          result={analysis.result}
+          previous={analysis.previous}
+          answers={analysis.answers}
+          saving={saving}
+          onSave={() => void save(correctsAnything(analysis.result!, rows) ? rows : undefined)}
+          onAdjust={() => setAdjusting(true)}
+          onAnswer={
+            analysis.result.question && analysis.answers.length < MAX_FOLLOW_UPS
+              ? answerQuestion
+              : undefined
+          }
+        />
+      )}
+
+      {analysis?.result && !adjusting && !questionOpen && !revised && (
         <EstimateCard
           result={analysis.result}
           downgraded={analysis.downgraded}
@@ -624,7 +670,6 @@ export function Log() {
           saving={saving}
           rows={rows}
           onAdjust={() => setAdjusting(true)}
-          onAnswer={analysis.answers.length < MAX_FOLLOW_UPS ? answerQuestion : undefined}
           onSave={() => void save(correctsAnything(analysis.result!, rows) ? rows : undefined)}
           onDiscard={() => {
             clearInput()

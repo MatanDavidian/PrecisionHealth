@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import type { EstimateResult } from '@/ai/estimator'
 import { correctsAnything, type EstimateCorrection } from '@/data/estimatedMeal'
 import { Card } from '../Card'
-import { fieldClass } from '../NumberField'
 import { useT } from '../../i18n'
 
 /**
@@ -25,7 +23,6 @@ export function EstimateCard({
   saving,
   onSave,
   onDiscard,
-  onAnswer,
   rows,
   onAdjust,
 }: {
@@ -37,8 +34,6 @@ export function EstimateCard({
   /** Corrections are passed back so the caller can record what was overridden. */
   onSave: (corrections?: EstimateCorrection[]) => void
   onDiscard: () => void
-  /** Absent once the follow-up allowance is spent; the question then stops being offered. */
-  onAnswer?: (answer: string) => void
   /** The rows as they currently stand, owned by the screen so Adjust can share them. */
   rows: EstimateCorrection[]
   /** Opens the adjust screen. */
@@ -60,9 +55,6 @@ export function EstimateCard({
     )
   }
 
-  const [answer, setAnswer] = useState('')
-  /** Dismissing the question is per-question, so a second one still gets asked. */
-  const [skipped, setSkipped] = useState<string>()
 
   const kept = rows.filter((row) => !row.removed)
   const corrected = correctsAnything(result, rows)
@@ -82,52 +74,6 @@ export function EstimateCard({
   return (
     <div className="pt-4">
       <Card label={fromText ? t('estimate.labelFromText') : t('estimate.label')}>
-        {/*
-          The question sits above the numbers because it is the one thing here
-          that expires — but it is phrased so that ignoring it is obviously
-          allowed. The estimate below is complete either way; answering only
-          makes it firmer, and the model was told never to withhold one.
-        */}
-        {result.question && onAnswer && skipped !== result.question && (
-          <div className="mb-4 rounded-card border border-hairline bg-surface p-4">
-            <p className="text-sm font-medium" dir="auto">
-              {result.question}
-            </p>
-            <p className="pt-1 text-xs text-ink-muted">{t('estimate.question.hint')}</p>
-            <form
-              className="flex flex-wrap items-center gap-2 pt-3"
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (!answer.trim()) return
-                onAnswer(answer)
-                setAnswer('')
-              }}
-            >
-              <input
-                className={`${fieldClass} min-w-0 flex-1`}
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder={t('estimate.question.placeholder')}
-                aria-label={t('estimate.question.label')}
-              />
-              <button
-                type="submit"
-                disabled={!answer.trim()}
-                className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface disabled:opacity-40"
-              >
-                {t('estimate.question.send')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSkipped(result.question)}
-                className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
-              >
-                {t('estimate.question.skip')}
-              </button>
-            </form>
-          </div>
-        )}
-
         <div className="flex flex-wrap gap-x-6 gap-y-2 pb-3">
           <Figure name={t('estimate.calories')} value={Math.round(total.kcal).toLocaleString()} />
           <Figure name={t('estimate.protein')} value={`${Math.round(total.protein)} g`} />

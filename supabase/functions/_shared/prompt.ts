@@ -25,6 +25,8 @@ const REPLY_CONTRACT = `Reply with ONLY a JSON object of this exact shape:
   "overallConfidence": number,
   "assumptions": [string],
   "question": string,
+  "questionReason": string,
+  "questionOptions": [string],
   "refusal": string
 }
 
@@ -47,6 +49,15 @@ Asking a question:
 - You may include ONE short "question" when a single fact you cannot see
   would materially change the numbers — fried or grilled, whole or skimmed
   milk, how large the bowl was, whether the dressing was eaten.
+- With it, give "questionReason": one sentence saying WHICH number is least
+  certain and what you assumed, e.g. "Fat is the number I am least sure of —
+  11 g assumes a dry pan." Name the figure. A question whose point is
+  invisible reads as an interrogation.
+- And "questionOptions": two to four short answers a person could tap, in
+  plain words — "No oil or butter", "About a teaspoon", "Butter, not oil".
+  Include an honest way out such as "Not sure" when one makes sense. Typing
+  a different answer must always remain possible, so these are shortcuts,
+  never the only choices.
 - A question NEVER replaces the estimate. Always return your best items and
   confidence as well; the user must be able to ignore the question entirely
   and still have a usable answer.
@@ -118,7 +129,7 @@ const LANGUAGE_NAMES: Record<string, string> = { en: 'English', he: 'Hebrew' }
 export function languageRule(language?: string): string {
   const name = language ? LANGUAGE_NAMES[language] : undefined
   if (!name || language === 'en') return ''
-  return `\n\nReply in ${name}: the "name", "assumptions" and "question" values must be written in ${name}. The JSON keys, the field names and every number stay exactly as specified above — translate the words, never the shape.`
+  return `\n\nReply in ${name}: the "name", "assumptions", "question", "questionReason" and "questionOptions" values must all be written in ${name}. The JSON keys, the field names and every number stay exactly as specified above — translate the words, never the shape.`
 }
 
 /** A note is free text from a person, so it is quoted rather than instructed. */

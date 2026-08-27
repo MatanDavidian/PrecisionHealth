@@ -29,7 +29,10 @@ export const SAMPLE_REPLY = {
   ],
   overallConfidence: 0.67,
   assumptions: ['Assumed cooked weights.', 'No added oil visible.'],
-  question: 'Was the chicken grilled dry, or cooked in oil or butter?',
+  question: 'Was anything cooked in oil or butter?',
+  questionReason:
+    'Fat is the number I am least sure of — 6 g assumes a dry pan. Everything else on the plate I can see.',
+  questionOptions: ['No oil or butter', 'About a teaspoon', 'About a tablespoon', 'Not sure'],
 }
 
 export class FakeEstimator implements FoodEstimator {
@@ -87,8 +90,10 @@ export class FakeEstimator implements FoodEstimator {
    *
    * The fake asks on the first pass and stops once answered, so the whole
    * conversation — question, answer, a firmer second estimate — can be walked
-   * through without spending anything. Confidence rises because the model now
-   * knows the thing it said it was guessing at.
+   * through without spending anything. It also has to actually MOVE the
+   * numbers: the revised card is mostly deltas and a "what this added" row,
+   * and a fake that answers with the same figures leaves every one of them
+   * reading "unchanged", which is a state nobody can check.
    */
   private async answer(
     hints: EstimateHints,
@@ -99,14 +104,38 @@ export class FakeEstimator implements FoodEstimator {
     const validated = validateEstimate(this.reply, this.model)
     const result = applyGramsHint(validated, hints.totalGrams)
     if (answers.length === 0) return result
+
+    const said = answers[answers.length - 1].answer.toLowerCase()
+    // "No oil or butter" contains "butter". Substring matching alone would
+    // add fat to a plate the user just said had none.
+    const denied = /\b(no|none|without|nothing|dry)\b/.test(said)
+    const added = denied ? undefined : FAT_ANSWERS.find((entry) => said.includes(entry.match))
+
     return {
       ...result,
       question: undefined,
+      questionReason: undefined,
+      questionOptions: undefined,
       overallConfidence: Math.min(1, result.overallConfidence + 0.2),
-      items: result.items.map((item) => ({
-        ...item,
-        confidence: Math.min(1, item.confidence + 0.2),
-      })),
+      items: [
+        ...result.items.map((item) => ({
+          ...item,
+          confidence: Math.min(1, item.confidence + 0.2),
+        })),
+        ...(added
+          ? [
+              {
+                name: added.name,
+                amountG: added.grams,
+                energyKcal: added.kcal,
+                proteinG: 0,
+                carbsG: 0,
+                fatG: added.fat,
+                confidence: 0.9,
+              },
+            ]
+          : []),
+      ],
       assumptions: [
         ...result.assumptions,
         `You said: ${answers[answers.length - 1].answer}`,
@@ -114,3 +143,15 @@ export class FakeEstimator implements FoodEstimator {
     }
   }
 }
+
+/**
+ * What the fake does with an answer about cooking fat.
+ *
+ * Rough but real numbers, so the delta on screen is worth reading while
+ * developing rather than being a placeholder.
+ */
+const FAT_ANSWERS = [
+  { match: 'tablespoon', name: 'Olive oil · 1 tbsp', grams: 14, kcal: 120, fat: 14 },
+  { match: 'teaspoon', name: 'Olive oil · 1 tsp', grams: 5, kcal: 40, fat: 5 },
+  { match: 'butter', name: 'Butter · 15 g', grams: 15, kcal: 105, fat: 12 },
+]

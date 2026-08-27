@@ -8,6 +8,7 @@ import {
 } from '@/data/estimatedMeal'
 import { Card } from '../Card'
 import { NumberField, fieldClass, labelClass } from '../NumberField'
+import { useT } from '../../i18n'
 
 /**
  * What the model came back with, whatever it was shown.
@@ -42,6 +43,7 @@ export function EstimateCard({
   /** Absent once the follow-up allowance is spent; the question then stops being offered. */
   onAnswer?: (answer: string) => void
 }) {
+  const t = useT()
   if (result.refusal) {
     return (
       <Card>
@@ -51,7 +53,7 @@ export function EstimateCard({
           onClick={onDiscard}
           className="mt-3 rounded-full border border-hairline px-4 py-2 text-sm"
         >
-          {fromText ? 'Describe something else' : 'Try another photo'}
+          {fromText ? t('estimate.describeSomethingElse') : t('estimate.tryAnotherPhoto')}
         </button>
       </Card>
     )
@@ -96,7 +98,7 @@ export function EstimateCard({
 
   return (
     <div className="pt-4">
-      <Card label={fromText ? 'Estimate from your words' : 'Estimate'}>
+      <Card label={fromText ? t('estimate.labelFromText') : t('estimate.label')}>
         {/*
           The question sits above the numbers because it is the one thing here
           that expires — but it is phrased so that ignoring it is obviously
@@ -105,11 +107,10 @@ export function EstimateCard({
         */}
         {result.question && onAnswer && skipped !== result.question && (
           <div className="mb-4 rounded-card border border-hairline bg-surface p-4">
-            <p className="text-sm font-medium">{result.question}</p>
-            <p className="pt-1 text-xs text-ink-muted">
-              Answering sharpens the numbers below. Skipping keeps them as they are — this is not
-              a question you have to answer.
+            <p className="text-sm font-medium" dir="auto">
+              {result.question}
             </p>
+            <p className="pt-1 text-xs text-ink-muted">{t('estimate.question.hint')}</p>
             <form
               className="flex flex-wrap items-center gap-2 pt-3"
               onSubmit={(e) => {
@@ -123,32 +124,32 @@ export function EstimateCard({
                 className={`${fieldClass} min-w-0 flex-1`}
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Grilled, no oil"
-                aria-label="Your answer"
+                placeholder={t('estimate.question.placeholder')}
+                aria-label={t('estimate.question.label')}
               />
               <button
                 type="submit"
                 disabled={!answer.trim()}
                 className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface disabled:opacity-40"
               >
-                Send answer
+                {t('estimate.question.send')}
               </button>
               <button
                 type="button"
                 onClick={() => setSkipped(result.question)}
                 className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
               >
-                Skip
+                {t('estimate.question.skip')}
               </button>
             </form>
           </div>
         )}
 
         <div className="flex flex-wrap gap-x-6 gap-y-2 pb-3">
-          <Figure name="Calories" value={Math.round(total.kcal).toLocaleString()} />
-          <Figure name="Protein" value={`${Math.round(total.protein)} g`} />
-          <Figure name="Carbs" value={`${Math.round(total.carbs)} g`} />
-          <Figure name="Fat" value={`${Math.round(total.fat)} g`} />
+          <Figure name={t('estimate.calories')} value={Math.round(total.kcal).toLocaleString()} />
+          <Figure name={t('estimate.protein')} value={`${Math.round(total.protein)} g`} />
+          <Figure name={t('estimate.carbs')} value={`${Math.round(total.carbs)} g`} />
+          <Figure name={t('estimate.fat')} value={`${Math.round(total.fat)} g`} />
         </div>
 
         {editing
@@ -163,7 +164,7 @@ export function EstimateCard({
                   <div className="grid gap-3 sm:grid-cols-4">
                     <div className="sm:col-span-4">
                       <label className={labelClass} htmlFor={`e-name-${row.index}`}>
-                        Food
+                        {t('estimate.food')}
                       </label>
                       <input
                         id={`e-name-${row.index}`}
@@ -175,7 +176,7 @@ export function EstimateCard({
                     </div>
                     <NumberField
                       id={`e-grams-${row.index}`}
-                      label="Grams"
+                      label={t('estimate.grams')}
                       value={row.amountG}
                       disabled={gone}
                       highlight={scaled.includes(row.index)}
@@ -183,14 +184,14 @@ export function EstimateCard({
                     />
                     <NumberField
                       id={`e-kcal-${row.index}`}
-                      label="Calories"
+                      label={t('estimate.calories')}
                       value={row.energyKcal}
                       disabled={gone}
                       onChange={(energyKcal) => update(row.index, { energyKcal })}
                     />
                     <NumberField
                       id={`e-protein-${row.index}`}
-                      label="Protein g"
+                      label={t('estimate.proteinG')}
                       value={row.proteinG}
                       disabled={gone}
                       onChange={(proteinG) => update(row.index, { proteinG })}
@@ -198,14 +199,14 @@ export function EstimateCard({
                     <div className="grid grid-cols-2 gap-3">
                       <NumberField
                         id={`e-carbs-${row.index}`}
-                        label="Carbs g"
+                        label={t('estimate.carbsG')}
                         value={row.carbsG}
                         disabled={gone}
                         onChange={(carbsG) => update(row.index, { carbsG })}
                       />
                       <NumberField
                         id={`e-fat-${row.index}`}
-                        label="Fat g"
+                        label={t('estimate.fatG')}
                         value={row.fatG}
                         disabled={gone}
                         onChange={(fatG) => update(row.index, { fatG })}
@@ -219,12 +220,14 @@ export function EstimateCard({
                       onClick={() => update(row.index, { removed: !gone })}
                       className="text-xs text-ink-muted underline"
                     >
-                      {gone ? 'Keep this food' : 'Remove this food'}
+                      {gone ? t('estimate.keepFood') : t('estimate.removeFood')}
                     </button>
                     {item && (
                       <span className="text-xs text-ink-muted">
-                        the model said {Math.round(item.amountG)} g ·{' '}
-                        {Math.round(item.energyKcal)} kcal
+                        {t('estimate.modelSaid', {
+                          grams: Math.round(item.amountG),
+                          kcal: Math.round(item.energyKcal),
+                        })}
                       </span>
                     )}
                   </div>
@@ -239,22 +242,24 @@ export function EstimateCard({
                   key={row.index}
                   className="flex flex-wrap items-baseline justify-between gap-2 border-t border-hairline py-2"
                 >
-                  <span className="text-sm">
+                  <span className="text-sm" dir="auto">
                     {row.name}
                     <span className="text-ink-muted">
                       {' '}
-                      · {fromText && !wasChanged ? 'assumed ' : ''}
+                      · {fromText && !wasChanged ? `${t('estimate.assumed')} ` : ''}
                       {Math.round(row.amountG)} g
                     </span>
                   </span>
                   <span className="flex items-baseline gap-3">
-                    <span className="tabular text-xs text-ink-muted">
+                    {/* Pinned LTR: bidi would otherwise reorder the pieces
+                        around the separators and make this unreadable. */}
+                    <span className="tabular ltr-nums text-xs text-ink-muted">
                       {Math.round(row.proteinG)}P · {Math.round(row.carbsG)}C ·{' '}
                       {Math.round(row.fatG)}F
                     </span>
                     {wasChanged ? (
                       <span className="rounded-full bg-leaf-soft px-2 py-0.5 text-[0.65rem] font-medium text-leaf">
-                        yours
+                        {t('estimate.yours')}
                       </span>
                     ) : (
                       <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-medium text-accent">
@@ -275,53 +280,51 @@ export function EstimateCard({
           onClick={() => setEditing((open) => !open)}
           className="pt-3 text-xs text-ink-muted underline"
         >
-          {editing ? 'Done adjusting' : corrected ? 'Adjust again' : 'Adjust these numbers'}
+          {editing
+            ? t('estimate.doneAdjusting')
+            : corrected
+              ? t('estimate.adjustAgain')
+              : t('estimate.adjust')}
         </button>
 
         {editing && (
-          <p className="pt-2 text-xs text-ink-muted">
-            Change the grams and the rest follows by ratio. Type over any number to break the link.
-            What you change is saved as your own figure, not an estimate to confirm later.
-          </p>
+          <p className="pt-2 text-xs text-ink-muted">{t('estimate.adjustHint')}</p>
         )}
 
         {result.assumptions.length > 0 && (
-          <ul className="list-disc space-y-0.5 pl-4 pt-3 text-xs text-ink-muted">
+          <ul className="list-disc space-y-0.5 ps-4 pt-3 text-xs text-ink-muted">
             {result.assumptions.map((assumption) => (
-              <li key={assumption}>{assumption}</li>
+              <li key={assumption} dir="auto">
+                {assumption}
+              </li>
             ))}
           </ul>
         )}
 
         {fromText && (
           <p className="pt-3 text-xs text-ink-muted">
-            Confidence is lower than a photo's — nothing was seen, so portions were assumed.
+            {t('estimate.fromTextNote')}
           </p>
         )}
 
         {lowConfidence && (
           <p className="pt-3 text-xs text-accent">
-            Low confidence — worth checking the numbers before you trust them.
+            {t('estimate.lowConfidence')}
           </p>
         )}
 
         {downgraded && (
           <p className="pt-3 text-xs text-accent">
-            Read by the quicker model — your most-accurate analyses are used up.
+            {t('estimate.downgraded')}
           </p>
         )}
 
         {kept.length === 0 && (
-          <p className="pt-3 text-sm text-accent">
-            Every food is removed — there is nothing left to save. Keep one, or discard the whole
-            estimate.
-          </p>
+          <p className="pt-3 text-sm text-accent">{t('estimate.allRemoved')}</p>
         )}
 
         <p className="pt-3 text-xs text-ink-muted">
-          {corrected
-            ? 'Your corrections are saved as entered; anything you left alone stays an estimate you can confirm in Nutrition.'
-            : 'Saved as an estimate you can confirm, correct or delete in Nutrition.'}
+          {corrected ? t('estimate.savedNoteCorrected') : t('estimate.savedNote')}
         </p>
 
         <div className="flex flex-wrap gap-3 pt-4">
@@ -331,14 +334,14 @@ export function EstimateCard({
             disabled={saving || kept.length === 0}
             className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
           >
-            {saving ? 'Saving…' : 'Save meal'}
+            {saving ? t('estimate.saving') : t('estimate.save')}
           </button>
           <button
             type="button"
             onClick={onDiscard}
             className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
           >
-            Discard
+            {t('estimate.discard')}
           </button>
         </div>
       </Card>
@@ -352,7 +355,8 @@ function Figure({ name, value }: { name: string; value: string }) {
       <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">
         {name}
       </p>
-      <p className="tabular pt-0.5 text-lg font-medium">{value}</p>
+      {/* "64 g" must not be reordered to "g 64" by an RTL paragraph. */}
+      <p className="tabular ltr-nums pt-0.5 text-lg font-medium">{value}</p>
     </div>
   )
 }

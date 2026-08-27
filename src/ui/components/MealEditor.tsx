@@ -18,6 +18,8 @@ import {
 } from '@/domain'
 import { deviceZone } from '@/data/newRecords'
 import { NumberField, fieldClass as field, labelClass as label } from './NumberField'
+import { useT } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 
 /**
  * The zone the meal was logged in, not the one the phone is in now.
@@ -28,15 +30,15 @@ import { NumberField, fieldClass as field, labelClass as label } from './NumberF
 const zoneOf = (meal: Meal): IanaZone =>
   meal.time.kind === 'instant' ? meal.time.zone : deviceZone()
 
-const slotWord = (slot: MealSlot) => slot.charAt(0) + slot.slice(1).toLowerCase()
+const slotKey = (slot: MealSlot): StringKey => `common.slot.${slot}` as StringKey
 
 /** Where the numbers on screen came from, said plainly. */
-function origin(meal: Meal): string {
+function originKey(meal: Meal): StringKey {
   const items = liveItems(meal.items)
   const estimated = items.some((item) => item.provenance.source === 'AI_ESTIMATE')
   const unconfirmed = items.some((item) => needsConfirmation(item.provenance))
-  if (!estimated) return 'entered by hand'
-  return unconfirmed ? 'estimated, not yet confirmed' : 'from an estimate you confirmed'
+  if (!estimated) return 'editor.originHand'
+  return unconfirmed ? 'editor.originUnconfirmed' : 'editor.originConfirmed'
 }
 
 /**
@@ -63,6 +65,7 @@ export function MealEditor({
   onCancel: () => void
   onDelete: () => void
 }) {
+  const t = useT()
   const zone = zoneOf(meal)
   const [items, setItems] = useState<FoodItemEdit[]>(() => liveItems(meal.items).map(editableItem))
   const [removed, setRemoved] = useState<FoodItemId[]>([])
@@ -116,16 +119,16 @@ export function MealEditor({
       className="my-2 rounded-card border border-hairline bg-surface p-4"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <p className="text-sm font-medium">Editing {slotWord(meal.slot).toLowerCase()}</p>
+        <p className="text-sm font-medium">
+          {t('editor.editing', { slot: t(slotKey(meal.slot)) })}
+        </p>
         <p className="text-xs text-ink-muted">
-          Logged {timeOfDay(meal, zone)}, {origin(meal)}
+          {t('editor.loggedAt', { time: timeOfDay(meal, zone), origin: t(originKey(meal)) })}
         </p>
       </div>
 
       {remaining.length === 0 && (
-        <p className="pt-3 text-sm text-accent">
-          Every food is removed — saving now deletes the meal. It can be undone.
-        </p>
+        <p className="pt-3 text-sm text-accent">{t('editor.allRemoved')}</p>
       )}
 
       {items.map((item) => {
@@ -138,7 +141,7 @@ export function MealEditor({
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="sm:col-span-4">
                 <label className={label} htmlFor={`name-${item.id}`}>
-                  Food
+                  {t('estimate.food')}
                 </label>
                 <input
                   id={`name-${item.id}`}
@@ -150,7 +153,7 @@ export function MealEditor({
               </div>
               <NumberField
                 id={`grams-${item.id}`}
-                label="Grams"
+                label={t('estimate.grams')}
                 value={item.amountG}
                 disabled={gone}
                 highlight={scaled.includes(item.id)}
@@ -158,14 +161,14 @@ export function MealEditor({
               />
               <NumberField
                 id={`kcal-${item.id}`}
-                label="Calories"
+                label={t('estimate.calories')}
                 value={item.energyKcal}
                 disabled={gone}
                 onChange={(energyKcal) => update(item.id, { energyKcal })}
               />
               <NumberField
                 id={`protein-${item.id}`}
-                label="Protein g"
+                label={t('estimate.proteinG')}
                 value={item.proteinG}
                 disabled={gone}
                 onChange={(proteinG) => update(item.id, { proteinG })}
@@ -173,14 +176,14 @@ export function MealEditor({
               <div className="grid grid-cols-2 gap-3">
                 <NumberField
                   id={`carbs-${item.id}`}
-                  label="Carbs g"
+                  label={t('estimate.carbsG')}
                   value={item.carbsG}
                   disabled={gone}
                   onChange={(carbsG) => update(item.id, { carbsG })}
                 />
                 <NumberField
                   id={`fat-${item.id}`}
-                  label="Fat g"
+                  label={t('estimate.fatG')}
                   value={item.fatG}
                   disabled={gone}
                   onChange={(fatG) => update(item.id, { fatG })}
@@ -197,7 +200,7 @@ export function MealEditor({
               }
               className="pt-2 text-xs text-ink-muted underline"
             >
-              {gone ? 'Keep this food' : 'Remove this food'}
+              {gone ? t('estimate.keepFood') : t('estimate.removeFood')}
             </button>
           </div>
         )
@@ -206,7 +209,7 @@ export function MealEditor({
       <div className="mt-4 grid gap-3 border-t border-hairline pt-4 sm:grid-cols-2">
         <div>
           <label className={label} htmlFor={`slot-${meal.id}`}>
-            Meal
+            {t('log.details.meal')}
           </label>
           <select
             id={`slot-${meal.id}`}
@@ -216,14 +219,14 @@ export function MealEditor({
           >
             {MEAL_SLOTS.map((option) => (
               <option key={option} value={option}>
-                {slotWord(option)}
+                {t(slotKey(option))}
               </option>
             ))}
           </select>
         </div>
         <div>
           <label className={label} htmlFor={`time-${meal.id}`}>
-            Time
+            {t('log.details.time')}
           </label>
           <input
             id={`time-${meal.id}`}
@@ -236,9 +239,7 @@ export function MealEditor({
       </div>
 
       {scaled.length > 0 && (
-        <p className="pt-3 text-xs text-ink-muted">
-          Change the grams and the rest follows by ratio. Type over any number to break the link.
-        </p>
+        <p className="pt-3 text-xs text-ink-muted">{t('editor.ratioHint')}</p>
       )}
 
       <div className="flex flex-wrap items-center gap-3 pt-4">
@@ -247,22 +248,22 @@ export function MealEditor({
           disabled={saving}
           className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
         >
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? t('estimate.saving') : t('editor.saveChanges')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
         >
-          Cancel
+          {t('editor.cancel')}
         </button>
         <button
           type="button"
           onClick={onDelete}
-          className="ml-auto flex items-center gap-2 rounded-full border border-accent-soft px-4 py-2 text-sm text-accent transition-colors hover:bg-accent-soft"
+          className="ms-auto flex items-center gap-2 rounded-full border border-accent-soft px-4 py-2 text-sm text-accent transition-colors hover:bg-accent-soft"
         >
           <TrashIcon />
-          Delete meal
+          {t('editor.delete')}
         </button>
       </div>
     </form>

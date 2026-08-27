@@ -302,3 +302,30 @@ backend.
 - **One estimator provider (OpenAI) at launch.** The port makes a second
   provider an adapter, but CORS behaviour must be verified per provider before
   offering it.
+
+## Q12 — Is a food's identity its name?
+
+`mealSignature` (`src/domain/usuals.ts`) decides that two meals are "the same
+usual" by normalising and sorting their item names. That was fine while the app
+spoke one language. With Hebrew (D21) it is not: a user who switches language
+mid-history gets two separate usuals for the same breakfast, because
+"Porridge" and "דייסה" are different strings.
+
+The same weakness is already there in one language — "Greek yoghurt" and "greek
+yogurt" are one usual only because normalisation is generous, and "chicken
+breast" against "grilled chicken" are two.
+
+**Not being fixed now, deliberately.** The real answer is a
+language-independent food identity: an id from a food database, with names as
+labels hanging off it. That is the same work as the food-database / barcode
+path already parked in the roadmap, and it is also the credible route to
+micronutrients. Inventing a half-version — a hand-kept synonym table, say —
+would be work thrown away when the real thing lands.
+
+**Consequence accepted meanwhile:** switching language splits your usuals. The
+old ones do not disappear; they simply stop matching new entries, and both
+remain repeatable from "Everything you log".
+
+**Settle it when** the food database arrives, or when someone actually switches
+language mid-history and minds.
+

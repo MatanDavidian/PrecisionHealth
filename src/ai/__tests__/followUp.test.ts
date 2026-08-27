@@ -3,7 +3,11 @@ import { OpenAiEstimator } from '../openaiEstimator'
 import { ProxyEstimator } from '../proxyEstimator'
 import { FakeEstimator, SAMPLE_REPLY } from '../fakeEstimator'
 import { validateEstimate } from '../validate'
-import { MAX_FOLLOW_UPS, followUpText } from '../../../supabase/functions/_shared/prompt'
+import {
+  MAX_FOLLOW_UPS,
+  followUpText,
+  languageRule,
+} from '../../../supabase/functions/_shared/prompt'
 
 const openAiReply = (content: unknown) =>
   new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(content) } }] }), {
@@ -135,5 +139,32 @@ describe('the fake walks the whole conversation', () => {
 describe('the follow-up allowance', () => {
   it('is small and finite, because each round re-sends the photo', () => {
     expect(MAX_FOLLOW_UPS).toBe(2)
+  })
+})
+
+describe('answering in the reader’s language', () => {
+  it('asks for Hebrew values while insisting the shape stays English', () => {
+    const rule = languageRule('he')
+    expect(rule).toContain('Reply in Hebrew')
+    expect(rule).toContain('"name"')
+    // The sentence that stops a helpful model translating the keys and
+    // breaking the parse.
+    expect(rule).toMatch(/JSON keys.*stay exactly as specified/)
+  })
+
+  it('says nothing at all for English, which is what the prompt already assumes', () => {
+    expect(languageRule('en')).toBe('')
+    expect(languageRule(undefined)).toBe('')
+  })
+
+  it('reaches the provider on the system message', async () => {
+    let body: string | undefined
+    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+      body = String(init?.body)
+      return openAiReply(SAMPLE_REPLY)
+    }) as unknown as typeof fetch
+
+    await new OpenAiEstimator(openAiOptions(fetchImpl)).estimate(new Blob(), { language: 'he' })
+    expect(body).toContain('Reply in Hebrew')
   })
 })

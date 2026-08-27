@@ -21,7 +21,7 @@ export function ProvenanceBadge({ provenance }: { provenance: Provenance }) {
   const confidence =
     provenance.confidence != null ? ` ${Math.round(provenance.confidence * 100)}%` : ''
   return (
-    <span className="ml-2 whitespace-nowrap rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-medium text-accent">
+    <span className="ms-2 whitespace-nowrap rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-medium text-accent">
       AI estimate{confidence}
     </span>
   )

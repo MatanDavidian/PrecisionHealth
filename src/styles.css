@@ -18,8 +18,13 @@
   --color-ink-muted: #8a8375;
   --color-hairline: #ddd4c2;
 
-  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /*
+   * Hebrew falls through to the second face in each stack: neither Fraunces
+   * nor Inter has Hebrew glyphs, and a browser picks per character, so Latin
+   * text keeps the intended face while Hebrew gets one designed for it.
+   */
+  --font-display: 'Fraunces', 'Frank Ruhl Libre', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', 'Heebo', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   --radius-card: 1.25rem;
 }
@@ -40,6 +45,19 @@ body {
 /* Numbers in stat rows should align regardless of digit width. */
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Runs of numbers and separators that must not be re-ordered in Hebrew.
+ *
+ * Bidi resolves a string like "53P · 0C · 6F" or "07:38" against the
+ * paragraph direction, which in an RTL page flips the pieces around the
+ * punctuation and produces something that is technically correct and
+ * completely unreadable. These are data, not prose, so they are pinned LTR.
+ */
+.ltr-nums {
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 /*

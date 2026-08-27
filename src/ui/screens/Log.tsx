@@ -26,6 +26,8 @@ import { MAX_FOLLOW_UPS, MODEL_LABELS, MODEL_TERRA } from '../../../supabase/fun
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
+import { useLang } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 
 const field =
   'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm outline-none focus:border-accent'
@@ -35,13 +37,7 @@ const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] te
 const keyMissing = (settings: AppSettings): boolean => estimatorRequiresKey() && !settings.apiKey
 
 /** How the docked bar names this meal while it is being read. */
-const SLOT_LABEL: Record<MealSlot, string> = {
-  NIGHT: 'night meal',
-  BREAKFAST: 'breakfast',
-  LUNCH: 'lunch',
-  DINNER: 'dinner',
-  SNACK: 'snack',
-}
+const SLOT_LABEL = (slot: MealSlot): StringKey => `common.slotLabel.${slot}` as StringKey
 
 const hhmm = (date: Date) =>
   `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
@@ -55,10 +51,10 @@ const hhmm = (date: Date) =>
  */
 export type LogMode = 'photo' | 'write' | 'again'
 
-const MODES: readonly ModeTab<LogMode>[] = [
-  { value: 'photo', label: 'Photo', description: 'Photograph what you are eating' },
-  { value: 'write', label: 'Write', description: 'Describe what you ate in words' },
-  { value: 'again', label: 'Again', description: 'Log something you have eaten before' },
+const MODES = (t: (key: StringKey) => string): readonly ModeTab<LogMode>[] => [
+  { value: 'photo', label: t('log.mode.photo'), description: t('log.mode.photo.description') },
+  { value: 'write', label: t('log.mode.write'), description: t('log.mode.write.description') },
+  { value: 'again', label: t('log.mode.again'), description: t('log.mode.again.description') },
 ]
 
 const isMode = (value: string | null): value is LogMode =>
@@ -74,6 +70,7 @@ const isMode = (value: string | null): value is LogMode =>
  * written anywhere (spec §3) — Retry reuses it, saving or clearing drops it.
  */
 export function Log() {
+  const { t, lang } = useLang()
   const { runWrite, trial, revision } = useDataRevision()
   const { logRepeat, logFoods, logDay, deleteMeal, deleteMeals } = useActions()
   const [params, setParams] = useSearchParams()
@@ -146,17 +143,20 @@ export function Log() {
     foodName: foodName.trim() || undefined,
     totalGrams: grams.trim() ? Number(grams) : undefined,
     note: note.trim() || undefined,
+    // So the food names and assumptions come back in the language the rest of
+    // the screen is already speaking.
+    language: lang,
   })
 
   async function onPhotoChosen(file: File) {
     setSaved(false)
-    await start(file, hints(), slot, SLOT_LABEL[slot])
+    await start(file, hints(), slot, t(SLOT_LABEL(slot)))
   }
 
   async function onDescribed() {
     setSaved(false)
     setRecent(rememberDescription(description))
-    await startText(description, hints(), slot, SLOT_LABEL[slot])
+    await startText(description, hints(), slot, t(SLOT_LABEL(slot)))
   }
 
   /** Drops the input and every hint that belonged to it. */
@@ -209,8 +209,8 @@ export function Log() {
   return (
     <div className="mx-auto max-w-xl">
       <header className="pb-5">
-        <h1 className="font-display text-4xl">Log</h1>
-        <p className="pt-1 text-sm text-ink-muted">Three ways in. Photo is the default.</p>
+        <h1 className="font-display text-4xl">{t('log.title')}</h1>
+        <p className="pt-1 text-sm text-ink-muted">{t('log.subtitle')}</p>
       </header>
 
       {/*
@@ -246,8 +246,8 @@ export function Log() {
       {justLogged && (
         <div className="mb-4 rounded-card border border-leaf-soft bg-leaf-soft p-3">
           <p className="text-sm">
-            <span className="font-medium">{justLogged.label} logged</span> — no photo, no estimate
-            to review.
+            <span className="font-medium">{t('usuals.logged', { label: justLogged.label })}</span> —{' '}
+            {t('usuals.loggedNote')}
           </p>
           <div className="flex gap-2 pt-2">
             <button
@@ -260,14 +260,14 @@ export function Log() {
               }}
               className="rounded-full border border-hairline bg-surface px-3 py-1.5 text-xs"
             >
-              Undo
+              {t('usuals.undo')}
             </button>
             <button
               type="button"
               onClick={() => setJustLogged(undefined)}
               className="rounded-full px-3 py-1.5 text-xs text-ink-muted"
             >
-              Dismiss
+              {t('usuals.dismiss')}
             </button>
           </div>
         </div>
@@ -278,7 +278,7 @@ export function Log() {
         there is one thing on screen and one decision to make about it.
       */}
       {!analysis && (
-        <ModeTabs tabs={MODES} value={mode} onChange={setMode} label="How to log this meal" />
+        <ModeTabs tabs={MODES(t)} value={mode} onChange={setMode} label={t('log.modes.label')} />
       )}
 
       {!analysis && (
@@ -326,7 +326,9 @@ export function Log() {
                 if (meals.length > 0) {
                   setJustLogged({
                     meals,
-                    label: `${meals.length} meal${meals.length === 1 ? '' : 's'} from yesterday`,
+                    label: t('usuals.fromYesterday', {
+                      count: t('usuals.mealCount', { count: meals.length }),
+                    }),
                   })
                 }
               })
@@ -346,7 +348,7 @@ export function Log() {
       )}
 
       {mode === 'again' && !usuals && (
-        <p className="text-sm text-ink-muted">Looking through what you have logged…</p>
+        <p className="text-sm text-ink-muted">{t('usuals.looking')}</p>
       )}
         </div>
       )}
@@ -377,13 +379,13 @@ export function Log() {
             onClick={clearInput}
             className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
           >
-            Cancel
+            {t('log.analyzing.cancel')}
           </button>
           <Link
             to="/today"
             className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
           >
-            Leave this open
+            {t('log.analyzing.leave')}
           </Link>
         </div>
       )}
@@ -391,19 +393,19 @@ export function Log() {
       {showAnalyzingExplainer && (
         <div className="mt-4 rounded-card bg-leaf-soft p-5">
           <p className="pb-2 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-leaf">
-            Why this looks like this
+            {t('log.analyzing.whyTitle')}
           </p>
-          <p className="text-sm leading-relaxed text-ink-muted">
-            The wait is put where your eyes already are — on the photo — rather than in a line of
-            small text under it. Leaving the screen doesn't cancel anything: the work carries on
-            and a bar stays docked above the tab bar until it's done.
-          </p>
+          <p className="text-sm leading-relaxed text-ink-muted">{t('log.analyzing.why')}</p>
         </div>
       )}
 
       {saved && (
         <p className="pt-4 text-sm text-leaf">
-          Saved. <Link to="/today" className="underline">See today</Link>.
+          {t('log.saved')}{' '}
+          <Link to="/today" className="underline">
+            {t('log.savedLink')}
+          </Link>
+          .
         </p>
       )}
 
@@ -467,14 +469,14 @@ export function Log() {
             onClick={() => setShowDetails((open) => !open)}
             className="text-xs text-ink-muted underline"
           >
-            {showDetails ? 'Hide details' : 'Add details (optional)'}
+            {showDetails ? t('log.details.hide') : t('log.details.show')}
           </button>
 
           {showDetails && (
             <div className="grid gap-3 pt-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className={label} htmlFor="food">
-                  What is it
+                  {t('log.details.what')}
                 </label>
                 <input
                   id="food"
@@ -483,13 +485,11 @@ export function Log() {
                   value={foodName}
                   onChange={(e) => setFoodName(e.target.value)}
                 />
-                <p className="pt-1 text-xs text-ink-muted">
-                  Naming it stops the model guessing the identification.
-                </p>
+                <p className="pt-1 text-xs text-ink-muted">{t('log.details.whatHint')}</p>
               </div>
               <div>
                 <label className={label} htmlFor="grams">
-                  Total grams
+                  {t('log.details.grams')}
                 </label>
                 <input
                   id="grams"
@@ -500,12 +500,12 @@ export function Log() {
                   value={grams}
                   onChange={(e) => setGrams(e.target.value)}
                 />
-                <p className="pt-1 text-xs text-ink-muted">Weighing it is the biggest accuracy win.</p>
+                <p className="pt-1 text-xs text-ink-muted">{t('log.details.gramsHint')}</p>
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className={label} htmlFor="time">
-                    Time
+                    {t('log.details.time')}
                   </label>
                   <input
                     id="time"
@@ -517,7 +517,7 @@ export function Log() {
                 </div>
                 <div className="flex-1">
                   <label className={label} htmlFor="slot">
-                    Meal
+                    {t('log.details.meal')}
                   </label>
                   <select
                     id="slot"
@@ -527,7 +527,7 @@ export function Log() {
                   >
                     {MEAL_SLOTS.map((option) => (
                       <option key={option} value={option}>
-                        {option.charAt(0) + option.slice(1).toLowerCase()}
+                        {t(`common.slot.${option}` as StringKey)}
                       </option>
                     ))}
                   </select>
@@ -546,7 +546,11 @@ export function Log() {
               onClick={retry}
               className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface"
             >
-              {analysis.error ? 'Try again' : fromText ? 'Estimate' : 'Analyze'}
+              {analysis.error
+                ? t('log.action.tryAgain')
+                : fromText
+                  ? t('log.write.estimate')
+                  : t('log.action.analyze')}
             </button>
           )}
           <button
@@ -557,7 +561,7 @@ export function Log() {
             }}
             className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
           >
-            {fromText ? 'Start over' : 'Discard photo'}
+            {fromText ? t('log.action.startOver') : t('log.action.discardPhoto')}
           </button>
         </div>
       )}
@@ -567,9 +571,10 @@ export function Log() {
           <p className="text-sm text-accent">{analysis.error.message}</p>
           {analysis.error.retryable && (
             <p className="pt-1 text-xs text-ink-muted">
-              {fromText ? 'What you wrote is' : 'Your photo and details are'} still here — retry, or{' '}
+              {fromText ? t('log.error.stillHereText') : t('log.error.stillHerePhoto')}{' '}
+              {t('log.error.retryOr')}{' '}
               <Link to="/nutrition" className="underline">
-                log it by hand
+                {t('log.error.logByHand')}
               </Link>
               .
             </p>

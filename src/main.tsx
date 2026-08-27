@@ -4,15 +4,19 @@ import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import { DataProvider } from './ui/DataProvider'
 import { AnalysisProvider } from './ui/AnalysisProvider'
+import { LanguageProvider } from './ui/i18n'
 import './styles.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      {/* Inside DataProvider, because the chosen language lives in settings. */}
       <DataProvider>
-        <AnalysisProvider>
-          <App />
-        </AnalysisProvider>
+        <LanguageProvider>
+          <AnalysisProvider>
+            <App />
+          </AnalysisProvider>
+        </LanguageProvider>
       </DataProvider>
     </BrowserRouter>
   </StrictMode>,

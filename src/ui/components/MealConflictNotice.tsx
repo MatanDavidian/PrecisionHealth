@@ -31,7 +31,7 @@ export function MealConflictNotice({
             key={candidate.recordId}
             type="button"
             onClick={() => onChoose(candidate)}
-            className="block w-full rounded-lg border border-hairline bg-surface p-2 text-left transition-colors hover:bg-card-soft"
+            className="block w-full rounded-lg border border-hairline bg-surface p-2 text-start transition-colors hover:bg-card-soft"
           >
             <span className="flex items-baseline justify-between gap-3">
               <span className="text-xs font-medium">

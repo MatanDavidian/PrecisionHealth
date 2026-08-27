@@ -31,6 +31,7 @@ import {
   describedFoodText,
   followUpText,
   hintText,
+  languageRule,
   type EstimateHints,
   type FollowUp,
 } from '../_shared/prompt.ts'
@@ -246,7 +247,12 @@ Deno.serve(async (request) => {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: body.photo ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT },
+          {
+            role: 'system',
+            content:
+              (body.photo ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT) +
+              languageRule(body.hints?.language),
+          },
           {
             role: 'user',
             content: body.photo

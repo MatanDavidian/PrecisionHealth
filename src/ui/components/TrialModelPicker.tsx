@@ -57,12 +57,12 @@ export function TrialModelPicker({
               <span className="text-sm font-medium">
                 {label.name}
                 {isSol && !locked && trial.solRemaining <= trial.solAllowance && (
-                  <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-normal text-accent">
+                  <span className="ms-2 rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-normal text-accent">
                     {trial.solRemaining} left
                   </span>
                 )}
                 {locked && (
-                  <span className="ml-2 rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-normal text-ink-muted">
+                  <span className="ms-2 rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-normal text-ink-muted">
                     used up
                   </span>
                 )}

@@ -32,7 +32,7 @@ export function AnalysisBar() {
     <button
       type="button"
       onClick={() => navigate('/log')}
-      className="fixed inset-x-3 bottom-20 z-10 mx-auto flex max-w-md items-center gap-3 rounded-full border border-hairline bg-surface px-4 py-2.5 text-left shadow-lg md:bottom-4"
+      className="fixed inset-x-3 bottom-20 z-10 mx-auto flex max-w-md items-center gap-3 rounded-full border border-hairline bg-surface px-4 py-2.5 text-start shadow-lg md:bottom-4"
     >
       <span
         className={`size-2 shrink-0 rounded-full ${running ? 'animate-pulse bg-accent' : 'bg-leaf'}`}

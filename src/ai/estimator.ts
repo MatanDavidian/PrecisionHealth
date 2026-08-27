@@ -33,6 +33,14 @@ export interface EstimateHints {
    * camera knows both — so a sentence from them beats a better model.
    */
   note?: string
+  /**
+   * Which language the reply's words should be in.
+   *
+   * Not a preference the model may weigh — a Hebrew reader looking at Hebrew
+   * buttons should not be handed English food names. Only the values are
+   * translated; the JSON shape is a contract with a parser.
+   */
+  language?: 'en' | 'he'
 }
 
 export interface EstimatedItem {

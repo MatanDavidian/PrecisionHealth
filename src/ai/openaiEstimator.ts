@@ -21,6 +21,7 @@ import {
   describedFoodText,
   followUpText,
   hintText,
+  languageRule,
 } from '../../supabase/functions/_shared/prompt'
 import { applyGramsHint, validateEstimate } from './validate'
 
@@ -117,7 +118,7 @@ export class OpenAiEstimator implements FoodEstimator {
     const call = async (extraInstruction?: string) => {
       const conversation = followUpText(answers)
       const messages = [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: systemPrompt + languageRule(hints.language) },
         { role: 'user', content: userContent },
         ...(conversation ? [{ role: 'user', content: conversation }] : []),
         ...(extraInstruction ? [{ role: 'user', content: extraInstruction }] : []),

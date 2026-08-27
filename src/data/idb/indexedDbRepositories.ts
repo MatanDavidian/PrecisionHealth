@@ -137,6 +137,12 @@ export function createIndexedDbRepositories(
           model: value('model') || DEFAULT_SETTINGS.model,
           autoAnalyze: value('autoAnalyze') !== 'false',
           trialModel: value('trialModel') || undefined,
+          // Narrowed rather than cast: settings are strings on the way out, and
+          // a stored value from a future build should fall back to "follow the
+          // browser" rather than become an invalid language.
+          language: value('language') === 'he' || value('language') === 'en'
+            ? (value('language') as 'en' | 'he')
+            : undefined,
         }
       },
       save: async (patch) => {

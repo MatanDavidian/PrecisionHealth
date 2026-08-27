@@ -3,15 +3,17 @@ import { NavLink } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
 import { WriteFailureBanner } from './components/WriteFailureBanner'
 import { AnalysisBar } from './components/AnalysisBar'
+import { useT } from './i18n'
+import type { StringKey } from './i18n/strings'
 
-const TRACK = [
-  { to: '/log', label: 'Log' },
-  { to: '/today', label: 'Today' },
-  { to: '/nutrition', label: 'Nutrition' },
-  { to: '/training', label: 'Training' },
-  { to: '/recovery', label: 'Recovery' },
-  { to: '/body', label: 'Body' },
-  { to: '/health', label: 'Health' },
+const TRACK: { to: string; label: StringKey }[] = [
+  { to: '/log', label: 'nav.log' },
+  { to: '/today', label: 'nav.today' },
+  { to: '/nutrition', label: 'nav.nutrition' },
+  { to: '/training', label: 'nav.training' },
+  { to: '/recovery', label: 'nav.recovery' },
+  { to: '/body', label: 'nav.body' },
+  { to: '/health', label: 'nav.health' },
 ]
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -23,31 +25,33 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const t = useT()
   return (
     <div className="flex min-h-full">
-      <aside className="hidden w-60 shrink-0 border-r border-hairline bg-surface px-4 py-6 md:block">
+      {/* border-e, not border-r: the sidebar sits on the other side in Hebrew. */}
+      <aside className="hidden w-60 shrink-0 border-e border-hairline bg-surface px-4 py-6 md:block">
         <div className="flex items-center gap-3 px-3">
           <span className="size-7 rounded-full bg-accent" />
           <span className="font-display text-xl">Timeline</span>
         </div>
 
-        <SectionLabel>Overview</SectionLabel>
+        <SectionLabel>{t('nav.overview')}</SectionLabel>
         <nav className="flex flex-col gap-1">
           {TRACK.slice(0, 2).map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
 
-        <SectionLabel>Track</SectionLabel>
+        <SectionLabel>{t('nav.track')}</SectionLabel>
         <nav className="flex flex-col gap-1">
           {TRACK.slice(2).map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
 
-        <SectionLabel>App</SectionLabel>
+        <SectionLabel>{t('nav.app')}</SectionLabel>
         <nav className="flex flex-col gap-1">
-          <NavItem to="/settings" label="Settings" />
+          <NavItem to="/settings" label="nav.settings" />
         </nav>
       </aside>
 
@@ -60,7 +64,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
 }
 
-function NavItem({ to, label }: { to: string; label: string }) {
+function NavItem({ to, label }: { to: string; label: StringKey }) {
+  const t = useT()
   return (
     <NavLink
       to={to}
@@ -71,7 +76,7 @@ function NavItem({ to, label }: { to: string; label: string }) {
         ].join(' ')
       }
     >
-      {label}
+      {t(label)}
     </NavLink>
   )
 }

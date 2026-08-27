@@ -1,4 +1,5 @@
 import { formatElapsed, type Analysis } from '../../AnalysisProvider'
+import { useT } from '../../i18n'
 
 /** A ring, spinning, drawn about 43% open — same geometry as the design. */
 function ProgressRing() {
@@ -49,6 +50,7 @@ export function InputPreview({
   /** Offered on a finished text estimate: change the words and ask again. */
   onEdit?: () => void
 }) {
+  const t = useT()
   const running = analysis.status === 'running'
 
   if (analysis.input.kind === 'text') {
@@ -63,14 +65,14 @@ export function InputPreview({
             onClick={onEdit}
             className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
           >
-            Edit
+            {t('log.action.edit')}
           </button>
         )}
         {running && (
           <p className="flex items-center gap-2 text-sm text-ink-muted">
             <span className="size-2 animate-pulse rounded-full bg-accent" />
-            Working it out…
-            <span className="tabular text-xs">{formatElapsed(elapsed)}</span>
+            {t('log.analyzing.working')}
+            <span className="tabular ltr-nums text-xs">{formatElapsed(elapsed)}</span>
           </p>
         )}
       </div>
@@ -81,7 +83,7 @@ export function InputPreview({
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-card">
       <img
         src={analysis.input.url}
-        alt="The meal you photographed"
+        alt={t('log.photoAlt')}
         className="absolute inset-0 size-full object-cover"
       />
       {running && (
@@ -89,9 +91,10 @@ export function InputPreview({
           {/* Solid, not dimmed: the wait lives here, not the photo underneath. */}
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-ink">
             <ProgressRing />
-            <p className="text-sm font-medium text-surface">Reading your plate…</p>
-            <p className="tabular text-xs text-surface/70">
-              {formatElapsed(elapsed)} · usually about 15 seconds
+            <p className="text-sm font-medium text-surface">{t('log.analyzing.reading')}</p>
+            <p className="text-xs text-surface/70">
+              <span className="tabular ltr-nums">{formatElapsed(elapsed)}</span> ·{' '}
+              {t('log.analyzing.usually')}
             </p>
           </div>
           <div className="scan-sweep pointer-events-none absolute inset-x-0 top-0 h-1/4" />

@@ -186,9 +186,39 @@ app itself rather than a generic tracker:
   right after the camera hands back control; the running state now shows
   immediately, on the photo as captured, before any of that work starts.
 
+## The estimate card, now that it argues back
+
+- **Editable in place** — "Adjust these numbers" turns the item rows into
+  fields (food, grams, calories, protein, carbs, fat) plus "remove this food".
+  Changing the grams re-portions the rest by ratio; each row shows what the
+  model had said ("the model said 170 g · 281 kcal"). A corrected row is
+  badged **"yours"** in sage instead of a terracotta confidence pill, because
+  it is no longer an estimate.
+- **A question from the model** — a bordered card *above* the numbers with one
+  short question, a text field, **Send answer** and **Skip**. The copy makes
+  clear the estimate below is already usable: "this is not a question you have
+  to answer." Answering returns the screen to the analyzing state and comes
+  back with firmer numbers. At most two per meal.
+
+## Two languages, two directions
+
+A **Language** card is the first thing in Settings — English / עברית — because
+someone who cannot read the rest of the screen has to find it without reading
+anything.
+
+Choosing Hebrew stamps `dir="rtl"` on the document and the whole layout mirrors:
+the sidebar moves to the right, padding and alignment flip, and the day arrows
+reverse so "back" still points the way the reader came from. Numeric runs
+(`53P · 0C · 6F`, `64 g`, `07:38`) stay left-to-right inside the mirrored page —
+bidi would otherwise reorder them into nonsense. Model-authored text carries
+`dir="auto"`, so an English food name in a Hebrew page still reads correctly.
+
+Hebrew type falls through to Frank Ruhl Libre (display) and Heebo (sans), since
+Fraunces and Inter have no Hebrew glyphs.
+
 ## Settings, in order
 
-**Account** (signed in as … / not signed in) · **OpenAI API key** (with a
+**Language** (English / עברית) · **Account** (signed in as … / not signed in) · **OpenAI API key** (with a
 three-step "don't have a key yet?" guide when empty) · **Accuracy or speed**
 (the trial model picker) · **Analysis** (model + auto-analyze) · **Photos**
 (never saved) · **Where your data is saved** (browser vs account).

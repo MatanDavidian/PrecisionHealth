@@ -113,6 +113,15 @@ export interface AppSettings {
    * they may actually have.
    */
   trialModel?: string
+  /**
+   * Which language the app speaks, and which way it runs.
+   *
+   * Device-local like everything else here, and deliberately so: it is a
+   * preference about this screen, not a fact about this person, and someone
+   * may well want Hebrew on their phone and English on a shared laptop.
+   * Unset means "follow the browser".
+   */
+  language?: 'en' | 'he'
 }
 
 export interface SettingsRepository {

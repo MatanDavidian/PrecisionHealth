@@ -8,6 +8,7 @@ import { useDataRevision } from '../DataProvider'
 import { TrialModelPicker } from '../components/TrialModelPicker'
 import { signOut } from '@/data/session'
 import type { AppSettings } from '@/data/repositories'
+import { useLang, LANGUAGES } from '../i18n'
 
 const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
 const field =
@@ -16,6 +17,7 @@ const field =
 type TestState = { kind: 'idle' | 'testing' } | { kind: 'done'; ok: boolean; message: string }
 
 export function Settings() {
+  const { t, lang, setLang } = useLang()
   const { session, authAvailable, trial, refreshTrial } = useDataRevision()
   const [settings, setSettings] = useState<AppSettings>()
   const [keyInput, setKeyInput] = useState('')
@@ -85,14 +87,40 @@ export function Settings() {
   return (
     <div className="mx-auto max-w-2xl">
       <header className="pb-6">
-        <h1 className="font-display text-4xl">Settings</h1>
+        <h1 className="font-display text-4xl">{t('settings.title')}</h1>
         <p className="pt-1 text-sm text-ink-muted">
           Photo analysis runs on your own OpenAI account.
         </p>
       </header>
 
       <div className="grid gap-4">
-        <Card label="Account">
+        {/*
+          First card, and deliberately so: someone who cannot read the rest of
+          this screen needs to find this one without reading anything.
+        */}
+        <Card label={t('settings.language')}>
+          <div className="flex flex-wrap gap-2">
+            {LANGUAGES.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setLang(option.value)}
+                aria-pressed={lang === option.value}
+                lang={option.value}
+                className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                  lang === option.value
+                    ? 'border-accent bg-accent text-surface'
+                    : 'border-hairline bg-surface hover:bg-card-soft'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <p className="pt-3 text-xs text-ink-muted">{t('settings.languageHint')}</p>
+        </Card>
+
+        <Card label={t('settings.account')}>
           {!authAvailable ? (
             <p className="text-sm text-ink-muted">
               No backend is configured in this build, so everything stays in this browser.
@@ -129,7 +157,7 @@ export function Settings() {
           )}
         </Card>
 
-        <Card label="OpenAI API key">
+        <Card label={t('settings.apiKey')}>
           <div className="pb-3">
             <label className={label} htmlFor="apiKey">
               Key
@@ -187,7 +215,7 @@ export function Settings() {
           {!settings.apiKey && (
             <div className="mt-4 rounded-xl border border-hairline p-3">
               <p className="text-sm font-medium">Don't have a key yet?</p>
-              <ol className="list-decimal space-y-1 pl-4 pt-2 text-xs leading-relaxed text-ink-muted">
+              <ol className="list-decimal space-y-1 ps-4 pt-2 text-xs leading-relaxed text-ink-muted">
                 <li>
                   Open{' '}
                   <a
@@ -257,7 +285,7 @@ export function Settings() {
         </Card>
 
         {trial && !trial.exhausted && (
-          <Card label="Accuracy or speed">
+          <Card label={t('settings.accuracyOrSpeed')}>
             <p className="pb-3 text-sm text-ink-muted">
               More accurate models look harder at a crowded plate and take longer. Choose per
               your patience — you can change this any time.
@@ -273,7 +301,7 @@ export function Settings() {
           </Card>
         )}
 
-        <Card label="Analysis">
+        <Card label={t('settings.analysis')}>
           <div className="pb-4">
             <div className="flex items-baseline justify-between gap-3 pb-1">
               <label className={label.replace(' pb-1', '')} htmlFor="model">
@@ -381,7 +409,7 @@ export function Settings() {
           </label>
         </Card>
 
-        <Card label="Photos">
+        <Card label={t('settings.photos')}>
           <p className="text-sm text-ink-muted">
             Meal photos are never saved — not on this device, not anywhere else. Each photo is sent
             for analysis once and then discarded. What is kept is the estimate, its confidence, and
@@ -389,7 +417,7 @@ export function Settings() {
           </p>
         </Card>
 
-        <Card label="Where your data is saved">
+        <Card label={t('settings.storage')}>
           {session.authenticated ? (
             <>
               <p className="text-sm">

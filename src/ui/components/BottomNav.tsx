@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAnalysis } from '../AnalysisProvider'
+import { useT } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 
 /**
  * Mobile navigation, added with slice 2.
@@ -8,15 +10,16 @@ import { useAnalysis } from '../AnalysisProvider'
  * the app was a desktop dashboard, not survivable now that the phone is the
  * camera and the primary device.
  */
-const ITEMS = [
-  { to: '/log', label: 'Log', icon: CameraIcon },
-  { to: '/today', label: 'Today', icon: SunIcon },
-  { to: '/nutrition', label: 'Food', icon: PlateIcon },
-  { to: '/settings', label: 'Settings', icon: GearIcon },
+const ITEMS: { to: string; label: StringKey; icon: () => JSX.Element }[] = [
+  { to: '/log', label: 'nav.log', icon: CameraIcon },
+  { to: '/today', label: 'nav.today', icon: SunIcon },
+  { to: '/nutrition', label: 'nav.food', icon: PlateIcon },
+  { to: '/settings', label: 'nav.settings', icon: GearIcon },
 ]
 
 export function BottomNav() {
   const { analysis } = useAnalysis()
+  const t = useT()
   /**
    * A dot on the Log tab: terracotta while a photo is being read, sage once a
    * result is waiting. Small enough to ignore, present enough to answer "did
@@ -45,13 +48,13 @@ export function BottomNav() {
             <Icon />
             {to === '/log' && dot && (
               <span
-                className={`absolute -right-1.5 -top-0.5 size-2 rounded-full ${dot} ${
+                className={`absolute -end-1.5 -top-0.5 size-2 rounded-full ${dot} ${
                   dot === 'bg-accent' ? 'animate-pulse' : ''
                 }`}
               />
             )}
           </span>
-          {label}
+          {t(label)}
         </NavLink>
       ))}
     </nav>

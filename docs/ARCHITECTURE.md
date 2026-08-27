@@ -333,3 +333,71 @@ which is why that was fixed before any of this was built.
 **Revisit when** hosting cost, data-residency or the AI tool layer (roadmap
 phases 7-12) argue for a self-hosted ASP.NET service. The seam (D3) keeps that
 affordable.
+
+## D20 — An estimate is a starting point, not a verdict
+
+**Decision.** An AI estimate is editable before it is saved, and the model may
+ask one clarifying question — but a question never replaces an estimate, and
+answering is always optional.
+
+**Why.** The moment a person is most likely to know a number is wrong is the
+moment they are looking at it next to the food. Before this, the card offered
+Save or Discard, so the options were to save a number you could see was wrong
+and fix it on another screen, or throw the analysis away and photograph the
+plate again. Neither is a thing anyone should have to choose between.
+
+The same reasoning runs the other way. The model is often uncertain about
+exactly one thing it cannot see — grilled or fried, whole milk or skimmed — and
+one sentence from the person holding the plate is worth more than a better
+model would have been. It could not ask; it guessed, and lowered its confidence.
+
+**The rule that makes the question safe.** The estimate is always complete and
+always saveable. A question that could block a save would be worse than no
+question, because it turns a working flow into a modal one. So the prompt
+requires items and confidence in every reply, the UI says out loud that
+answering is optional, and Skip sits beside Send.
+
+**Provenance consequence.** A corrected item is written as `USER` / `RAW`, not
+as a confirmed estimate: a human looked at the number and said what it should
+be, which is precisely confirmation. Items left alone stay `AI_ESTIMATE` and
+still want confirming, so one meal can carry both honestly. This is the rule
+D15's `applyMealEdit` already applied to a saved meal — one rule at two
+moments.
+
+**What is never mutated.** `EstimateResult` stays exactly what the model
+returned; corrections travel beside it into the `AIInference` row. The audit
+answers both halves of "why does it say that?" — what the model claimed, and
+what the human overrode. **Built in**
+`docs/features/estimate-conversation.md`.
+
+**Revisit when** a conversation needs to survive across devices, or when
+follow-ups stop being cheap enough to give away.
+
+## D21 — Language is a device setting, and the model answers in it
+
+**Decision.** The UI speaks English or Hebrew, chosen per device and stored in
+local settings; the layout mirrors with `dir`; and the chosen language is sent
+to the model so food names and assumptions come back in it too.
+
+**Why per device rather than per account.** It is a preference about a screen,
+not a fact about a person. Someone may reasonably want Hebrew on their phone
+and English on a shared laptop, and settings are already excluded from sync for
+the API key (D14, Q8) — the same box is the right one.
+
+**Why the model too.** Translating the buttons and leaving "Grilled chicken
+breast" in English produces a screen that is Hebrew everywhere except the part
+the user came to read. The rule appended to the prompt is deliberate about
+translating *values only*: a model told simply to "reply in Hebrew" will
+helpfully translate the JSON keys as well, and then nothing parses.
+
+**Consequence, accepted.** `mealSignature` identifies a repeatable meal by its
+item names, so switching language mid-history splits one breakfast into two
+usuals. Recorded as Q12. The fix is a language-independent food identity, which
+is the food-database work already parked in the roadmap; a half-version of it
+now would be the wrong order.
+
+**Revisit when** a third language arrives (the dictionary is typed so adding one
+is a compile error until it is complete, which is the intended cost), or when
+food identity stops being a name. **Built in**
+`docs/features/hebrew-and-rtl.md`.
+

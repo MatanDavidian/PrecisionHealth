@@ -14,14 +14,10 @@ import {
 import { deviceZone } from '@/data/newRecords'
 import type { Usuals } from '@/data/usuals'
 import { Card } from './Card'
+import { useT } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 
-const SLOT_WORD: Record<MealSlot, string> = {
-  NIGHT: 'tonight',
-  BREAKFAST: 'breakfast',
-  LUNCH: 'lunch',
-  DINNER: 'dinner',
-  SNACK: 'a snack',
-}
+const slotWordKey = (slot: MealSlot): StringKey => `common.slotWord.${slot}` as StringKey
 
 const kcal = (meal: UsualMeal): number =>
   Math.round(meal.template.items.reduce((sum, i) => sum + convert(i.nutrients.energy, 'kcal'), 0))
@@ -32,17 +28,17 @@ const grams = (meal: UsualMeal): number =>
   Math.round(meal.template.items.reduce((sum, i) => sum + convert(i.amount, 'g'), 0))
 
 /** "Yesterday, 07:38" · "Tuesday" · "3 weeks ago" — how a person would say it. */
-function when(iso: string, zone: IanaZone): string {
+function when(iso: string, zone: IanaZone, t: ReturnType<typeof useT>, locale: string): string {
   const then = new Date(iso)
-  const time = then.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  const time = then.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   // Calendar days apart, not hours apart: last night's dinner is "yesterday"
   // when you open the app after midnight, however few hours ago it was.
   const today = dayKey(new Date().toISOString(), zone)
   const days = daysBetween(dayKey(iso, zone), today)
-  if (days <= 0) return `Today, ${time}`
-  if (days === 1) return `Yesterday, ${time}`
-  if (days < 7) return then.toLocaleDateString(undefined, { weekday: 'long' })
-  return `${Math.floor(days / 7)} week${days < 14 ? '' : 's'} ago`
+  if (days <= 0) return t('when.today', { time })
+  if (days === 1) return t('when.yesterday', { time })
+  if (days < 7) return then.toLocaleDateString(locale, { weekday: 'long' })
+  return t('when.weeksAgo', { count: Math.floor(days / 7) })
 }
 
 /**
@@ -73,6 +69,9 @@ export function UsualsPanel({
   busy: boolean
   searchFirst?: boolean
 }) {
+  const t = useT()
+  const locale = document.documentElement.lang || 'en'
+  const slotWord = t(slotWordKey(slot))
   const [selected, setSelected] = useState<UsualFood[]>([])
   const [showAll, setShowAll] = useState(false)
   const [query, setQuery] = useState('')
@@ -122,29 +121,27 @@ export function UsualsPanel({
       {searchFirst && (
         <label className="mb-4 flex items-center gap-3 rounded-full border border-hairline bg-surface px-4 py-2.5">
           <SearchIcon />
-          <span className="sr-only">Search anything you have logged</span>
+          <span className="sr-only">{t('usuals.search')}</span>
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search anything you've logged"
+            placeholder={t('usuals.search')}
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-ink-muted"
           />
         </label>
       )}
 
-      <Card label={everything ? 'Everything you log' : `Usual for ${SLOT_WORD[slot]}`}>
+      <Card label={everything ? t('usuals.everything') : t('usuals.forSlot', { slot: slotWord })}>
         {suggestions.length === 0 ? (
           <p className="py-1 text-sm text-ink-muted">
             {searching
-              ? `Nothing logged matches "${query.trim()}".`
-              : `Nothing usual for ${SLOT_WORD[slot]} yet — photograph one and it will be here next time.`}
+              ? t('usuals.noMatch', { query: query.trim() })
+              : t('usuals.none', { slot: slotWord })}
           </p>
         ) : (
           <>
-            <p className="pb-3 text-xs text-ink-muted">
-              One tap logs it — no photo, no waiting, no estimate to review.
-            </p>
+            <p className="pb-3 text-xs text-ink-muted">{t('usuals.oneTap')}</p>
             <div className="space-y-2">
               {suggestions.map((usual) => (
                 <button
@@ -152,21 +149,21 @@ export function UsualsPanel({
                   type="button"
                   disabled={busy}
                   onClick={() => onRepeatMeal(usual)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-hairline bg-surface p-3 text-left transition-colors hover:bg-card-soft disabled:opacity-40"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-hairline bg-surface p-3 text-start transition-colors hover:bg-card-soft disabled:opacity-40"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">
                       {usual.template.items.map((i) => i.name).join(', ')}
                     </span>
                     <span className="block pt-0.5 text-xs text-ink-muted">
-                      {when(usual.lastAt, zone)}
+                      {when(usual.lastAt, zone, t, locale)}
                       {/* Weight is worth showing only when it was recorded. */}
                       {grams(usual) > 0 && ` · ${grams(usual)} g`}
-                      {usual.count > 1 && ` · logged ${usual.count}× recently`}
-                      {!usual.confirmed && ' · unconfirmed estimate'}
+                      {usual.count > 1 && ` · ${t('usuals.loggedTimes', { count: usual.count })}`}
+                      {!usual.confirmed && ` · ${t('usuals.unconfirmed')}`}
                     </span>
                   </span>
-                  <span className="tabular shrink-0 text-sm">{kcal(usual)} kcal</span>
+                  <span className="tabular ltr-nums shrink-0 text-sm">{kcal(usual)} kcal</span>
                 </button>
               ))}
             </div>
@@ -182,7 +179,7 @@ export function UsualsPanel({
             }}
             className="pt-3 text-xs text-ink-muted underline"
           >
-            {showAll ? `Back to ${SLOT_WORD[slot]}` : 'See all usuals'}
+            {showAll ? t('usuals.backTo', { slot: slotWord }) : t('usuals.seeAll')}
           </button>
         )}
 
@@ -191,7 +188,7 @@ export function UsualsPanel({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search anything you've logged before"
+            placeholder={t('usuals.search')}
             className="mt-3 w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
           />
         )}
@@ -199,18 +196,18 @@ export function UsualsPanel({
         {dueFromYesterday.length > 0 && !everything && (
           <div className="pt-4">
             <p className="pb-2 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-              Yesterday
+              {t('usuals.yesterday')}
             </p>
             <div className="space-y-1">
               {dueFromYesterday.map((meal) => (
                 <div key={meal.recordId} className="flex items-baseline justify-between gap-3 text-xs">
                   <span className="min-w-0 truncate text-ink-muted">
                     <span className="font-medium text-ink">
-                      {meal.slot.charAt(0) + meal.slot.slice(1).toLowerCase()}
+                      {t(`common.slot.${meal.slot}` as StringKey)}
                     </span>{' '}
                     · {meal.items.map((i) => i.name).join(', ')}
                   </span>
-                  <span className="tabular shrink-0 text-ink-muted">
+                  <span className="tabular ltr-nums shrink-0 text-ink-muted">
                     {timeOfDay(meal, zone)}
                   </span>
                 </div>
@@ -222,13 +219,13 @@ export function UsualsPanel({
               onClick={() => onRepeatDay(dueFromYesterday)}
               className="mt-3 rounded-full border border-hairline px-4 py-1.5 text-xs transition-colors hover:bg-card-soft disabled:opacity-40"
             >
-              Repeat {dueFromYesterday.length === usuals.yesterdayMeals.length ? 'the day' : 'today so far'} ·{' '}
-              {dueFromYesterday.length} meal{dueFromYesterday.length === 1 ? '' : 's'}
+              {dueFromYesterday.length === usuals.yesterdayMeals.length
+                ? t('usuals.repeatDay')
+                : t('usuals.repeatSoFar')}{' '}
+              · {t('usuals.mealCount', { count: dueFromYesterday.length })}
             </button>
             {dueFromYesterday.length < usuals.yesterdayMeals.length && (
-              <p className="pt-1 text-xs text-ink-muted">
-                Later meals are left out until their time comes round.
-              </p>
+              <p className="pt-1 text-xs text-ink-muted">{t('usuals.laterLeftOut')}</p>
             )}
           </div>
         )}
@@ -236,7 +233,7 @@ export function UsualsPanel({
         {foods.length > 0 && (
           <div className="pt-4">
             <p className="pb-2 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-              Single foods, tap to add
+              {t('usuals.singleFoods')}
             </p>
             <div className="flex flex-wrap gap-2">
               {foods.map((food) => {
@@ -253,7 +250,8 @@ export function UsualsPanel({
                         : 'border-hairline bg-surface hover:bg-card-soft'
                     }`}
                   >
-                    {food.name} <span className="tabular opacity-70">{foodKcal(food)}</span>
+                    {food.name}{' '}
+                    <span className="tabular ltr-nums opacity-70">{foodKcal(food)}</span>
                   </button>
                 )
               })}
@@ -262,7 +260,8 @@ export function UsualsPanel({
             {selected.length > 0 && (
               <div className="flex flex-wrap items-center gap-3 pt-3">
                 <span className="text-xs text-ink-muted">
-                  {selected.length} selected · <span className="tabular">{selectedKcal} kcal</span>
+                  {t('usuals.selected', { count: selected.length })} ·{' '}
+                  <span className="tabular ltr-nums">{selectedKcal} kcal</span>
                 </span>
                 <button
                   type="button"
@@ -273,14 +272,14 @@ export function UsualsPanel({
                   }}
                   className="rounded-full bg-accent px-4 py-1.5 text-xs font-medium text-surface disabled:opacity-40"
                 >
-                  Log them
+                  {t('usuals.logThem')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelected([])}
                   className="rounded-full border border-hairline px-3 py-1.5 text-xs"
                 >
-                  Cancel
+                  {t('usuals.cancel')}
                 </button>
               </div>
             )}

@@ -11,8 +11,10 @@ import { AdoptionPrompt } from '../components/AdoptionPrompt'
 import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
 import { convert } from '@/domain'
+import { useT } from '../i18n'
 
 export function Today() {
+  const t = useT()
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
@@ -20,7 +22,7 @@ export function Today() {
   const { session } = useDataRevision()
 
   if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
-  if (!data) return <p className="text-sm text-ink-muted">Loading your day…</p>
+  if (!data) return <p className="text-sm text-ink-muted">{t('usuals.looking')}</p>
 
   const { nutrients, workouts, sleep, effective, conflicts, goals, unconfirmed } = data
   const workout = workouts[0]
@@ -56,7 +58,7 @@ export function Today() {
       <AdoptionPrompt />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card label="Nutrition">
+        <Card label={t('today.nutrition')}>
           <StatRow name="Calories" value={showNumber(nutrients.energy, 'kcal')} />
           <StatRow
             name="Protein"
@@ -81,7 +83,7 @@ export function Today() {
           )}
         </Card>
 
-        <Card label="Activity">
+        <Card label={t('today.activity')}>
           <StatRow name="Steps" value={effective.STEPS ? showNumber(effective.STEPS.value, 'count') : '—'} />
           <StatRow
             name="Workout"
@@ -93,7 +95,7 @@ export function Today() {
           />
         </Card>
 
-        <Card label="Recovery">
+        <Card label={t('today.recovery')}>
           <StatRow name="Sleep" value={sleep ? showDuration(sleep.duration) : '—'} />
           <StatRow name="HRV" value={effective.HRV ? show(effective.HRV.value, 'ms') : '—'} />
           <StatRow
@@ -102,7 +104,7 @@ export function Today() {
           />
         </Card>
 
-        <Card label="Body">
+        <Card label={t('today.body')}>
           <StatRow name="Weight" value={effective.WEIGHT ? show(effective.WEIGHT.value, 'kg', 1) : '—'} />
           <StatRow name="Body fat" value={effective.BODY_FAT ? show(effective.BODY_FAT.value, '%', 1) : '—'} />
           {weightConflict && (
@@ -114,7 +116,7 @@ export function Today() {
           )}
         </Card>
 
-        <Card label="Meals">
+        <Card label={t('today.meals')}>
           {data.meals.length === 0 && (
             <p className="py-1.5 text-sm text-ink-muted">
               {isToday ? 'Nothing logged yet today.' : 'Nothing was logged on this day.'}

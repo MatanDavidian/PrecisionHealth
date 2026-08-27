@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { convert, type MealSlot, type UsualMeal } from '@/domain'
+import { useT } from '../../i18n'
 
 /**
  * The camera, and the one sentence a camera cannot capture.
@@ -29,6 +30,7 @@ export function PhotoPanel({
   slot: MealSlot
   busy: boolean
 }) {
+  const t = useT()
   const fileInput = useRef<HTMLInputElement>(null)
   const [noteOpen, setNoteOpen] = useState(note.trim().length > 0)
 
@@ -53,8 +55,8 @@ export function PhotoPanel({
         className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-card border border-dashed border-hairline bg-card text-ink-muted transition-colors hover:bg-card-soft"
       >
         <CameraIcon />
-        <span className="text-sm font-medium text-ink">Take a photo</span>
-        <span className="text-xs">or choose one from your library</span>
+        <span className="text-sm font-medium text-ink">{t('log.photo.take')}</span>
+        <span className="text-xs">{t('log.photo.orLibrary')}</span>
       </button>
 
       <div className="flex flex-wrap items-center gap-3 pt-3">
@@ -65,18 +67,16 @@ export function PhotoPanel({
             className="flex items-center gap-2 rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
           >
             <PlusIcon />
-            Add a note
+            {t('log.photo.addNote')}
           </button>
         )}
-        <span className="text-xs text-ink-muted">
-          Optional, and it goes to the model with the photo — "no oil", "half portion".
-        </span>
+        <span className="text-xs text-ink-muted">{t('log.photo.noteHint')}</span>
       </div>
 
       {noteOpen && (
         <div className="pt-3">
           <label className="sr-only" htmlFor="photo-note">
-            A note about this meal
+            {t('log.photo.noteLabel')}
           </label>
           <textarea
             id="photo-note"
@@ -84,13 +84,11 @@ export function PhotoPanel({
             autoFocus
             value={note}
             onChange={(e) => onNoteChange(e.target.value)}
-            placeholder="No oil, half portion, sauce on the side…"
+            placeholder={t('log.photo.notePlaceholder')}
             className="w-full rounded-card border border-hairline bg-surface px-4 py-3 text-sm outline-none focus:border-accent"
           />
           {note.trim().length > 0 && (
-            <p className="pt-1 text-xs text-ink-muted">
-              Sent with the next photo you take, and treated as fact rather than a guess.
-            </p>
+            <p className="pt-1 text-xs text-ink-muted">{t('log.photo.noteSent')}</p>
           )}
         </div>
       )}
@@ -101,10 +99,10 @@ export function PhotoPanel({
             type="button"
             disabled={busy}
             onClick={() => onLogUsual(usualNow)}
-            className="mt-5 flex w-full items-center gap-3 rounded-card border border-hairline bg-surface p-3 text-left transition-colors hover:bg-card-soft disabled:opacity-40"
+            className="mt-5 flex w-full items-center gap-3 rounded-card border border-hairline bg-surface p-3 text-start transition-colors hover:bg-card-soft disabled:opacity-40"
           >
             <span className="whitespace-nowrap text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-              Usual now
+              {t('log.photo.usualNow')}
             </span>
             <span className="min-w-0 flex-1 truncate text-sm">
               {usualNow.template.items.map((item) => item.name).join(', ')}
@@ -115,10 +113,9 @@ export function PhotoPanel({
             </span>
           </button>
           <p className="pt-2 text-xs text-ink-muted">
-            The one thing you eat at this hour most often — one tap, no camera. Everything else you
-            repeat is under{' '}
+            {t('log.photo.usualHint')} {t('log.photo.usualHintLink')}{' '}
             <button type="button" onClick={onSeeAll} className="underline">
-              Again
+              {t('log.mode.again')}
             </button>
             .
           </p>

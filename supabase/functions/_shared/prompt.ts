@@ -101,6 +101,24 @@ export interface EstimateHints {
   totalGrams?: number
   /** Free text the user added alongside a photo: "no oil", "half portion". */
   note?: string
+  /** Which language the reply's words should be in. Defaults to English. */
+  language?: 'en' | 'he'
+}
+
+const LANGUAGE_NAMES: Record<string, string> = { en: 'English', he: 'Hebrew' }
+
+/**
+ * Asks for the reply's words — and only its words — in the user's language.
+ *
+ * The insistence that keys stay English is not pedantry: a model told to
+ * "reply in Hebrew" will helpfully translate `"items"` and `"amountG"` too,
+ * and then nothing parses. Values are prose for a person; keys are a contract
+ * with a parser, and the two need saying apart.
+ */
+export function languageRule(language?: string): string {
+  const name = language ? LANGUAGE_NAMES[language] : undefined
+  if (!name || language === 'en') return ''
+  return `\n\nReply in ${name}: the "name", "assumptions" and "question" values must be written in ${name}. The JSON keys, the field names and every number stay exactly as specified above — translate the words, never the shape.`
 }
 
 /** A note is free text from a person, so it is quoted rather than instructed. */

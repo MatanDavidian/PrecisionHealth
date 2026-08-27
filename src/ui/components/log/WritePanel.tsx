@@ -1,4 +1,5 @@
 import { MAX_DESCRIPTION_CHARS } from '../../../../supabase/functions/_shared/prompt'
+import { useT } from '../../i18n'
 
 /**
  * Logging a meal by describing it.
@@ -25,20 +26,21 @@ export function WritePanel({
   onForgetRecent: (description: string) => void
   busy: boolean
 }) {
+  const t = useT()
   const text = value.trim()
   const tooLong = value.length > MAX_DESCRIPTION_CHARS
 
   return (
     <div>
       <label className="sr-only" htmlFor="meal-description">
-        What did you eat?
+        {t('log.write.label')}
       </label>
       <textarea
         id="meal-description"
         rows={4}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="two eggs on toast and a black coffee"
+        placeholder={t('log.write.placeholder')}
         className="w-full rounded-card border border-hairline bg-surface px-4 py-3 text-sm leading-relaxed outline-none focus:border-accent"
       />
 
@@ -49,12 +51,12 @@ export function WritePanel({
           disabled={!text || tooLong || busy}
           className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface transition-colors disabled:opacity-40"
         >
-          Estimate
+          {t('log.write.estimate')}
         </button>
         <span className="text-xs text-ink-muted">
           {tooLong
             ? `That is longer than ${MAX_DESCRIPTION_CHARS} characters — trim it to the food itself.`
-            : 'A couple of seconds, and a wider margin than a photo.'}
+            : t('log.write.hint')}
         </span>
       </div>
 
@@ -64,18 +66,18 @@ export function WritePanel({
             {recent.map((description) => (
               <span
                 key={description}
-                className="flex items-center gap-1 rounded-full border border-hairline bg-surface pl-3 pr-1 text-sm"
+                className="flex items-center gap-1 rounded-full border border-hairline bg-surface ps-3 pe-1 text-sm"
               >
                 <button
                   type="button"
                   onClick={() => onChange(description)}
-                  className="max-w-[16rem] truncate py-1.5 text-left"
+                  className="max-w-[16rem] truncate py-1.5 text-start"
                 >
                   {description}
                 </button>
                 <button
                   type="button"
-                  aria-label={`Forget "${description}"`}
+                  aria-label={`${t('log.write.forget')} "${description}"`}
                   onClick={() => onForgetRecent(description)}
                   className="flex size-5 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-card-soft"
                 >
@@ -84,9 +86,7 @@ export function WritePanel({
               </span>
             ))}
           </div>
-          <p className="pt-2 text-xs text-ink-muted">
-            Things you've described before, ready to send again. Kept on this device only.
-          </p>
+          <p className="pt-2 text-xs text-ink-muted">{t('log.write.recent')}</p>
         </div>
       )}
     </div>

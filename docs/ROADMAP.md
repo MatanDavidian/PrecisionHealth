@@ -164,6 +164,40 @@ before anything used them.
 **Ships:** logging the meal you already ate, and fixing the portion the model
 got wrong instead of confirming a number you know is off.
 
+## Slice 3.8 — An estimate you can argue with ✅ built
+
+Two requests that turned out to be one idea: the estimate is a starting point,
+not a verdict. Its numbers are editable in place before saving — with
+re-portioning by ratio and each row showing what the model had said — and the
+model may ask one clarifying question whose answer produces a firmer estimate.
+A whole conversation about one meal costs one analysis, capped at two
+follow-ups.
+
+Full plan: [`features/estimate-conversation.md`](features/estimate-conversation.md).
+
+**Proved:** that D15's editing rule generalises — a corrected item is a user
+entry at both moments, before and after saving — and that the append-only
+ledger absorbed a second kind of billable event without either trial counter
+changing. Found a real React bug the unit tests could not: reading state inside
+a `setState` updater and starting work from there, which made answering a
+question silently do nothing.
+**Ships:** the ability to fix a number while you are looking at it, and a model
+that can ask instead of guessing.
+
+## Slice 3.9 — Hebrew, right to left ✅ built
+
+The app speaks English or Hebrew, chosen per device, with the layout mirrored
+and the model asked to answer in the same language — so the screen is not
+Hebrew everywhere except the food names.
+
+Full plan: [`features/hebrew-and-rtl.md`](features/hebrew-and-rtl.md).
+
+**Proved:** that a typed dictionary derived from English makes an incomplete
+translation a build failure rather than a half-translated screen. Found a
+settings bug that only a browser could: the store wrote any key but read from a
+whitelist, so the choice persisted and came back empty.
+**Ships:** an app the owner can read in their own language.
+
 ## Slice 4 — Import from Garmin
 
 Sleep, HRV, resting heart rate, steps, weight. The first time two sources

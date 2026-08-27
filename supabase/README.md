@@ -19,7 +19,8 @@ conventions, because a convention only holds while every client behaves:
 | **D15** meal versioning | `unique (meal_id, version)` | Two devices editing the same base: the second insert fails, and the client turns that into the conflict card |
 | **D16** isolation | Row-Level Security, `user_id = auth.uid()` | Family members cannot read or write each other's rows |
 
-`profiles` is the one mutable table — a profile is current state, not a log.
+`profiles` and `user_preferences` are the two mutable tables — current state,
+not a log. Everything else is append-only, and D4 is why.
 
 There is deliberately **no `settings` table** (the API key never leaves the
 device, D14/Q8) and **no photo storage** (Q10).
@@ -183,11 +184,16 @@ happens server-side.
 
 1. **Apply the migrations** (SQL Editor, in order):
    `0003_usage_ledger.sql`, `0004_admin_views.sql`, `0005_admin_key_source.sql`,
-   then `0006_conversation_followups.sql`.
+   `0006_conversation_followups.sql`, then `0007_user_preferences.sql`.
 
-   The last one adds `conversation_id` and the `OK_FOLLOWUP` outcome, which is
-   how a meal the model asked a question about still costs one analysis rather
-   than three. Until it is applied, answering a question fails.
+   `0006` adds `conversation_id` and the `OK_FOLLOWUP` outcome, which is how a
+   meal the model asked a question about still costs one analysis rather than
+   three. Until it is applied, answering a question fails.
+
+   `0007` adds `user_preferences`, which is where a person's language lives so
+   it follows them between devices. Until it is applied the app falls back to
+   the device's own copy and never prompts — deliberately, since a table it
+   cannot read is not the same as a preference nobody has set.
 
 2. **Set a hard spend cap on the OpenAI organisation** before the key is ever
    used by anyone but you — [platform.openai.com](https://platform.openai.com)

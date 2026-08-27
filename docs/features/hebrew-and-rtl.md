@@ -50,19 +50,55 @@ types cannot catch.
 
 ## 3. Where the choice lives
 
-`AppSettings.language`, which is **device-local and excluded from sync** by the
-same rule as the API key (D14, Q8). That is right: it is a preference about
-this screen, not a fact about this person, and someone may well want Hebrew on
-their phone and English on a shared laptop.
+**Two places, doing different jobs.**
 
-Unset means follow `navigator.language`; an explicit choice always wins. A
-Hebrew speaker should not have to find a setting written in a language they did
-not pick, which is also why the picker is the **first card** in Settings.
+`AppSettings.language` is the device's copy: it makes the app work signed out,
+work offline, and switch the instant you tap. `user_preferences.language` is
+the preference proper — it follows the person to a laptop they have never
+opened this app on.
+
+The account wins when they disagree, since that is the one deliberately
+chosen. Signing in with a language already picked on this device carries it up
+rather than discarding it, so an existing user is never re-asked.
+
+The whole decision is five inputs and four outcomes, and it lives in
+[`reconcile.ts`](../../src/ui/i18n/reconcile.ts) as a pure function rather than
+inside an effect, because it is the only part worth arguing about:
+
+| Signed in | Account | Device | What happens |
+|---|---|---|---|
+| no | — | any | The device decides; nobody is asked, there is nowhere to keep the answer |
+| yes | set | any | Account wins, device brought into step |
+| yes | empty | set | Device choice carried **up**; not asked again |
+| yes | empty | empty, table reached | **Ask** |
+| yes | unreadable | empty | Say nothing — a failed read is not "has not chosen" |
+
+That last row is the one that matters. Treating "could not reach the table" as
+"never chose" would interrupt on every flaky connection.
+
+### Asked once, properly
+
+`navigator.language` is a guess. A Hebrew reader on a laptop set up in English
+gets English until they think to go looking, so a signed-in account with no
+stored preference is **asked directly** — a modal on first sign-in, both
+options written in their own language ("עברית" is legible to whoever wants it;
+"Hebrew" spelled in English helps only someone who does not need it).
+
+"Decide later" records nothing, so the question returns at the next sign-in.
+Unanswered is not the same as answered.
+
+The picker also stays the **first card** in Settings, for changing it after.
 
 > **A bug worth recording.** The IndexedDB settings repository writes any key
 > generically but *reads* from an explicit whitelist. `language` persisted
 > perfectly and came back `undefined` every time, so the choice survived within
 > a page and evaporated on navigation. Only driving the browser found it.
+
+> **A second one, found live.** Reading the preference returned `undefined`
+> both when the row was absent and when the query failed. With the table not
+> yet migrated, that is indistinguishable from "never chosen" — every sign-in
+> would have opened with a modal. `readAccountLanguage` now returns three
+> states, and the prompt needs the affirmative one.
 
 ## 4. Running right to left
 

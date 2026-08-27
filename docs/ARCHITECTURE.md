@@ -385,16 +385,53 @@ what the human overrode. **Built in**
 **Revisit when** a conversation needs to survive across devices, or when
 follow-ups stop being cheap enough to give away.
 
-## D21 — Language is a device setting, and the model answers in it
+## D21 — Language belongs to the person, and the model answers in it
 
 **Decision.** The UI speaks English or Hebrew, chosen per device and stored in
 local settings; the layout mirrors with `dir`; and the chosen language is sent
 to the model so food names and assumptions come back in it too.
 
-**Why per device rather than per account.** It is a preference about a screen,
-not a fact about a person. Someone may reasonably want Hebrew on their phone
-and English on a shared laptop, and settings are already excluded from sync for
-the API key (D14, Q8) — the same box is the right one.
+**Amended (Aug 2026): it is stored per ACCOUNT, in two places.**
+
+Originally this was device-local, on the reasoning that someone might want
+Hebrew on their phone and English on a shared laptop. That was a worse
+prediction than it sounded: the far commoner case is one person who reads
+Hebrew on every device they own, and having to find the setting again on each
+of them is the kind of small friction that makes an app feel unfinished.
+
+So there are two homes, and they do different jobs:
+
+- **The device**, in local settings, which is what makes the app work signed
+  out, work offline, and switch the instant you tap rather than after a round
+  trip.
+- **The account**, in `user_preferences`, which is the preference proper — the
+  one that follows a person to a laptop they have never opened this app on.
+
+The account wins when they disagree, because it is the one deliberately
+chosen; the device copy is a cache that also happens to work alone. Signing in
+with a language already picked on this device carries it UP rather than
+discarding it, so nobody is asked a question they have already answered.
+
+**Why a new table rather than `profiles`.** A profile has required fields — a
+name, a timezone, unit preferences — and writing a half-profile purely to hold
+a language would be a lie about what a profile is. `user_preferences` is also
+the one table in the schema that takes UPDATE: D4's append-only rule governs
+records of things that happened, and a preference is current state whose
+history is worth nothing.
+
+**The API key is not affected and never will be.** It stays on the device
+(D14, Q8). The rule this bends is about append-only storage, not about what may
+leave the browser.
+
+**Asked once, not guessed forever.** `navigator.language` is a guess, and a
+Hebrew reader on a laptop set up in English gets English until they think to go
+looking. So a signed-in account with no stored preference is asked directly,
+the first time. "Never chosen" and "chose English" are different states, which
+is why the column is nullable.
+
+The one case that must not interrupt: a read that FAILED is not "they have not
+chosen". Treating the two the same would nag on every flaky connection, so the
+prompt appears only when the table was actually reached and found empty.
 
 **Why the model too.** Translating the buttons and leaving "Grilled chicken
 breast" in English produces a screen that is Hebrew everywhere except the part

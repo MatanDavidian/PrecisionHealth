@@ -485,6 +485,13 @@ const en = {
   'adjust.less': 'Less {food}',
   'adjust.more': 'More {food}',
 
+  // ------------------------------------------------------ language prompt --
+  'chooseLang.title': 'Which language should this be in?',
+  'chooseLang.body':
+    'It applies everywhere, including the answers the model gives you, and follows you to any device you sign in on. You can change it in Settings whenever you like.',
+  'chooseLang.later': 'Decide later',
+
+
   // ---------------------------------------------------------- conversation --
   'ask.summaryKcal': '{kcal} kcal',
   'ask.usable': 'A usable estimate already. One thing would sharpen it, and answering takes a tap.',
@@ -964,6 +971,13 @@ const he: Dictionary = {
   'adjust.grams': 'גרמים של {food}',
   'adjust.less': 'פחות {food}',
   'adjust.more': 'יותר {food}',
+
+  // ------------------------------------------------------ language prompt --
+  'chooseLang.title': 'באיזו שפה שנציג את זה?',
+  'chooseLang.body':
+    'זה חל בכל מקום, כולל התשובות שהמודל נותן לכם, ומלווה אתכם לכל מכשיר שתתחברו בו. אפשר לשנות בהגדרות בכל רגע.',
+  'chooseLang.later': 'להחליט אחר כך',
+
 
   // ---------------------------------------------------------- conversation --
   'ask.summaryKcal': '{kcal} קלוריות',

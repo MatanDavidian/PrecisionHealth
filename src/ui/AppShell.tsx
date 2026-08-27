@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
 import { WriteFailureBanner } from './components/WriteFailureBanner'
 import { AnalysisBar } from './components/AnalysisBar'
+import { LanguagePrompt } from './components/LanguagePrompt'
 import { useT } from './i18n'
 import type { StringKey } from './i18n/strings'
 
@@ -60,6 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <BottomNav />
       <AnalysisBar />
       <WriteFailureBanner />
+      <LanguagePrompt />
     </div>
   )
 }

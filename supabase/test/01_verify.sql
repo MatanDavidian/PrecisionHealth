@@ -185,3 +185,58 @@ end
 $$;
 
 reset role;
+
+\echo '== a language preference belongs to the person =='
+set role postgres;
+
+insert into public.user_preferences (user_id, language)
+values ('11111111-1111-1111-1111-111111111111', 'he');
+
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+select case when count(*) = 1 then 'PASS: a user reads their own preference'
+  else 'FAIL: read ' || count(*) || ' rows' end
+from public.user_preferences;
+
+-- Unlike every health table, this one may be rewritten: a preference is
+-- current state, not a record of something that happened.
+do $$
+begin
+  update public.user_preferences set language = 'en'
+  where user_id = '11111111-1111-1111-1111-111111111111';
+  raise notice 'PASS: a preference can be changed';
+exception
+  when insufficient_privilege then raise exception 'FAIL: UPDATE on preferences was refused';
+end
+$$;
+
+-- ...but only your own, and only to a language that exists.
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select case when count(*) = 0 then 'PASS: nobody reads another user''s preference'
+  else 'FAIL: leaked ' || count(*) || ' rows' end
+from public.user_preferences
+where user_id = '11111111-1111-1111-1111-111111111111';
+
+do $$
+begin
+  insert into public.user_preferences (user_id, language)
+  values ('11111111-1111-1111-1111-111111111111', 'he');
+  raise exception 'FAIL: wrote a preference for somebody else';
+exception
+  when insufficient_privilege then raise notice 'PASS: cross-user preference insert refused';
+end
+$$;
+
+set role postgres;
+do $$
+begin
+  insert into public.user_preferences (user_id, language)
+  values ('22222222-2222-2222-2222-222222222222', 'klingon');
+  raise exception 'FAIL: an unknown language was accepted';
+exception
+  when check_violation then raise notice 'PASS: language is constrained';
+end
+$$;
+
+reset role;

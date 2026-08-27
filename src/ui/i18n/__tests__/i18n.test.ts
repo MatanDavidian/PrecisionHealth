@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { translator, detectLanguage } from '../translate'
 import { DIRECTION, STRINGS, type Lang } from '../strings'
+import { decideLanguage } from '../reconcile'
 
 const langs: Lang[] = ['en', 'he']
 
@@ -86,5 +87,57 @@ describe('choosing a language before anyone has', () => {
 
   it('notices Hebrew even when it is not the first preference', () => {
     expect(withNavigator(['en-US', 'he'])).toBe('he')
+  })
+})
+
+describe('reconciling the device and the account', () => {
+  it('leaves a signed-out user to their device, and asks nothing', () => {
+    // There would be nowhere to keep the answer.
+    expect(decideLanguage({ authenticated: false, onDevice: 'he', reachable: true })).toEqual({
+      use: 'he',
+      ask: false,
+    })
+    expect(decideLanguage({ authenticated: false, reachable: true }).ask).toBe(false)
+  })
+
+  it('lets the account win, and brings the device back into step', () => {
+    expect(
+      decideLanguage({ authenticated: true, onAccount: 'he', onDevice: 'en', reachable: true }),
+    ).toEqual({ use: 'he', saveToDevice: 'he', ask: false })
+  })
+
+  it('writes nothing when the two already agree', () => {
+    const d = decideLanguage({
+      authenticated: true,
+      onAccount: 'he',
+      onDevice: 'he',
+      reachable: true,
+    })
+    expect(d.saveToDevice).toBeUndefined()
+    expect(d.ask).toBe(false)
+  })
+
+  it('carries a device choice up rather than asking again', () => {
+    // Someone who set this before signing in has already answered.
+    expect(decideLanguage({ authenticated: true, onDevice: 'he', reachable: true })).toEqual({
+      use: 'he',
+      saveToAccount: 'he',
+      ask: false,
+    })
+  })
+
+  it('asks only when neither knows', () => {
+    expect(decideLanguage({ authenticated: true, reachable: true })).toEqual({ ask: true })
+  })
+
+  it('stays quiet when the account could not be read', () => {
+    // "We could not reach it" is not "they have not chosen" — treating the two
+    // the same would nag on every flaky connection.
+    expect(decideLanguage({ authenticated: true, reachable: false })).toEqual({ ask: false })
+  })
+
+  it('never asks when something is already set, reachable or not', () => {
+    expect(decideLanguage({ authenticated: true, onDevice: 'en', reachable: false }).ask).toBe(false)
+    expect(decideLanguage({ authenticated: true, onAccount: 'en', reachable: false }).ask).toBe(false)
   })
 })

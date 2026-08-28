@@ -234,6 +234,26 @@ Then Save meal / Back to the estimate / Let it ask instead.
   to answer." Answering returns the screen to the analyzing state and comes
   back with firmer numbers. At most two per meal.
 
+## Today: three numbers you can type
+
+Three rows on the dashboard are tappable rather than read-only, and look it —
+the value is followed by a small underlined **Set** / **Change**. Tapping opens
+a compact form *in place*: a number input, its unit, Save and Cancel, and one
+line of guidance. Not a modal; entering your weight is a five-second job and the
+surrounding figures are the context you are entering it against.
+
+- **Body → Weight** — "79.4 kg · Change". Hint: *"Weigh yourself at the same
+  time of day — first thing, before eating, is the least noisy."*
+- **Body → Goal** (new row, under Weight) — "75 kg · 4.4 kg to go · Change", or
+  "No goal set · Set a goal" when there is none. The distance turns sage and
+  reads "Reached" at zero.
+- **Activity → Active kcal** — "2,480 · Change". Hint: *"What your watch or ring
+  says you burned in total today, resting metabolism included."*
+
+A typed weight is an ordinary measurement, so it takes its place beside any
+device reading — the conflict card ("Two sources disagree · 79.4 Manual · 72.8
+Scale") appears for hand-entered figures exactly as it does for imported ones.
+
 ## Two languages, two directions
 
 A **Language** card is the first thing in Settings — English / עברית — because

@@ -183,6 +183,13 @@ export function createSupabaseRepositories(
         ) as Row<Goal>[] | null
         return rowsOf(rows)
       },
+      add: (goal: Goal) =>
+        insert('goals', {
+          id: goal.id,
+          user_id: goal.userId,
+          day: goal.startsOn,
+          data: goal,
+        }),
     },
 
     inferences: {

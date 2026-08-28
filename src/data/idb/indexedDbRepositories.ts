@@ -22,6 +22,7 @@ import type { AppSettings, DateRange, HealthRepositories } from '@/data/reposito
 import { DEFAULT_SETTINGS } from '@/config'
 import {
   asMeal,
+  goalRow,
   mealRow,
   observationRow,
   openHealthDB,
@@ -110,6 +111,9 @@ export function createIndexedDbRepositories(
       listActive: async (userId: UserId) => {
         const rows = await (await db()).getAll('goals')
         return unwrap(rows.filter((row) => row.userId === userId && row.data.active))
+      },
+      add: async (goal) => {
+        await (await db()).put('goals', goalRow(goal))
       },
     },
 

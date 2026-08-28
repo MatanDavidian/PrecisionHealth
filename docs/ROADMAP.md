@@ -198,10 +198,36 @@ settings bug that only a browser could: the store wrote any key but read from a
 whitelist, so the choice persisted and came back empty.
 **Ships:** an app the owner can read in their own language.
 
-## Slice 4 — Import from Garmin
+## Slice 3.10 — Numbers you can type ✅ built
+
+Current weight, a target weight, and the calories you spent in a day — enterable
+on Today, because the dashboard was showing seeded figures with no way to put
+real ones there.
+
+Full plan: [`features/manual-body-and-energy.md`](features/manual-body-and-energy.md).
+
+**Proved:** that the domain modelled in slice 0 was worth modelling. `WEIGHT`,
+`ACTIVE_ENERGY`, `Goal` and the precedence rules all already existed; the work
+was a write path and somewhere to tap. And it exercised D6 on real input for
+the first time — a typed weight joined an existing conflict rather than
+overwriting it.
+**Ships:** a Today screen that is useful before any device is connected to it.
+
+## Slice 4 — Import from Garmin ⚠️ blocked
 
 Sleep, HRV, resting heart rate, steps, weight. The first time two sources
 describe the same day.
+
+**Blocked (Aug 2026):** Garmin's Health API is partner-approval only, and new
+applications appear to be closed — the request form has been removed with no
+published reopening date. The three routes still open (file import, the API if
+access reopens, or a paid aggregator that would also cover Apple Health and
+Samsung) are weighed up in
+[`features/manual-body-and-energy.md`](features/manual-body-and-energy.md) §4.
+
+Slice 3.10 covers the immediate need by hand, and deliberately writes through
+the same observation path an import would use — so whichever route opens, it is
+an adapter rather than a rewrite.
 
 **Proves:** conflict detection (D6) against real device noise, and whether the
 tolerances are tuned anywhere near right.

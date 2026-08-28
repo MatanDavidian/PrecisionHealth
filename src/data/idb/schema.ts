@@ -190,3 +190,5 @@ export const observationRow = (observation: Observation): ObservationRow => ({
   ...rowFor(observation, dayKeyOf(observation.time)),
   code: observation.code,
 })
+/** Filed under the day it starts applying from, which is what a goal has. */
+export const goalRow = (goal: Goal): Row<Goal> => rowFor(goal, goal.startsOn)

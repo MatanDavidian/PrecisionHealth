@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getRepositories } from '@/data'
 import { currentUserId } from '@/data/session'
-import { buildMeal, deviceZone, newId, type MealInput } from '@/data/newRecords'
+import {
+  buildGoal,
+  buildMeal,
+  buildObservation,
+  deviceZone,
+  newId,
+  type GoalInput,
+  type MealInput,
+  type ObservationInput,
+} from '@/data/newRecords'
 import {
   effectiveObservation,
   observationConflict,
@@ -158,6 +167,36 @@ export function useActions() {
   )
 
   /** D6: settling a disagreement writes a new record superseding every candidate. */
+  /**
+   * A measurement the user typed: today's weight, yesterday's calories burned.
+   *
+   * An ordinary observation with USER provenance, so it sits in the same
+   * precedence order as anything a device will send later (D6) — and if a
+   * watch ever disagrees with it, that becomes a conflict the user settles
+   * rather than a number silently overwritten.
+   */
+  const recordObservation = useCallback(
+    async (input: ObservationInput) => {
+      await runWrite('that measurement', () =>
+        getRepositories().observations.add(buildObservation(currentUserId(), input)),
+      )
+    },
+    [runWrite],
+  )
+
+  /**
+   * Sets a target. Appends rather than edits, so what you used to be aiming
+   * for stays readable (D4); `currentGoals` picks the newest per metric.
+   */
+  const setGoal = useCallback(
+    async (input: GoalInput) => {
+      await runWrite('that goal', () =>
+        getRepositories().goals.add(buildGoal(currentUserId(), input)),
+      )
+    },
+    [runWrite],
+  )
+
   const resolveConflict = useCallback(
     async (chosen: Observation, candidates: Observation[]) => {
       await runWrite('your choice', () =>
@@ -306,6 +345,8 @@ export function useActions() {
 
   return {
     addMeal,
+    recordObservation,
+    setGoal,
     resolveConflict,
     confirmEstimate,
     resolveMealVersion,

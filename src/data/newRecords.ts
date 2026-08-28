@@ -8,15 +8,26 @@
  */
 import {
   canonical,
+  dayKey,
   toCanonical,
   userEntered,
+  zonedTimeToUtc,
+  type CalendarDate,
   type FoodItem,
   type FoodItemId,
+  type Goal,
+  type GoalDirection,
+  type GoalId,
+  type GoalMetric,
   type IanaZone,
   type Meal,
   type MealId,
   type MealSlot,
   type Nutrients,
+  type Observation,
+  type ObservationCode,
+  type ObservationId,
+  type Unit,
   type UserId,
 } from '@/domain'
 
@@ -95,3 +106,79 @@ export const suggestSlot = (date: Date): MealSlot => {
   if (hour < 22) return 'DINNER'
   return 'SNACK'
 }
+
+/**
+ * The instant to stamp on something recorded FOR a given day.
+ *
+ * Today gets the actual time, because that is when it happened. A past day
+ * gets midday LOCAL to the zone being recorded in — twelve hours clear of
+ * either boundary, so nothing short of a timezone change can push it onto a
+ * neighbouring date. Pretending to know that yesterday's weight was taken at
+ * 07:14 would be inventing detail.
+ *
+ * Not midday everywhere: no instant shares a date worldwide, since the globe
+ * spans twenty-six hours of clock. It does not need to. The record carries the
+ * zone it was made in (D7), and that is the one it is read back through.
+ */
+export function instantOn(day: CalendarDate, zone = deviceZone()): string {
+  const now = new Date()
+  if (dayKey(now.toISOString(), zone) === day) return now.toISOString()
+  return zonedTimeToUtc(day, '12:00', zone)
+}
+
+export interface ObservationInput {
+  code: ObservationCode
+  /** As the user typed it, in `unit` — converted to canonical here (D8). */
+  value: number
+  unit: Unit
+  /** The day it belongs to, which is not always today. */
+  day: CalendarDate
+}
+
+/** A measurement the user entered by hand. USER provenance, no confirming needed. */
+export function buildObservation(
+  userId: UserId,
+  input: ObservationInput,
+  zone = deviceZone(),
+): Observation {
+  const at = instantOn(input.day, zone)
+  return {
+    id: newId() as ObservationId,
+    userId,
+    code: input.code,
+    time: { kind: 'instant', at, zone },
+    value: toCanonical({ value: input.value, unit: input.unit }),
+    provenance: userEntered(at),
+  }
+}
+
+export interface GoalInput {
+  metric: GoalMetric
+  target: number
+  unit: Unit
+  direction: GoalDirection
+  /** Defaults to today: a goal you set now did not apply retroactively. */
+  startsOn?: CalendarDate
+}
+
+/**
+ * A target the user set.
+ *
+ * Always `active`, always new. Superseding an old goal is what
+ * `currentGoals` is for — nothing here rewrites the previous one, because
+ * what you used to be aiming for is part of the story (D4).
+ */
+export function buildGoal(userId: UserId, input: GoalInput, zone = deviceZone()): Goal {
+  const today = dayKey(new Date().toISOString(), zone)
+  return {
+    id: newId() as GoalId,
+    userId,
+    metric: input.metric,
+    direction: input.direction,
+    target: toCanonical({ value: input.target, unit: input.unit }),
+    startsOn: input.startsOn ?? today,
+    active: true,
+    provenance: userEntered(new Date().toISOString()),
+  }
+}
+

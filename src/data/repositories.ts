@@ -63,7 +63,15 @@ export interface ObservationRepository {
 }
 
 export interface GoalRepository {
+  /**
+   * Every active goal, including superseded ones for the same metric.
+   *
+   * Goals are append-only like the rest (D4), so changing a target appends
+   * rather than edits. `currentGoals` picks the newest per metric; the reader
+   * is not handed a pre-resolved answer, exactly as with observations.
+   */
   listActive(userId: UserId): Promise<Goal[]>
+  add(goal: Goal): Promise<void>
 }
 
 /** Clinical reads exist as interfaces before any screen uses them — see docs/ARCHITECTURE.md. */
@@ -114,12 +122,13 @@ export interface AppSettings {
    */
   trialModel?: string
   /**
-   * Which language the app speaks, and which way it runs.
+   * This device's copy of the chosen language (D21).
    *
-   * Device-local like everything else here, and deliberately so: it is a
-   * preference about this screen, not a fact about this person, and someone
-   * may well want Hebrew on their phone and English on a shared laptop.
-   * Unset means "follow the browser".
+   * The preference proper lives on the account, in `user_preferences`, so it
+   * follows a person between devices. This copy is what makes the app work
+   * signed out, work offline, and switch the instant you tap rather than after
+   * a round trip. Unset means "follow the browser", and is also what makes the
+   * app ask.
    */
   language?: 'en' | 'he'
 }

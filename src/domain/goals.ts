@@ -54,3 +54,43 @@ export interface WorkoutPlan {
   endsOn?: CalendarDate
   provenance: Provenance
 }
+
+/**
+ * The goal that currently counts for each metric.
+ *
+ * Goals are append-only like everything else (D4): changing your target weight
+ * writes a NEW goal rather than editing the old one, so the history of what you
+ * were aiming for survives. That means a reader can see several goals for one
+ * metric, and the newest is the one in force.
+ *
+ * Ordered by when it was recorded rather than by `startsOn`, because two goals
+ * can legitimately start on the same day — you set one, thought better of it,
+ * and set another an hour later.
+ */
+export function currentGoals(goals: readonly Goal[]): Goal[] {
+  const newest = new Map<GoalMetric, Goal>()
+  for (const goal of goals) {
+    if (!goal.active) continue
+    const held = newest.get(goal.metric)
+    if (!held || goal.provenance.recordedAt > held.provenance.recordedAt) {
+      newest.set(goal.metric, goal)
+    }
+  }
+  return [...newest.values()]
+}
+
+/** The goal in force for one metric, if there is one. */
+export const goalFor = (goals: readonly Goal[], metric: GoalMetric): Goal | undefined =>
+  currentGoals(goals).find((goal) => goal.metric === metric)
+
+/**
+ * Which way a target is meant to be approached.
+ *
+ * Derived from where you are rather than asked, because nobody thinks of a
+ * target weight as having a direction — they think "I want to be 75". The
+ * direction is what makes "did I get there?" answerable, and REACH would
+ * demand hitting the number to within a gram.
+ */
+export const directionToward = (current: number, target: number): GoalDirection =>
+  target < current ? 'AT_MOST' : 'AT_LEAST'
+

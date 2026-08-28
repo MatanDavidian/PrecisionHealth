@@ -485,6 +485,25 @@ const en = {
   'adjust.less': 'Less {food}',
   'adjust.more': 'More {food}',
 
+  // ------------------------------------------------------- entering by hand --
+  'entry.set': 'Set',
+  'entry.change': 'Change',
+  'entry.save': 'Save',
+  'entry.cancel': 'Cancel',
+  'entry.setNamed': 'Set {name}',
+  'entry.notRecorded': 'Not recorded',
+  'entry.weightHint': 'Weigh yourself at the same time of day — first thing, before eating, is the least noisy.',
+  'entry.energyHint': 'What your watch or ring says you burned in total today, resting metabolism included.',
+  'goal.label': 'Goal',
+  'goal.none': 'No goal set',
+  'goal.set': 'Set a goal',
+  'goal.change': 'Change goal',
+  'goal.toGo': '{count} kg to go',
+  'goal.reached': 'Reached',
+  'goal.target': 'Target weight',
+  'goal.hint': 'Changing it keeps the old one in your history rather than erasing it.',
+
+
   // ------------------------------------------------------ language prompt --
   'chooseLang.title': 'Which language should this be in?',
   'chooseLang.body':
@@ -971,6 +990,25 @@ const he: Dictionary = {
   'adjust.grams': 'גרמים של {food}',
   'adjust.less': 'פחות {food}',
   'adjust.more': 'יותר {food}',
+
+  // ------------------------------------------------------- entering by hand --
+  'entry.set': 'הזנה',
+  'entry.change': 'שינוי',
+  'entry.save': 'שמירה',
+  'entry.cancel': 'ביטול',
+  'entry.setNamed': 'הזנת {name}',
+  'entry.notRecorded': 'לא נרשם',
+  'entry.weightHint': 'שקלו את עצמכם באותה שעה בכל יום — בבוקר, לפני האוכל, זה הכי פחות רועש.',
+  'entry.energyHint': 'מה שהשעון או הטבעת שלכם אומרים ששרפתם היום בסך הכל, כולל חילוף חומרים במנוחה.',
+  'goal.label': 'יעד',
+  'goal.none': 'לא הוגדר יעד',
+  'goal.set': 'הגדרת יעד',
+  'goal.change': 'שינוי היעד',
+  'goal.toGo': 'נותרו {count} ק״ג',
+  'goal.reached': 'הושג',
+  'goal.target': 'משקל יעד',
+  'goal.hint': 'שינוי היעד משאיר את הקודם בהיסטוריה שלכם ולא מוחק אותו.',
+
 
   // ------------------------------------------------------ language prompt --
   'chooseLang.title': 'באיזו שפה שנציג את זה?',

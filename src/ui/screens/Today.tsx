@@ -10,8 +10,10 @@ import { DataUnavailable } from '../components/DataUnavailable'
 import { AdoptionPrompt } from '../components/AdoptionPrompt'
 import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
-import { convert } from '@/domain'
+import { convert, goalFor } from '@/domain'
 import { useT } from '../i18n'
+import { EditableStat } from '../components/EditableStat'
+import { WeightGoal } from '../components/WeightGoal'
 import type { StringKey } from '../i18n/strings'
 
 export function Today() {
@@ -19,7 +21,7 @@ export function Today() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
-  const { resolveConflict } = useActions()
+  const { resolveConflict, recordObservation, setGoal } = useActions()
   const { session } = useDataRevision()
 
   if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
@@ -96,9 +98,17 @@ export function Today() {
                 : t('today.restDay')
             }
           />
-          <StatRow
+          <EditableStat
             name={t('today.activeKcal')}
+            unit="kcal"
+            hint={t('entry.energyHint')}
             value={effective.ACTIVE_ENERGY ? showNumber(effective.ACTIVE_ENERGY.value, 'kcal') : '—'}
+            current={
+              effective.ACTIVE_ENERGY ? convert(effective.ACTIVE_ENERGY.value, 'kcal') : undefined
+            }
+            onSave={(value) =>
+              recordObservation({ code: 'ACTIVE_ENERGY', value, unit: 'kcal', day })
+            }
           />
         </Card>
 
@@ -112,13 +122,24 @@ export function Today() {
         </Card>
 
         <Card label={t('today.body')}>
-          <StatRow
+          <EditableStat
             name={t('today.weight')}
+            unit="kg"
+            hint={t('entry.weightHint')}
             value={effective.WEIGHT ? show(effective.WEIGHT.value, 'kg', 1) : '—'}
+            current={effective.WEIGHT ? convert(effective.WEIGHT.value, 'kg') : undefined}
+            onSave={(value) => recordObservation({ code: 'WEIGHT', value, unit: 'kg', day })}
           />
           <StatRow
             name={t('today.bodyFat')}
             value={effective.BODY_FAT ? show(effective.BODY_FAT.value, '%', 1) : '—'}
+          />
+          <WeightGoal
+            goal={goalFor(goals, 'WEIGHT')}
+            currentKg={effective.WEIGHT ? convert(effective.WEIGHT.value, 'kg') : undefined}
+            onSet={(target, direction) =>
+              setGoal({ metric: 'WEIGHT', target, unit: 'kg', direction })
+            }
           />
           {weightConflict && (
             <ConflictNotice

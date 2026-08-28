@@ -1,4 +1,4 @@
-import { LANGUAGES, useLang } from '../i18n'
+import { LANGUAGES, translator, useLang } from '../i18n'
 
 /**
  * Asked once per account, the first time someone signs in without a language.
@@ -11,9 +11,16 @@ import { LANGUAGES, useLang } from '../i18n'
  * Both options are shown in their OWN language, never translated: "עברית" is
  * legible to the person who wants it whatever the app is currently speaking,
  * and "Hebrew" written in English helps only someone who does not need it.
+ *
+ * The card's own words are always English, whatever the browser guessed. This
+ * is the one screen where the app does not yet know what language to use — so
+ * it asks in the one most likely to be understood by someone who has not
+ * answered, rather than committing to a guess it is in the middle of checking.
+ * The two buttons carry the real meaning and need no translation at all.
  */
 export function LanguagePrompt() {
-  const { lang, setLang, needsChoice, postponeChoice, t } = useLang()
+  const { lang, setLang, needsChoice, postponeChoice } = useLang()
+  const t = translator('en')
   if (!needsChoice) return null
 
   return (

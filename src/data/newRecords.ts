@@ -24,12 +24,14 @@ import {
   type MealId,
   type MealSlot,
   type Nutrients,
+  type Objective,
   type Observation,
   type ObservationCode,
   type ObservationId,
   type Unit,
   type UserId,
 } from '@/domain'
+import { OBJECTIVE_SHAPE } from '@/domain'
 
 export const deviceZone = (): IanaZone => Intl.DateTimeFormat().resolvedOptions().timeZone
 
@@ -179,6 +181,40 @@ export function buildGoal(userId: UserId, input: GoalInput, zone = deviceZone())
     startsOn: input.startsOn ?? today,
     active: true,
     provenance: userEntered(new Date().toISOString()),
+  }
+}
+
+/**
+ * The goal that a chosen programme amounts to.
+ *
+ * Stored as an ENERGY goal whose target is the daily balance the objective
+ * asks for — a snapshot, so retuning the rates later cannot rewrite what
+ * someone was aiming for last June (D4). `objective` is what the UI reads to
+ * name it; the number is what history reads.
+ *
+ * An objective with no calorie target still writes a goal, with a target of
+ * zero and the key saying why. "I am not counting" is a choice worth recording,
+ * and it is not the same as never having chosen.
+ */
+export function buildObjectiveGoal(
+  userId: UserId,
+  objective: Objective,
+  zone = deviceZone(),
+): Goal {
+  const daily = OBJECTIVE_SHAPE[objective].dailyKcal
+  return {
+    ...buildGoal(
+      userId,
+      {
+        metric: 'ENERGY',
+        target: daily ?? 0,
+        unit: 'kcal',
+        // A deficit is a ceiling, a surplus a floor, and level is neither.
+        direction: daily === null || daily === 0 ? 'REACH' : daily < 0 ? 'AT_MOST' : 'AT_LEAST',
+      },
+      zone,
+    ),
+    objective,
   }
 }
 

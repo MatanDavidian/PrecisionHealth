@@ -10,10 +10,10 @@ import { DataUnavailable } from '../components/DataUnavailable'
 import { AdoptionPrompt } from '../components/AdoptionPrompt'
 import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
-import { convert, goalFor } from '@/domain'
+import { convert, goalFor, isObjective } from '@/domain'
 import { useT } from '../i18n'
-import { EditableStat } from '../components/EditableStat'
-import { WeightGoal } from '../components/WeightGoal'
+import { PlanCard } from '../components/PlanCard'
+import { useNudged } from '../useNudged'
 import type { StringKey } from '../i18n/strings'
 
 export function Today() {
@@ -21,13 +21,38 @@ export function Today() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
-  const { resolveConflict, recordObservation, setGoal } = useActions()
+  const { resolveConflict, recordObservation, setGoal, setObjective } = useActions()
   const { session } = useDataRevision()
+
+  /*
+    Everything the plan card needs, derived BEFORE the early returns below.
+    Hooks cannot live after a conditional return — the first render bails out
+    while the day loads, and the next one would call three more of them.
+  */
+  const loaded = data?.effective
+  const goals = data?.goals ?? []
+  const weightTarget = goalFor(goals, 'WEIGHT')
+  const energyGoal = goalFor(goals, 'ENERGY')
+  const objective = isObjective(energyGoal?.objective) ? energyGoal.objective : undefined
+
+  // Nudging is per-tap; the store hears the number the user settled on.
+  const [weightKg, nudgeWeight] = useNudged(
+    loaded?.WEIGHT ? convert(loaded.WEIGHT.value, 'kg') : undefined,
+    (kg) => void recordObservation({ code: 'WEIGHT', value: kg, unit: 'kg', day }),
+  )
+  const [burnedKcal, nudgeBurned] = useNudged(
+    loaded?.ACTIVE_ENERGY ? convert(loaded.ACTIVE_ENERGY.value, 'kcal') : undefined,
+    (kcal) => void recordObservation({ code: 'ACTIVE_ENERGY', value: kcal, unit: 'kcal', day }),
+  )
+  const [targetKg, nudgeTarget] = useNudged(
+    weightTarget ? convert(weightTarget.target, 'kg') : undefined,
+    (kg) => void setGoal({ metric: 'WEIGHT', target: kg, unit: 'kg', direction: 'REACH' }),
+  )
 
   if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
   if (!data) return <p className="text-sm text-ink-muted">{t('usuals.looking')}</p>
 
-  const { nutrients, workouts, sleep, effective, conflicts, goals, unconfirmed } = data
+  const { nutrients, workouts, sleep, conflicts, unconfirmed, effective } = data
   const workout = workouts[0]
   const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
   const proteinProgress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
@@ -59,6 +84,19 @@ export function Today() {
       </header>
 
       <AdoptionPrompt />
+
+      <PlanCard
+        weightKg={weightKg}
+        targetKg={targetKg}
+        burnedKcal={burnedKcal}
+        burnedByHand={effective.ACTIVE_ENERGY?.provenance.source === 'USER'}
+        eatenKcal={convert(nutrients.energy, 'kcal')}
+        objective={objective}
+        onWeight={nudgeWeight}
+        onTarget={nudgeTarget}
+        onBurned={nudgeBurned}
+        onObjective={(next) => void setObjective(next)}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card label={t('today.nutrition')}>
@@ -98,17 +136,9 @@ export function Today() {
                 : t('today.restDay')
             }
           />
-          <EditableStat
+          <StatRow
             name={t('today.activeKcal')}
-            unit="kcal"
-            hint={t('entry.energyHint')}
             value={effective.ACTIVE_ENERGY ? showNumber(effective.ACTIVE_ENERGY.value, 'kcal') : '—'}
-            current={
-              effective.ACTIVE_ENERGY ? convert(effective.ACTIVE_ENERGY.value, 'kcal') : undefined
-            }
-            onSave={(value) =>
-              recordObservation({ code: 'ACTIVE_ENERGY', value, unit: 'kcal', day })
-            }
           />
         </Card>
 
@@ -122,24 +152,13 @@ export function Today() {
         </Card>
 
         <Card label={t('today.body')}>
-          <EditableStat
+          <StatRow
             name={t('today.weight')}
-            unit="kg"
-            hint={t('entry.weightHint')}
             value={effective.WEIGHT ? show(effective.WEIGHT.value, 'kg', 1) : '—'}
-            current={effective.WEIGHT ? convert(effective.WEIGHT.value, 'kg') : undefined}
-            onSave={(value) => recordObservation({ code: 'WEIGHT', value, unit: 'kg', day })}
           />
           <StatRow
             name={t('today.bodyFat')}
             value={effective.BODY_FAT ? show(effective.BODY_FAT.value, '%', 1) : '—'}
-          />
-          <WeightGoal
-            goal={goalFor(goals, 'WEIGHT')}
-            currentKg={effective.WEIGHT ? convert(effective.WEIGHT.value, 'kg') : undefined}
-            onSet={(target, direction) =>
-              setGoal({ metric: 'WEIGHT', target, unit: 'kg', direction })
-            }
           />
           {weightConflict && (
             <ConflictNotice

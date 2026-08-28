@@ -1,6 +1,7 @@
 import type { Id } from './ids'
 import type { CanonicalQuantity } from './units'
 import type { ObservationCode } from './observation'
+import type { Objective } from './objectives'
 import type { Provenance } from './provenance'
 import type { CalendarDate } from './time'
 import type { UserId } from './user'
@@ -27,6 +28,15 @@ export interface Goal {
   startsOn: CalendarDate
   endsOn?: CalendarDate
   active: boolean
+  /**
+   * The programme this goal came from, when it was set by picking one.
+   *
+   * The `target` above is the daily energy aim as it stood at the time — a
+   * snapshot, deliberately, so that retuning the rates later does not silently
+   * rewrite what someone was aiming for last June (D4). The key is what the UI
+   * reads to name it and to decide whether a target weight applies.
+   */
+  objective?: Objective
   provenance: Provenance
 }
 

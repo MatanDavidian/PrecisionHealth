@@ -4,6 +4,7 @@ import { currentUserId } from '@/data/session'
 import {
   buildGoal,
   buildMeal,
+  buildObjectiveGoal,
   buildObservation,
   deviceZone,
   newId,
@@ -42,6 +43,7 @@ import {
   type Goal,
   type Meal,
   type Nutrients,
+  type Objective,
   type Observation,
   type Sleep,
   type Workout,
@@ -197,6 +199,16 @@ export function useActions() {
     [runWrite],
   )
 
+  /** Records which programme the user is on, as an ENERGY goal (D4: appended). */
+  const setObjective = useCallback(
+    async (objective: Objective) => {
+      await runWrite('that goal', () =>
+        getRepositories().goals.add(buildObjectiveGoal(currentUserId(), objective)),
+      )
+    },
+    [runWrite],
+  )
+
   const resolveConflict = useCallback(
     async (chosen: Observation, candidates: Observation[]) => {
       await runWrite('your choice', () =>
@@ -347,6 +359,7 @@ export function useActions() {
     addMeal,
     recordObservation,
     setGoal,
+    setObjective,
     resolveConflict,
     confirmEstimate,
     resolveMealVersion,

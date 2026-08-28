@@ -234,7 +234,50 @@ Then Save meal / Back to the estimate / Let it ask instead.
   to answer." Answering returns the screen to the analyzing state and comes
   back with firmer numbers. At most two per meal.
 
-## Today: three numbers you can type
+## Today: a day view and a week view
+
+One segmented control in the header — **Day · Week** — and the title changes
+with it: "Today" becomes "This week", the date becomes "Aug 22 – Aug 28, 2026",
+and the day arrows disappear where they would mean nothing. The view is in the
+URL (`/today?view=week`).
+
+### The plan card (day view)
+
+One card above the dashboard holding the four numbers that drive everything, in
+a responsive four-column grid:
+
+- **Current weight** — a pill stepper (− 79.4 +), the value at 24px.
+- **Target weight** — the same, in 0.5 kg steps, with "4.4 kg to lose" beneath.
+  Only appears for objectives that are about a number on the scale.
+- **Burned per day** — 50 kcal steps, "Set by hand" beneath when the figure came
+  from a person rather than a device.
+- **Goal** — the objective's name at 17px with an underlined **Change**, and its
+  aim beneath: *"A 500 kcal deficit a day — about 0.5 kg a week."*
+
+Tapping Change opens a row of five pills: **Lose weight · Lose fat, keep muscle ·
+Build muscle · Keep this weight · General fitness**.
+
+A strip along the bottom answers the question the screen exists for:
+*"Ate 2,130 · burned 2,480"* and a chip reading "350 kcal under" — sage under,
+terracotta over, sand when level.
+
+### The week view
+
+- **Eaten against burned** — 196px of chart, two bars a day (terracotta eaten,
+  sage burned), a dot legend, weekday initials beneath with today's in full ink.
+  A day with nothing logged is a 2px hairline, not a gap.
+- **This week** — the net in Fraunces at 38px, terracotta over and sage under,
+  then a sentence: *"You ate 910 kcal more than you burned across the seven
+  days."* Below, Eaten and Burned as "17,890 · 2,556/day". A quiet line appears
+  when the burn was only recorded on some days.
+- **Against your goal** — the objective's name, what it aims for against what
+  you landed on, and a verdict pill: **On track** (sage), **4,410 kcal short**
+  (terracotta), or **Nothing to grade** (sand).
+- **AI** — a leaf card, "Insights on this week", a *disabled* "Ask for insights"
+  with a *not built yet* badge, and the promise in plain words: **"Nothing is
+  sent until you ask."**
+
+## Older notes: three numbers you can type
 
 Three rows on the dashboard are tappable rather than read-only, and look it —
 the value is followed by a small underlined **Set** / **Change**. Tapping opens

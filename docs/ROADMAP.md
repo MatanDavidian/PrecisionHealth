@@ -213,6 +213,20 @@ the first time — a typed weight joined an existing conflict rather than
 overwriting it.
 **Ships:** a Today screen that is useful before any device is connected to it.
 
+## Slice 3.11 — A goal with a shape, and a week to judge it by ✅ built
+
+Five objectives rather than a bare target number, and a Day/Week toggle showing
+eaten against burned across seven days with a verdict against the objective.
+
+Full plan: [`features/objectives-and-the-week.md`](features/objectives-and-the-week.md).
+
+**Proved:** that refusing to average missing data is worth the extra field. A
+day with no burned figure stays undefined rather than zero, the week's target
+scales to the days that reported, and the screen says so — otherwise absence
+would read as a deficit.
+**Ships:** the first answer to "was this week any good?", and the first screen
+that grades rather than reports.
+
 ## Slice 4 — Import from Garmin ⚠️ blocked
 
 Sleep, HRV, resting heart rate, steps, weight. The first time two sources

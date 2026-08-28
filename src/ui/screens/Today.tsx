@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, StatRow } from '../components/Card'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
@@ -14,15 +15,32 @@ import { convert, goalFor, isObjective } from '@/domain'
 import { useT } from '../i18n'
 import { PlanCard } from '../components/PlanCard'
 import { useNudged } from '../useNudged'
+import { WeekView, WeekTeaser, weekRangeLabel } from '../components/WeekView'
+import { readWeek } from '@/data/week'
+import type { WeekEnergy } from '@/domain'
+import { currentUserId } from '@/data/session'
+import { useSearchParams } from 'react-router-dom'
 import type { StringKey } from '../i18n/strings'
 
 export function Today() {
   const t = useT()
+  const [params, setParams] = useSearchParams()
+  /**
+   * Day or week, held in the URL so the choice survives a reload and can be
+   * linked to — the same reasoning as the Log screen's three modes.
+   */
+  const view = params.get('view') === 'week' ? 'week' : 'day'
+  const setView = (next: 'day' | 'week') => {
+    const updated = new URLSearchParams(params)
+    if (next === 'day') updated.delete('view')
+    else updated.set('view', next)
+    setParams(updated, { replace: true })
+  }
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
   const { resolveConflict, recordObservation, setGoal, setObjective } = useActions()
-  const { session } = useDataRevision()
+  const { session, revision } = useDataRevision()
 
   /*
     Everything the plan card needs, derived BEFORE the early returns below.
@@ -44,6 +62,24 @@ export function Today() {
     loaded?.ACTIVE_ENERGY ? convert(loaded.ACTIVE_ENERGY.value, 'kcal') : undefined,
     (kcal) => void recordObservation({ code: 'ACTIVE_ENERGY', value: kcal, unit: 'kcal', day }),
   )
+  /**
+   * The week, loaded only when it is being looked at.
+   *
+   * Seven days is eight reads; doing them on every day view to fill a card
+   * nobody opened would be paying for the feature whether or not it is used.
+   */
+  const [week, setWeek] = useState<WeekEnergy>()
+  useEffect(() => {
+    if (view !== 'week') return
+    let cancelled = false
+    void readWeek(currentUserId(), day, objective)
+      .then((result) => !cancelled && setWeek(result))
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [view, day, objective, revision])
+
   const [targetKg, nudgeTarget] = useNudged(
     weightTarget ? convert(weightTarget.target, 'kg') : undefined,
     (kg) => void setGoal({ metric: 'WEIGHT', target: kg, unit: 'kg', direction: 'REACH' }),
@@ -62,18 +98,42 @@ export function Today() {
     <div className="mx-auto max-w-5xl">
       <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
         <div>
-          <h1 className="font-display text-4xl">{dayLabel(day, today, t)}</h1>
-          <p className="pt-1 text-sm text-ink-muted">{day}</p>
+          <h1 className="font-display text-4xl">
+            {view === 'week' ? t('week.title') : dayLabel(day, today, t)}
+          </h1>
+          <p className="pt-1 text-sm text-ink-muted">
+            {view === 'week' && week
+              ? weekRangeLabel(week.from, week.to, document.documentElement.lang || undefined)
+              : day}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <DayNav
-            day={day}
-            today={today}
-            isToday={isToday}
-            onPrevious={selected.goPrevious}
-            onNext={selected.goNext}
-            onToday={selected.goToday}
-          />
+          {/* Two words, in the shape the Log tabs already use. */}
+          <div className="flex gap-0.5 rounded-full border border-hairline p-0.5">
+            {(['day', 'week'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setView(option)}
+                aria-pressed={view === option}
+                className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
+                  view === option ? 'bg-ink font-medium text-surface' : 'text-ink-muted hover:text-ink'
+                }`}
+              >
+                {t(option === 'day' ? 'week.day' : 'week.week')}
+              </button>
+            ))}
+          </div>
+          {view === 'day' && (
+            <DayNav
+              day={day}
+              today={today}
+              isToday={isToday}
+              onPrevious={selected.goPrevious}
+              onNext={selected.goNext}
+              onToday={selected.goToday}
+            />
+          )}
           <Link
             to="/log"
             className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
@@ -85,6 +145,14 @@ export function Today() {
 
       <AdoptionPrompt />
 
+      {view === 'week' ? (
+        week ? (
+          <WeekView week={week} objective={objective} />
+        ) : (
+          <p className="text-sm text-ink-muted">{t('usuals.looking')}</p>
+        )
+      ) : (
+        <>
       <PlanCard
         weightKg={weightKg}
         targetKg={targetKg}
@@ -192,12 +260,10 @@ export function Today() {
           })}
         </Card>
 
-        <Card tone="leaf">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-leaf">AI</p>
-          <h2 className="pt-2 font-display text-xl">{t('today.aiTitle')}</h2>
-          <p className="pt-1 text-sm text-ink-muted">{t('today.aiBody')}</p>
-        </Card>
+        <WeekTeaser onOpen={() => setView('week')} />
       </div>
+        </>
+      )}
     </div>
   )
 }

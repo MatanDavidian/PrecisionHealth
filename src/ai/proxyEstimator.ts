@@ -18,9 +18,11 @@ import {
   type EstimateResult,
   type FollowUp,
   type FoodEstimator,
+  type WeekInsight,
 } from './estimator'
 import { toDataUrl } from './photo'
-import { applyGramsHint, validateEstimate } from './validate'
+import { applyGramsHint, validateEstimate, validateInsight } from './validate'
+import type { WeekReport } from '@/domain'
 
 export interface TrialState {
   used: number
@@ -87,6 +89,10 @@ export class ProxyEstimator implements FoodEstimator {
     return this.send({ text: description.trim() }, hints, answers)
   }
 
+  async weekInsights(report: WeekReport, hints: EstimateHints): Promise<WeekInsight> {
+    return this.send({ report }, hints, [], validateInsight) as Promise<WeekInsight>
+  }
+
   /**
    * One request, whichever input it carries.
    *
@@ -95,11 +101,14 @@ export class ProxyEstimator implements FoodEstimator {
    * single field and nothing else. The trial counts both the same way, because
    * from the payer's side they are the same call.
    */
-  private async send(
-    input: { photo: string } | { text: string },
+  private async send<T = EstimateResult>(
+    input: { photo: string } | { text: string } | { report: WeekReport },
     hints: EstimateHints,
     answers: readonly FollowUp[] = [],
-  ): Promise<EstimateResult> {
+    /** How to read the reply. The transport is identical either way. */
+    read: (parsed: unknown, model: string) => T = ((p: unknown, m: string) =>
+      applyGramsHint(validateEstimate(p, m), hints.totalGrams)) as never,
+  ): Promise<T> {
     const token = await this.options.getAccessToken()
     if (!token) throw new EstimateError('NO_KEY', 'Not signed in')
 
@@ -179,6 +188,6 @@ export class ProxyEstimator implements FoodEstimator {
       throw new EstimateError('UNREADABLE', 'Reply was not JSON', body.content)
     }
 
-    return applyGramsHint(validateEstimate(parsed, this.model), hints.totalGrams)
+    return read(parsed, this.model)
   }
 }

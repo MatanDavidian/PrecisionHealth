@@ -10,20 +10,24 @@ import {
   type EstimateResult,
   type FollowUp,
   type FoodEstimator,
+  type WeekInsight,
 } from './estimator'
 import { toDataUrl } from './photo'
 // One prompt, shared with the edge function: two paths to the same provider
 // must ask the same question, or the same photo answers differently depending
 // on whose key paid for it.
 import {
+  INSIGHTS_SYSTEM_PROMPT,
   SYSTEM_PROMPT,
   TEXT_SYSTEM_PROMPT,
   describedFoodText,
   followUpText,
   hintText,
+  insightsLanguageRule,
   languageRule,
 } from '../../supabase/functions/_shared/prompt'
-import { applyGramsHint, validateEstimate } from './validate'
+import { applyGramsHint, validateEstimate, validateInsight } from './validate'
+import type { WeekReport } from '@/domain'
 
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions'
 
@@ -70,6 +74,8 @@ export class OpenAiEstimator implements FoodEstimator {
       ],
       hints,
       answers,
+      validateEstimate,
+      (result, h) => applyGramsHint(result, h.totalGrams),
     )
   }
 
@@ -81,7 +87,27 @@ export class OpenAiEstimator implements FoodEstimator {
     if (!description.trim()) {
       throw new EstimateError('UNREADABLE', 'There is nothing written to estimate')
     }
-    return this.ask(TEXT_SYSTEM_PROMPT, describedFoodText(description, hints), hints, answers)
+    return this.ask(
+      TEXT_SYSTEM_PROMPT,
+      describedFoodText(description, hints),
+      hints,
+      answers,
+      validateEstimate,
+      (result, h) => applyGramsHint(result, h.totalGrams),
+    )
+  }
+
+  async weekInsights(report: WeekReport, hints: EstimateHints): Promise<WeekInsight> {
+    const content = await this.ask(
+      INSIGHTS_SYSTEM_PROMPT + insightsLanguageRule(hints.language),
+      // The report goes as JSON rather than prose: it is data the model should
+      // read, and rewriting it into sentences would only lose precision.
+      `Here is the week, as JSON:\n${JSON.stringify(report)}`,
+      {},
+      [],
+      validateInsight,
+    )
+    return content
   }
 
   /**
@@ -92,12 +118,15 @@ export class OpenAiEstimator implements FoodEstimator {
    * knows JSON mode, the single repair attempt — are the same for both and
    * live here rather than in two near-identical copies.
    */
-  private async ask(
+  private async ask<T>(
     systemPrompt: string,
     userContent: unknown,
     hints: EstimateHints,
     answers: readonly FollowUp[] = [],
-  ): Promise<EstimateResult> {
+    /** What to make of the reply. Estimates and insights differ only here. */
+    read: (parsed: unknown, model: string) => T = validateEstimate as never,
+    finish: (result: T, hints: EstimateHints) => T = ((r: T) => r) as never,
+  ): Promise<T> {
     const apiKey = await this.options.getApiKey()
     if (!apiKey) throw new EstimateError('NO_KEY', 'No API key configured')
 
@@ -186,17 +215,17 @@ export class OpenAiEstimator implements FoodEstimator {
       return content
     }
 
-    const parse = (content: string): EstimateResult => {
+    const parse = (content: string): T => {
       let parsed: unknown
       try {
         parsed = JSON.parse(content)
       } catch {
         throw new EstimateError('UNREADABLE', 'Reply was not JSON', content)
       }
-      return validateEstimate(parsed, model)
+      return read(parsed, model)
     }
 
-    let result: EstimateResult
+    let result: T
     try {
       result = parse(await call())
     } catch (error) {
@@ -208,7 +237,7 @@ export class OpenAiEstimator implements FoodEstimator {
       )
     }
 
-    return applyGramsHint(result, hints.totalGrams)
+    return finish(result, hints)
   }
 }
 

@@ -16,6 +16,7 @@
 // The conversation shape lives with the prompt, so the client and the edge
 // function cannot disagree about what a follow-up round looks like.
 import type { FollowUp } from '../../supabase/functions/_shared/prompt'
+import type { WeekReport } from '@/domain'
 export type { FollowUp }
 
 /** Optional user input. The model must treat these as ground truth, not suggestions. */
@@ -95,6 +96,28 @@ export interface EstimateResult {
   model: string
 }
 
+/**
+ * What the model says about a week.
+ *
+ * Structured rather than prose, for the same reason an estimate is: the app
+ * renders it in its own type and its own language, and a wall of markdown
+ * would be neither. It also means "it said nothing useful" is representable —
+ * an empty `suggestions` with a low confidence — instead of being dressed up
+ * as advice.
+ */
+export interface WeekInsight {
+  /** One sentence: the most useful thing about the week. */
+  summary: string
+  /** Two to four things visible in the data, with the numbers quoted. */
+  observations: string[]
+  /** Concrete changes, small enough to do tomorrow. May be empty. */
+  suggestions: string[]
+  /** 0..1, and expected to be low when the week is sparse. */
+  confidence: number
+  raw: unknown
+  model: string
+}
+
 export interface FoodEstimator {
   /** The name that goes into the audit record. */
   readonly model: string
@@ -117,6 +140,15 @@ export interface FoodEstimator {
     hints: EstimateHints,
     answers?: readonly FollowUp[],
   ): Promise<EstimateResult>
+  /**
+   * Reads a week and says what to change.
+   *
+   * On the same port because it is the same provider, the same key, the same
+   * entitlement and the same error vocabulary — everything except the question
+   * being asked. A second port would duplicate all of that to gain a narrower
+   * name.
+   */
+  weekInsights(report: WeekReport, hints: EstimateHints): Promise<WeekInsight>
 }
 
 /**

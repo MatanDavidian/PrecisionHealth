@@ -39,7 +39,58 @@ export function weekRangeLabel(from: string, to: string, locale?: string): strin
  * baseline do not justify forty kilobytes, and the one thing a library would
  * give — axes and ticks — is exactly what this design does without.
  */
-export function WeekView({ week, objective }: { week: WeekEnergy; objective?: Objective }) {
+/**
+ * What the week is missing before it can say anything.
+ *
+ * Ordered: the burn figure first, because without it the chart has nothing to
+ * draw and the totals are half a comparison. A goal only decides whether the
+ * week can be *judged*, which is a smaller absence.
+ */
+export type WeekBlocker = 'BURN' | 'GOAL' | undefined
+
+export const weekBlocker = (week: WeekEnergy, objective?: Objective): WeekBlocker =>
+  week.daysWithBurn === 0 ? 'BURN' : objective === undefined ? 'GOAL' : undefined
+
+/**
+ * Said instead of the week, when the week would be guessing.
+ *
+ * Showing a chart with one series and a summary that compares a number against
+ * nothing would look like an answer. An empty state that says which figure is
+ * missing, and offers to go and set it, is the honest version.
+ */
+export function WeekBlocked({ blocker, onGo }: { blocker: 'BURN' | 'GOAL'; onGo: () => void }) {
+  const t = useT()
+  return (
+    <div className="max-w-md">
+      <section className="rounded-card bg-card p-6">
+        <h2 className="font-display text-[1.4rem] font-medium">
+          {t(blocker === 'BURN' ? 'week.blockedBurnTitle' : 'week.blockedGoalTitle')}
+        </h2>
+        <p className="max-w-[44ch] pt-2 text-sm leading-relaxed text-ink-muted">
+          {t(blocker === 'BURN' ? 'week.blockedBurnBody' : 'week.blockedGoalBody')}
+        </p>
+        <button
+          type="button"
+          onClick={onGo}
+          className="mt-4 rounded-full border border-hairline px-4 py-1.5 text-[0.84rem] font-medium transition-colors hover:bg-card-soft"
+        >
+          {t('week.setItOnTheDay')}
+        </button>
+      </section>
+    </div>
+  )
+}
+
+export function WeekView({
+  week,
+  objective,
+  insights,
+}: {
+  week: WeekEnergy
+  objective?: Objective
+  /** The AI card, owned by the screen because it holds the request state. */
+  insights?: React.ReactNode
+}) {
   const t = useT()
   const zone = deviceZone()
   const today = dayKey(new Date().toISOString(), zone)
@@ -195,23 +246,7 @@ export function WeekView({ week, objective }: { week: WeekEnergy; objective?: Ob
         </section>
       </div>
 
-      <section className="rounded-card bg-leaf-soft p-6">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-leaf">AI</p>
-        <h2 className="pt-2 font-display text-xl font-medium">{t('week.insightsTitle')}</h2>
-        <p className="max-w-[56ch] pt-1 text-sm text-ink-muted">{t('week.insightsBody')}</p>
-        <div className="flex flex-wrap items-center gap-3 pt-3.5">
-          <button
-            type="button"
-            disabled
-            className="cursor-default rounded-full border border-leaf/30 px-4 py-1.5 text-[0.84rem] font-medium text-leaf opacity-55"
-          >
-            {t('week.askForInsights')}
-          </button>
-          <span className="rounded-full border border-hairline px-2.5 py-1 text-[0.69rem] text-ink-muted">
-            {t('week.notBuilt')}
-          </span>
-        </div>
-      </section>
+      {insights}
     </div>
   )
 }

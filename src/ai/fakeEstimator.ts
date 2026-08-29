@@ -3,7 +3,14 @@
  * development when no API key is configured and `?fake=1` is set, so the flow
  * can be exercised without spending anything.
  */
-import type { EstimateHints, EstimateResult, FollowUp, FoodEstimator } from './estimator'
+import type {
+  EstimateHints,
+  EstimateResult,
+  FollowUp,
+  FoodEstimator,
+  WeekInsight,
+} from './estimator'
+import type { WeekReport } from '@/domain'
 import { applyGramsHint, validateEstimate } from './validate'
 
 export const SAMPLE_REPLY = {
@@ -82,6 +89,37 @@ export class FakeEstimator implements FoodEstimator {
         confidence: Math.max(0, item.confidence - 0.15),
       })),
       assumptions: [...result.assumptions, 'Portions were assumed; nothing was seen.'],
+    }
+  }
+
+  /**
+   * A believable week reading, built from the report it was actually given.
+   *
+   * Quoting the real totals matters: an insight card full of invented numbers
+   * looks right in a screenshot and hides the fact that nothing was wired up.
+   */
+  async weekInsights(report: WeekReport, _hints: EstimateHints): Promise<WeekInsight> {
+    if (this.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, this.delayMs))
+    if (this.failWith) throw this.failWith
+    const { eatenKcal, burnedKcal, netKcal, daysWithBurn } = report.totals
+    const sparse = daysWithBurn < 5
+    return {
+      summary: sparse
+        ? `Only ${daysWithBurn} of seven days carry a burn figure, so this is a partial picture.`
+        : `You ate ${eatenKcal.toLocaleString()} kcal against ${burnedKcal.toLocaleString()} burned — a net of ${netKcal > 0 ? '+' : ''}${netKcal.toLocaleString()}.`,
+      observations: [
+        `Eaten averaged ${Math.round(eatenKcal / Math.max(1, report.days.length)).toLocaleString()} kcal a day.`,
+        `Protein came to ${Math.round(report.totals.proteinG)} g across the week.`,
+        report.goal.aimKcal === null
+          ? 'No calorie target on this goal, so the balance is context rather than a score.'
+          : `The goal asked for ${report.goal.aimKcal.toLocaleString()} and you landed ${report.goal.gapKcal > 0 ? 'above' : 'below'} it.`,
+      ],
+      suggestions: sparse
+        ? []
+        : ['Add a protein source at breakfast on the days you train.'],
+      confidence: sparse ? 0.35 : 0.72,
+      raw: { fake: true },
+      model: this.model,
     }
   }
 

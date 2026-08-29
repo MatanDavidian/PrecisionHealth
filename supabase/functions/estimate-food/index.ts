@@ -18,6 +18,7 @@
  */
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
+  INSIGHTS_SYSTEM_PROMPT,
   MAX_FOLLOW_UPS,
   MODEL_SOL,
   MODEL_TERRA,
@@ -31,6 +32,7 @@ import {
   describedFoodText,
   followUpText,
   hintText,
+  insightsLanguageRule,
   languageRule,
   type EstimateHints,
   type FollowUp,
@@ -38,6 +40,13 @@ import {
 
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
 const MAX_COMPLETION_TOKENS = 4000
+/**
+ * The most week-report JSON worth sending.
+ *
+ * Seven days of meals is a few kilobytes; anything past this is a client bug or
+ * an attempt to run up the owner's bill on a key the user does not hold.
+ */
+const MAX_REPORT_CHARS = 12_000
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -61,6 +70,14 @@ interface RequestBody {
   day: string
   /** Which model the user asked for. Validated here; never trusted. */
   model?: string
+  /**
+   * A week of food and arithmetic, when the user asked for insights.
+   *
+   * Passed through to the model as JSON and never stored — the same rule the
+   * photo follows (Q10). What comes back is prose about seven days, not a
+   * record of them.
+   */
+  report?: unknown
   /** The exchange so far, when the model asked something and the user replied. */
   answers?: FollowUp[]
   /**
@@ -119,7 +136,15 @@ Deno.serve(async (request) => {
   // One input or the other, never neither. A photo wins if both arrive, since
   // it is the stronger evidence and sending both is a client bug, not a mode.
   const described = typeof body?.text === 'string' ? body.text.trim() : ''
-  if ((!body?.photo && !described) || !body?.day) return json({ error: 'bad_request' }, 400)
+  // A week report is the third kind of input. It is bounded here rather than
+  // trusted: a client could otherwise post a megabyte and bill it to the owner.
+  const reported =
+    body?.report && typeof body.report === 'object'
+      ? JSON.stringify(body.report).slice(0, MAX_REPORT_CHARS)
+      : ''
+  if ((!body?.photo && !described && !reported) || !body?.day) {
+    return json({ error: 'bad_request' }, 400)
+  }
 
   const conversationId =
     typeof body.conversationId === 'string' && body.conversationId.length > 0
@@ -249,18 +274,21 @@ Deno.serve(async (request) => {
         messages: [
           {
             role: 'system',
-            content:
-              (body.photo ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT) +
-              languageRule(body.hints?.language),
+            content: reported
+              ? INSIGHTS_SYSTEM_PROMPT + insightsLanguageRule(body.hints?.language)
+              : (body.photo ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT) +
+                languageRule(body.hints?.language),
           },
           {
             role: 'user',
-            content: body.photo
-              ? [
-                  { type: 'text', text: hintText(body.hints ?? {}) },
-                  { type: 'image_url', image_url: { url: body.photo, detail: 'auto' } },
-                ]
-              : describedFoodText(described, body.hints ?? {}),
+            content: reported
+              ? `Here is the week, as JSON:\n${reported}`
+              : body.photo
+                ? [
+                    { type: 'text', text: hintText(body.hints ?? {}) },
+                    { type: 'image_url', image_url: { url: body.photo, detail: 'auto' } },
+                  ]
+                : describedFoodText(described, body.hints ?? {}),
           },
           // The API is stateless, so the exchange is re-sent with the evidence.
           ...(answers.length > 0

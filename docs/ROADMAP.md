@@ -227,6 +227,20 @@ would read as a deficit.
 **Ships:** the first answer to "was this week any good?", and the first screen
 that grades rather than reports.
 
+## Slice 3.12 — Ask the model about your week ✅ built
+
+Seven days of meals, the totals and the goal, sent on request — and read back as
+a summary, what is visible in the data, and what is worth trying. The week
+refuses to draw or grade anything until there is a burn figure and an objective.
+
+Full plan: [`features/week-insights.md`](features/week-insights.md).
+
+**Proved:** that a named payload type is worth more than a comment. The promise
+on the button — "nothing that says who you are" — is asserted by a test that
+serialises a real report and fails on any identity in it.
+**Ships:** the first advice the app gives, and the first thing it sends
+anywhere on purpose.
+
 ## Slice 4 — Import from Garmin ⚠️ blocked
 
 Sleep, HRV, resting heart rate, steps, weight. The first time two sources

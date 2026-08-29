@@ -9,7 +9,12 @@
  * Hand-rolled rather than a schema library: the shape is small and stable, and
  * this is a lean project (no new dependency for twenty lines of checks).
  */
-import { EstimateError, type EstimatedItem, type EstimateResult } from './estimator'
+import {
+  EstimateError,
+  type EstimatedItem,
+  type EstimateResult,
+  type WeekInsight,
+} from './estimator'
 
 /** Calories implied by macros. Atwater factors: 4/4/9 kcal per gram. */
 export const kcalFromMacros = (proteinG: number, carbsG: number, fatG: number): number =>
@@ -145,5 +150,37 @@ export function applyGramsHint(result: EstimateResult, totalGrams?: number): Est
       fiberG: item.fiberG === undefined ? undefined : item.fiberG * factor,
     })),
     assumptions: [...result.assumptions, `Scaled to the ${totalGrams} g you entered.`],
+  }
+}
+
+/**
+ * Turning the model's week reply into a `WeekInsight`.
+ *
+ * Softer than `validateEstimate` on purpose. An estimate that arrives malformed
+ * must fail, because a wrong number becomes indistinguishable from a
+ * measurement once written. An insight is prose the user reads and judges — a
+ * missing suggestions array is a thinner answer, not a corrupt one, so the
+ * shape is repaired rather than rejected.
+ */
+export function validateInsight(raw: unknown, model: string): WeekInsight {
+  if (!isObject(raw)) throw new EstimateError('UNREADABLE', 'reply is not an object', raw)
+
+  const summary = text(raw.summary)
+  const observations = stringList(raw.observations).slice(0, 6)
+  const suggestions = stringList(raw.suggestions).slice(0, 4)
+
+  // Nothing to show at all is a failure; the model was asked for a sentence
+  // even when its answer is "there is not enough here to tell".
+  if (!summary && observations.length === 0) {
+    throw new EstimateError('UNREADABLE', 'reply carried no summary or observations', raw)
+  }
+
+  return {
+    summary,
+    observations,
+    suggestions,
+    confidence: confidence(raw.confidence),
+    raw,
+    model,
   }
 }

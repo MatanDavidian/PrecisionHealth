@@ -29,8 +29,10 @@ import {
   type Nutrients,
   type Portioned,
   type UserId,
+  reportMealCount,
+  type WeekReport,
 } from '@/domain'
-import type { EstimateHints, EstimateResult, PhotoMeta } from '@/ai/estimator'
+import type { EstimateHints, EstimateResult, PhotoMeta, WeekInsight } from '@/ai/estimator'
 import { newId } from './newRecords'
 
 /**
@@ -244,5 +246,49 @@ export function buildFailedInference(
     },
     userConfirmed: false,
     safetyFlags: [`FAILED_${args.kind}`],
+  }
+}
+
+/**
+ * The audit row for a week reading.
+ *
+ * Advice is a claim the app made, and D13 says every claim has to be
+ * answerable for later — including the ones that turn out to be wrong. What is
+ * kept is the reply and the SHAPE of what was sent: totals, the goal, and how
+ * many days carried data. The meals themselves are not duplicated here; they
+ * are already records of their own, and copying them into an audit row would
+ * store the same food twice.
+ */
+export function buildInsightInference(
+  userId: UserId,
+  report: WeekReport,
+  insight: WeekInsight,
+): AIInference {
+  const at = new Date().toISOString()
+  return {
+    id: newId() as AIInferenceId,
+    userId,
+    purpose: 'HEALTH_SCAN',
+    model: insight.model,
+    modelVersion: insight.model,
+    createdAt: at,
+    confidence: insight.confidence,
+    // The days it read, so "which week was this about?" has an answer.
+    inputReferences: [`week:${report.from}..${report.to}`],
+    output: {
+      summary: insight.summary,
+      observations: insight.observations,
+      suggestions: insight.suggestions,
+      sent: {
+        from: report.from,
+        to: report.to,
+        totals: report.totals,
+        goal: report.goal,
+        meals: reportMealCount(report),
+      },
+      raw: insight.raw,
+    },
+    userConfirmed: false,
+    safetyFlags: insight.confidence < 0.5 ? ['LOW_CONFIDENCE'] : [],
   }
 }

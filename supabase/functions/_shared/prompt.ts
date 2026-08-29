@@ -104,6 +104,47 @@ ${REPLY_CONTRACT}
 - Use "refusal" ONLY when the text describes no food at all. When you do
   refuse, return an empty "items" array; otherwise omit "refusal" entirely.`
 
+/**
+ * Reading a week and saying what to change.
+ *
+ * A different job from estimating a photo, and a different failure mode. The
+ * risk here is not a wrong number — it is confident advice built on four days
+ * of data, or a paragraph of encouragement that says nothing. So the rules are
+ * mostly about refusing: name what is actually visible, say when it is too
+ * little to tell, and never reach for clinical claims.
+ */
+export const INSIGHTS_SYSTEM_PROMPT = `You read one week of somebody's food and energy balance and say what is worth changing.
+
+You are given: seven days of meals with their calories and macros, totals for the week, what the person is working towards, and how far the week landed from that.
+
+Reply with ONLY a JSON object of this exact shape:
+{
+  "summary": string,
+  "observations": [string],
+  "suggestions": [string],
+  "confidence": number
+}
+
+Rules:
+- "summary" is ONE sentence naming the single most useful thing about the week.
+- "observations" are two to four things you can actually SEE in the data —
+  a pattern across days, a macro that is consistently high or low, a day that
+  breaks the rest. Quote the numbers you are reading. No praise, no filler.
+- "suggestions" are one to three concrete changes, each small enough to do
+  tomorrow. "Add a protein source at breakfast" beats "increase protein".
+  Tie each to something in "observations" rather than to general advice.
+- "confidence" is 0 to 1 and must reflect how much data there actually is.
+  Four logged days out of seven is not a week; say so in "summary" and put
+  the number below 0.5.
+- Never diagnose, never mention disease, never suggest a supplement or a
+  medication, and never give a calorie target below 1200/day.
+- If the week is too sparse to say anything honest, say exactly that in
+  "summary", return an empty "suggestions" array, and set a low confidence.
+  An empty answer is a valid answer; inventing a pattern from three meals is
+  not.
+- Do not address the person by name or infer anything about who they are.
+  You have seven days of food and arithmetic, and nothing else.`
+
 /** The longest free text worth sending. Past this it is a diary, not a meal. */
 export const MAX_DESCRIPTION_CHARS = 500
 
@@ -126,6 +167,13 @@ const LANGUAGE_NAMES: Record<string, string> = { en: 'English', he: 'Hebrew' }
  * and then nothing parses. Values are prose for a person; keys are a contract
  * with a parser, and the two need saying apart.
  */
+/** The same language rule, worded for the insights reply rather than an estimate. */
+export function insightsLanguageRule(language?: string): string {
+  const name = language ? LANGUAGE_NAMES[language] : undefined
+  if (!name || language === 'en') return ''
+  return `\n\nReply in ${name}: the "summary", "observations" and "suggestions" values must be written in ${name}. The JSON keys and every number stay exactly as specified above.`
+}
+
 export function languageRule(language?: string): string {
   const name = language ? LANGUAGE_NAMES[language] : undefined
   if (!name || language === 'en') return ''

@@ -12,18 +12,28 @@ import { AdoptionPrompt } from '../components/AdoptionPrompt'
 import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
 import { convert, goalFor, isObjective } from '@/domain'
-import { useT } from '../i18n'
+import { useLang } from '../i18n'
 import { PlanCard } from '../components/PlanCard'
+import { InsightsCard, type InsightsState } from '../components/InsightsCard'
+import { getEstimator, getRepositories } from '@/data'
+import { buildInsightInference } from '@/data/estimatedMeal'
+import { reportMealCount, type WeekReport } from '@/domain'
 import { useNudged } from '../useNudged'
-import { WeekView, WeekTeaser, weekRangeLabel } from '../components/WeekView'
-import { readWeek } from '@/data/week'
+import {
+  WeekView,
+  WeekTeaser,
+  WeekBlocked,
+  weekBlocker,
+  weekRangeLabel,
+} from '../components/WeekView'
+import { readWeek, readWeekReport } from '@/data/week'
 import type { WeekEnergy } from '@/domain'
 import { currentUserId } from '@/data/session'
 import { useSearchParams } from 'react-router-dom'
 import type { StringKey } from '../i18n/strings'
 
 export function Today() {
-  const t = useT()
+  const { t, lang } = useLang()
   const [params, setParams] = useSearchParams()
   /**
    * Day or week, held in the URL so the choice survives a reload and can be
@@ -72,13 +82,57 @@ export function Today() {
   useEffect(() => {
     if (view !== 'week') return
     let cancelled = false
-    void readWeek(currentUserId(), day, objective)
+    void readWeek(currentUserId(), day, objective, getRepositories())
       .then((result) => !cancelled && setWeek(result))
       .catch(() => undefined)
     return () => {
       cancelled = true
     }
   }, [view, day, objective, revision])
+
+  /**
+   * The insights request, and the payload it would send.
+   *
+   * The report is built as soon as the week is, so the card can say how many
+   * meals are about to leave the device BEFORE anyone agrees to send them.
+   * Building it costs one extra read and buys a specific promise instead of a
+   * vague one.
+   */
+  const [insights, setInsights] = useState<InsightsState>({ kind: 'idle' })
+  const [report, setReport] = useState<WeekReport>()
+  useEffect(() => {
+    if (view !== 'week') return
+    let cancelled = false
+    void readWeekReport(currentUserId(), day, objective, { weightKg, targetKg }, getRepositories())
+      .then((built) => !cancelled && setReport(built))
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+    // Deliberately not keyed on weight/target: they only decorate the payload,
+    // and rebuilding it on every stepper tap would be work nobody asked for.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, day, objective, revision])
+
+  /** Asks, records the attempt either way, and keeps the answer on screen. */
+  const askForInsights = async () => {
+    if (!report) return
+    setInsights({ kind: 'running' })
+    try {
+      const insight = await getEstimator().weekInsights(report, { language: lang })
+      setInsights({ kind: 'done', insight, at: Date.now() })
+      // The audit trail applies here exactly as it does to an estimate (D13):
+      // advice the app gave must be answerable for later.
+      await getRepositories()
+        .inferences.add(buildInsightInference(currentUserId(), report, insight))
+        .catch(() => undefined)
+    } catch (cause) {
+      setInsights({
+        kind: 'failed',
+        message: cause instanceof Error ? cause.message : String(cause),
+      })
+    }
+  }
 
   const [targetKg, nudgeTarget] = useNudged(
     weightTarget ? convert(weightTarget.target, 'kg') : undefined,
@@ -147,7 +201,25 @@ export function Today() {
 
       {view === 'week' ? (
         week ? (
-          <WeekView week={week} objective={objective} />
+          weekBlocker(week, objective) ? (
+            <WeekBlocked
+              blocker={weekBlocker(week, objective)!}
+              onGo={() => setView('day')}
+            />
+          ) : (
+            <WeekView
+              week={week}
+              objective={objective}
+              insights={
+                <InsightsCard
+                  state={insights}
+                  mealCount={report ? reportMealCount(report) : 0}
+                  onAsk={() => void askForInsights()}
+                  onDismiss={() => setInsights({ kind: 'idle' })}
+                />
+              }
+            />
+          )
         ) : (
           <p className="text-sm text-ink-muted">{t('usuals.looking')}</p>
         )

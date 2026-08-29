@@ -485,6 +485,33 @@ const en = {
   'adjust.less': 'Less {food}',
   'adjust.more': 'More {food}',
 
+  // ------------------------------------------------------------- insights --
+  'insights.reading': 'Reading your week…',
+  'insights.takesAMoment': 'Seven days of meals, your totals and your goal — usually under a minute.',
+  'insights.willSend': 'Sends {meals} meals across 7 days, your totals and your goal. No name, no account, nothing that says who you are.',
+  'insights.summary': 'The week',
+  'insights.observations': 'What is in the data',
+  'insights.suggestions': 'Worth trying',
+  'insights.nothingToSuggest': 'Nothing worth changing on this evidence.',
+  'insights.confidence': '{count}% sure',
+  'insights.lowConfidence': 'Thin week — worth reading as a hint rather than a verdict.',
+  'insights.askAgain': 'Ask again',
+  'insights.dismiss': 'Close',
+  'insights.failed': 'Could not read your week',
+  'insights.tryAgain': 'Try again',
+  'insights.readOn': 'Read on {date}',
+
+
+  // ------------------------------------------------- the week, when blocked --
+  'week.blockedBurnTitle': 'Set what you burn first',
+  'week.blockedBurnBody':
+    'The week compares what you ate against what you burned. Without a burn figure there is nothing to compare, so the chart and the summary stay away rather than guess at one.',
+  'week.blockedGoalTitle': 'Pick what you are working towards',
+  'week.blockedGoalBody':
+    'A week can be added up without a goal, but not judged. Choose one and the same seven days get a target to be measured against.',
+  'week.setItOnTheDay': 'Set it on the day',
+
+
   // ---------------------------------------------------------- the week view --
   'week.day': 'Day',
   'week.week': 'Week',
@@ -1040,6 +1067,33 @@ const he: Dictionary = {
   'adjust.grams': 'גרמים של {food}',
   'adjust.less': 'פחות {food}',
   'adjust.more': 'יותר {food}',
+
+  // ------------------------------------------------------------- insights --
+  'insights.reading': 'קוראים את השבוע שלכם…',
+  'insights.takesAMoment': 'שבעה ימים של ארוחות, הסיכומים והיעד שלכם — בדרך כלל פחות מדקה.',
+  'insights.willSend': 'נשלחות {meals} ארוחות מ-7 ימים, הסיכומים שלכם והיעד. בלי שם, בלי חשבון, בלי שום דבר שמזהה אתכם.',
+  'insights.summary': 'השבוע',
+  'insights.observations': 'מה שרואים בנתונים',
+  'insights.suggestions': 'שווה לנסות',
+  'insights.nothingToSuggest': 'אין מה לשנות על סמך הנתונים האלה.',
+  'insights.confidence': 'ביטחון {count}%',
+  'insights.lowConfidence': 'שבוע דל — כדאי לקרוא את זה כרמז ולא כפסק דין.',
+  'insights.askAgain': 'לשאול שוב',
+  'insights.dismiss': 'סגירה',
+  'insights.failed': 'לא הצלחנו לקרוא את השבוע שלכם',
+  'insights.tryAgain': 'ניסיון נוסף',
+  'insights.readOn': 'נקרא ב{date}',
+
+
+  // ------------------------------------------------- the week, when blocked --
+  'week.blockedBurnTitle': 'קודם הזינו כמה אתם שורפים',
+  'week.blockedBurnBody':
+    'השבוע משווה בין מה שאכלתם למה ששרפתם. בלי נתון שריפה אין מה להשוות, ולכן הגרף והסיכום נשארים בחוץ במקום לנחש אותו.',
+  'week.blockedGoalTitle': 'בחרו למה אתם חותרים',
+  'week.blockedGoalBody':
+    'אפשר לסכם שבוע בלי יעד, אבל אי אפשר לשפוט אותו. בחרו אחד ואותם שבעה ימים יקבלו יעד להימדד מולו.',
+  'week.setItOnTheDay': 'להזין בתצוגת היום',
+
 
   // ---------------------------------------------------------- the week view --
   'week.day': 'יום',

@@ -234,6 +234,35 @@ Then Save meal / Back to the estimate / Let it ask instead.
   to answer." Answering returns the screen to the analyzing state and comes
   back with firmer numbers. At most two per meal.
 
+## The week, when it cannot say anything
+
+Two empty states, each naming the one figure that is missing, on a sand card at
+`max-w-md`:
+
+- **"Set what you burn first"** — *"The week compares what you ate against what
+  you burned. Without a burn figure there is nothing to compare, so the chart
+  and the summary stay away rather than guess at one."*
+- **"Pick what you are working towards"** — *"A week can be added up without a
+  goal, but not judged."*
+
+Both offer **Set it on the day**, which switches back to the day view. The
+chart, the summary and the AI card are all absent in these states, not greyed.
+
+## The week insights card
+
+Four states in the leaf-toned AI card:
+
+1. **Ask** — the title, the description, then a counted line: *"Sends 14 meals
+   across 7 days, your totals and your goal. No name, no account, nothing that
+   says who you are."* Then **Ask for insights**.
+2. **Reading** — a pulsing sage dot, *"Reading your week…"*, and *"Seven days of
+   meals, your totals and your goal — usually under a minute."*
+3. **Answer** — a sentence at 0.98rem, then **WHAT IS IN THE DATA** as a bulleted
+   list, then **WORTH TRYING** (or *"Nothing worth changing on this evidence."*
+   when the list is empty). A confidence pill, a low-confidence caveat under
+   50%, and **Ask again** / **Close**.
+4. **Failed** — the message in terracotta with **Try again**.
+
 ## Today: a day view and a week view
 
 One segmented control in the header — **Day · Week** — and the title changes

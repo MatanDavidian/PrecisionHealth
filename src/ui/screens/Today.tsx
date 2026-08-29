@@ -188,12 +188,6 @@ export function Today() {
               onToday={selected.goToday}
             />
           )}
-          <Link
-            to="/log"
-            className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
-          >
-            {t('today.logAMeal')}
-          </Link>
         </div>
       </header>
 

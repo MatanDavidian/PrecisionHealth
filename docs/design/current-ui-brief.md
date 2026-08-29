@@ -288,6 +288,10 @@ view; what rarely changes lives in Settings → You.
 The sidebar entry for Today reads **Week** while the week view is showing, so
 the highlighted item names what is on screen.
 
+The header carries no "Log a meal" button. Log is a top-level destination in
+both the sidebar and the bottom bar, so a second route to it on the screen next
+door was a duplicate paying for itself in width.
+
 ### Settings, in three tabs
 
 A vertical nav at 188px — **You · Photo analysis · Account & data** — with the

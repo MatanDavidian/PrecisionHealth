@@ -351,7 +351,6 @@ const en = {
   'signin.errCode': 'That code was not accepted',
 
   // --------------------------------------------------------------- today ---
-  'today.logAMeal': 'Log a meal',
   'today.steps': 'Steps',
   'today.workout': 'Workout',
   'today.strength': 'Strength · {minutes} min',
@@ -938,7 +937,6 @@ const he: Dictionary = {
   'signin.errCode': 'הקוד הזה לא התקבל',
 
   // --------------------------------------------------------------- today ---
-  'today.logAMeal': 'רישום ארוחה',
   'today.steps': 'צעדים',
   'today.workout': 'אימון',
   'today.strength': 'כוח · {minutes} דקות',

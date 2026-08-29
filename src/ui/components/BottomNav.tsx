@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAnalysis } from '../AnalysisProvider'
 import { useT } from '../i18n'
 import type { StringKey } from '../i18n/strings'
@@ -20,6 +20,11 @@ const ITEMS: { to: string; label: StringKey; icon: () => JSX.Element }[] = [
 export function BottomNav() {
   const { analysis } = useAnalysis()
   const t = useT()
+  const location = useLocation()
+  /** Same rule as the sidebar: the tab names what is on screen. */
+  const onWeek =
+    location.pathname === '/today' &&
+    new URLSearchParams(location.search).get('view') === 'week'
   /**
    * A dot on the Log tab: terracotta while a photo is being read, sage once a
    * result is waiting. Small enough to ignore, present enough to answer "did
@@ -54,7 +59,7 @@ export function BottomNav() {
               />
             )}
           </span>
-          {t(label)}
+          {t(to === '/today' && onWeek ? 'week.week' : label)}
         </NavLink>
       ))}
     </nav>

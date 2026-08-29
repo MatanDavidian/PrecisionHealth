@@ -42,7 +42,7 @@ export async function readWeek(
 
   const [meals, ...burnSets] = await Promise.all([
     repos.meals.listByRange(userId, { from: days[0], to: days.at(-1)! }),
-    ...days.map((day) => repos.observations.listByDay(userId, day, 'ACTIVE_ENERGY')),
+    ...days.map((day) => repos.observations.listByDay(userId, day, 'TOTAL_ENERGY')),
   ])
 
   // The store returns every version; take the newest of each meal and drop
@@ -84,7 +84,7 @@ export async function readWeekReport(
 
   const [meals, ...burnSets] = await Promise.all([
     repos.meals.listByRange(userId, { from: days[0], to: days.at(-1)! }),
-    ...days.map((day) => repos.observations.listByDay(userId, day, 'ACTIVE_ENERGY')),
+    ...days.map((day) => repos.observations.listByDay(userId, day, 'TOTAL_ENERGY')),
   ])
 
   const live = latestVersions(meals).map((meal) => {

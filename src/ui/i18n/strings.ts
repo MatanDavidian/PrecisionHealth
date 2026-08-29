@@ -141,12 +141,7 @@ const en = {
   'estimate.tryAnotherPhoto': 'Try another photo',
   'estimate.describeSomethingElse': 'Describe something else',
 
-  'estimate.question.hint':
-    'Answering sharpens the numbers below. Skipping keeps them as they are — this is not a question you have to answer.',
-  'estimate.question.placeholder': 'Grilled, no oil',
   'estimate.question.label': 'Your answer',
-  'estimate.question.send': 'Send answer',
-  'estimate.question.skip': 'Skip',
 
   // --------------------------------------------------------------- usuals --
   'usuals.forSlot': 'Usual for {slot}',
@@ -215,6 +210,21 @@ const en = {
 
   // ------------------------------------------------------------- settings ---
   'settings.title': 'Settings',
+  'settings.tabYou': 'You',
+  'settings.tabAi': 'Photo analysis',
+  'settings.tabAccount': 'Account & data',
+  'settings.blurbYou': 'Your goal, your weight, and the language everything speaks.',
+  'settings.blurbAi': 'Which model reads your photos, and on whose key.',
+  'settings.blurbAccount': 'Where your data lives, and who it belongs to.',
+  'settings.yourGoal': 'Your goal',
+  'settings.goalTail':
+    'It sets the daily line on Today and what the week is measured against — nothing else changes.',
+  'settings.weight': 'Weight',
+  'settings.current': 'Current',
+  'settings.target': 'Target',
+  'settings.lastRead': 'Last recorded {date}.',
+  'settings.notRecorded': 'Not recorded yet.',
+
   'settings.account': 'Account',
   'settings.language': 'Language',
   'settings.languageHint':
@@ -347,6 +357,14 @@ const en = {
   'today.strength': 'Strength · {minutes} min',
   'today.restDay': 'Rest day',
   'today.activeKcal': 'Active kcal',
+  'today.burnedTotal': 'Burned, total',
+  'today.yoursToSet': 'Yours to set',
+  'today.trackerRead': 'the tracker read {count}',
+  'today.setIt': 'Set it',
+  'today.untilYouSet': 'Until you set this, nothing is compared against it',
+  'today.lessBurned': 'Less burned',
+  'today.moreBurned': 'More burned',
+
   'today.sleep': 'Sleep',
   'today.hrv': 'HRV',
   'today.restingHr': 'Resting HR',
@@ -360,7 +378,6 @@ const en = {
   } as Plural,
   'today.reviewInNutrition': 'review in Nutrition',
   'today.aiTitle': 'See what changed this week',
-  'today.aiBody': 'Runs later, once there is enough history to compare against.',
 
   // ------------------------------------------------------- log, remainder --
   'log.notice.accuracyTitle': 'Accuracy or speed — your choice',
@@ -387,7 +404,6 @@ const en = {
   'log.details.gramsPlaceholder': '250',
 
   // ------------------------------------------------------------ settings ---
-  'settings.subtitle': 'Photo analysis runs on your own OpenAI account.',
   'settings.noBackend': 'No backend is configured in this build, so everything stays in this browser.',
   'settings.signedInAs': 'Signed in as',
   'settings.followsYou': 'Your data is saved to your account and follows you between devices.',
@@ -489,7 +505,6 @@ const en = {
   'insights.reading': 'Reading your week…',
   'insights.takesAMoment': 'Seven days of meals, your totals and your goal — usually under a minute.',
   'insights.willSend': 'Sends {meals} meals across 7 days, your totals and your goal. No name, no account, nothing that says who you are.',
-  'insights.summary': 'The week',
   'insights.observations': 'What is in the data',
   'insights.suggestions': 'Worth trying',
   'insights.nothingToSuggest': 'Nothing worth changing on this evidence.',
@@ -499,7 +514,6 @@ const en = {
   'insights.dismiss': 'Close',
   'insights.failed': 'Could not read your week',
   'insights.tryAgain': 'Try again',
-  'insights.readOn': 'Read on {date}',
 
 
   // ------------------------------------------------- the week, when blocked --
@@ -540,27 +554,15 @@ const en = {
   'week.insightsBody':
     'Sends these seven days and your goal, and reads back what to change. Nothing is sent until you ask.',
   'week.askForInsights': 'Ask for insights',
-  'week.notBuilt': 'not built yet',
   'week.noBurnData':
     'No calories burned recorded this week — set them on the day view and the balance becomes real.',
   'week.partialBurn': 'Burn recorded on {count} of 7 days; the target is scaled to match.',
 
 
   // ------------------------------------------------------------- the plan --
-  'plan.currentWeight': 'Current weight',
-  'plan.targetWeight': 'Target weight',
-  'plan.burnedPerDay': 'Burned per day',
-  'plan.goal': 'Goal',
-  'plan.change': 'Change',
-  'plan.done': 'Done',
-  'plan.byHand': 'Set by hand',
   'plan.youAreThere': 'You are there.',
   'plan.toLose': '{count} kg to lose',
   'plan.toGain': '{count} kg to gain',
-  'plan.ateBurned': 'Ate {eaten} · burned {burned}',
-  'plan.level': 'level',
-  'plan.over': '{count} kcal over',
-  'plan.under': '{count} kcal under',
   'plan.less': 'Less {name}',
   'plan.more': 'More {name}',
 
@@ -727,12 +729,7 @@ const he: Dictionary = {
   'estimate.tryAnotherPhoto': 'תמונה אחרת',
   'estimate.describeSomethingElse': 'לתאר משהו אחר',
 
-  'estimate.question.hint':
-    'תשובה תחדד את המספרים למטה. דילוג ישאיר אותם כמו שהם — זו לא שאלה שחייבים לענות עליה.',
-  'estimate.question.placeholder': 'בגריל, בלי שמן',
   'estimate.question.label': 'התשובה שלכם',
-  'estimate.question.send': 'שליחת תשובה',
-  'estimate.question.skip': 'דילוג',
 
   // --------------------------------------------------------------- usuals --
   'usuals.forSlot': 'הרגיל ל{slot}',
@@ -801,6 +798,20 @@ const he: Dictionary = {
 
   // ------------------------------------------------------------- settings ---
   'settings.title': 'הגדרות',
+  'settings.tabYou': 'אתם',
+  'settings.tabAi': 'ניתוח תמונות',
+  'settings.tabAccount': 'חשבון ונתונים',
+  'settings.blurbYou': 'היעד שלכם, המשקל שלכם, והשפה שהכל מדבר בה.',
+  'settings.blurbAi': 'איזה מודל קורא את התמונות שלכם, ועל חשבון איזה מפתח.',
+  'settings.blurbAccount': 'איפה הנתונים שלכם נמצאים, ולמי הם שייכים.',
+  'settings.yourGoal': 'היעד שלכם',
+  'settings.goalTail': 'זה קובע את הקו היומי במסך היום ומול מה השבוע נמדד — שום דבר אחר לא משתנה.',
+  'settings.weight': 'משקל',
+  'settings.current': 'נוכחי',
+  'settings.target': 'יעד',
+  'settings.lastRead': 'נרשם לאחרונה ב{date}.',
+  'settings.notRecorded': 'עוד לא נרשם.',
+
   'settings.account': 'חשבון',
   'settings.language': 'שפה',
   'settings.languageHint':
@@ -933,6 +944,14 @@ const he: Dictionary = {
   'today.strength': 'כוח · {minutes} דקות',
   'today.restDay': 'יום מנוחה',
   'today.activeKcal': 'קלוריות פעילות',
+  'today.burnedTotal': 'נשרף, סך הכל',
+  'today.yoursToSet': 'אתם קובעים',
+  'today.trackerRead': 'המכשיר הראה {count}',
+  'today.setIt': 'להזין',
+  'today.untilYouSet': 'עד שתזינו את זה, שום דבר לא מושווה מולו',
+  'today.lessBurned': 'פחות נשרף',
+  'today.moreBurned': 'יותר נשרף',
+
   'today.sleep': 'שינה',
   'today.hrv': 'HRV',
   'today.restingHr': 'דופק במנוחה',
@@ -946,7 +965,6 @@ const he: Dictionary = {
   },
   'today.reviewInNutrition': 'לסקירה במסך התזונה',
   'today.aiTitle': 'לראות מה השתנה השבוע',
-  'today.aiBody': 'ירוץ בהמשך, כשתהיה מספיק היסטוריה להשוות אליה.',
 
   // ------------------------------------------------------- log, remainder --
   'log.notice.accuracyTitle': 'דיוק או מהירות — אתם בוחרים',
@@ -973,7 +991,6 @@ const he: Dictionary = {
   'log.details.gramsPlaceholder': '250',
 
   // ------------------------------------------------------------ settings ---
-  'settings.subtitle': 'ניתוח תמונות רץ על חשבון OpenAI שלכם.',
   'settings.noBackend': 'לא הוגדר שרת בגרסה הזו, ולכן הכל נשאר בדפדפן הזה.',
   'settings.signedInAs': 'מחוברים כ',
   'settings.followsYou': 'הנתונים שלכם נשמרים בחשבון ומלווים אתכם בין מכשירים.',
@@ -1072,7 +1089,6 @@ const he: Dictionary = {
   'insights.reading': 'קוראים את השבוע שלכם…',
   'insights.takesAMoment': 'שבעה ימים של ארוחות, הסיכומים והיעד שלכם — בדרך כלל פחות מדקה.',
   'insights.willSend': 'נשלחות {meals} ארוחות מ-7 ימים, הסיכומים שלכם והיעד. בלי שם, בלי חשבון, בלי שום דבר שמזהה אתכם.',
-  'insights.summary': 'השבוע',
   'insights.observations': 'מה שרואים בנתונים',
   'insights.suggestions': 'שווה לנסות',
   'insights.nothingToSuggest': 'אין מה לשנות על סמך הנתונים האלה.',
@@ -1082,7 +1098,6 @@ const he: Dictionary = {
   'insights.dismiss': 'סגירה',
   'insights.failed': 'לא הצלחנו לקרוא את השבוע שלכם',
   'insights.tryAgain': 'ניסיון נוסף',
-  'insights.readOn': 'נקרא ב{date}',
 
 
   // ------------------------------------------------- the week, when blocked --
@@ -1123,26 +1138,14 @@ const he: Dictionary = {
   'week.insightsBody':
     'שולח את שבעת הימים האלה ואת היעד שלכם, ומחזיר מה כדאי לשנות. שום דבר לא נשלח עד שתבקשו.',
   'week.askForInsights': 'לבקש תובנות',
-  'week.notBuilt': 'עוד לא נבנה',
   'week.noBurnData': 'לא נרשמו קלוריות שנשרפו השבוע — הזינו אותן בתצוגת היום והמאזן יהפוך לאמיתי.',
   'week.partialBurn': 'נרשמה שריפה ב-{count} מתוך 7 ימים; היעד מותאם בהתאם.',
 
 
   // ------------------------------------------------------------- the plan --
-  'plan.currentWeight': 'משקל נוכחי',
-  'plan.targetWeight': 'משקל יעד',
-  'plan.burnedPerDay': 'נשרף ביום',
-  'plan.goal': 'יעד',
-  'plan.change': 'שינוי',
-  'plan.done': 'סיום',
-  'plan.byHand': 'הוזן ידנית',
   'plan.youAreThere': 'אתם שם.',
   'plan.toLose': 'נותרו {count} ק״ג לרדת',
   'plan.toGain': 'נותרו {count} ק״ג לעלות',
-  'plan.ateBurned': 'אכלתם {eaten} · שרפתם {burned}',
-  'plan.level': 'מאוזן',
-  'plan.over': '{count} קלוריות מעל',
-  'plan.under': '{count} קלוריות מתחת',
   'plan.less': 'פחות {name}',
   'plan.more': 'יותר {name}',
 

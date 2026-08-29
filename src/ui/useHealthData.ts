@@ -71,7 +71,15 @@ export interface DayData {
   goals: Goal[]
 }
 
-const TRACKED = ['STEPS', 'ACTIVE_ENERGY', 'HRV', 'RESTING_HEART_RATE', 'WEIGHT', 'BODY_FAT'] as const
+const TRACKED = [
+  'STEPS',
+  'ACTIVE_ENERGY',
+  'TOTAL_ENERGY',
+  'HRV',
+  'RESTING_HEART_RATE',
+  'WEIGHT',
+  'BODY_FAT',
+] as const
 
 export interface DayState {
   data?: DayState extends never ? never : DayData

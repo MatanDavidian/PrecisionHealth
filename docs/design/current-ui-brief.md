@@ -270,7 +270,32 @@ with it: "Today" becomes "This week", the date becomes "Aug 22 – Aug 28, 2026"
 and the day arrows disappear where they would mean nothing. The view is in the
 URL (`/today?view=week`).
 
-### The plan card (day view)
+### Where the numbers live
+
+There is no panel at the top of Today. What changes daily lives on the day
+view; what rarely changes lives in Settings → You.
+
+- **Activity card** gains a **Burned, total** row. Unset it reads *"Set it"*
+  with *"Until you set this, nothing is compared against it — the tracker read
+  640."* Set, it becomes a compact ± stepper in 50 kcal steps with *"Yours to
+  set · the tracker read 640"* beneath. This is a different quantity from the
+  **Active kcal** row above it: that is what a tracker reports for movement,
+  this is everything the body burned, and only the second one is what the week
+  measures eating against.
+- **Settings → You** holds the goal (five pills), Current and Target weight as
+  steppers, and Language.
+
+The sidebar entry for Today reads **Week** while the week view is showing, so
+the highlighted item names what is on screen.
+
+### Settings, in three tabs
+
+A vertical nav at 188px — **You · Photo analysis · Account & data** — with the
+subtitle under the title changing to match. Seven cards had grown up with
+nothing saying which belonged together; the split is by what someone came to
+do.
+
+### (Removed) The plan card
 
 One card above the dashboard holding the four numbers that drive everything, in
 a responsive four-column grid:

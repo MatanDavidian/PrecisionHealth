@@ -36,6 +36,18 @@ export type ObservationCode =
   // ACTIVITY
   | 'STEPS'
   | 'ACTIVE_ENERGY'
+  /**
+   * Everything the body burned in a day, resting metabolism included.
+   *
+   * Deliberately NOT the same thing as ACTIVE_ENERGY, which is what a tracker
+   * reports for movement alone. The difference is most of the number — roughly
+   * 1,500 kcal for an adult at rest — so comparing food intake against the
+   * active figure would understate expenditure by more than a meal a day and
+   * make every week read as a surplus.
+   *
+   * This is the figure the week measures eating against.
+   */
+  | 'TOTAL_ENERGY'
   | 'DISTANCE'
   // RECOVERY
   | 'HRV'
@@ -63,6 +75,7 @@ export type ObservationCode =
 export const CATEGORY_OF: Record<ObservationCode, ObservationCategory> = {
   STEPS: 'ACTIVITY',
   ACTIVE_ENERGY: 'ACTIVITY',
+  TOTAL_ENERGY: 'ACTIVITY',
   DISTANCE: 'ACTIVITY',
   HRV: 'RECOVERY',
   RESTING_HEART_RATE: 'RECOVERY',
@@ -96,6 +109,7 @@ export const CONFLICT_TOLERANCE: Partial<Record<ObservationCode, number>> = {
   BODY_FAT: 0.5, // %
   STEPS: 250, // count
   ACTIVE_ENERGY: 50, // kcal
+  TOTAL_ENERGY: 100, // kcal — a bigger number, so a wider band before it is a disagreement
   HRV: 5, // ms
   RESTING_HEART_RATE: 3, // bpm
 }

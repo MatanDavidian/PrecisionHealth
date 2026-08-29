@@ -51,7 +51,7 @@ async function seedWeek() {
     await repos.observations.add(
       buildObservation(
         USER,
-        { code: 'ACTIVE_ENERGY', value: 2400, unit: 'kcal', day: key(at) },
+        { code: 'TOTAL_ENERGY', value: 2400, unit: 'kcal', day: key(at) },
         ZONE,
       ),
     )
@@ -120,5 +120,31 @@ describe('the week report', () => {
     const older = await readWeekReport(USER, key(dayAgo(9)), 'LOSE_WEIGHT', undefined, repos)
     expect(report.days.every((d) => d.burnedKcal !== undefined)).toBe(true)
     expect(older.days.some((d) => d.burnedKcal === undefined)).toBe(true)
+  })
+})
+
+describe('total expenditure is not the tracker’s activity figure', () => {
+  it('ignores ACTIVE_ENERGY when totalling the week', async () => {
+    // The difference is most of the number — roughly 1,500 kcal a day at rest.
+    // Counting the active figure as total would make every week read as a
+    // surplus, so the week reads TOTAL_ENERGY and nothing else.
+    const db = openHealthDB()
+    open = await db
+    const repos = createIndexedDbRepositories(db)
+    const at = dayAgo(0)
+    at.setHours(13, 0, 0, 0)
+    await repos.observations.add(
+      buildObservation(USER, { code: 'ACTIVE_ENERGY', value: 640, unit: 'kcal', day: key(at) }, ZONE),
+    )
+    const report = await readWeekReport(USER, key(at), 'MAINTAIN', undefined, repos)
+    expect(report.totals.burnedKcal).toBe(0)
+    expect(report.totals.daysWithBurn).toBe(0)
+
+    await repos.observations.add(
+      buildObservation(USER, { code: 'TOTAL_ENERGY', value: 2400, unit: 'kcal', day: key(at) }, ZONE),
+    )
+    const withTotal = await readWeekReport(USER, key(at), 'MAINTAIN', undefined, repos)
+    expect(withTotal.totals.burnedKcal).toBe(2400)
+    expect(withTotal.totals.daysWithBurn).toBe(1)
   })
 })

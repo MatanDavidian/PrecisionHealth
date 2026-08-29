@@ -51,21 +51,25 @@ export function Stepper({
           disabled={value <= min}
           path="M5 12h14"
         />
-        <input
-          type="number"
-          inputMode="decimal"
-          step={step}
-          min={min}
-          max={max}
-          aria-label={label}
-          value={value.toFixed(decimals)}
-          onChange={(e) => {
-            const next = Number(e.target.value)
-            if (Number.isFinite(next)) onChange(clamp(next))
-          }}
-          className="tabular ltr-nums w-[5.2rem] bg-transparent text-2xl font-medium outline-none"
-        />
-        <span className="sr-only">{unit}</span>
+        {/* Number and unit are both Latin, so the pair travels together and
+            stays LTR even on a mirrored page. */}
+        <span className="ltr-nums flex items-baseline gap-1">
+          <input
+            type="number"
+            inputMode="decimal"
+            step={step}
+            min={min}
+            max={max}
+            aria-label={label}
+            value={value.toFixed(decimals)}
+            onChange={(e) => {
+              const next = Number(e.target.value)
+              if (Number.isFinite(next)) onChange(clamp(next))
+            }}
+            className="tabular w-[4.4rem] bg-transparent text-2xl font-medium outline-none"
+          />
+          <span className="text-sm text-ink-muted">{unit}</span>
+        </span>
         <Nudge
           label={t('plan.more', { name: label })}
           onClick={() => nudge(step)}

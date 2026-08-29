@@ -9,6 +9,19 @@ import { TrialModelPicker } from '../components/TrialModelPicker'
 import { signOut } from '@/data/session'
 import type { AppSettings } from '@/data/repositories'
 import { useLang, LANGUAGES } from '../i18n'
+import type { StringKey } from '../i18n/strings'
+import { YouSettings } from '../components/YouSettings'
+import { useActions, useDay } from '../useHealthData'
+import { useSelectedDay } from '../useSelectedDay'
+import { convert, goalFor, isObjective } from '@/domain'
+
+type SettingsTab = 'you' | 'ai' | 'account'
+
+const TABS: { tab: SettingsTab; label: StringKey; blurb: StringKey }[] = [
+  { tab: 'you', label: 'settings.tabYou', blurb: 'settings.blurbYou' },
+  { tab: 'ai', label: 'settings.tabAi', blurb: 'settings.blurbAi' },
+  { tab: 'account', label: 'settings.tabAccount', blurb: 'settings.blurbAccount' },
+]
 
 const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
 const field =
@@ -18,6 +31,25 @@ type TestState = { kind: 'idle' | 'testing' } | { kind: 'done'; ok: boolean; mes
 
 export function Settings() {
   const { t, lang, setLang } = useLang()
+  const [tab, setTab] = useState<SettingsTab>('you')
+  const { today } = useSelectedDay()
+  const { data } = useDay(today)
+  const { recordObservation, setGoal, setObjective } = useActions()
+
+  const goals = data?.goals ?? []
+  const weightTarget = goalFor(goals, 'WEIGHT')
+  const energyGoal = goalFor(goals, 'ENERGY')
+  const objective = isObjective(energyGoal?.objective) ? energyGoal.objective : undefined
+  const weight = data?.effective.WEIGHT
+  const weightKg = weight ? convert(weight.value, 'kg') : undefined
+  const targetKg = weightTarget ? convert(weightTarget.target, 'kg') : undefined
+  const weightRecordedOn =
+    weight?.time.kind === 'instant'
+      ? new Date(weight.time.at).toLocaleDateString(document.documentElement.lang || undefined, {
+          day: 'numeric',
+          month: 'short',
+        })
+      : undefined
   const { session, authAvailable, trial, refreshTrial } = useDataRevision()
   const [settings, setSettings] = useState<AppSettings>()
   const [keyInput, setKeyInput] = useState('')
@@ -88,72 +120,84 @@ export function Settings() {
     <div className="mx-auto max-w-2xl">
       <header className="pb-6">
         <h1 className="font-display text-4xl">{t('settings.title')}</h1>
-        <p className="pt-1 text-sm text-ink-muted">{t('settings.subtitle')}</p>
+        <p className="pt-1 text-sm text-ink-muted">
+          {t(TABS.find((option) => option.tab === tab)!.blurb)}
+        </p>
       </header>
 
-      <div className="grid gap-4">
-        {/*
-          First card, and deliberately so: someone who cannot read the rest of
-          this screen needs to find this one without reading anything.
-        */}
-        <Card label={t('settings.language')}>
-          <div className="flex flex-wrap gap-2">
-            {LANGUAGES.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setLang(option.value)}
-                aria-pressed={lang === option.value}
-                lang={option.value}
-                className={`rounded-full border px-4 py-2 text-sm transition-colors ${
-                  lang === option.value
-                    ? 'border-accent bg-accent text-surface'
-                    : 'border-hairline bg-surface hover:bg-card-soft'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          <p className="pt-3 text-xs text-ink-muted">{t('settings.languageHint')}</p>
-        </Card>
+      {/*
+        Three groups, because the screen had grown to seven cards with nothing
+        saying which belonged together. The split is by what a person came to
+        do: change something about themselves, change how photos are read, or
+        deal with the account.
+      */}
+      <div className="flex flex-wrap items-start gap-x-7 gap-y-5">
+        <nav className="flex w-full shrink-0 flex-row gap-1 sm:w-[188px] sm:flex-col">
+          {TABS.map((option) => (
+            <button
+              key={option.tab}
+              type="button"
+              onClick={() => setTab(option.tab)}
+              aria-current={tab === option.tab ? 'page' : undefined}
+              className={`rounded-xl px-3 py-2 text-start text-sm transition-colors ${
+                tab === option.tab
+                  ? 'bg-card-soft font-medium text-ink'
+                  : 'text-ink-muted hover:bg-card-soft/60'
+              }`}
+            >
+              {t(option.label)}
+            </button>
+          ))}
+        </nav>
 
-        <Card label={t('settings.account')}>
-          {!authAvailable ? (
-            <p className="text-sm text-ink-muted">{t('settings.noBackend')}</p>
-          ) : session.authenticated ? (
+        <div className="grid min-w-[300px] flex-1 gap-4">
+          {tab === 'you' && (
             <>
-              <p className="text-sm">
-                {t('settings.signedInAs')} <span className="font-medium">{session.email}</span>
-              </p>
-              <p className="pt-1 text-xs text-ink-muted">{t('settings.followsYou')}</p>
+              <YouSettings
+                objective={objective}
+                weightKg={weightKg}
+                targetKg={targetKg}
+                weightRecordedOn={weightRecordedOn}
+                onObjective={(next) => void setObjective(next)}
+                onWeight={(kg) =>
+                  void recordObservation({ code: 'WEIGHT', value: kg, unit: 'kg', day: today })
+                }
+                onTarget={(kg) =>
+                  void setGoal({ metric: 'WEIGHT', target: kg, unit: 'kg', direction: 'REACH' })
+                }
+              />
+              <Card label={t('settings.language')}>
+              <div className="flex flex-wrap gap-2">
+              {LANGUAGES.map((option) => (
               <button
-                type="button"
-                onClick={() => void signOut()}
-                className="mt-3 rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+              key={option.value}
+              type="button"
+              onClick={() => setLang(option.value)}
+              aria-pressed={lang === option.value}
+              lang={option.value}
+              className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+              lang === option.value
+              ? 'border-accent bg-accent text-surface'
+              : 'border-hairline bg-surface hover:bg-card-soft'
+              }`}
               >
-                {t('settings.signOut')}
+              {option.label}
               </button>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-ink-muted">{t('settings.notSignedIn')}</p>
-              <Link
-                to="/signin"
-                className="mt-3 inline-block rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
-              >
-                {t('settings.signIn')}
-              </Link>
+              ))}
+              </div>
+              <p className="pt-3 text-xs text-ink-muted">{t('settings.languageHint')}</p>
+              </Card>
             </>
           )}
-        </Card>
 
-        <Card label={t('settings.apiKey')}>
-          <div className="pb-3">
-            <label className={label} htmlFor="apiKey">
+          {tab === 'ai' && (
+            <>
+              <Card label={t('settings.apiKey')}>
+              <div className="pb-3">
+              <label className={label} htmlFor="apiKey">
               {t('settings.key')}
-            </label>
-            <input
+              </label>
+              <input
               id="apiKey"
               type="password"
               autoComplete="off"
@@ -162,262 +206,295 @@ export function Settings() {
               placeholder={t('settings.keyPlaceholder')}
               value={keyInput}
               onChange={(e) => {
-                setKeyInput(e.target.value)
-                setTest({ kind: 'idle' })
+              setKeyInput(e.target.value)
+              setTest({ kind: 'idle' })
               }}
-            />
-          </div>
+              />
+              </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
+              <div className="flex flex-wrap items-center gap-3">
+              <button
               type="button"
               onClick={() => {
-                const key = keyInput.trim()
-                // Saving a key is exactly when the account's model list becomes
-                // available — waiting for a separate Refresh click just looks
-                // like the feature is broken.
-                void update({ apiKey: key }).then(() => loadModels(key))
+              const key = keyInput.trim()
+              // Saving a key is exactly when the account's model list becomes
+              // available — waiting for a separate Refresh click just looks
+              // like the feature is broken.
+              void update({ apiKey: key }).then(() => loadModels(key))
               }}
               className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
-            >
+              >
               {t('settings.saveKey')}
-            </button>
-            <button
+              </button>
+              <button
               type="button"
               disabled={!keyInput.trim() || test.kind === 'testing'}
               onClick={() => void runTest()}
               className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft disabled:opacity-40"
-            >
+              >
               {test.kind === 'testing' ? t('settings.testing') : t('settings.testKey')}
-            </button>
-            {test.kind === 'done' && (
+              </button>
+              {test.kind === 'done' && (
               <span className={`text-xs ${test.ok ? 'text-leaf' : 'text-accent'}`}>
-                {test.message}
+              {test.message}
               </span>
-            )}
-            {saved && <span className="text-xs text-leaf">{t('settings.saved')}</span>}
-          </div>
+              )}
+              {saved && <span className="text-xs text-leaf">{t('settings.saved')}</span>}
+              </div>
 
-          {/*
-            Shown only when there is no key: the steps matter exactly once, and
-            the ChatGPT-Plus point is the misunderstanding almost everyone
-            arrives with.
-          */}
-          {!settings.apiKey && (
-            <div className="mt-4 rounded-xl border border-hairline p-3">
+              {/*
+              Shown only when there is no key: the steps matter exactly once, and
+              the ChatGPT-Plus point is the misunderstanding almost everyone
+              arrives with.
+              */}
+              {!settings.apiKey && (
+              <div className="mt-4 rounded-xl border border-hairline p-3">
               <p className="text-sm font-medium">{t('settings.noKeyTitle')}</p>
               <ol className="list-decimal space-y-1 ps-4 pt-2 text-xs leading-relaxed text-ink-muted">
-                <li>
-                  {t('settings.step1Open')}{' '}
-                  <a
-                    className="underline"
-                    href="https://platform.openai.com/api-keys"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    platform.openai.com/api-keys
-                  </a>{' '}
-                  {t('settings.step1')}
-                </li>
-                <li>
-                  {t('settings.step2Add')}{' '}
-                  <a
-                    className="underline"
-                    href="https://platform.openai.com/settings/organization/billing"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {t('settings.billing')}
-                  </a>{' '}
-                  {t('settings.step2Tail')}
-                </li>
-                <li>{t('settings.step3')}</li>
+              <li>
+              {t('settings.step1Open')}{' '}
+              <a
+              className="underline"
+              href="https://platform.openai.com/api-keys"
+              target="_blank"
+              rel="noreferrer"
+              >
+              platform.openai.com/api-keys
+              </a>{' '}
+              {t('settings.step1')}
+              </li>
+              <li>
+              {t('settings.step2Add')}{' '}
+              <a
+              className="underline"
+              href="https://platform.openai.com/settings/organization/billing"
+              target="_blank"
+              rel="noreferrer"
+              >
+              {t('settings.billing')}
+              </a>{' '}
+              {t('settings.step2Tail')}
+              </li>
+              <li>{t('settings.step3')}</li>
               </ol>
               <p className="pt-2 text-xs leading-relaxed text-ink-muted">
-                <strong>{t('settings.notIncludedBold')}</strong> {t('settings.notIncluded')}
+              <strong>{t('settings.notIncludedBold')}</strong> {t('settings.notIncluded')}
               </p>
-            </div>
-          )}
+              </div>
+              )}
 
-          <div className="pt-4 text-xs leading-relaxed text-ink-muted">
-            <p>
+              <div className="pt-4 text-xs leading-relaxed text-ink-muted">
+              <p>
               {t('settings.storedHead')} <strong>{t('settings.storedBold')}</strong>
               {t('settings.storedTail')}
-            </p>
-            <p className="pt-2">
+              </p>
+              <p className="pt-2">
               {t('settings.scriptsHead')}{' '}
               <a
-                className="underline"
-                href="https://platform.openai.com/settings/organization/limits"
-                target="_blank"
-                rel="noreferrer"
+              className="underline"
+              href="https://platform.openai.com/settings/organization/limits"
+              target="_blank"
+              rel="noreferrer"
               >
-                {t('settings.spendingLimit')}
+              {t('settings.spendingLimit')}
               </a>
               {t('settings.scriptsTail')}{' '}
               <a
-                className="underline"
-                href="https://openai.com/policies/api-data-usage-policies"
-                target="_blank"
-                rel="noreferrer"
+              className="underline"
+              href="https://openai.com/policies/api-data-usage-policies"
+              target="_blank"
+              rel="noreferrer"
               >
-                {t('settings.dataPolicies')}
+              {t('settings.dataPolicies')}
               </a>
               .
-            </p>
-          </div>
-        </Card>
-
-        {trial && !trial.exhausted && (
-          <Card label={t('settings.accuracyOrSpeed')}>
-            <p className="pb-3 text-sm text-ink-muted">{t('settings.accuracyBody')}</p>
-            <TrialModelPicker
+              </p>
+              </div>
+              </Card>
+              {trial && !trial.exhausted && (
+              <Card label={t('settings.accuracyOrSpeed')}>
+              <p className="pb-3 text-sm text-ink-muted">{t('settings.accuracyBody')}</p>
+              <TrialModelPicker
               trial={trial}
               selected={settings.trialModel}
               onSelect={(model) => {
-                void update({ trialModel: model })
-                refreshTrial()
+              void update({ trialModel: model })
+              refreshTrial()
               }}
-            />
-          </Card>
-        )}
-
-        <Card label={t('settings.analysis')}>
-          <div className="pb-4">
-            <div className="flex items-baseline justify-between gap-3 pb-1">
+              />
+              </Card>
+              )}
+              <Card label={t('settings.analysis')}>
+              <div className="pb-4">
+              <div className="flex items-baseline justify-between gap-3 pb-1">
               <label className={label.replace(' pb-1', '')} htmlFor="model">
-                {t('settings.model')}
+              {t('settings.model')}
               </label>
               {settings.apiKey && (
-                <button
-                  type="button"
-                  onClick={() => void loadModels(settings.apiKey!)}
-                  disabled={loadingModels}
-                  className="text-xs text-ink-muted underline disabled:opacity-40"
-                >
-                  {loadingModels ? t('settings.loading') : t('settings.refreshList')}
-                </button>
-              )}
-            </div>
-
-            {models.length > 0 && !customModel ? (
-              <select
-                id="model"
-                className={field}
-                value={models.some((m) => m.id === settings.model) ? settings.model : ''}
-                onChange={(e) => {
-                  if (e.target.value === '__custom__') {
-                    setCustomModel(true)
-                    return
-                  }
-                  void update({ model: e.target.value })
-                }}
-              >
-                {!models.some((m) => m.id === settings.model) && (
-                  <option value="">{t('settings.notInList', { model: settings.model })}</option>
-                )}
-                <optgroup label={t('settings.canRead')}>
-                  {models
-                    .filter((m) => m.vision)
-                    .map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.id}
-                        {m.note ? ` — ${m.note}` : ''}
-                      </option>
-                    ))}
-                </optgroup>
-                {/* Shown but unselectable: seeing why a model is missing beats
-                    wondering where it went. */}
-                <optgroup label={t('settings.textOnly')}>
-                  {models
-                    .filter((m) => !m.vision)
-                    .map((m) => (
-                      <option key={m.id} value={m.id} disabled>
-                        {m.id}
-                      </option>
-                    ))}
-                </optgroup>
-                <option value="__custom__">{t('settings.typeMyself')}</option>
-              </select>
-            ) : (
-              <input
-                id="model"
-                className={field}
-                value={settings.model}
-                onChange={(e) => setSettings({ ...settings, model: e.target.value })}
-                onBlur={(e) => void update({ model: e.target.value.trim() || DEFAULT_SETTINGS.model })}
-              />
-            )}
-
-            <p className="pt-1 text-xs text-ink-muted">
-              {loadingModels
-                ? t('settings.loadingModels')
-                : modelsError
-                  ? modelsError
-                  : models.length > 0
-                    ? t('settings.modelsCount', {
-                        vision: models.filter((m) => m.vision).length,
-                        total: models.length,
-                      })
-                    : settings.apiKey
-                      ? t('settings.saveThenRefresh')
-                      : t('settings.addKeyToLoad')}{' '}
-              {t('settings.defaultIs', { model: DEFAULT_SETTINGS.model })}
-            </p>
-
-            {models.length > 0 && customModel && (
               <button
-                type="button"
-                onClick={() => setCustomModel(false)}
-                className="pt-1 text-xs text-ink-muted underline"
+              type="button"
+              onClick={() => void loadModels(settings.apiKey!)}
+              disabled={loadingModels}
+              className="text-xs text-ink-muted underline disabled:opacity-40"
               >
-                {t('settings.pickFromList')}
+              {loadingModels ? t('settings.loading') : t('settings.refreshList')}
               </button>
-            )}
-          </div>
+              )}
+              </div>
 
-          <label className="flex items-start gap-3 text-sm">
-            <input
+              {models.length > 0 && !customModel ? (
+              <select
+              id="model"
+              className={field}
+              value={models.some((m) => m.id === settings.model) ? settings.model : ''}
+              onChange={(e) => {
+              if (e.target.value === '__custom__') {
+              setCustomModel(true)
+              return
+              }
+              void update({ model: e.target.value })
+              }}
+              >
+              {!models.some((m) => m.id === settings.model) && (
+              <option value="">{t('settings.notInList', { model: settings.model })}</option>
+              )}
+              <optgroup label={t('settings.canRead')}>
+              {models
+              .filter((m) => m.vision)
+              .map((m) => (
+              <option key={m.id} value={m.id}>
+              {m.id}
+              {m.note ? ` — ${m.note}` : ''}
+              </option>
+              ))}
+              </optgroup>
+              {/* Shown but unselectable: seeing why a model is missing beats
+              wondering where it went. */}
+              <optgroup label={t('settings.textOnly')}>
+              {models
+              .filter((m) => !m.vision)
+              .map((m) => (
+              <option key={m.id} value={m.id} disabled>
+              {m.id}
+              </option>
+              ))}
+              </optgroup>
+              <option value="__custom__">{t('settings.typeMyself')}</option>
+              </select>
+              ) : (
+              <input
+              id="model"
+              className={field}
+              value={settings.model}
+              onChange={(e) => setSettings({ ...settings, model: e.target.value })}
+              onBlur={(e) => void update({ model: e.target.value.trim() || DEFAULT_SETTINGS.model })}
+              />
+              )}
+
+              <p className="pt-1 text-xs text-ink-muted">
+              {loadingModels
+              ? t('settings.loadingModels')
+              : modelsError
+              ? modelsError
+              : models.length > 0
+              ? t('settings.modelsCount', {
+              vision: models.filter((m) => m.vision).length,
+              total: models.length,
+              })
+              : settings.apiKey
+              ? t('settings.saveThenRefresh')
+              : t('settings.addKeyToLoad')}{' '}
+              {t('settings.defaultIs', { model: DEFAULT_SETTINGS.model })}
+              </p>
+
+              {models.length > 0 && customModel && (
+              <button
+              type="button"
+              onClick={() => setCustomModel(false)}
+              className="pt-1 text-xs text-ink-muted underline"
+              >
+              {t('settings.pickFromList')}
+              </button>
+              )}
+              </div>
+
+              <label className="flex items-start gap-3 text-sm">
+              <input
               type="checkbox"
               className="mt-0.5"
               checked={settings.autoAnalyze}
               onChange={(e) => void update({ autoAnalyze: e.target.checked })}
-            />
-            <span>
+              />
+              <span>
               {t('settings.autoAnalyze')}
               <span className="block text-xs text-ink-muted">{t('settings.autoAnalyzeHint')}</span>
-            </span>
-          </label>
-        </Card>
-
-        <Card label={t('settings.photos')}>
-          <p className="text-sm text-ink-muted">{t('settings.photosBody')}</p>
-        </Card>
-
-        <Card label={t('settings.storage')}>
-          {session.authenticated ? (
-            <>
-              <p className="text-sm">{t('settings.storageAccount')}</p>
-              <p className="pt-2 text-xs text-ink-muted">{t('settings.storageAccountNote')}</p>
-            </>
-          ) : (
-            <>
-              <p className="text-sm">
-                {t('settings.storageLocal', {
-                  usage: usage ? t('settings.storageUsage', { usage }) : '',
-                })}
-              </p>
-              <p className="pt-2 text-xs text-ink-muted">{t('settings.storageLocalNote')}</p>
+              </span>
+              </label>
+              </Card>
+              <Card label={t('settings.photos')}>
+              <p className="text-sm text-ink-muted">{t('settings.photosBody')}</p>
+              </Card>
             </>
           )}
 
-          <p className="pt-3 text-xs text-ink-muted">
-            <span className="rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-medium">
+          {tab === 'account' && (
+            <>
+              <Card label={t('settings.account')}>
+              {!authAvailable ? (
+              <p className="text-sm text-ink-muted">{t('settings.noBackend')}</p>
+              ) : session.authenticated ? (
+              <>
+              <p className="text-sm">
+              {t('settings.signedInAs')} <span className="font-medium">{session.email}</span>
+              </p>
+              <p className="pt-1 text-xs text-ink-muted">{t('settings.followsYou')}</p>
+              <button
+              type="button"
+              onClick={() => void signOut()}
+              className="mt-3 rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+              >
+              {t('settings.signOut')}
+              </button>
+              </>
+              ) : (
+              <>
+              <p className="text-sm text-ink-muted">{t('settings.notSignedIn')}</p>
+              <Link
+              to="/signin"
+              className="mt-3 inline-block rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+              >
+              {t('settings.signIn')}
+              </Link>
+              </>
+              )}
+              </Card>
+              <Card label={t('settings.storage')}>
+              {session.authenticated ? (
+              <>
+              <p className="text-sm">{t('settings.storageAccount')}</p>
+              <p className="pt-2 text-xs text-ink-muted">{t('settings.storageAccountNote')}</p>
+              </>
+              ) : (
+              <>
+              <p className="text-sm">
+              {t('settings.storageLocal', {
+              usage: usage ? t('settings.storageUsage', { usage }) : '',
+              })}
+              </p>
+              <p className="pt-2 text-xs text-ink-muted">{t('settings.storageLocalNote')}</p>
+              </>
+              )}
+
+              <p className="pt-3 text-xs text-ink-muted">
+              <span className="rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-medium">
               {t('settings.notBuiltYet')}
-            </span>{' '}
-            {t('settings.exportNote')}
-          </p>
-        </Card>
+              </span>{' '}
+              {t('settings.exportNote')}
+              </p>
+              </Card>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

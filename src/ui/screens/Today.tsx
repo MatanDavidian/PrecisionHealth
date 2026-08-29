@@ -13,8 +13,8 @@ import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
 import { convert, goalFor, isObjective } from '@/domain'
 import { useLang } from '../i18n'
-import { PlanCard } from '../components/PlanCard'
 import { InsightsCard, type InsightsState } from '../components/InsightsCard'
+import { BurnedRow } from '../components/BurnedRow'
 import { getEstimator, getRepositories } from '@/data'
 import { buildInsightInference } from '@/data/estimatedMeal'
 import { reportMealCount, type WeekReport } from '@/domain'
@@ -49,7 +49,7 @@ export function Today() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
-  const { resolveConflict, recordObservation, setGoal, setObjective } = useActions()
+  const { resolveConflict, recordObservation } = useActions()
   const { session, revision } = useDataRevision()
 
   /*
@@ -63,14 +63,18 @@ export function Today() {
   const energyGoal = goalFor(goals, 'ENERGY')
   const objective = isObjective(energyGoal?.objective) ? energyGoal.objective : undefined
 
+  /*
+    Weight and target are READ here, not edited — they live in Settings now,
+    because they are facts about a person rather than about a day. They are
+    still gathered because the week report carries them as context.
+  */
+  const weightKg = loaded?.WEIGHT ? convert(loaded.WEIGHT.value, 'kg') : undefined
+  const targetKg = weightTarget ? convert(weightTarget.target, 'kg') : undefined
+
   // Nudging is per-tap; the store hears the number the user settled on.
-  const [weightKg, nudgeWeight] = useNudged(
-    loaded?.WEIGHT ? convert(loaded.WEIGHT.value, 'kg') : undefined,
-    (kg) => void recordObservation({ code: 'WEIGHT', value: kg, unit: 'kg', day }),
-  )
   const [burnedKcal, nudgeBurned] = useNudged(
-    loaded?.ACTIVE_ENERGY ? convert(loaded.ACTIVE_ENERGY.value, 'kcal') : undefined,
-    (kcal) => void recordObservation({ code: 'ACTIVE_ENERGY', value: kcal, unit: 'kcal', day }),
+    loaded?.TOTAL_ENERGY ? convert(loaded.TOTAL_ENERGY.value, 'kcal') : undefined,
+    (kcal) => void recordObservation({ code: 'TOTAL_ENERGY', value: kcal, unit: 'kcal', day }),
   )
   /**
    * The week, loaded only when it is being looked at.
@@ -134,10 +138,6 @@ export function Today() {
     }
   }
 
-  const [targetKg, nudgeTarget] = useNudged(
-    weightTarget ? convert(weightTarget.target, 'kg') : undefined,
-    (kg) => void setGoal({ metric: 'WEIGHT', target: kg, unit: 'kg', direction: 'REACH' }),
-  )
 
   if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
   if (!data) return <p className="text-sm text-ink-muted">{t('usuals.looking')}</p>
@@ -225,18 +225,6 @@ export function Today() {
         )
       ) : (
         <>
-      <PlanCard
-        weightKg={weightKg}
-        targetKg={targetKg}
-        burnedKcal={burnedKcal}
-        burnedByHand={effective.ACTIVE_ENERGY?.provenance.source === 'USER'}
-        eatenKcal={convert(nutrients.energy, 'kcal')}
-        objective={objective}
-        onWeight={nudgeWeight}
-        onTarget={nudgeTarget}
-        onBurned={nudgeBurned}
-        onObjective={(next) => void setObjective(next)}
-      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card label={t('today.nutrition')}>
@@ -279,6 +267,13 @@ export function Today() {
           <StatRow
             name={t('today.activeKcal')}
             value={effective.ACTIVE_ENERGY ? showNumber(effective.ACTIVE_ENERGY.value, 'kcal') : '—'}
+          />
+          <BurnedRow
+            kcal={burnedKcal}
+            trackerKcal={
+              effective.ACTIVE_ENERGY ? convert(effective.ACTIVE_ENERGY.value, 'kcal') : undefined
+            }
+            onChange={nudgeBurned}
           />
         </Card>
 

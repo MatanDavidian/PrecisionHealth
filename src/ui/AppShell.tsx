@@ -4,6 +4,7 @@ import { BottomNav } from './components/BottomNav'
 import { WriteFailureBanner } from './components/WriteFailureBanner'
 import { AnalysisBar } from './components/AnalysisBar'
 import { LanguagePrompt } from './components/LanguagePrompt'
+import { useLocation } from 'react-router-dom'
 import { useT } from './i18n'
 import type { StringKey } from './i18n/strings'
 
@@ -68,6 +69,20 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function NavItem({ to, label }: { to: string; label: StringKey }) {
   const t = useT()
+  const location = useLocation()
+  /**
+   * Today's entry reads "Week" while the week is showing.
+   *
+   * The sidebar names the thing on screen, and calling it "Today" when the
+   * page says "This week" makes the highlighted item look like it is lying
+   * about where you are.
+   */
+  const showing: StringKey =
+    to === '/today' &&
+    location.pathname === '/today' &&
+    new URLSearchParams(location.search).get('view') === 'week'
+      ? 'week.week'
+      : label
   return (
     <NavLink
       to={to}
@@ -78,7 +93,7 @@ function NavItem({ to, label }: { to: string; label: StringKey }) {
         ].join(' ')
       }
     >
-      {t(label)}
+      {t(showing)}
     </NavLink>
   )
 }

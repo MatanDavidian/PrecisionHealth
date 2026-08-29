@@ -83,14 +83,37 @@ Drawn with divs. Fourteen rectangles and a baseline do not justify a charting
 dependency, and the one thing a library would add — axes and ticks — is exactly
 what this design does without.
 
-## 5. The plan card
+## 5. Where the numbers live
 
-The four numbers that drive all of this — weight, target weight, burned, and the
-objective — moved into one card at the top of the day view. They had been spread
-across three read-only cards, which made the dashboard a report rather than
-something you use, and left "am I ahead or behind today?" unanswered anywhere.
-The balance strip at the bottom is that answer, and it is why the four are
-gathered: it cannot be computed without all of them.
+**Superseded (Aug 2026).** These four briefly shared one card at the top of the
+day view. That was wrong, and the owner said so: it put the parts that never
+change — your goal, your target — at the top of the screen you open most often,
+and made the dashboard shout about them.
+
+They are split by how often they move:
+
+- **Today → Activity** keeps *Burned, total*, because it is a fact about a day
+  and you set it daily.
+- **Settings → You** keeps the goal and both weights, because they are facts
+  about a person that you set once and revisit rarely.
+
+The balance strip went with the card. It is no loss: the week view answers "am
+I ahead or behind" over a span where the question actually means something,
+and a single day's net is mostly noise.
+
+### One quantity became two
+
+The design showing *Active kcal* and *Burned, total* as separate rows made an
+error visible that had been there since the manual-entry slice: they are
+different numbers. Active energy is what a tracker reports for movement; total
+expenditure includes resting metabolism, which is most of it — roughly 1,500
+kcal a day for an adult.
+
+Conflating them meant a tracker's active figure would have been compared
+against food intake as if it were total burn, understating expenditure by more
+than a meal a day and making every week read as a surplus. `TOTAL_ENERGY` is
+now its own observation code, and it is the one the week measures against. A
+test pins the distinction.
 
 **Steppers, not text fields.** These numbers move by small known amounts from
 where they already are — 79.4 to 79.3, never to something unrelated — so a

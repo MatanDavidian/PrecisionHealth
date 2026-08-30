@@ -44,9 +44,12 @@ export function LanguagePrompt() {
               lang={option.value}
               dir={option.value === 'he' ? 'rtl' : 'ltr'}
               onClick={() => setLang(option.value)}
+              /* Ink, like every other selection. Accent here would read as the
+                 app recommending a language, when all this marks is the one
+                 guessed from the browser. */
               className={`rounded-full border px-4 py-3 text-base transition-colors ${
                 lang === option.value
-                  ? 'border-accent bg-accent font-medium text-surface'
+                  ? 'border-ink bg-ink font-medium text-canvas'
                   : 'border-hairline bg-surface hover:bg-card-soft'
               }`}
             >

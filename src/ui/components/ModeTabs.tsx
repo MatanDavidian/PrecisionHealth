@@ -9,6 +9,8 @@
  * list above a camera above a details form, where the thing you wanted was
  * always below the fold.
  */
+import { PILL, PILL_OFF, PILL_ON } from './segmented'
+
 export interface ModeTab<T extends string> {
   value: T
   label: string
@@ -34,7 +36,7 @@ export function ModeTabs<T extends string>({
     <div
       role="tablist"
       aria-label={label}
-      className="mb-4 flex gap-1 rounded-full bg-card p-1"
+      className="mb-[18px] flex gap-1 rounded-full bg-card p-1"
     >
       {tabs.map((tab) => {
         const active = tab.value === value
@@ -47,9 +49,7 @@ export function ModeTabs<T extends string>({
             aria-selected={active}
             aria-label={tab.description}
             onClick={() => onChange(tab.value)}
-            className={`flex-1 rounded-full py-2 text-center text-sm transition-colors ${
-              active ? 'bg-ink font-medium text-surface' : 'text-ink-muted hover:text-ink'
-            }`}
+            className={`flex-1 py-[9px] text-center ${PILL} ${active ? PILL_ON : PILL_OFF}`}
           >
             {tab.label}
           </button>

@@ -7,6 +7,7 @@ import { show, showDuration, showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
+import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { DataUnavailable } from '../components/DataUnavailable'
 import { AdoptionPrompt } from '../components/AdoptionPrompt'
 import { useDataRevision } from '../DataProvider'
@@ -170,9 +171,7 @@ export function Today() {
                 type="button"
                 onClick={() => setView(option)}
                 aria-pressed={view === option}
-                className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-                  view === option ? 'bg-ink font-medium text-surface' : 'text-ink-muted hover:text-ink'
-                }`}
+                className={`px-4 py-1.5 ${PILL} ${view === option ? PILL_ON : PILL_OFF}`}
               >
                 {t(option === 'day' ? 'week.day' : 'week.week')}
               </button>

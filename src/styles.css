@@ -15,6 +15,19 @@
   --color-leaf: #6f7f53;
   --color-leaf-soft: #eaf1da;
   --color-ink: #2b2721;
+  /*
+   * Two greys, and the difference between them is the difference between a
+   * label and a sentence.
+   *
+   * `ink-muted` is for text you are meant to skim past on the way to something
+   * else: the uppercase eyebrows over a card, a date under a heading, the
+   * unselected entries in a nav. `ink-soft` is for prose you are meant to
+   * actually read — the explanatory line inside a card, the inactive half of a
+   * switch — and it is darker because at 14px the lighter one asks you to work
+   * for it. Collapsing them into one grey is what makes a screen look flat and
+   * slightly out of focus against the design.
+   */
+  --color-ink-soft: #6f6a60;
   --color-ink-muted: #8a8375;
   --color-hairline: #ddd4c2;
 

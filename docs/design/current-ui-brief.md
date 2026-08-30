@@ -288,6 +288,27 @@ view; what rarely changes lives in Settings → You.
 The sidebar entry for Today reads **Week** while the week view is showing, so
 the highlighted item names what is on screen.
 
+## Two greys, and one rule for selection
+
+`ink-muted` (#8a8375) is for text you skim past — uppercase eyebrows, the date
+under a heading, unselected entries in the app's own sidebar. `ink-soft`
+(#6f6a60) is for text you actually read: the explanatory line inside a card, and
+the unselected half of a switch. At 14px the lighter grey asks you to work for
+it, which is why the design uses the darker one there and why collapsing both
+into `ink-muted` made every screen look slightly out of focus.
+
+Selection is filled with **ink, never accent**. Accent (#c2673e) belongs to the
+one action a screen wants you to take; a row where five goal pills can each glow
+orange leaves nothing able to say "this is the button". The three secondary
+navs — Log's Photo/Write/Again, the Day/Week switch, and Settings' tabs — share
+one pill recipe in `src/ui/components/segmented.ts` so they cannot drift apart
+again. Settings' selected tab fills `card` rather than `card-soft`, a shade
+deeper than the sidebar above it, so a second level of navigation reads as
+underneath the first rather than beside it.
+
+On a phone all three become full-width pill rows; Settings' vertical 188px list
+only appears from `sm` up, where there is width to spend on it.
+
 The header carries no "Log a meal" button. Log is a top-level destination in
 both the sidebar and the bottom bar, so a second route to it on the screen next
 door was a duplicate paying for itself in width.

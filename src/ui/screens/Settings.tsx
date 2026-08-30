@@ -132,17 +132,25 @@ export function Settings() {
         deal with the account.
       */}
       <div className="flex flex-wrap items-start gap-x-7 gap-y-5">
-        <nav className="flex w-full shrink-0 flex-row gap-1 sm:w-[188px] sm:flex-col">
+        {/*
+          Two shapes for one nav. On a phone it is a pill row like every other
+          switch in the app, because 188px of vertical list would eat the screen
+          before the settings started. From `sm` up it is the vertical list the
+          design draws, where the selected entry is filled `card` rather than
+          `card-soft` — a shade deeper than the app's own sidebar, so a second
+          level of navigation reads as underneath the first instead of beside it.
+        */}
+        <nav className="flex w-full shrink-0 gap-1 rounded-full bg-card p-1 sm:w-[188px] sm:flex-col sm:rounded-none sm:bg-transparent sm:p-0">
           {TABS.map((option) => (
             <button
               key={option.tab}
               type="button"
               onClick={() => setTab(option.tab)}
               aria-current={tab === option.tab ? 'page' : undefined}
-              className={`rounded-xl px-3 py-2 text-start text-sm transition-colors ${
+              className={`flex-1 rounded-full py-2 text-center text-[12.5px] transition-colors sm:flex-none sm:rounded-xl sm:px-3.5 sm:py-[9px] sm:text-start sm:text-sm ${
                 tab === option.tab
-                  ? 'bg-card-soft font-medium text-ink'
-                  : 'text-ink-muted hover:bg-card-soft/60'
+                  ? 'bg-ink font-medium text-canvas sm:bg-card sm:text-ink'
+                  : 'text-ink-soft sm:text-ink-muted sm:hover:bg-card-soft/60'
               }`}
             >
               {t(option.label)}
@@ -175,9 +183,9 @@ export function Settings() {
               onClick={() => setLang(option.value)}
               aria-pressed={lang === option.value}
               lang={option.value}
-              className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+              className={`rounded-full border px-[15px] py-[7px] text-[13.5px] transition-colors ${
               lang === option.value
-              ? 'border-accent bg-accent text-surface'
+              ? 'border-ink bg-ink font-medium text-canvas'
               : 'border-hairline bg-surface hover:bg-card-soft'
               }`}
               >

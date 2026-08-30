@@ -59,9 +59,11 @@ export function YouSettings({
               type="button"
               onClick={() => onObjective(option)}
               aria-pressed={objective === option}
-              className={`rounded-full border px-4 py-2 text-[0.84rem] transition-colors ${
+              /* Selected is ink, not accent: five orange-capable pills would
+                 leave the screen with no way left to say "this is the button". */
+              className={`rounded-full border px-[15px] py-[7px] text-[13.5px] transition-colors ${
                 objective === option
-                  ? 'border-accent bg-accent text-surface'
+                  ? 'border-ink bg-ink font-medium text-canvas'
                   : 'border-hairline bg-surface hover:bg-card-soft'
               }`}
             >

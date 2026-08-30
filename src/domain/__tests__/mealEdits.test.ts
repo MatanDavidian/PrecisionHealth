@@ -11,6 +11,9 @@ import {
   needsConfirmation,
   restoreMeal,
   retractMeal,
+  refill,
+  canRefill,
+  REFILL_MAX_G,
   scaleTo,
   userEntered,
   type AIInferenceId,
@@ -65,6 +68,60 @@ describe('re-portioning by weight', () => {
   it("leaves a weightless item's numbers alone rather than zeroing them", () => {
     const weightless = editableItem(item('oil', { amount: canonical(0, 'g') }))
     expect(scaleTo(weightless, 15)).toMatchObject({ amountG: 15, energyKcal: 400 })
+  })
+})
+
+describe('refill: ten percent more food', () => {
+  const portion = (amountG: number) => ({
+    amountG,
+    energyKcal: amountG * 2,
+    proteinG: amountG,
+    carbsG: amountG,
+    fatG: amountG,
+  })
+
+  it('adds ten percent to the grams and carries every macro with it', () => {
+    expect(refill(portion(200))).toMatchObject({
+      amountG: 220,
+      energyKcal: 440,
+      proteinG: 220,
+      carbsG: 220,
+      fatG: 220,
+    })
+  })
+
+  it('compounds: each press is ten percent of what is on screen', () => {
+    // Not 200 + 3 x 20. Three presses are three helpings, each measured
+    // against the plate as it stands.
+    expect(refill(refill(refill(portion(200)))).amountG).toBe(266)
+  })
+
+  it('always adds at least a gram, where ten percent would round to nothing', () => {
+    // The design's plain round() is a no-op below 5 g, which would leave the
+    // button looking broken on exactly the items where one gram matters.
+    expect(refill(portion(4)).amountG).toBe(5)
+    expect(refill(portion(1)).amountG).toBe(2)
+  })
+
+  it('does not let binary floating point add a phantom gram', () => {
+    // 100 * 1.1 is 110.00000000000001, so ceil() would say 111 here.
+    expect(refill(portion(100)).amountG).toBe(110)
+  })
+
+  it('stops at the ceiling instead of running away', () => {
+    expect(refill(portion(880)).amountG).toBe(REFILL_MAX_G)
+    expect(canRefill(portion(REFILL_MAX_G))).toBe(false)
+  })
+
+  it('never shrinks a food that is already above the ceiling', () => {
+    const big = portion(1200)
+    expect(refill(big)).toBe(big)
+    expect(canRefill(big)).toBe(false)
+  })
+
+  it('leaves a weightless item alone — there is nothing to take ten percent of', () => {
+    expect(refill(portion(0)).amountG).toBe(0)
+    expect(canRefill(portion(0))).toBe(false)
   })
 })
 

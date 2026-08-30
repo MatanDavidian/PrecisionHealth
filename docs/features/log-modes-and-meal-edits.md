@@ -143,6 +143,35 @@ no mode to leave, because a mode you have to notice is one people get stuck in.
 A zero-weight item cannot be scaled from nothing, so its numbers are left alone
 rather than zeroed.
 
+### Refill — ten percent more, without typing
+
+Beside the **Grams** field is a **Refill** button. One press adds 10% to the
+portion and carries calories, protein, carbs and fat with it by the same ratio.
+It is the same `scaleTo` arithmetic re-portioning already used, reached without
+working out what 10% of 320 is.
+
+It **compounds**: each press is ten percent of what is on screen, not of what
+was saved, so three presses read as three helpings rather than arithmetic about
+an original nobody is looking at any more. Once a food has moved, a **Back to
+N g** link appears beside *Remove this food* and restores that item's saved
+portion, macros and all — Refill is easy to press twice by accident, and the
+way back should not be "cancel the whole edit".
+
+Three details the numbers force, which the design's version does not have:
+
+- **It always adds at least a gram.** A plain `round(g * 1.1)` is a no-op below
+  5 g — ten percent of 4 rounds back to 4 — and the button would look broken on
+  exactly the small items where a gram matters most.
+- **It floors rather than ceils.** `ceil` looks like the obvious fix and is
+  wrong: `100 * 1.1` is `110.00000000000001` in binary floating point, so `ceil`
+  would invent a 111th gram.
+- **It stops at `REFILL_MAX_G` (900 g)** and never shrinks. A food already at or
+  above the ceiling is returned untouched and the button disables itself, rather
+  than being quietly pulled back down to 900.
+
+The arithmetic is `refill()` in [`src/domain/mealEdits.ts`](../../src/domain/mealEdits.ts),
+beside `scaleTo`, so it is unit-tested rather than living in a click handler.
+
 ### Removing one food
 
 Dropping a food takes its **whole correction chain** with it. `liveItems` hides

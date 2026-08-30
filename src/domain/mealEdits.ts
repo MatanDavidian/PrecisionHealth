@@ -95,6 +95,50 @@ export function scaleTo<T extends Portioned>(edit: T, amountG: number): T {
   }
 }
 
+/** How much one Refill adds to the portion. */
+export const REFILL_STEP = 0.1
+
+/**
+ * The most Refill will push a single food to, in grams.
+ *
+ * A ceiling rather than a judgement about what anyone can eat: without one, a
+ * button that multiplies runs away in a handful of taps, and a number nobody
+ * meant to type is worse than a button that stops.
+ */
+export const REFILL_MAX_G = 900
+
+/**
+ * One press of Refill: ten percent more food, and every number follows.
+ *
+ * The portion is the thing people get wrong, and they get it wrong in one
+ * direction — a bowl is bigger than the model thought, a second helping went
+ * unlogged. Ten percent is small enough to press twice without thinking and
+ * large enough to be worth pressing once.
+ *
+ * Compounding, deliberately: each press is ten percent of what is on screen,
+ * not of what was saved, so three presses read as three helpings rather than
+ * arithmetic about an original nobody is looking at any more.
+ *
+ * The `+ 1` floor is a correction to the design's plain `round`, which is a
+ * no-op below 5 g — ten percent of 4 rounds back to 4, and the button would
+ * look broken on exactly the small items where a gram matters most. It also
+ * avoids `ceil`, which trips over binary floating point: 100 * 1.1 is
+ * 110.00000000000001, and ceil would make that 111.
+ */
+export function refill<T extends Portioned>(edit: T): T {
+  // Nothing to take ten percent OF. Without this the `+ 1` floor below would
+  // give a weightless item a gram and leave its macros where they were.
+  if (edit.amountG <= 0) return edit
+  const next = Math.min(REFILL_MAX_G, Math.max(edit.amountG + 1, Math.round(edit.amountG * (1 + REFILL_STEP))))
+  // Never shrinks. An item already at or above the ceiling stays where it is
+  // rather than being quietly pulled back down to it.
+  return next <= edit.amountG ? edit : scaleTo(edit, next)
+}
+
+/** False once Refill can no longer add anything, so the button can say so. */
+export const canRefill = (edit: Portioned): boolean =>
+  edit.amountG > 0 && edit.amountG < REFILL_MAX_G
+
 const sameNumbers = (item: FoodItem, edit: FoodItemEdit): boolean =>
   item.name.trim() === edit.name.trim() &&
   close(grams(item), edit.amountG) &&

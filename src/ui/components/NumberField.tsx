@@ -21,6 +21,7 @@ export function NumberField({
   onChange,
   disabled,
   highlight,
+  trailing,
 }: {
   id: string
   label: string
@@ -29,23 +30,45 @@ export function NumberField({
   disabled?: boolean
   /** Marks a number that moved on its own, because the weight changed. */
   highlight?: boolean
+  /**
+   * A control sitting against the field, sharing its height.
+   *
+   * Refill lives here rather than under the grid because it acts on this one
+   * number: a button that changes the grams belongs beside the grams, where
+   * you can see what it did without looking for it.
+   */
+  trailing?: React.ReactNode
 }) {
   return (
     <div>
       <label className={labelClass} htmlFor={id}>
         {label}
       </label>
-      <input
-        id={id}
-        type="number"
-        min={0}
-        step="any"
-        disabled={disabled}
-        className={`${fieldClass} tabular ${highlight ? 'border-accent' : ''}`}
-        value={value === 0 ? '' : value}
-        placeholder="0"
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-      />
+      <div className="flex items-stretch gap-1.5">
+        <input
+          id={id}
+          type="number"
+          min={0}
+          step="any"
+          disabled={disabled}
+          /*
+            The border colour is SWAPPED, not appended. `fieldClass` already
+            carries `border-hairline`, and two utilities setting the same
+            property resolve by their order in the generated stylesheet rather
+            than in this string — so appending `border-accent` quietly lost,
+            and the mark on a number that moved on its own has never actually
+            shown. Replacing the token leaves nothing to resolve.
+          */
+          className={`${fieldClass.replace(
+            'border-hairline',
+            highlight ? 'border-accent' : 'border-hairline',
+          )} tabular min-w-0 flex-1`}
+          value={value === 0 ? '' : value}
+          placeholder="0"
+          onChange={(e) => onChange(Number(e.target.value) || 0)}
+        />
+        {trailing}
+      </div>
     </div>
   )
 }

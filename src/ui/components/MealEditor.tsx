@@ -1,11 +1,13 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import {
   MEAL_SLOTS,
   changesAnything,
   dayKey,
+  canRefill,
   editableItem,
   liveItems,
   needsConfirmation,
+  refill,
   scaleTo,
   timeOfDay,
   zonedTimeToUtc,
@@ -74,6 +76,18 @@ export function MealEditor({
   const [scaled, setScaled] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
+  /**
+   * What each food looked like when the form opened.
+   *
+   * Refill is easy to press twice by accident and its effect compounds, so
+   * there has to be a way back that is not "cancel the whole edit and start
+   * again". Kept per item, because each is portioned on its own.
+   */
+  const saved = useMemo(
+    () => new Map(liveItems(meal.items).map(editableItem).map((item) => [String(item.id), item])),
+    [meal],
+  )
+
   const remaining = items.filter((item) => !removed.includes(item.id))
 
   const update = (id: FoodItemId, patch: Partial<FoodItemEdit>) =>
@@ -87,6 +101,20 @@ export function MealEditor({
       current.map((item) => (item.id === id ? scaleTo(item, amountG) : item)),
     )
     setScaled((current) => (current.includes(id) ? current : [...current, id]))
+  }
+
+  /** Ten percent more food, and the macros follow — the arithmetic is domain. */
+  const addTenPercent = (id: FoodItemId) => {
+    setItems((current) => current.map((item) => (item.id === id ? refill(item) : item)))
+    setScaled((current) => (current.includes(id) ? current : [...current, id]))
+  }
+
+  /** Back to the portion as saved, macros and all. */
+  const revert = (id: FoodItemId) => {
+    const original = saved.get(String(id))
+    if (!original) return
+    setItems((current) => current.map((item) => (item.id === id ? original : item)))
+    setScaled((current) => current.filter((scaledId) => scaledId !== id))
   }
 
   const edit = (): MealEdit => ({
@@ -138,8 +166,15 @@ export function MealEditor({
             key={item.id}
             className={`mt-4 border-t border-hairline pt-4 first:mt-3 ${gone ? 'opacity-50' : ''}`}
           >
-            <div className="grid gap-3 sm:grid-cols-4">
-              <div className="sm:col-span-4">
+            {/*
+              The design's grid: as many 132px columns as fit, each food name
+              spanning the lot. It replaces a fixed four-column layout that had
+              carbs and fat sharing one cell — which worked until Refill needed
+              room beside the grams, and then squeezed that field to nothing and
+              clipped the last two.
+            */}
+            <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(132px,1fr))]">
+              <div className="col-span-full">
                 <label className={label} htmlFor={`name-${item.id}`}>
                   {t('estimate.food')}
                 </label>
@@ -158,6 +193,18 @@ export function MealEditor({
                 disabled={gone}
                 highlight={scaled.includes(item.id)}
                 onChange={(amountG) => reportion(item.id, amountG)}
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => addTenPercent(item.id)}
+                    disabled={gone || !canRefill(item)}
+                    title={t('editor.refillTitle')}
+                    className="flex shrink-0 items-center gap-[5px] whitespace-nowrap rounded-lg border border-hairline bg-surface px-[11px] text-xs font-medium text-ink-soft transition-colors hover:border-accent hover:bg-card-soft hover:text-accent disabled:opacity-40 disabled:hover:border-hairline disabled:hover:bg-surface disabled:hover:text-ink-soft"
+                  >
+                    <RefillIcon />
+                    {t('editor.refill')}
+                  </button>
+                }
               />
               <NumberField
                 id={`kcal-${item.id}`}
@@ -173,35 +220,46 @@ export function MealEditor({
                 disabled={gone}
                 onChange={(proteinG) => update(item.id, { proteinG })}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <NumberField
-                  id={`carbs-${item.id}`}
-                  label={t('estimate.carbsG')}
-                  value={item.carbsG}
-                  disabled={gone}
-                  onChange={(carbsG) => update(item.id, { carbsG })}
-                />
-                <NumberField
-                  id={`fat-${item.id}`}
-                  label={t('estimate.fatG')}
-                  value={item.fatG}
-                  disabled={gone}
-                  onChange={(fatG) => update(item.id, { fatG })}
-                />
-              </div>
+              <NumberField
+                id={`carbs-${item.id}`}
+                label={t('estimate.carbsG')}
+                value={item.carbsG}
+                disabled={gone}
+                onChange={(carbsG) => update(item.id, { carbsG })}
+              />
+              <NumberField
+                id={`fat-${item.id}`}
+                label={t('estimate.fatG')}
+                value={item.fatG}
+                disabled={gone}
+                onChange={(fatG) => update(item.id, { fatG })}
+              />
             </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                setRemoved((current) =>
-                  gone ? current.filter((id) => id !== item.id) : [...current, item.id],
-                )
-              }
-              className="pt-2 text-xs text-ink-muted underline"
-            >
-              {gone ? t('estimate.keepFood') : t('estimate.removeFood')}
-            </button>
+            <div className="flex flex-wrap items-baseline gap-4 pt-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setRemoved((current) =>
+                    gone ? current.filter((id) => id !== item.id) : [...current, item.id],
+                  )
+                }
+                className="text-xs text-ink-muted underline"
+              >
+                {gone ? t('estimate.keepFood') : t('estimate.removeFood')}
+              </button>
+              {/* Only once this food actually moved, and it names the number it
+                  goes back to so the way out is legible before it is taken. */}
+              {!gone && scaled.includes(item.id) && (
+                <button
+                  type="button"
+                  onClick={() => revert(item.id)}
+                  className="text-xs text-accent underline"
+                >
+                  {t('editor.backTo', { grams: saved.get(String(item.id))?.amountG ?? 0 })}
+                </button>
+              )}
+            </div>
           </div>
         )
       })}
@@ -280,6 +338,25 @@ export function MealEditor({
 function atOn(meal: Meal, hhmm: string): string {
   if (meal.time.kind !== 'instant') return new Date().toISOString()
   return zonedTimeToUtc(dayKey(meal.time.at, meal.time.zone), hhmm, meal.time.zone)
+}
+
+/** The design's refresh arrow: a circle that comes back round to itself. */
+function RefillIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+      <path d="M20 4v4h-4" />
+    </svg>
+  )
 }
 
 function TrashIcon() {

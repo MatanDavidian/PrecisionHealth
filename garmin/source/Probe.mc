@@ -96,7 +96,9 @@ module Probe {
         for (var i = 0; i < days.size(); i++) {
             var day = days[i];
             out.add("");
-            out.add(dateOf(day) + (i == 0 ? "  <- newest" : ""));
+            out.add("[" + i + "]" + (i == 0 ? " <- newest" : ""));
+            out.add("  date:  " + dateOf(day));
+            out.add("  start: " + epochOf(day));
             out.add("  kcal:  " + field(day, :calories));
             out.add("  steps: " + field(day, :steps));
         }
@@ -113,6 +115,31 @@ module Probe {
         }
         var at = Gregorian.info(day.startOfDay, Time.FORMAT_SHORT);
         return at.year + "-" + pad(at.month) + "-" + pad(at.day);
+    }
+
+    //! `startOfDay` as a raw Unix timestamp, in seconds.
+    //!
+    //! Printed alongside the formatted date because it answers a data-model
+    //! question rather than a debugging one: it says where Garmin anchors the
+    //! day. Convert the number and see what wall clock it lands on in your own
+    //! zone — 00:00 means the row is anchored to LOCAL midnight, 03:00 on a
+    //! UTC+3 watch means it is anchored to UTC midnight, and anything else
+    //! means a device-defined boundary we would have to model explicitly.
+    //!
+    //! The formatted date above is derived through Gregorian.info, which
+    //! applies the local zone, so on its own it cannot tell those cases apart.
+    //! That distinction decides which local calendar day a TOTAL_ENERGY
+    //! observation belongs to, and getting it wrong shifts a whole day's burn
+    //! onto its neighbour.
+    function epochOf(day) as String {
+        if (!(day has :startOfDay) || day.startOfDay == null) {
+            return "--";
+        }
+        var at = day.startOfDay;
+        if (!(at has :value)) {
+            return "(no value())";
+        }
+        return at.value().toString();
     }
 
     // ------------------------------------------------------------------ today

@@ -31,9 +31,17 @@ GARMIN DATA POC
 getHistory: SUPPORTED
 7 day(s) returned
 
-2026-08-29
+[0] <- newest
+  date:  2026-08-29
+  start: 1787950800
   kcal:  2381
   steps: 9432
+
+[1]
+  date:  2026-08-28
+  start: 1787864400
+  kcal:  2554
+  steps: 11208
 ...
 
 TODAY [NOT SAVED]
@@ -84,8 +92,22 @@ figures can be read down the screen against Garmin Connect.
 3. **How many days** come back. Seven is the documented maximum; fewer sets how
    much backfill is possible.
 
-4. **Day boundaries.** Does each printed date match the day Garmin Connect
-   attributes those calories to?
+4. **Where the day is anchored.** Take the printed `start:` epoch and convert
+   it, then see what wall clock it lands on **in your own zone**:
+
+   | Lands on | Means |
+   | --- | --- |
+   | `00:00` local | anchored to local midnight — what we assume |
+   | `03:00` local on a UTC+3 watch | anchored to **UTC** midnight |
+   | anything else | a device-defined boundary we have to model explicitly |
+
+   The formatted `date:` above it cannot tell these apart, because it is derived
+   through `Gregorian.info`, which applies the local zone either way. This
+   decides which local calendar day a `TOTAL_ENERGY` observation belongs to, and
+   getting it wrong shifts a whole day's burn onto its neighbour.
+
+5. **Day boundaries against Connect.** Does each printed date match the day
+   Garmin Connect attributes those calories to?
 
 ## Before this stops being disposable
 

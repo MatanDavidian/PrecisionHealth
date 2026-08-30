@@ -188,7 +188,30 @@ export function Nutrition() {
 
           {meals.map((meal) =>
             editing === meal.id ? (
+              <div key={meal.recordId}>
+                {/*
+                  A sheet on a phone, a card in the list on a desktop — one
+                  editor, positioned differently.
+
+                  A five-field form inline pushes the list of what you ate off
+                  the screen on a phone, so it lifts out of the flow and sits
+                  over a dimmed page instead. Tapping the dim closes it, which
+                  is the gesture a sheet has to answer; `Escape` does the same
+                  for a keyboard.
+                */}
+                <div
+                  className="fixed inset-0 z-40 bg-ink/25 md:hidden"
+                  onClick={() => setEditing(undefined)}
+                  aria-hidden
+                />
+                <div
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') setEditing(undefined)
+                  }}
+                  className="max-md:fixed max-md:inset-x-0 max-md:bottom-bottom-nav max-md:z-50 max-md:max-h-[80vh] max-md:overflow-y-auto max-md:rounded-t-[24px] max-md:border-t max-md:border-hairline max-md:bg-surface max-md:shadow-[0_-14px_34px_rgba(43,39,33,0.14)]"
+                >
               <MealEditor
+                dayKcal={convert(nutrients.energy, 'kcal')}
                 /*
                   Keyed on the RECORD, not the meal: if another device writes a
                   new version while this form is open, the form is rebuilt from
@@ -205,6 +228,8 @@ export function Nutrition() {
                   setEditing(undefined)
                 }}
               />
+                </div>
+              </div>
             ) : (
               <MealRow
                 key={meal.id}

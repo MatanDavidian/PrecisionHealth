@@ -61,11 +61,20 @@ export function MealEditor({
   onSave,
   onCancel,
   onDelete,
+  dayKcal,
 }: {
   meal: Meal
   onSave: (edit: MealEdit) => Promise<void>
   onCancel: () => void
   onDelete: () => void
+  /**
+   * The day's calorie total as it stands, so Save can say what it will become.
+   *
+   * On a phone the editor covers the totals card, so the number the button is
+   * about to change is off screen while you are changing it. Putting the result
+   * on the button is the difference between committing and guessing.
+   */
+  dayKcal?: number
 }) {
   const t = useT()
   const zone = zoneOf(meal)
@@ -74,6 +83,8 @@ export function MealEditor({
   const [slot, setSlot] = useState<MealSlot>(meal.slot)
   const [time, setTime] = useState(() => timeOfDay(meal, zone))
   const [scaled, setScaled] = useState<string[]>([])
+  /** How many times Refill was pressed on each food, so the line can say. */
+  const [refills, setRefills] = useState<Record<string, number>>({})
   const [saving, setSaving] = useState(false)
 
   /**
@@ -101,12 +112,15 @@ export function MealEditor({
       current.map((item) => (item.id === id ? scaleTo(item, amountG) : item)),
     )
     setScaled((current) => (current.includes(id) ? current : [...current, id]))
+    // A typed weight is not a tap of Refill, so the tally stops describing it.
+    setRefills(({ [String(id)]: _typed, ...rest }) => rest)
   }
 
   /** Ten percent more food, and the macros follow — the arithmetic is domain. */
   const addTenPercent = (id: FoodItemId) => {
     setItems((current) => current.map((item) => (item.id === id ? refill(item) : item)))
     setScaled((current) => (current.includes(id) ? current : [...current, id]))
+    setRefills((current) => ({ ...current, [String(id)]: (current[String(id)] ?? 0) + 1 }))
   }
 
   /** Back to the portion as saved, macros and all. */
@@ -115,6 +129,7 @@ export function MealEditor({
     if (!original) return
     setItems((current) => current.map((item) => (item.id === id ? original : item)))
     setScaled((current) => current.filter((scaledId) => scaledId !== id))
+    setRefills(({ [String(id)]: _gone, ...rest }) => rest)
   }
 
   const edit = (): MealEdit => ({
@@ -125,6 +140,21 @@ export function MealEditor({
   })
 
   const dirty = changesAnything(meal, edit())
+
+  /**
+   * What the day's calorie total becomes if this is saved.
+   *
+   * The meal's own contribution is swapped, not added: what is on screen
+   * replaces what is stored, so the arithmetic is (day − saved + edited).
+   */
+  const projectedKcal =
+    dayKcal === undefined
+      ? undefined
+      : Math.round(
+          dayKcal -
+            [...saved.values()].reduce((sum, item) => sum + item.energyKcal, 0) +
+            remaining.reduce((sum, item) => sum + item.energyKcal, 0),
+        )
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -144,8 +174,14 @@ export function MealEditor({
   return (
     <form
       onSubmit={submit}
-      className="my-2 rounded-card border border-hairline bg-surface p-4"
+      /* Inside the phone sheet the surrounding chrome is the sheet's own, so
+         the form drops its card border and takes the design's 14/20/18 padding. */
+      className="my-2 rounded-card border border-hairline bg-surface p-4 max-md:my-0 max-md:rounded-none max-md:border-0 max-md:px-5 max-md:pb-[18px] max-md:pt-3.5"
     >
+      {/* The sheet's grab handle. Phone only — on a desktop this is a card in
+          a list and there is nothing to drag. */}
+      <div className="mx-auto mb-3.5 h-1 w-[38px] rounded-full bg-hairline sm:hidden" aria-hidden />
+
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <p className="text-sm font-medium">
           {t('editor.editing', { slot: t(slotKey(meal.slot)) })}
@@ -173,7 +209,7 @@ export function MealEditor({
               room beside the grams, and then squeezed that field to nothing and
               clipped the last two.
             */}
-            <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(132px,1fr))]">
+            <div className="grid gap-3 max-md:grid-cols-4 max-md:gap-2 sm:[grid-template-columns:repeat(auto-fit,minmax(132px,1fr))]">
               <div className="col-span-full">
                 <label className={label} htmlFor={`name-${item.id}`}>
                   {t('estimate.food')}
@@ -186,6 +222,7 @@ export function MealEditor({
                   onChange={(e) => update(item.id, { name: e.target.value })}
                 />
               </div>
+              <div className="max-md:col-span-4">
               <NumberField
                 id={`grams-${item.id}`}
                 label={t('estimate.grams')}
@@ -199,16 +236,26 @@ export function MealEditor({
                     onClick={() => addTenPercent(item.id)}
                     disabled={gone || !canRefill(item)}
                     title={t('editor.refillTitle')}
-                    className="flex shrink-0 items-center gap-[5px] whitespace-nowrap rounded-lg border border-hairline bg-surface px-[11px] text-xs font-medium text-ink-soft transition-colors hover:border-accent hover:bg-card-soft hover:text-accent disabled:opacity-40 disabled:hover:border-hairline disabled:hover:bg-surface disabled:hover:text-ink-soft"
+                    /* min-h-11 is 44px — the smallest thing a thumb hits
+                       reliably, and this one is pressed repeatedly. Once it has
+                       been used it takes the accent, so a glance at the row says
+                       the portion is no longer the one that was saved. */
+                    className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-4 text-[13px] font-medium transition-colors disabled:opacity-40 max-md:min-h-11 sm:gap-[5px] sm:px-[11px] sm:text-xs ${
+                      (refills[String(item.id)] ?? 0) > 0
+                        ? 'border-accent bg-accent-soft/50 text-accent'
+                        : 'border-hairline bg-surface text-ink-soft hover:border-accent hover:bg-card-soft hover:text-accent'
+                    }`}
                   >
                     <RefillIcon />
                     {t('editor.refill')}
                   </button>
                 }
               />
+              </div>
               <NumberField
                 id={`kcal-${item.id}`}
                 label={t('estimate.calories')}
+                shortLabel={t('estimate.kcalShort')}
                 value={item.energyKcal}
                 disabled={gone}
                 onChange={(energyKcal) => update(item.id, { energyKcal })}
@@ -216,6 +263,7 @@ export function MealEditor({
               <NumberField
                 id={`protein-${item.id}`}
                 label={t('estimate.proteinG')}
+                shortLabel={t('estimate.protShort')}
                 value={item.proteinG}
                 disabled={gone}
                 onChange={(proteinG) => update(item.id, { proteinG })}
@@ -223,6 +271,7 @@ export function MealEditor({
               <NumberField
                 id={`carbs-${item.id}`}
                 label={t('estimate.carbsG')}
+                shortLabel={t('estimate.carbShort')}
                 value={item.carbsG}
                 disabled={gone}
                 onChange={(carbsG) => update(item.id, { carbsG })}
@@ -230,6 +279,7 @@ export function MealEditor({
               <NumberField
                 id={`fat-${item.id}`}
                 label={t('estimate.fatG')}
+                shortLabel={t('estimate.fatShort')}
                 value={item.fatG}
                 disabled={gone}
                 onChange={(fatG) => update(item.id, { fatG })}
@@ -251,13 +301,25 @@ export function MealEditor({
               {/* Only once this food actually moved, and it names the number it
                   goes back to so the way out is legible before it is taken. */}
               {!gone && scaled.includes(item.id) && (
-                <button
-                  type="button"
-                  onClick={() => revert(item.id)}
-                  className="text-xs text-accent underline"
-                >
-                  {t('editor.backTo', { grams: saved.get(String(item.id))?.amountG ?? 0 })}
-                </button>
+                <>
+                  {(refills[String(item.id)] ?? 0) > 0 && (
+                    <span className="tabular text-xs text-ink-muted">
+                      {t('editor.refilledBy', {
+                        taps: refills[String(item.id)],
+                        percent: Math.round(
+                          (item.amountG / (saved.get(String(item.id))?.amountG || item.amountG) - 1) * 100,
+                        ),
+                      })}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => revert(item.id)}
+                    className="text-xs text-accent underline"
+                  >
+                    {t('editor.backTo', { grams: saved.get(String(item.id))?.amountG ?? 0 })}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -300,25 +362,38 @@ export function MealEditor({
         <p className="pt-3 text-xs text-ink-muted">{t('editor.ratioHint')}</p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 pt-4">
+      {/*
+        Cancel first on a phone, Save first on a desktop.
+
+        The order follows the thumb, not the page: on a phone the two fill the
+        row and the safe one sits under the hand that is not about to commit,
+        which is the platform convention people already have. Delete drops to
+        its own line there rather than becoming a third of a row and sitting a
+        thumb's width from Save (Q7).
+      */}
+      <div className="flex flex-wrap items-center gap-3 pt-4 max-md:gap-2.5">
         <button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
+          className="order-2 rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40 max-md:flex-1 max-md:py-3 sm:order-1"
         >
-          {saving ? t('estimate.saving') : t('editor.saveChanges')}
+          {saving
+            ? t('estimate.saving')
+            : projectedKcal === undefined
+              ? t('editor.saveChanges')
+              : t('editor.saveWithTotal', { kcal: projectedKcal.toLocaleString() })}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+          className="order-1 rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft max-md:flex-1 max-md:py-3 sm:order-2"
         >
           {t('editor.cancel')}
         </button>
         <button
           type="button"
           onClick={onDelete}
-          className="ms-auto flex items-center gap-2 rounded-full border border-accent-soft px-4 py-2 text-sm text-accent transition-colors hover:bg-accent-soft"
+          className="order-3 flex items-center gap-2 rounded-full border border-accent-soft px-4 py-2 text-sm text-accent transition-colors hover:bg-accent-soft max-md:w-full max-md:justify-center sm:ms-auto"
         >
           <TrashIcon />
           {t('editor.delete')}

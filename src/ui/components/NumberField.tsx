@@ -22,6 +22,7 @@ export function NumberField({
   disabled,
   highlight,
   trailing,
+  shortLabel,
 }: {
   id: string
   label: string
@@ -38,11 +39,26 @@ export function NumberField({
    * you can see what it did without looking for it.
    */
   trailing?: React.ReactNode
+  /**
+   * A shorter name for a phone, where four of these share one row.
+   *
+   * Only the one being shown is in the DOM's box model at a time — the other
+   * is `display:none`, so a screen reader reads exactly one name per field
+   * rather than "Calories kcal".
+   */
+  shortLabel?: string
 }) {
   return (
     <div>
       <label className={labelClass} htmlFor={id}>
-        {label}
+        {shortLabel ? (
+          <>
+            <span className="sm:hidden">{shortLabel}</span>
+            <span className="max-sm:hidden">{label}</span>
+          </>
+        ) : (
+          label
+        )}
       </label>
       <div className="flex items-stretch gap-1.5">
         <input
@@ -62,7 +78,7 @@ export function NumberField({
           className={`${fieldClass.replace(
             'border-hairline',
             highlight ? 'border-accent' : 'border-hairline',
-          )} tabular min-w-0 flex-1`}
+          )} tabular min-w-0 flex-1 ${shortLabel ? 'max-sm:px-2 max-sm:text-center' : ''}`}
           value={value === 0 ? '' : value}
           placeholder="0"
           onChange={(e) => onChange(Number(e.target.value) || 0)}

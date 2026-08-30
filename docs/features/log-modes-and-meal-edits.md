@@ -143,6 +143,38 @@ no mode to leave, because a mode you have to notice is one people get stuck in.
 A zero-weight item cannot be scaled from nothing, so its numbers are left alone
 rather than zeroed.
 
+### Editing on a phone
+
+Below `md` — the width at which the app shows its bottom bar — editing opens as
+a **sheet** over a dimmed page rather than inline. A five-field form in the list
+pushes the list of what you ate off the screen, which is the one thing the page
+is for. Tapping the dim closes it; so does `Escape`.
+
+The sheet sits *on top of* the bottom bar, not over it, so the tab you are in
+stays visible. Both sides of that read `--spacing-bottom-nav` from
+[`styles.css`](../../src/styles.css): the bar sets its height from the token and
+the sheet offsets by it, because a guessed number in the second place drifts the
+moment the first one changes.
+
+Three things the phone does differently, following the design:
+
+- The four totals sit in a 2×2 grid instead of a row.
+- The macros shrink to a **four-up strip** under Grams — `kcal / Prot / Carb /
+  Fat`, centred — so a Refill's ratio is visible in one glance. The short names
+  are `display:none`-swapped against the full ones, so a screen reader reads
+  exactly one name per field rather than "Calories kcal".
+- **Save carries the number it will write** — `Save · 2,247` — because the
+  totals card is behind the sheet while you are changing it. The arithmetic
+  swaps rather than adds: day − saved + edited.
+
+Refill's target grows to 44px on a phone and takes the accent once it has been
+used, and the line beneath says what it did: `Refilled 2× · +21%`. Typing a
+weight by hand clears that tally, because a typed number is not a tap.
+
+Cancel comes first on a phone and Save first on a desktop — the order follows
+the thumb, not the page. Delete drops to its own line rather than sitting a
+thumb's width from Save (Q7).
+
 ### Refill — ten percent more, without typing
 
 Beside the **Grams** field is a **Refill** button. One press adds 10% to the

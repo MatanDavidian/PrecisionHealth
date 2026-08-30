@@ -38,7 +38,7 @@ export function BottomNav() {
         : undefined
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-10 flex min-h-bottom-nav border-t border-hairline bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
       {ITEMS.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}

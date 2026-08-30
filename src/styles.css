@@ -40,6 +40,13 @@
   --font-sans: 'Inter', 'Heebo', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   --radius-card: 1.25rem;
+
+  /*
+   * The mobile bar's height, named because two components have to agree on it:
+   * the bar sets it, and the editing sheet sits exactly on top of it. A guessed
+   * number in the second place would drift the moment the first one changed.
+   */
+  --spacing-bottom-nav: 3.8rem;
 }
 
 html,

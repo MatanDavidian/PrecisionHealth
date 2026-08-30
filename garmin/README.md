@@ -163,6 +163,29 @@ place, which is what to paste when something fails.
   then eject. If the watch does not appear in Finder it is presenting as MTP
   rather than as a disk; *Android File Transfer* handles that on macOS.
 
+## Known-good toolchain
+
+First clean build was against:
+
+| | |
+| --- | --- |
+| SDK | `connectiq-sdk-mac-9.2.0-2026-06-09` |
+| Device definitions | Forerunner 265 / 265s (API level 5.2) |
+| Java | OpenJDK 17 |
+| macOS | 15.1, Apple Silicon |
+
+Builds with **no warnings**. If a warning appears, it is new — read it.
+
+Three things the first build caught, in case they come back:
+
+- **XML comments cannot contain `--`.** The manifest is rejected outright, with
+  an error that does not mention which comment.
+- **`me` is Monkey C's reference to the current instance**, so it cannot be used
+  as a variable name.
+- **The launcher icon must match the device's size** — 60×60 for the FR265, not
+  the 40×40 that is common elsewhere. This one is only a warning; the image is
+  scaled if it is wrong.
+
 ## Layout
 
 | File | |
@@ -175,3 +198,9 @@ place, which is what to paste when something fails.
 `Probe.mc` is where the answers come from. Every field is read through a `has`
 check, so a metric this watch does not carry prints `--` and the rest of the
 report still arrives.
+
+Members are read **by name**, never by indexing the object with a symbol.
+Symbol indexing compiles but the compiler cannot verify it, and since every
+figure in the report passes through one helper, a runtime failure there would
+produce a blank screen and no clue why. Naming them makes the compiler do the
+checking.

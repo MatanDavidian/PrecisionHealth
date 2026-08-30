@@ -9,7 +9,7 @@
 
   UserProfile is the one permission here. VO2 max and resting heart rate live on
   UserProfile.Profile and are unreachable without it; every use is guarded, so a
-  refusal degrades to "--" rather than crashing.
+  refusal degrades to a dash rather than crashing.
 
   THE ID BELOW WAS INVENTED, AND SHOULD BE REGENERATED BEFORE THIS IS ANYTHING
   BUT DISPOSABLE.

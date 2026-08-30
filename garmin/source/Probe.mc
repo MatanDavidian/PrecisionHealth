@@ -61,11 +61,6 @@ module Probe {
             return;
         }
 
-        if (days == null) {
-            out.add("getHistory: SUPPORTED");
-            out.add(" returned null");
-            return;
-        }
         if (!(days has :size)) {
             // Garmin documents the return as Array<History>, so per the contract
             // this cannot happen. Kept anyway: it costs three lines, and on a
@@ -99,8 +94,8 @@ module Probe {
             out.add("[" + i + "]" + (i == 0 ? " <- newest" : ""));
             out.add("  date:  " + dateOf(day));
             out.add("  start: " + epochOf(day));
-            out.add("  kcal:  " + field(day, :calories));
-            out.add("  steps: " + field(day, :steps));
+            out.add("  kcal:  " + num(day has :calories ? day.calories : null));
+            out.add("  steps: " + num(day has :steps ? day.steps : null));
         }
     }
 
@@ -155,19 +150,15 @@ module Probe {
             out.add(" " + messageOf(e));
             return;
         }
-        if (info == null) {
-            out.add(" getInfo returned null");
-            return;
-        }
 
         // Shown for comparison only. A running total read at any hour before
         // midnight is an undercount by definition, which is why the design
         // writes completed days and nothing for today.
-        out.add("  kcal:  " + field(info, :calories) + " (part)");
-        out.add("  steps: " + field(info, :steps));
-        out.add("  recov: " + field(info, :timeToRecovery) + " h");
-        out.add("  stress:" + field(info, :stressScore));
-        out.add("  resp:  " + field(info, :respirationRate));
+        out.add("  kcal:  " + num(info has :calories ? info.calories : null) + " (part)");
+        out.add("  steps: " + num(info has :steps ? info.steps : null));
+        out.add("  recov: " + num(info has :timeToRecovery ? info.timeToRecovery : null) + " h");
+        out.add("  stress:" + num(info has :stressScore ? info.stressScore : null));
+        out.add("  resp:  " + num(info has :respirationRate ? info.respirationRate : null));
     }
 
     // ---------------------------------------------------------------- profile
@@ -175,38 +166,34 @@ module Probe {
     function profile(out as Array<String>) as Void {
         out.add("PROFILE");
 
-        var me = null;
+        var mine = null;
         try {
-            me = UserProfile.getProfile();
+            mine = UserProfile.getProfile();
         } catch (e) {
             // Most likely the UserProfile permission was declined.
             out.add(" unavailable");
             out.add(" " + messageOf(e));
             return;
         }
-        if (me == null) {
-            out.add(" returned null");
-            return;
-        }
 
-        out.add("  VO2 run:  " + field(me, :vo2maxRunning));
-        out.add("  VO2 bike: " + field(me, :vo2maxCycling));
-        out.add("  rest HR:  " + field(me, :restingHeartRate));
-        out.add("  avg rest: " + field(me, :averageRestingHeartRate));
+        out.add("  VO2 run:  " + num(mine has :vo2maxRunning ? mine.vo2maxRunning : null));
+        out.add("  VO2 bike: " + num(mine has :vo2maxCycling ? mine.vo2maxCycling : null));
+        out.add("  rest HR:  " + num(mine has :restingHeartRate ? mine.restingHeartRate : null));
+        out.add("  avg rest: " + num(mine has :averageRestingHeartRate ? mine.averageRestingHeartRate : null));
     }
 
     // ------------------------------------------------------------------ small
 
-    //! One field, or "--" if this device does not carry it.
+    //! A value, or a dash when this watch does not carry it.
     //!
-    //! `has` is checked before the read because a missing member throws in
-    //! Monkey C, and "this watch does not report stress" is a result worth
-    //! printing rather than a crash.
-    function field(holder, name as Symbol) as String {
-        if (holder == null || !(holder has name)) {
-            return "--";
-        }
-        var value = holder[name];
+    //! Every call site guards its read with `has` and passes the member
+    //! directly, rather than indexing the object by symbol. Symbol indexing
+    //! compiles, but the compiler cannot verify it — and since every figure in
+    //! this report goes through here, a runtime failure would produce a blank
+    //! screen and no clue why. Naming the members makes the compiler check
+    //! them, which on a build meant to discover what this device offers is the
+    //! answer arriving a day earlier.
+    function num(value) as String {
         return value == null ? "--" : value.toString();
     }
 

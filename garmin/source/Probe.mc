@@ -14,13 +14,19 @@ import Toybox.UserProfile;
 //! that something, somewhere, was missing.
 module Probe {
 
-    //! The one question version 0 exists to answer.
+    //! What version 0 exists to answer.
     //!
-    //! Three outcomes, kept apart because they mean completely different things.
-    //! "The API is not on this device" kills the design that reads completed
-    //! days. "The API is here and returned nothing" is probably a watch with no
-    //! history yet, and is survivable. Collapsing them into one "no data"
-    //! message would throw away the distinction we came for.
+    //! Garmin documents getHistory() as supported on the FR265 since API 1.0,
+    //! returning at most seven History records, most recent first. So the real
+    //! unknowns are narrower than "does it work": how many days are actually
+    //! populated on this watch, and what History.calories corresponds to in
+    //! Garmin Connect.
+    //!
+    //! The three outcomes are still kept apart, because they mean completely
+    //! different things. "The API is not on this device" kills the design that
+    //! reads completed days. "The API is here and returned nothing" is probably
+    //! a watch that has not been worn long enough, and is survivable. Collapsing
+    //! them into one "no data" message would throw away the distinction.
     function report() as Array<String> {
         var out = [] as Array<String>;
 
@@ -61,8 +67,10 @@ module Probe {
             return;
         }
         if (!(days has :size)) {
-            // Worth knowing rather than assuming: if it is an iterator instead
-            // of an array, the ingestion code has to be written differently.
+            // Garmin documents the return as Array<History>, so per the contract
+            // this cannot happen. Kept anyway: it costs three lines, and on a
+            // build whose entire job is finding out what this device really
+            // does, "the contract did not hold" is worth being able to read.
             out.add("getHistory: SUPPORTED");
             out.add(" returned a non-array");
             return;
@@ -76,14 +84,19 @@ module Probe {
         out.add("getHistory: SUPPORTED");
         out.add(days.size() + " day(s) returned");
 
-        // Every day, not just yesterday. Laid out so the dates and calorie
+        // Every day, not just the newest. Laid out so the dates and calorie
         // figures can be read straight down against Garmin Connect, which
         // settles the active-vs-total question and the day-boundary question
         // in one sitting.
+        //
+        // Garmin documents the order as most-recent-first, so index 0 is the
+        // one to compare. It is marked rather than named "yesterday": whether
+        // the newest entry is yesterday or today is itself a thing this build
+        // is here to find out, and the printed date answers it.
         for (var i = 0; i < days.size(); i++) {
             var day = days[i];
             out.add("");
-            out.add(dateOf(day));
+            out.add(dateOf(day) + (i == 0 ? "  <- newest" : ""));
             out.add("  kcal:  " + field(day, :calories));
             out.add("  steps: " + field(day, :steps));
         }

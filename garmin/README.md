@@ -2,14 +2,21 @@
 
 A watch app that **reads and prints. It saves nothing and sends nothing.**
 
-It exists to answer one question before any more of the Garmin path is built:
+It exists to settle, before any more of the Garmin path is built:
 
-> Does the Forerunner 265 return **completed previous days** through
-> `ActivityMonitor.getHistory()`?
+> **What does `ActivityMonitor.History.calories` actually mean**, and how many
+> days does the Forerunner 265 really populate?
+
+Garmin documents `getHistory()` as returning `Array<ActivityMonitor.History>` —
+at most seven records, **most recent first**, supported on the FR265 since API
+level 1.0. So existence is not in doubt; the numbers are. Available history
+length varies by device and by how long the watch has been running, and the
+meaning of the calorie field is not stated anywhere we can rely on.
 
 The design in [`../docs/features/manual-body-and-energy.md`](../docs/features/manual-body-and-energy.md) §4
-rests on that — completed days are written, today is not — and Connect IQ gates
-APIs per device, so it is checked with `has` rather than assumed.
+rests on both — completed days are written, today is not, and the value maps to
+`TOTAL_ENERGY`. The `has` guards stay anyway, because a documented contract and
+a watch in your hand are not the same evidence.
 
 There is **no `Communications` permission in the manifest**. Not merely no sync
 code: the permission is absent, so this build cannot depend on the phone and
@@ -54,17 +61,43 @@ figures can be read down the screen against Garmin Connect.
 
 ## What to check once it runs
 
-1. **`getHistory` supported, and non-empty.** This is the gate. Everything else
-   is secondary.
-2. **Active or total?** At one moment, compare the newest history entry against
-   Garmin Connect for that day: Total Calories, Active Calories, Resting
-   Calories. If it matches Total → the value maps to `TOTAL_ENERGY`. If it
-   matches Active → it maps to `ACTIVE_ENERGY`, and the plan changes. **Do not
-   guess this**; getting it wrong understates daily burn by roughly a BMR and
-   makes every week read as a surplus.
-3. **Day boundaries.** Does the printed date match the day Garmin Connect
+1. **Active or total?** This is the one that matters. At a single moment,
+   compare the entry marked `<- newest` against Garmin Connect for that same
+   date:
+
+   | | |
+   | --- | --- |
+   | POC `History.calories` | 2,487 |
+   | Connect — Total Calories | ? |
+   | Connect — Active Calories | ? |
+   | Connect — Resting Calories | ? |
+
+   Matches **Total** → the value maps to `TOTAL_ENERGY` and the plan stands.
+   Matches **Active** → it maps to `ACTIVE_ENERGY`, and the plan changes.
+   **Do not guess this.** Getting it wrong understates daily burn by roughly a
+   BMR and makes every week read as a surplus.
+
+2. **Is the newest entry yesterday, or today?** The date is printed rather than
+   assumed. If it is today, the entry is a running total and the "completed days
+   only" rule has to skip it.
+
+3. **How many days** come back. Seven is the documented maximum; fewer sets how
+   much backfill is possible.
+
+4. **Day boundaries.** Does each printed date match the day Garmin Connect
    attributes those calories to?
-4. **How many days** come back — this sets how much backfill is possible.
+
+## Before this stops being disposable
+
+The application id in `manifest.xml` was invented so the project builds today.
+Run **`Monkey C: Regenerate UUID`** from the VS Code command palette once, and
+then never change it again.
+
+That id is the application's own identity. It is **not** the Connect IQ Store
+identifier — the Store issues a separate public id later, and Garmin's intent
+API distinguishes the two as `manifest-id://` and `store-id://`. Changing the
+manifest UUID after release makes an installed app and its update look like two
+unrelated applications.
 
 ## Building it
 

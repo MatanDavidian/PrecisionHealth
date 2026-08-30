@@ -184,10 +184,19 @@ would be a guess.
 
 ### 4.1 The POC, and the gate it has to pass
 
-Version 0 answers **one** question: does the FR265 return completed previous-day
-records through `getHistory()`? The whole design above rests on it, and Connect
-IQ gates APIs per device, so it is checked with Monkey C's `has` rather than
-assumed.
+Garmin documents `getHistory()` as returning `Array<ActivityMonitor.History>` —
+at most seven records, most recent first, supported on the FR265 since API level
+1.0. So the gate is narrower than "does this work". Version 0 settles the two
+things the documentation does **not** answer:
+
+1. **What `History.calories` corresponds to** — Total or Active, checked against
+   Garmin Connect for the same date. This is the load-bearing one.
+2. **How many days this watch actually populates**, which sets how far back any
+   future import can reach.
+
+The `has` guards stay regardless: a documented contract and a watch in your hand
+are not the same evidence, and this is the build whose job is to tell them
+apart.
 
 It prints, and saves nothing. It has **no network permission in its manifest** —
 not merely no sync code — so there is no phone dependency and nothing ambiguous

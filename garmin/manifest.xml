@@ -10,6 +10,19 @@
   UserProfile is the one permission here. VO2 max and resting heart rate live on
   UserProfile.Profile and are unreachable without it; every use is guarded, so a
   refusal degrades to "--" rather than crashing.
+
+  THE ID BELOW WAS INVENTED, AND SHOULD BE REGENERATED BEFORE THIS IS ANYTHING
+  BUT DISPOSABLE.
+
+  Run `Monkey C: Regenerate UUID` from the VS Code command palette, once, and
+  then never change it again. This is the application's own identity and is NOT
+  the Connect IQ Store identifier — the Store issues a separate public id later,
+  and Garmin's intent API distinguishes the two as manifest-id:// and
+  store-id://. Changing the manifest UUID after release makes an installed app
+  and its update look like two different applications.
+
+  A syntactically valid value is left in place so the project builds and runs on
+  a watch today; that is all it is for.
 -->
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
   <iq:application

@@ -4,8 +4,9 @@
 a target weight, and the calories you spent in a day — so the dashboard is
 useful before any watch is connected to it.
 
-Status: **built** (Aug 2026). Stands in for the Garmin slice, which is blocked
-on something outside our control (§4).
+Status: **built** (Aug 2026). Stands in for the Garmin slice — the Health API
+is closed to new applicants, but Connect IQ is a way in for most of what we
+wanted, with sleep and HRV the exceptions (§4).
 
 ---
 
@@ -70,29 +71,141 @@ a routine thing is the wrong trade. Editing happens in place rather than in a
 modal: it is a five-second job, and the surrounding numbers are the context you
 are entering against.
 
-## 4. Why not Garmin
+## 4. Garmin: what is reachable, and what is not
 
-The plan was to import this from a watch. Garmin's Health API is
-**partner-approval only**, and as of 2026 new applications appear to be closed
-— the access-request form has been removed with no published reopening date. So
-the automatic path is not available to build against, however much we would
-prefer it.
+The plan was to import this from a watch. That is still the plan, but by a
+different door than the one we first tried.
 
-What the data would look like is known and unchanged: Garmin's daily summaries
-carry `ActiveKilocalories`, `BmrKilocalories` and `CalendarDate`, which map
-cleanly onto `ACTIVE_ENERGY` observations. When a route opens, it becomes an
-adapter behind the same write path this feature already uses — the same shape
-as BYOK becoming a server proxy for the estimator (D14).
+### The Health API is shut; Connect IQ is not
 
-The three routes, for whoever picks this up:
+Garmin's **Health API is partner-approval only**, and as of 2026 new
+applications appear to be closed — the access-request form has been removed
+with no published reopening date.
 
-- **File import.** Garmin Connect exports daily summaries; no approval, no
-  cost, but manual.
-- **The Health API.** The real thing — OAuth plus webhook pushes to an edge
-  function. Blocked on approval.
-- **An aggregator** (Terra, Vital, Rook). Works today and covers Apple Health,
-  Samsung and Google Fit in one go, which is the rest of the wish list. Costs
-  money per user and routes health data through a third company.
+**Connect IQ is a separate route and needs no such approval.** A Watch App
+written in Monkey C runs on the device, reads the same metrics Garmin computes,
+and can be sideloaded to your own watch over USB with a developer signing key
+that the VS Code extension generates. Publishing to the Connect IQ Store later
+is an ordinary store review, not the blocked partner application.
+
+### What Connect IQ can and cannot supply
+
+Checked against Garmin's Connect IQ documentation for the Forerunner 265. The
+right-hand column is the API that carries it.
+
+| Metric | Connect IQ | Where |
+| --- | --- | --- |
+| Calories, today (running) | yes | `ActivityMonitor.getInfo().calories` |
+| Calories, completed days | yes | `ActivityMonitor.getHistory()` |
+| Steps, distance, active minutes | yes | `ActivityMonitor` |
+| Heart-rate history | yes | `ActivityMonitor` / `SensorHistory` |
+| Resting HR, 7-day average | yes | `UserProfile.Profile` |
+| Stress, current | yes | `ActivityMonitor.Info.stressScore` |
+| Stress history | yes | `SensorHistory.getStressHistory()` |
+| Body Battery history | yes | `SensorHistory.getBodyBatteryHistory()` |
+| Recovery time | yes | `ActivityMonitor.Info.timeToRecovery` |
+| Respiration rate | yes | `ActivityMonitor.Info.respirationRate` |
+| VO₂ max, running and cycling | yes | `UserProfile.Profile.vo2maxRunning` |
+| **Sleep duration** | **no** | not exposed |
+| **Sleep stages, sleep score** | **no** | not exposed |
+| **Nightly HRV / HRV status** | **no** | no public equivalent |
+| **Training Readiness** | **no** | not exposed |
+
+Body Battery and stress history sit on `SensorHistory`, a different surface from
+`ActivityMonitor` with its own device gating — not the same call.
+
+So Connect IQ covers **Activity and Training** and most of **Wellness**, and
+leaves **Recovery incomplete**: sleep and HRV, the two inputs that section most
+needs, are the two it cannot give. That does not make Connect IQ the wrong
+choice; it makes it the first of two adapters rather than the only one. The
+second — Apple Health, Health Connect, the Health API if it reopens, or a paid
+aggregator — carries sleep and HRV into the same observations. `APPLE_HEALTH`
+and `HEALTH_CONNECT` are already members of `DataSource`, so that day needs no
+schema change.
+
+### The mapping, and why the old note here was wrong
+
+An earlier version of this section said Garmin's figures map onto
+`ACTIVE_ENERGY`. That is the bug `TOTAL_ENERGY` was split out to prevent:
+`ActiveKilocalories` is movement only, and using it as total daily expenditure
+understates the burn by roughly a basal metabolic rate — about 1500 kcal a day —
+which would make every week read as a surplus.
+
+The expected mapping is:
+
+```
+ActivityMonitor History.calories  →  TOTAL_ENERGY
+```
+
+**Expected, not established.** Connect IQ documents the field as "calories
+burned so far for the current day" without saying whether that is active only or
+active plus BMR. Confirming it is the POC's job (§4.1), by reading the value and
+comparing it against Garmin Connect's Total and Active figures at the same
+moment. Nothing should be written to the database on the strength of the
+assumption.
+
+### Yesterday is authoritative; today is not written
+
+`getInfo().calories` is by definition a partial day — read it at 21:00 and it is
+an undercount. Writing that as the day's expenditure would make the week compare
+a full day of eating against a partial day of burning.
+
+So ingestion reads **completed days from `getHistory()`** and writes those. It
+writes **nothing at all for today**. There is deliberately no "provisional"
+observation state: `summariseWeek` scales the week's aim by `daysWithBurn` and
+leaves days with no burn `undefined` rather than zero, so the week already
+handles the silence honestly and says how many days it read. A provisional
+figure would instead count as a day *with* burn and drag the average down, and
+supporting it properly would mean teaching the chart, the summary, the verdict
+and the insights payload about a state that resolves itself by morning.
+
+### Writing it: no new mechanism needed
+
+A Garmin reading is `deviceReading('GARMIN', …)` — `source: GARMIN`, `kind: RAW`.
+Everything else follows from rules that already exist:
+
+- **Re-syncing a day already imported from Garmin** supersedes the previous
+  Garmin record (D4's append-only correction chain). There is no database-level
+  uniqueness constraint on `(user, day, metric, source)`, and there should not
+  be one.
+- **A manual entry and a watch reading for the same day both stay stored.**
+  Precedence decides which is effective, and it already favours the human:
+  `USER_CONFIRMED` + `USER` outranks `RAW` + `GARMIN`, because kind dominates
+  source. Your typed figure wins; the watch fills the days you did not type.
+- **A disagreement wider than the `TOTAL_ENERGY` tolerance (100 kcal) surfaces
+  as a conflict** for you to resolve, rather than being silently overwritten
+  (D6). This is the same machinery the weight card already uses.
+
+The watch cannot supply an IANA zone — Connect IQ exposes the UTC offset and DST
+state through `System.ClockTime`, not a canonical zone id. So the payload
+carries the local calendar date and the offset, and the **backend supplies the
+zone from the user's profile** (D7). Inferring `Asia/Jerusalem` from `+03:00`
+would be a guess.
+
+### 4.1 The POC, and the gate it has to pass
+
+Version 0 answers **one** question: does the FR265 return completed previous-day
+records through `getHistory()`? The whole design above rests on it, and Connect
+IQ gates APIs per device, so it is checked with Monkey C's `has` rather than
+assumed.
+
+It prints, and saves nothing. It has **no network permission in its manifest** —
+not merely no sync code — so there is no phone dependency and nothing ambiguous
+about what it is testing. It distinguishes three outcomes that mean very
+different things:
+
+```
+getHistory UNSUPPORTED      the API is absent on this device
+getHistory SUPPORTED, EMPTY the API exists and returned no days
+getHistory SUPPORTED, N     the API exists and returned N days
+```
+
+and prints **every** day it gets back, not just yesterday, so the dates and
+calorie figures can be compared against Garmin Connect side by side — settling
+both the active-vs-total question and the day-boundary question at once.
+
+Source is in [`garmin/`](../../garmin). Only if this gate passes is it worth
+adding the write adapter, the `Communications` permission and an endpoint.
 
 ## 5. Tests
 

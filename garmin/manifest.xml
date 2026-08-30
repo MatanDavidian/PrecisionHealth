@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+  Deliberately minimal.
+
+  There is no Communications permission, and that is the point rather than an
+  oversight: version 0 sends nothing anywhere, so it cannot depend on the phone,
+  cannot prompt about network access, and cannot be accused of having tested
+  something other than what it claims. Add it in the same commit that adds sync.
+
+  UserProfile is the one permission here. VO2 max and resting heart rate live on
+  UserProfile.Profile and are unreachable without it; every use is guarded, so a
+  refusal degrades to "--" rather than crashing.
+-->
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+  <iq:application
+      entry="PocApp"
+      id="a7c41e0b93d64f8fa1b25c60d7e3849f"
+      launcherIcon="@Drawables.LauncherIcon"
+      minApiLevel="3.2.0"
+      name="@Strings.AppName"
+      type="watch-app">
+
+    <!-- Start with the one watch we can actually test on. Widening this list is
+         a manifest edit and a rebuild, not a code change. -->
+    <iq:products>
+      <iq:product id="fr265"/>
+      <iq:product id="fr265s"/>
+    </iq:products>
+
+    <iq:permissions>
+      <iq:uses-permission id="UserProfile"/>
+    </iq:permissions>
+
+    <iq:languages>
+      <iq:language>eng</iq:language>
+    </iq:languages>
+  </iq:application>
+</iq:manifest>

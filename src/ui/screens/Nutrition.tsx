@@ -3,7 +3,7 @@ import { Card } from '../components/Card'
 import { MealForm } from '../components/MealForm'
 import { MealEditor } from '../components/MealEditor'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
-import { show, showNumber } from '../format'
+import { showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
@@ -40,6 +40,15 @@ export function Nutrition() {
   const { session } = useDataRevision()
   const [editing, setEditing] = useState<MealId>()
   const [deleted, setDeleted] = useState<JustDeleted>()
+  /**
+   * Whether the type-it-in form is open.
+   *
+   * Closed by default, behind a "By hand" button on the logged list. Logging by
+   * hand is the fallback — the three ways in on the Log screen are the ones
+   * people use — and an always-open five-field form pushed the actual list of
+   * what you ate below the fold on a phone.
+   */
+  const [manual, setManual] = useState(false)
 
   /*
     Both belong to the day you were looking at. Carried onto another day, the
@@ -49,6 +58,7 @@ export function Nutrition() {
   useEffect(() => {
     setEditing(undefined)
     setDeleted(undefined)
+    setManual(false)
   }, [day])
 
   if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
@@ -67,7 +77,7 @@ export function Nutrition() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
+      <header className="flex flex-col gap-3 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-6">
         <div>
           <h1 className="font-display text-4xl">{t('nutrition.title')}</h1>
           <p className="pt-1 text-sm text-ink-muted">
@@ -86,30 +96,60 @@ export function Nutrition() {
 
       <div className="grid gap-4">
         <Card label={t('nutrition.todaysTotal')}>
-          <div className="flex flex-wrap gap-x-8 gap-y-2">
+          {/*
+            Two by two on a phone rather than a wrapping row. Four figures in a
+            row at 390px either shrink until they stop being headline numbers or
+            wrap into a ragged two-and-two anyway; a grid makes that pairing
+            deliberate and keeps the four baselines aligned.
+          */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-2">
             <Total name={t('estimate.calories')} value={showNumber(nutrients.energy, 'kcal')} />
             <Total
               name={t('estimate.protein')}
-              value={
-                proteinGoal
-                  ? `${showNumber(nutrients.protein, 'g')} / ${showNumber(proteinGoal.target, 'g')} g`
-                  : show(nutrients.protein, 'g')
-              }
+              value={showNumber(nutrients.protein, 'g')}
+              sub={proteinGoal ? `/ ${showNumber(proteinGoal.target, 'g')} g` : 'g'}
               good={progress?.attained}
             />
-            <Total name={t('estimate.carbs')} value={show(nutrients.carbs, 'g')} />
-            <Total name={t('estimate.fat')} value={show(nutrients.fat, 'g')} />
+            <Total name={t('estimate.carbs')} value={showNumber(nutrients.carbs, 'g')} sub="g" />
+            <Total name={t('estimate.fat')} value={showNumber(nutrients.fat, 'g')} sub="g" />
           </div>
         </Card>
 
-        {/* Logging always writes to now, so the form only makes sense on today. */}
-        {isToday && (
-          <Card label={t('nutrition.logAMeal')}>
-            <MealForm onSubmit={addMeal} />
-          </Card>
-        )}
+        <Card
+          label={t('nutrition.loggedCount', { count: meals.length })}
+          /* Logging always writes to now, so the form only makes sense on today. */
+          action={
+            isToday ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setManual((open) => !open)
+                  setEditing(undefined)
+                }}
+                aria-expanded={manual}
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                  manual
+                    ? 'border-accent bg-accent-soft text-accent'
+                    : 'border-hairline text-ink-soft hover:bg-card-soft'
+                }`}
+              >
+                <PlusIcon />
+                {t('nutrition.byHand')}
+              </button>
+            ) : undefined
+          }
+        >
+          {manual && isToday && (
+            <div className="mb-2 rounded-card border border-hairline bg-surface p-3">
+              <MealForm
+                onSubmit={async (meal) => {
+                  await addMeal(meal)
+                  setManual(false)
+                }}
+              />
+            </div>
+          )}
 
-        <Card label={t('nutrition.loggedCount', { count: meals.length })}>
           {/*
             The undo sits where the meal was, and says what it cost the day's
             total. A delete you cannot take back is a trap on a phone, where
@@ -191,12 +231,32 @@ const slotKey = (meal: Meal): StringKey => `common.slot.${meal.slot}` as StringK
 const mealKcal = (meal: Meal): number =>
   Math.round(meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0))
 
-function Total({ name, value, good }: { name: string; value: string; good?: boolean }) {
+/**
+ * One headline figure, with its unit demoted.
+ *
+ * "128 / 145 g" is one number and three pieces of context; setting the whole
+ * string at one size makes the reader work out which part is the measurement.
+ * The unit and the target are smaller and muted so the eye lands on the digit
+ * that changed.
+ */
+function Total({
+  name,
+  value,
+  sub,
+  good,
+}: {
+  name: string
+  value: string
+  /** Unit, or unit and target — always secondary to `value`. */
+  sub?: string
+  good?: boolean
+}) {
   return (
     <div>
       <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">{name}</p>
-      <p className={`tabular ltr-nums pt-1 text-lg font-medium ${good ? 'text-leaf' : ''}`}>
+      <p className={`tabular ltr-nums pt-1 text-xl font-medium sm:text-lg ${good ? 'text-leaf' : ''}`}>
         {value}
+        {sub && <span className="ps-1 text-[0.81rem] font-normal text-ink-muted">{sub}</span>}
       </p>
     </div>
   )
@@ -313,6 +373,14 @@ const iconProps = {
   strokeWidth: 2.25,
   'aria-hidden': true,
 } as const
+
+function PlusIcon() {
+  return (
+    <svg {...iconProps} width={12} height={12} strokeWidth={2.75}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
 
 function PencilIcon() {
   return (

@@ -39,7 +39,6 @@ const en = {
   'nav.overview': 'Overview',
   'nav.track': 'Track',
   'nav.app': 'App',
-  'nav.nutrition': 'Nutrition',
   'nav.training': 'Training',
   'nav.recovery': 'Recovery',
   'nav.body': 'Body',
@@ -128,9 +127,9 @@ const en = {
   'estimate.keepFood': 'Keep this food',
   'estimate.allRemoved':
     'Every food is removed — there is nothing left to save. Keep one, or discard the whole estimate.',
-  'estimate.savedNote': 'Saved as an estimate you can confirm, correct or delete in Nutrition.',
+  'estimate.savedNote': 'Saved as an estimate you can confirm, correct or delete in Food.',
   'estimate.savedNoteCorrected':
-    'Your corrections are saved as entered; anything you left alone stays an estimate you can confirm in Nutrition.',
+    'Your corrections are saved as entered; anything you left alone stays an estimate you can confirm in Food.',
   'estimate.lowConfidence': 'Low confidence — worth checking the numbers before you trust them.',
   'estimate.fromTextNote':
     "Confidence is lower than a photo's — nothing was seen, so portions were assumed.",
@@ -175,9 +174,10 @@ const en = {
   'when.weeksAgo': { one: '{count} week ago', other: '{count} weeks ago' } as Plural,
 
   // -------------------------------------------------------------- nutrition --
-  'nutrition.title': 'Nutrition',
+  'nutrition.title': 'Food',
   'nutrition.todaysTotal': "Today's total",
   'nutrition.logAMeal': 'Log a meal',
+  'nutrition.byHand': 'By hand',
   'nutrition.addAnotherFood': 'Add another food',
   'nutrition.confirm': 'Confirm',
   'nutrition.editMeal': 'Edit {slot}',
@@ -379,7 +379,7 @@ const en = {
     one: 'One item is an unconfirmed AI estimate —',
     other: '{count} items are unconfirmed AI estimates —',
   } as Plural,
-  'today.reviewInNutrition': 'review in Nutrition',
+  'today.reviewInNutrition': 'review in Food',
   'today.aiTitle': 'See what changed this week',
 
   // ------------------------------------------------------- log, remainder --
@@ -632,7 +632,6 @@ const he: Dictionary = {
   'nav.overview': 'סקירה',
   'nav.track': 'מעקב',
   'nav.app': 'אפליקציה',
-  'nav.nutrition': 'תזונה',
   'nav.training': 'אימונים',
   'nav.recovery': 'התאוששות',
   'nav.body': 'גוף',
@@ -766,9 +765,10 @@ const he: Dictionary = {
   'when.weeksAgo': { one: 'לפני שבוע', other: 'לפני {count} שבועות' },
 
   // -------------------------------------------------------------- nutrition --
-  'nutrition.title': 'תזונה',
+  'nutrition.title': 'אוכל',
   'nutrition.todaysTotal': 'הסך הכל להיום',
   'nutrition.logAMeal': 'רישום ארוחה',
+  'nutrition.byHand': 'ידנית',
   'nutrition.addAnotherFood': 'הוספת מזון נוסף',
   'nutrition.confirm': 'אישור',
   'nutrition.editMeal': 'עריכת {slot}',
@@ -969,7 +969,7 @@ const he: Dictionary = {
     one: 'פריט אחד הוא הערכת AI לא מאושרת —',
     other: '{count} פריטים הם הערכות AI לא מאושרות —',
   },
-  'today.reviewInNutrition': 'לסקירה במסך התזונה',
+  'today.reviewInNutrition': 'לסקירה במסך האוכל',
   'today.aiTitle': 'לראות מה השתנה השבוע',
 
   // ------------------------------------------------------- log, remainder --

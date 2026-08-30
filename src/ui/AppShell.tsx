@@ -11,7 +11,7 @@ import type { StringKey } from './i18n/strings'
 const TRACK: { to: string; label: StringKey }[] = [
   { to: '/log', label: 'nav.log' },
   { to: '/today', label: 'nav.today' },
-  { to: '/nutrition', label: 'nav.nutrition' },
+  { to: '/nutrition', label: 'nav.food' },
   { to: '/training', label: 'nav.training' },
   { to: '/recovery', label: 'nav.recovery' },
   { to: '/body', label: 'nav.body' },

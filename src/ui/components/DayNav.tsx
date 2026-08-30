@@ -23,14 +23,17 @@ export function DayNav({
 }) {
   const t = useT()
   return (
-    <div className="flex items-center gap-1">
+    /* Full width on a phone, where the design gives it a row of its own with
+       the label centred between the arrows; only as wide as it needs from
+       `sm` up, where it shares the header with the title. */
+    <div className="flex w-full items-center gap-1 sm:w-auto">
       <Arrow label={t('today.previousDay')} onClick={onPrevious} direction="left" />
       <button
         type="button"
         onClick={onToday}
         disabled={isToday}
         title={isToday ? undefined : t('today.backToToday')}
-        className="min-w-[9.5rem] rounded-full px-3 py-1.5 text-sm text-ink-muted transition-colors enabled:hover:bg-card-soft disabled:cursor-default"
+        className="flex-1 rounded-full px-3 py-1.5 text-sm text-ink-muted transition-colors enabled:hover:bg-card-soft disabled:cursor-default sm:min-w-[9.5rem] sm:flex-none"
       >
         {dayLabel(day, today, t)}
       </button>

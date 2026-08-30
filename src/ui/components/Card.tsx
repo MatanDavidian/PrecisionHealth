@@ -4,18 +4,24 @@ export function Card({
   label,
   children,
   tone = 'default',
+  action,
 }: {
   label?: string
   children: ReactNode
   tone?: 'default' | 'leaf'
+  /** A control on the eyebrow row, opposite the label. */
+  action?: ReactNode
 }) {
   const bg = tone === 'leaf' ? 'bg-leaf-soft' : 'bg-card'
   return (
     <section className={`${bg} rounded-card p-5`}>
-      {label && (
-        <p className="pb-3 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">
-          {label}
-        </p>
+      {(label || action) && (
+        <div className="flex items-center justify-between gap-3 pb-3">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+            {label}
+          </p>
+          {action}
+        </div>
       )}
       {children}
     </section>

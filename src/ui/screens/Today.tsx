@@ -151,7 +151,21 @@ export function Today() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <header className="flex flex-wrap items-end justify-between gap-4 pb-6">
+      {/*
+        The switch does not move when you use it.
+
+        It used to. The day view carries a date stepper beside the switch and
+        the week view does not, so the row's contents changed width with the
+        view — which on a phone made it wrap differently, and on a desktop slid
+        the switch sideways. Either way the control jumped out from under the
+        finger that had just pressed it, and the page appeared to rebuild
+        itself. Both halves are fixed here rather than in CSS alone: on a phone
+        the switch is a full-width row of its own with the stepper BELOW it, so
+        the stepper's coming and going cannot reach it; from `sm` up the
+        stepper keeps its space in the row even in the week view, where it is
+        present but inert.
+      */}
+      <header className="flex flex-col gap-3.5 pb-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
         <div>
           <h1 className="font-display text-4xl">
             {view === 'week' ? t('week.title') : dayLabel(day, today, t)}
@@ -162,22 +176,41 @@ export function Today() {
               : day}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Two words, in the shape the Log tabs already use. */}
-          <div className="flex gap-0.5 rounded-full border border-hairline p-0.5">
+        <div className="flex flex-col gap-3.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          {/*
+            Filled and full-width on a phone, where it is the same shape as the
+            Log tabs and the Settings tabs; outlined and only as wide as its two
+            words from `sm` up, where it sits beside the date stepper.
+          */}
+          <div className="flex gap-1.5 rounded-full bg-card p-1 sm:gap-0.5 sm:border sm:border-hairline sm:bg-transparent sm:p-0.5">
             {(['day', 'week'] as const).map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => setView(option)}
                 aria-pressed={view === option}
-                className={`px-4 py-1.5 ${PILL} ${view === option ? PILL_ON : PILL_OFF}`}
+                className={`flex-1 py-2 max-sm:text-[13px] sm:flex-none sm:px-4 sm:py-1.5 ${PILL} ${
+                  view === option ? PILL_ON : PILL_OFF
+                }`}
               >
                 {t(option === 'day' ? 'week.day' : 'week.week')}
               </button>
             ))}
           </div>
-          {view === 'day' && (
+          {/*
+            Dropped on a phone, where it sits below the switch and so cannot
+            disturb it. Kept but inert from `sm` up, where removing it would
+            let the switch slide across.
+          */}
+          <div
+            className={view === 'day' ? undefined : 'max-sm:hidden sm:invisible'}
+            aria-hidden={view !== 'day'}
+            /* `inert` is the right primitive for "present but not there" — it
+               takes the stepper out of the focus order and the accessibility
+               tree, so an invisible control cannot be tabbed into. React 18's
+               DOM typings predate it, hence the plain attribute. */
+            {...(view === 'day' ? {} : ({ inert: '' } as Record<string, string>))}
+          >
             <DayNav
               day={day}
               today={today}
@@ -186,7 +219,7 @@ export function Today() {
               onNext={selected.goNext}
               onToday={selected.goToday}
             />
-          )}
+          </div>
         </div>
       </header>
 

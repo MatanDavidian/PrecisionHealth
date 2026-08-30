@@ -288,6 +288,31 @@ view; what rarely changes lives in Settings → You.
 The sidebar entry for Today reads **Week** while the week view is showing, so
 the highlighted item names what is on screen.
 
+## A control may not move when you use it
+
+Two of them did. The Day/Week switch shared a row with the date stepper, which
+exists only in the day view — so the row's contents changed width with the view,
+and the switch slid 240px sideways on a desktop, or 209px across and 54px up on
+a phone, out from under the finger that had just pressed it. The Settings tabs
+sat under a subtitle that changes with the selected tab, and in Hebrew some of
+those wrap to two lines and some to one, so the tab row stepped 20px down and
+back as you moved along it.
+
+Neither is a styling problem, so neither is fixed with styling alone:
+
+- On a phone the Day/Week switch is a full-width row of its own, in the shape
+  the design draws, with the date stepper **below** it — so the stepper's coming
+  and going cannot reach it. From `sm` up the stepper keeps its space in the row
+  even in the week view, present but `inert`.
+- The three Settings subtitles are stacked in one grid cell with two of them
+  invisible, making the header as tall as the tallest, in any language. A
+  reserved pixel height would have been a magic number the next translation
+  broke.
+
+The design's phone mockup drops the date stepper entirely — the switch sits
+where it used to be. That would cost the only way to reach another day on a
+phone, so the stepper is kept, below the switch.
+
 ## Two greys, and one rule for selection
 
 `ink-muted` (#8a8375) is for text you skim past — uppercase eyebrows, the date

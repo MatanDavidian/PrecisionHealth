@@ -120,9 +120,31 @@ export function Settings() {
     <div className="mx-auto max-w-2xl">
       <header className="pb-6">
         <h1 className="font-display text-4xl">{t('settings.title')}</h1>
-        <p className="pt-1 text-sm text-ink-muted">
-          {t(TABS.find((option) => option.tab === tab)!.blurb)}
-        </p>
+        {/*
+          All three blurbs are laid on top of each other in one grid cell, with
+          two of them invisible.
+
+          They are different lengths — in Hebrew on a phone some wrap to two
+          lines and some to one — so rendering only the current one made the
+          header change height, which pushed the tab row down as you moved
+          between tabs. A control that moves when you use it is the one thing a
+          tab row must never do. Stacking them makes the header as tall as the
+          tallest blurb, always, in any language, without a magic number that
+          the next translation would break.
+        */}
+        <div className="grid pt-1">
+          {TABS.map((option) => (
+            <p
+              key={option.tab}
+              aria-hidden={option.tab !== tab}
+              className={`col-start-1 row-start-1 text-sm text-ink-muted ${
+                option.tab === tab ? '' : 'invisible'
+              }`}
+            >
+              {t(option.blurb)}
+            </p>
+          ))}
+        </div>
       </header>
 
       {/*

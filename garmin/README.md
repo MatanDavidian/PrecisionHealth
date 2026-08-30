@@ -123,23 +123,45 @@ unrelated applications.
 
 ## Building it
 
+**One-time setup.** A free Garmin account is needed to download, but **no
+Connect IQ Store account and no Health API approval** — that is the whole point
+of this route.
+
+1. **Java.** The compiler is a Java program. `java -version` should print 8 or
+   newer; a JDK 17 is fine.
+2. **Connect IQ SDK Manager** — from `developer.garmin.com/connect-iq/sdk/`.
+   Run it and install the current SDK.
+3. **In the SDK Manager's Devices tab, download `Forerunner 265`.** The SDK on
+   its own cannot build for a device whose definition is not installed. This is
+   the step people miss; the symptom is an "unknown product" error naming
+   `fr265`.
+4. **VS Code extension**: *Monkey C*, published by Garmin.
+5. **Developer key**: Command Palette → `Monkey C: Generate a Developer Key`.
+   A watch will not run an unsigned app. It normally lands at
+   `~/.Garmin/developer_key` — it is a **private key**, and `.gitignore` is set
+   up to keep it out of this repo.
+
+**Compiling.** Either:
+
+```sh
+./build.sh              # fr265 by default
+./build.sh fr265s
 ```
-Mac
- ├── VS Code
- ├── the Monkey C extension
- └── the Connect IQ SDK (via the SDK Manager)
-```
 
-The extension generates the developer signing key; the watch will not run
-unsigned apps.
+or in VS Code — open **this `garmin/` folder** as the workspace root, not the
+repository root, or the extension will not find `monkey.jungle`. Then
+`Monkey C: Build for Device`.
 
-- `Monkey C: Build for Device` → produces a `.PRG`
-- connect the watch over USB, copy the `.PRG` into `GARMIN/APPS/`
-- eject, and it appears in the app list
+Prefer `build.sh` for a first build: it prints the whole compiler output in one
+place, which is what to paste when something fails.
 
-No Connect IQ Store account is needed to sideload onto your own watch, and **no
-Garmin Health API approval is needed at all** — that is the whole point of this
-route.
+**Running it.**
+
+- *Simulator* — `Monkey C: Run App` (F5). Good for "does it compile and render".
+  **Its activity data is fabricated, so it cannot answer the calories question.**
+- *Watch* — connect the FR265 over USB and copy the `.prg` into `GARMIN/APPS/`,
+  then eject. If the watch does not appear in Finder it is presenting as MTP
+  rather than as a disk; *Android File Transfer* handles that on macOS.
 
 ## Layout
 

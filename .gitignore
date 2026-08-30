@@ -12,3 +12,12 @@ dist/
 
 # Supabase CLI scratch state, per machine
 supabase/.temp/
+
+# Connect IQ build output
+garmin/bin/
+
+# Developer signing keys — private keys, never in the repo.
+# The Connect IQ key normally lives at ~/.Garmin/developer_key.
+*developer_key*
+*.der
+*.pem

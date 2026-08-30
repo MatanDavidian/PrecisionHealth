@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+#
+# Build the POC from the command line.
+#
+# The VS Code command does the same job, but this prints the compiler's whole
+# output in one place — which is what to paste when something fails to build.
+#
+#   ./build.sh              # default device: fr265
+#   ./build.sh fr265s       # any device listed in manifest.xml
+#
+set -uo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+DEVICE="${1:-fr265}"
+KEY="${DEVELOPER_KEY:-$HOME/.Garmin/developer_key}"
+SDK_ROOT="$HOME/Library/Application Support/Garmin/ConnectIQ"
+
+# The SDK Manager records the active SDK here. Fall back to the newest one
+# installed, so this still works if the file is missing or in an older format.
+SDK=""
+if [ -f "$SDK_ROOT/current-sdk.cfg" ]; then
+  CURRENT="$(tr -d '[:space:]' < "$SDK_ROOT/current-sdk.cfg")"
+  [ -d "$CURRENT" ] && SDK="$CURRENT"
+  [ -z "$SDK" ] && [ -d "$SDK_ROOT/Sdks/$CURRENT" ] && SDK="$SDK_ROOT/Sdks/$CURRENT"
+fi
+if [ -z "$SDK" ]; then
+  SDK="$(ls -d "$SDK_ROOT"/Sdks/*/ 2>/dev/null | sort -V | tail -1)"
+fi
+
+if [ -z "$SDK" ] || [ ! -x "$SDK/bin/monkeyc" ]; then
+  echo "No Connect IQ SDK found under:"
+  echo "  $SDK_ROOT/Sdks"
+  echo
+  echo "Install one with the Connect IQ SDK Manager, and download the fr265"
+  echo "device in its Devices tab — the SDK alone is not enough to build for it."
+  exit 1
+fi
+
+if [ ! -f "$KEY" ]; then
+  echo "No developer key at: $KEY"
+  echo
+  echo "Generate one in VS Code: Command Palette -> 'Monkey C: Generate a"
+  echo "Developer Key'. A watch will not run an unsigned app."
+  echo "Set DEVELOPER_KEY=/path/to/key if yours lives elsewhere."
+  exit 1
+fi
+
+mkdir -p "$HERE/bin"
+OUT="$HERE/bin/GarminDataPoc-$DEVICE.prg"
+
+echo "SDK:    $SDK"
+echo "Device: $DEVICE"
+echo "Key:    $KEY"
+echo "Out:    $OUT"
+echo "---------------------------------------------------------------"
+
+# -w turns on warnings; on a first build against an unknown SDK version they
+# are the interesting part, not noise.
+"$SDK/bin/monkeyc" \
+  -d "$DEVICE" \
+  -f "$HERE/monkey.jungle" \
+  -o "$OUT" \
+  -y "$KEY" \
+  -w
+STATUS=$?
+
+echo "---------------------------------------------------------------"
+if [ $STATUS -eq 0 ]; then
+  echo "Built: $OUT"
+  echo "Copy it to GARMIN/APPS/ on the watch."
+else
+  echo "Build failed (exit $STATUS). Paste everything above."
+fi
+exit $STATUS

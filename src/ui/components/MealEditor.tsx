@@ -62,6 +62,7 @@ export function MealEditor({
   onCancel,
   onDelete,
   dayKcal,
+  onLeftover,
 }: {
   meal: Meal
   onSave: (edit: MealEdit) => Promise<void>
@@ -75,6 +76,14 @@ export function MealEditor({
    * on the button is the difference between committing and guessing.
    */
   dayKcal?: number
+  /**
+   * Renders the leftover panel, given a way to close it.
+   *
+   * A render prop rather than a prop bag: the panel needs the repositories and
+   * the write action, which belong to the screen, and the editor's only job is
+   * to say where it goes.
+   */
+  onLeftover?: (close: () => void) => React.ReactNode
 }) {
   const t = useT()
   const zone = zoneOf(meal)
@@ -86,6 +95,7 @@ export function MealEditor({
   /** How many times Refill was pressed on each food, so the line can say. */
   const [refills, setRefills] = useState<Record<string, number>>({})
   const [saving, setSaving] = useState(false)
+  const [leftoverOpen, setLeftoverOpen] = useState(false)
 
   /**
    * What each food looked like when the form opened.
@@ -358,6 +368,33 @@ export function MealEditor({
         </div>
       </div>
 
+      {/*
+        A meal-level control, unlike Refill which belongs to one food. It sits
+        below the foods and above the actions because it acts on all of them.
+      */}
+      {onLeftover && remaining.length > 0 && (
+        <div className="mt-4 border-t border-hairline pt-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <p className="max-w-[46ch] text-[0.78rem] text-ink-soft">{t('leftover.prompt')}</p>
+            <button
+              type="button"
+              onClick={() => setLeftoverOpen((open) => !open)}
+              aria-expanded={leftoverOpen}
+              title={t('leftover.openTitle')}
+              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                leftoverOpen
+                  ? 'border-accent bg-accent-soft text-accent'
+                  : 'border-hairline text-ink-soft hover:border-accent hover:bg-card-soft hover:text-accent'
+              }`}
+            >
+              <LeftoverIcon />
+              {t('leftover.open')}
+            </button>
+          </div>
+          {leftoverOpen && onLeftover(() => setLeftoverOpen(false))}
+        </div>
+      )}
+
       {scaled.length > 0 && (
         <p className="pt-3 text-xs text-ink-muted">{t('editor.ratioHint')}</p>
       )}
@@ -413,6 +450,25 @@ export function MealEditor({
 function atOn(meal: Meal, hhmm: string): string {
   if (meal.time.kind !== 'instant') return new Date().toISOString()
   return zonedTimeToUtc(dayKey(meal.time.at, meal.time.zone), hhmm, meal.time.zone)
+}
+
+/** A part-circle: some of it went, some came back. */
+function LeftoverIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M12 3a9 9 0 1 0 9 9" />
+      <path d="M12 3v9h9" />
+    </svg>
+  )
 }
 
 /** The design's refresh arrow: a circle that comes back round to itself. */

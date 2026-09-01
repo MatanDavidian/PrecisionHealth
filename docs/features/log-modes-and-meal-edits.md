@@ -189,6 +189,46 @@ Observations were never restricted this way: the burned-calories stepper has
 always written to the selected day through `instantOn`. Meals were the odd one
 out.
 
+### Leftovers — what came back on the plate
+
+A meal-level control in the editor, unlike Refill which belongs to one food.
+Photograph or describe what is left, and each food is scaled to the share that
+was **eaten**.
+
+**Per food, not per meal.** "I finished the chicken and left half the rice" is
+the normal shape of a leftover, and one percentage across the meal cannot say
+it — it would move protein and carbohydrate in step when the whole point is
+that they did not. The headline figure ("about 70% of this meal was eaten") is
+derived, weighted by calories rather than by weight: leaving the salad and
+leaving the steak are different days, and averaging the fractions would call
+them the same.
+
+**The model is given the plate**, indexed. It cannot map "half the bread" onto
+item 2 without knowing there is a bread, and the reply refers to foods by index
+rather than name because the model writes names in the user's language.
+
+Three rules the arithmetic follows, each with a test:
+
+- **A food the estimate does not mention is left alone**, treated as fully
+  eaten. The asymmetry is deliberate: assuming "eaten" costs an unrecorded
+  leftover, which is the same as not using the feature. Assuming "left" makes
+  food you did eat vanish with nothing to notice it by.
+- **A food eaten to zero keeps its row at 0 g** rather than being deleted. A
+  model should not be able to remove a record on its own; the row stays visible
+  and Remove is one tap away for anyone who agrees with it.
+- **Fractions are clamped into 0..1** before they reach the arithmetic, and an
+  index no food occupies is dropped. These numbers subtract from a meal that is
+  already recorded, so a hallucination here removes food someone ate.
+
+**Provenance is the decision worth stating.** When a person types 260 over the
+model's 320, that is confirmation — a human looked and said what it should be.
+A leftover is the reverse: the human supplied the evidence and the **model**
+produced the numbers. So the scaled foods carry `AI_ESTIMATE` pointing at the
+inference that made them, and they need confirming, exactly as a photo estimate
+does. Pressing Apply agrees to record the claim; it does not vouch for it. That
+is why applying is its own write rather than a merge into the edit in progress —
+`applyMealEdit` stamps `USER_CONFIRMED`, which would be a lie here.
+
 ### Editing on a phone
 
 Below `md` — the width at which the app shows its bottom bar — editing opens as

@@ -162,6 +162,8 @@ export interface AIInference {
     | 'FOOD_PHOTO_ESTIMATE'
     /** The same estimate from a sentence the user typed rather than a photo. */
     | 'FOOD_TEXT_ESTIMATE'
+  /** Judging how much of an already-logged meal came back on the plate. */
+  | 'FOOD_LEFTOVER_ESTIMATE'
     | 'HEALTH_SCAN'
     | 'PLAN_GENERATION'
     | 'DOCUMENT_EXTRACTION'

@@ -18,11 +18,13 @@ import {
   type EstimateResult,
   type FollowUp,
   type FoodEstimator,
+  type LeftoverInput,
+  type PlatedFood,
   type WeekInsight,
 } from './estimator'
 import { toDataUrl } from './photo'
-import { applyGramsHint, validateEstimate, validateInsight } from './validate'
-import type { WeekReport } from '@/domain'
+import { applyGramsHint, validateEstimate, validateInsight, validateLeftover } from './validate'
+import type { LeftoverEstimate, WeekReport } from '@/domain'
 
 export interface TrialState {
   used: number
@@ -89,6 +91,27 @@ export class ProxyEstimator implements FoodEstimator {
     return this.send({ text: description.trim() }, hints, answers)
   }
 
+  /**
+   * A leftover, judged on the server.
+   *
+   * The plate travels with the request because the server holds the prompt and
+   * the key; the browser only knows which meal it is looking at. Same transport
+   * as everything else here — one endpoint, a different field.
+   */
+  async estimateLeftover(
+    input: LeftoverInput,
+    plate: readonly PlatedFood[],
+    hints: EstimateHints,
+  ): Promise<LeftoverEstimate> {
+    const leftover =
+      'photo' in input
+        ? { photo: await toDataUrl(input.photo), plate }
+        : { text: input.description, plate }
+    return this.send({ leftover }, hints, [], (parsed, model) =>
+      validateLeftover(parsed, model, plate.length),
+    ) as Promise<LeftoverEstimate>
+  }
+
   async weekInsights(report: WeekReport, hints: EstimateHints): Promise<WeekInsight> {
     return this.send({ report }, hints, [], validateInsight) as Promise<WeekInsight>
   }
@@ -102,7 +125,11 @@ export class ProxyEstimator implements FoodEstimator {
    * from the payer's side they are the same call.
    */
   private async send<T = EstimateResult>(
-    input: { photo: string } | { text: string } | { report: WeekReport },
+    input:
+      | { photo: string }
+      | { text: string }
+      | { report: WeekReport }
+      | { leftover: { photo?: string; text?: string; plate: readonly PlatedFood[] } },
     hints: EstimateHints,
     answers: readonly FollowUp[] = [],
     /** How to read the reply. The transport is identical either way. */

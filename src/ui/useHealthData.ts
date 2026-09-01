@@ -47,8 +47,10 @@ import {
   type Observation,
   type Sleep,
   type Workout,
+  type LeftoverEstimate,
 } from '@/domain'
 import { buildEstimatedMeal, type EstimatedMealInput } from '@/data/estimatedMeal'
+import { buildLeftoverMeal } from '@/data/leftoverMeal'
 import { useDataRevision } from './DataProvider'
 
 /** Sort key for a record's time, whichever shape it has. */
@@ -195,6 +197,29 @@ export function useActions() {
       return runWrite('this meal', async () => {
         await getRepositories().inferences.add(inference)
         await getRepositories().meals.add(meal)
+      })
+    },
+    [runWrite],
+  )
+
+  /**
+   * A leftover, recorded against a meal that is already logged.
+   *
+   * A new version of the meal (D15) whose reduced foods supersede the old ones
+   * (D4), and the inference that judged it (D13). The inference goes first for
+   * the same reason as an estimated meal: an unused audit row is a smaller
+   * wrong than a food pointing at one that is not there.
+   */
+  const applyLeftoverToMeal = useCallback(
+    async (
+      meal: Meal,
+      estimate: LeftoverEstimate,
+      source: { kind: 'photo'; sha256: string } | { kind: 'text'; description: string },
+    ) => {
+      const built = buildLeftoverMeal(currentUserId(), meal, estimate, source)
+      return runWrite('this leftover', async () => {
+        await getRepositories().inferences.add(built.inference)
+        await getRepositories().meals.add(built.meal)
       })
     },
     [runWrite],
@@ -390,6 +415,7 @@ export function useActions() {
   return {
     addMeal,
     addEstimatedMeal,
+    applyLeftoverToMeal,
     recordObservation,
     setGoal,
     setObjective,

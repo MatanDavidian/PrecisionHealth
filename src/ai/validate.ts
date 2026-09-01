@@ -15,6 +15,7 @@ import {
   type EstimateResult,
   type WeekInsight,
 } from './estimator'
+import { clampFraction, type LeftoverEstimate, type LeftoverPortion } from '@/domain'
 
 /** Calories implied by macros. Atwater factors: 4/4/9 kcal per gram. */
 export const kcalFromMacros = (proteinG: number, carbsG: number, fatG: number): number =>
@@ -183,4 +184,43 @@ export function validateInsight(raw: unknown, model: string): WeekInsight {
     raw,
     model,
   }
+}
+
+/**
+ * A leftover judgement, made safe.
+ *
+ * The fractions matter more than usual here, because they SUBTRACT from a meal
+ * that is already recorded. A hallucinated 0 removes food the person ate, and
+ * nothing on screen afterwards would say why the day is short. So an index that
+ * is not a number, or one no food occupies, is dropped rather than guessed at,
+ * and every fraction is clamped into 0..1 before it can reach the arithmetic.
+ */
+export function validateLeftover(raw: unknown, model: string, plateSize: number): LeftoverEstimate {
+  if (!isObject(raw)) throw new EstimateError('UNREADABLE', 'Reply was not an object', raw)
+  const list = Array.isArray(raw.portions) ? raw.portions : Array.isArray(raw.items) ? raw.items : []
+
+  const portions: LeftoverPortion[] = []
+  for (const entry of list) {
+    if (!isObject(entry)) continue
+    const index = Number(entry.index)
+    if (!Number.isInteger(index) || index < 0 || index >= plateSize) continue
+    const eaten =
+      entry.eatenFraction !== undefined
+        ? Number(entry.eatenFraction)
+        : entry.eaten !== undefined
+          ? Number(entry.eaten)
+          : Number.NaN
+    if (!Number.isFinite(eaten)) continue
+    portions.push({
+      index,
+      eatenFraction: clampFraction(eaten > 1 && eaten <= 100 ? eaten / 100 : eaten),
+      ...(text(entry.note) ? { note: text(entry.note) } : {}),
+    })
+  }
+
+  if (portions.length === 0) {
+    throw new EstimateError('UNREADABLE', 'No usable portions in the reply', raw)
+  }
+
+  return { portions, model, confidence: confidence(raw.confidence), raw }
 }

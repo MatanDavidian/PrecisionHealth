@@ -16,7 +16,7 @@
 // The conversation shape lives with the prompt, so the client and the edge
 // function cannot disagree about what a follow-up round looks like.
 import type { FollowUp } from '../../supabase/functions/_shared/prompt'
-import type { WeekReport } from '@/domain'
+import type { LeftoverEstimate, WeekReport } from '@/domain'
 export type { FollowUp }
 
 /** Optional user input. The model must treat these as ground truth, not suggestions. */
@@ -118,6 +118,15 @@ export interface WeekInsight {
   model: string
 }
 
+/** What was on the plate, as the model needs to see it. */
+export interface PlatedFood {
+  name: string
+  amountG: number
+}
+
+/** How the leftover is shown to the model. */
+export type LeftoverInput = { photo: Blob } | { description: string }
+
 export interface FoodEstimator {
   /** The name that goes into the audit record. */
   readonly model: string
@@ -149,6 +158,22 @@ export interface FoodEstimator {
    * name.
    */
   weekInsights(report: WeekReport, hints: EstimateHints): Promise<WeekInsight>
+  /**
+   * What came back on the plate, judged against what was on it.
+   *
+   * Takes the meal's foods because the model cannot map "half the bread" onto
+   * item 2 without knowing there is a bread. It answers with a fraction per
+   * food rather than one for the meal: leaving the salad and leaving the steak
+   * are different days, and a single percentage cannot tell them apart.
+   *
+   * A photo of the plate, or a sentence — the same two inputs as an estimate,
+   * for the same reason.
+   */
+  estimateLeftover(
+    input: LeftoverInput,
+    plate: readonly PlatedFood[],
+    hints: EstimateHints,
+  ): Promise<LeftoverEstimate>
 }
 
 /**

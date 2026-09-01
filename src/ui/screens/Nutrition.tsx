@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card } from '../components/Card'
 import { MealForm } from '../components/MealForm'
 import { DescribeMeal } from '../components/DescribeMeal'
+import { LeftoverPanel } from '../components/LeftoverPanel'
 import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { MealEditor } from '../components/MealEditor'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
@@ -41,6 +42,7 @@ export function Nutrition() {
   const {
     addMeal,
     addEstimatedMeal,
+    applyLeftoverToMeal,
     confirmEstimate,
     resolveMealVersion,
     editMeal,
@@ -289,6 +291,16 @@ export function Nutrition() {
                 >
               <MealEditor
                 dayKcal={convert(nutrients.energy, 'kcal')}
+                onLeftover={(close) => (
+                  <LeftoverPanel
+                    meal={meal}
+                    onClose={close}
+                    onApply={async (estimate, source) => {
+                      const ok = await applyLeftoverToMeal(meal, estimate, source)
+                      if (ok) setEditing(undefined)
+                    }}
+                  />
+                )}
                 /*
                   Keyed on the RECORD, not the meal: if another device writes a
                   new version while this form is open, the form is rebuilt from

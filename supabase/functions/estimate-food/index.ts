@@ -19,6 +19,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   INSIGHTS_SYSTEM_PROMPT,
+  LEFTOVER_SYSTEM_PROMPT,
+  plateLines,
   MAX_FOLLOW_UPS,
   MODEL_SOL,
   MODEL_TERRA,
@@ -78,6 +80,7 @@ interface RequestBody {
    * record of them.
    */
   report?: unknown
+  leftover?: unknown
   /** The exchange so far, when the model asked something and the user replied. */
   answers?: FollowUp[]
   /**
@@ -142,7 +145,14 @@ Deno.serve(async (request) => {
     body?.report && typeof body.report === 'object'
       ? JSON.stringify(body.report).slice(0, MAX_REPORT_CHARS)
       : ''
-  if ((!body?.photo && !described && !reported) || !body?.day) {
+  /*
+    A leftover is the fourth kind of input: a photo or a sentence, judged
+    against the foods that were served. The plate is bounded like everything
+    else here — it comes from a client, and a client can send anything.
+  */
+  const leftover = readLeftover(body?.leftover)
+
+  if ((!body?.photo && !described && !reported && !leftover) || !body?.day) {
     return json({ error: 'bad_request' }, 400)
   }
 
@@ -274,16 +284,20 @@ Deno.serve(async (request) => {
         messages: [
           {
             role: 'system',
-            content: reported
-              ? INSIGHTS_SYSTEM_PROMPT + insightsLanguageRule(body.hints?.language)
-              : (body.photo ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT) +
-                languageRule(body.hints?.language),
+            content: leftover
+              ? LEFTOVER_SYSTEM_PROMPT + languageRule(body.hints?.language)
+              : reported
+                ? INSIGHTS_SYSTEM_PROMPT + insightsLanguageRule(body.hints?.language)
+                : (body.photo ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT) +
+                  languageRule(body.hints?.language),
           },
           {
             role: 'user',
-            content: reported
-              ? `Here is the week, as JSON:\n${reported}`
-              : body.photo
+            content: leftover
+              ? leftoverContent(leftover)
+              : reported
+                ? `Here is the week, as JSON:\n${reported}`
+                : body.photo
                 ? [
                     { type: 'text', text: hintText(body.hints ?? {}) },
                     { type: 'image_url', image_url: { url: body.photo, detail: 'auto' } },
@@ -375,3 +389,57 @@ Deno.serve(async (request) => {
         },
   })
 })
+
+
+/** The most foods a leftover request may name, and how long each name may be. */
+const MAX_PLATE_ITEMS = 20
+const MAX_FOOD_NAME_CHARS = 80
+
+interface Leftover {
+  photo?: string
+  text?: string
+  plate: { name: string; amountG: number }[]
+}
+
+/**
+ * A leftover request, or nothing.
+ *
+ * Everything here arrives from a browser, so nothing is trusted: the plate is
+ * capped, names are cut, weights are coerced to finite numbers, and a request
+ * with no foods is not a leftover at all — without the plate the model has
+ * nothing to judge proportions against and would be guessing at both halves.
+ */
+function readLeftover(value: unknown): Leftover | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const raw = value as Record<string, unknown>
+  if (!Array.isArray(raw.plate) || raw.plate.length === 0) return undefined
+
+  const plate = raw.plate.slice(0, MAX_PLATE_ITEMS).flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return []
+    const food = entry as Record<string, unknown>
+    const name = typeof food.name === 'string' ? food.name.trim().slice(0, MAX_FOOD_NAME_CHARS) : ''
+    const amountG = Number(food.amountG)
+    if (!name || !Number.isFinite(amountG)) return []
+    return [{ name, amountG }]
+  })
+  if (plate.length === 0) return undefined
+
+  const photo = typeof raw.photo === 'string' ? raw.photo : undefined
+  const text =
+    typeof raw.text === 'string' ? raw.text.trim().slice(0, MAX_DESCRIPTION_CHARS) : undefined
+  if (!photo && !text) return undefined
+
+  return { photo, text, plate }
+}
+
+/** What the model is shown: the plate, then the evidence. */
+function leftoverContent(leftover: Leftover) {
+  const served = `This meal was served:\n${plateLines(leftover.plate)}`
+  if (leftover.photo) {
+    return [
+      { type: 'text', text: `${served}\n\nThis is what is left on the plate.` },
+      { type: 'image_url', image_url: { url: leftover.photo, detail: 'auto' } },
+    ]
+  }
+  return `${served}\n\nWhat is left, in the person's own words:\n<<<\n${leftover.text}\n>>>`
+}

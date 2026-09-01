@@ -11,13 +11,18 @@ import {
   type FollowUp,
   type FoodEstimator,
   type WeekInsight,
+  type LeftoverInput,
+  type PlatedFood,
 } from './estimator'
 import { toDataUrl } from './photo'
+import type { LeftoverEstimate } from '@/domain'
 // One prompt, shared with the edge function: two paths to the same provider
 // must ask the same question, or the same photo answers differently depending
 // on whose key paid for it.
 import {
   INSIGHTS_SYSTEM_PROMPT,
+  LEFTOVER_SYSTEM_PROMPT,
+  plateLines,
   SYSTEM_PROMPT,
   TEXT_SYSTEM_PROMPT,
   describedFoodText,
@@ -26,7 +31,7 @@ import {
   insightsLanguageRule,
   languageRule,
 } from '../../supabase/functions/_shared/prompt'
-import { applyGramsHint, validateEstimate, validateInsight } from './validate'
+import { applyGramsHint, validateEstimate, validateInsight, validateLeftover } from './validate'
 import type { WeekReport } from '@/domain'
 
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions'
@@ -94,6 +99,37 @@ export class OpenAiEstimator implements FoodEstimator {
       answers,
       validateEstimate,
       (result, h) => applyGramsHint(result, h.totalGrams),
+    )
+  }
+
+  /**
+   * How much of a served meal came back.
+   *
+   * The plate goes with the question, indexed, because the reply has to say
+   * WHICH food was left and a name cannot carry that across languages. Photo
+   * and sentence use the same prompt: the model is judging proportion either
+   * way, and the only difference is what it is looking at.
+   */
+  async estimateLeftover(
+    input: LeftoverInput,
+    plate: readonly PlatedFood[],
+    hints: EstimateHints,
+  ): Promise<LeftoverEstimate> {
+    const served = `This meal was served:\n${plateLines(plate)}`
+    const content =
+      'photo' in input
+        ? [
+            { type: 'text', text: `${served}\n\nThis is what is left on the plate.` },
+            { type: 'image_url', image_url: { url: await toDataUrl(input.photo), detail: 'low' } },
+          ]
+        : `${served}\n\nWhat is left, in the person's own words:\n<<<\n${input.description}\n>>>`
+
+    return this.ask(
+      LEFTOVER_SYSTEM_PROMPT + languageRule(hints.language),
+      content,
+      {},
+      [],
+      (raw, model) => validateLeftover(raw, model, plate.length),
     )
   }
 

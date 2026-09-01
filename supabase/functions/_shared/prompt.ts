@@ -311,3 +311,46 @@ export const MODEL_LABELS: Record<string, { name: string; detail: string }> = {
   [MODEL_TERRA]: { name: 'Balanced', detail: 'Good estimates in about fifteen seconds.' },
   [MODEL_LUNA]: { name: 'Fastest', detail: 'Quick and rough. Best for simple, obvious meals.' },
 }
+
+
+/**
+ * Judging what came back on the plate.
+ *
+ * The model is told what was served, so its only job is proportion. That is a
+ * far easier question than identifying food from scratch, and it is why a
+ * leftover photo can be trusted more than the estimate it corrects.
+ *
+ * The index is the contract. Names are not, because the model writes them in
+ * the user's language and would otherwise have to match "לחם" against "bread"
+ * to subtract the right food.
+ */
+export const LEFTOVER_SYSTEM_PROMPT = `You judge how much of a meal was eaten.
+
+You are given the foods that were served, each with an index and a weight, and
+either a photograph of what is left on the plate or a sentence describing it.
+
+Reply with JSON only:
+{
+  "portions": [
+    { "index": 0, "eatenFraction": 1, "note": "fully eaten" },
+    { "index": 1, "eatenFraction": 0.5, "note": "about half eaten" }
+  ],
+  "confidence": 0.0-1.0
+}
+
+Rules:
+- "eatenFraction" is how much of THAT food was EATEN, from 0 to 1. Not how much
+  is left. 1 means none of it came back.
+- Use the "index" you were given. Never invent an index, and never identify a
+  food by name alone.
+- Judge each food separately. Someone can finish the meat and leave the rice.
+- Omit a food entirely if you cannot see it and the description does not mention
+  it. Omitting means "assume it was eaten", which is the safe direction: saying
+  a food was left when it was not deletes food the person actually ate.
+- An empty plate means every food has eatenFraction 1.
+- "note" is a short phrase in the user's language, five words at most.
+- Return no other keys, and no prose.`
+
+/** What was served, as the model sees it. */
+export const plateLines = (plate: readonly { name: string; amountG: number }[]): string =>
+  plate.map((food, index) => `${index}. ${food.name} — ${Math.round(food.amountG)} g`).join('\n')

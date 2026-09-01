@@ -9,8 +9,10 @@ import type {
   FollowUp,
   FoodEstimator,
   WeekInsight,
+  LeftoverInput,
+  PlatedFood,
 } from './estimator'
-import type { WeekReport } from '@/domain'
+import type { LeftoverEstimate, WeekReport } from '@/domain'
 import { applyGramsHint, validateEstimate } from './validate'
 
 export const SAMPLE_REPLY = {
@@ -98,6 +100,43 @@ export class FakeEstimator implements FoodEstimator {
    * Quoting the real totals matters: an insight card full of invented numbers
    * looks right in a screenshot and hides the fact that nothing was wired up.
    */
+  /**
+   * A believable leftover, derived from the plate it was given.
+   *
+   * Deterministic on purpose: the first food is finished and the rest are half
+   * eaten, which is the shape the design draws and the shape the browser tests
+   * assert. A sentence that plainly says everything went is honoured, because
+   * a fake that ignores its input teaches the UI nothing.
+   */
+  async estimateLeftover(
+    input: LeftoverInput,
+    plate: readonly PlatedFood[],
+    _hints: EstimateHints,
+  ): Promise<LeftoverEstimate> {
+    if (this.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, this.delayMs))
+    if (this.failWith) throw this.failWith
+
+    const said = 'description' in input ? input.description.toLowerCase() : ''
+    /*
+      Phrases, not words. Matching a bare "finished" read "finished the chicken,
+      half the rice came back" as an empty plate — the word describes one food
+      in a sentence whose whole point is that another was left.
+    */
+    const finished = /(nothing left|empty plate|plate is empty|ate everything|finished it all|all of it|all gone)/.test(
+      said,
+    )
+
+    return {
+      portions: plate.map((_food, index) => ({
+        index,
+        eatenFraction: finished || index === 0 ? 1 : 0.5,
+        note: finished || index === 0 ? 'fully eaten' : 'about half eaten',
+      })),
+      model: this.model,
+      confidence: 0.72,
+    }
+  }
+
   async weekInsights(report: WeekReport, _hints: EstimateHints): Promise<WeekInsight> {
     if (this.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, this.delayMs))
     if (this.failWith) throw this.failWith

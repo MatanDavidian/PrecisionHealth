@@ -185,7 +185,7 @@ const en = {
   'nutrition.nothingLogged': 'Nothing logged for this day yet.',
   'nutrition.loggedCount': 'Logged ({count})',
   'nutrition.gProtein': '{grams} g protein',
-  'nutrition.deleted': '{slot} deleted · {kcal} kcal came off today’s total',
+  'nutrition.deleted': '{slot} deleted · {kcal} kcal came off the day’s total',
 
   'editor.editing': 'Editing {slot}',
   'editor.loggedAt': 'Logged {time}, {origin}',
@@ -782,7 +782,7 @@ const he: Dictionary = {
   'nutrition.nothingLogged': 'עוד לא נרשם דבר ליום הזה.',
   'nutrition.loggedCount': 'נרשמו ({count})',
   'nutrition.gProtein': '{grams} גרם חלבון',
-  'nutrition.deleted': '{slot} נמחקה · {kcal} קלוריות ירדו מהסך הכל של היום',
+  'nutrition.deleted': '{slot} נמחקה · {kcal} קלוריות ירדו מהסך היומי',
 
   'editor.editing': 'עריכת {slot}',
   'editor.loggedAt': 'נרשם ב{time}, {origin}',

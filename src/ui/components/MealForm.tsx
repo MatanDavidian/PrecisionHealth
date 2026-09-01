@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { suggestSlot, type FoodItemInput, type MealInput } from '@/data/newRecords'
-import { MEAL_SLOTS, type MealSlot } from '@/domain'
+import { deviceZone, suggestSlot, type FoodItemInput, type MealInput } from '@/data/newRecords'
+import { MEAL_SLOTS, zonedTimeToUtc, type CalendarDate, type MealSlot } from '@/domain'
 import { useT } from '../i18n'
 import type { StringKey } from '../i18n/strings'
 
@@ -25,7 +25,22 @@ const field =
  * food database yet, so this form is honest about being the manual path — the
  * photo flow in slice 3 is what makes logging fast.
  */
-export function MealForm({ onSubmit }: { onSubmit: (input: MealInput) => Promise<void> }) {
+export function MealForm({
+  day,
+  onSubmit,
+}: {
+  /**
+   * The day being logged, which is not always today.
+   *
+   * The form used to build its instant from `new Date()` and only carry the
+   * typed clock time, so a meal added while looking at last Tuesday would have
+   * been filed under today. That is why manual entry was locked to today — a
+   * limitation wearing the costume of a rule. Taking the day as an argument
+   * removes both.
+   */
+  day: CalendarDate
+  onSubmit: (input: MealInput) => Promise<void>
+}) {
   const t = useT()
   const now = new Date()
   const [slot, setSlot] = useState<MealSlot>(suggestSlot(now))
@@ -43,11 +58,15 @@ export function MealForm({ onSubmit }: { onSubmit: (input: MealInput) => Promise
     if (!valid || saving) return
     setSaving(true)
 
-    // The time input gives local wall-clock; combine it with today's date so the
-    // instant is built in the device's zone, which is what stamps the record.
-    const [hours, minutes] = time.split(':').map(Number)
-    const at = new Date()
-    at.setHours(hours, minutes, 0, 0)
+    /*
+      The typed clock time, resolved on the day being logged.
+
+      `zonedTimeToUtc` rather than date arithmetic, because "07:30 on 25 October"
+      is not a fixed number of hours from anything — the day a clock changes is
+      23 or 25 hours long, and building the instant by hand puts breakfast on
+      the wrong day once a year.
+    */
+    const at = new Date(zonedTimeToUtc(day, time, deviceZone()))
 
     try {
       await onSubmit({ slot, at, items: items.filter((item) => item.name.trim().length > 0) })

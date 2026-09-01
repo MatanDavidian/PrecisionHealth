@@ -117,9 +117,8 @@ export function Nutrition() {
 
         <Card
           label={t('nutrition.loggedCount', { count: meals.length })}
-          /* Logging always writes to now, so the form only makes sense on today. */
           action={
-            isToday ? (
+            (
               <button
                 type="button"
                 onClick={() => {
@@ -136,12 +135,18 @@ export function Nutrition() {
                 <PlusIcon />
                 {t('nutrition.byHand')}
               </button>
-            ) : undefined
+            )
           }
         >
-          {manual && isToday && (
+          {/*
+            Available on any day you can navigate to, not only today. A meal you
+            forgot to log is the ordinary reason to be looking at yesterday at
+            all, and the day's own date is what the entry is filed under.
+          */}
+          {manual && (
             <div className="mb-2 rounded-card border border-hairline bg-surface p-3">
               <MealForm
+                day={day}
                 onSubmit={async (meal) => {
                   await addMeal(meal)
                   setManual(false)

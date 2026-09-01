@@ -143,6 +143,29 @@ no mode to leave, because a mode you have to notice is one people get stuck in.
 A zero-weight item cannot be scaled from nothing, so its numbers are left alone
 rather than zeroed.
 
+### Logging a meal you forgot
+
+Typing a meal in by hand works on **any day you can navigate to**, not only
+today. Forgetting to log something is the ordinary reason to be looking at
+yesterday at all, so refusing to let you fix it there was the wrong shape.
+
+It was never a deliberate rule. The form built its instant from `new Date()` and
+carried only the typed clock time, so a meal entered while looking at last
+Tuesday would have been filed under today — silently, and wrongly. Locking the
+button to today hid that rather than fixing it. The form now takes the day on
+screen and resolves the typed time on it with `zonedTimeToUtc`, which is what
+the meal editor already did for a logged meal's time.
+
+`zonedTimeToUtc` rather than arithmetic on a midnight, because the day a clock
+changes is 23 or 25 hours long, and adding hours to it puts breakfast on the
+wrong day once a year. The tests check `00:15` and `23:45` — where an hour of
+error moves a whole day's calories onto its neighbour — and 25 October 2026,
+when Israel leaves DST.
+
+Observations were never restricted this way: the burned-calories stepper has
+always written to the selected day through `instantOn`. Meals were the odd one
+out.
+
 ### Editing on a phone
 
 Below `md` — the width at which the app shows its bottom bar — editing opens as

@@ -1,10 +1,53 @@
 import 'fake-indexeddb/auto'
 import { describe, expect, it } from 'vitest'
-import { buildGoal, buildObservation, instantOn } from '../newRecords'
-import { convert, dayKey, needsConfirmation, type UserId } from '@/domain'
+import { buildGoal, buildMeal, buildObservation, instantOn } from '../newRecords'
+import {
+  convert,
+  dayKey,
+  needsConfirmation,
+  zonedTimeToUtc,
+  type CalendarDate,
+  type UserId,
+} from '@/domain'
 
 const USER = 'user-demo' as UserId
 const ZONE = 'Asia/Jerusalem'
+
+describe('a meal typed by hand for another day', () => {
+  const food = [{ name: 'Eggs and oats', amount: 320, energyKcal: 560, proteinG: 32, carbsG: 58, fatG: 19 }]
+
+  /** What the form does: the typed clock time, resolved on the day on screen. */
+  const typedOn = (day: CalendarDate, time: string) =>
+    buildMeal(USER, { slot: 'BREAKFAST', at: new Date(zonedTimeToUtc(day, time, ZONE)), items: food }, ZONE)
+
+  it('lands on the day it was typed FOR, not the day it was typed ON', () => {
+    // The edges are the point. Midday would pass under almost any bug; 00:15
+    // and 23:45 are where an hour of zone error moves the meal to a
+    // neighbouring day, and a whole day's calories with it.
+    for (const day of ['2026-01-15', '2026-07-15'] as CalendarDate[]) {
+      for (const time of ['00:15', '07:30', '23:45']) {
+        const meal = typedOn(day, time)
+        if (meal.time.kind !== 'instant') throw new Error('expected an instant')
+        expect(dayKey(meal.time.at, ZONE)).toBe(day)
+      }
+    }
+  })
+
+  it('survives the day the clocks change', () => {
+    // Israel leaves DST on 25 October 2026, so that day is 25 hours long.
+    // Building the instant by adding hours to a midnight would put this
+    // breakfast on the 24th.
+    const meal = typedOn('2026-10-25' as CalendarDate, '07:30')
+    if (meal.time.kind !== 'instant') throw new Error('expected an instant')
+    expect(dayKey(meal.time.at, ZONE)).toBe('2026-10-25')
+  })
+
+  it('keeps the zone it was entered in, so it never drifts (D7)', () => {
+    const meal = typedOn('2026-08-18' as CalendarDate, '13:00')
+    if (meal.time.kind !== 'instant') throw new Error('expected an instant')
+    expect(meal.time.zone).toBe(ZONE)
+  })
+})
 
 describe('a measurement typed by hand', () => {
   it('is a plain user entry, needing no confirmation', () => {

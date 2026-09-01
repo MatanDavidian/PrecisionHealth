@@ -109,6 +109,44 @@ figures can be read down the screen against Garmin Connect.
 5. **Day boundaries against Connect.** Does each printed date match the day
    Garmin Connect attributes those calories to?
 
+## Running it in the simulator
+
+```sh
+./test.sh          # builds with -t, runs the probe, prints what it produced
+```
+
+Compiles the `(:test)` functions in and runs them on an fr265 profile, printing
+the whole report to the console. That is the only way to read the values from a
+script — the simulator's own window cannot be scraped.
+
+**It cannot answer what `History.calories` means.** The simulator's activity
+data is invented: every calorie and step comes back 0, and its clock is set
+decades ahead. What it does answer, before anything is sideloaded:
+
+- the API surface this build assumes is really there
+- `getHistory()` returns 7 entries on an fr265 profile
+- no guarded read throws anyway
+- `VO2 run`, `VO2 bike`, `rest HR`, `avg rest`, `stress`, `resp` and `recov` all
+  return values, which confirms the capability matrix
+- consecutive `start:` values differ by exactly 86,400, so the entries really
+  are one calendar day apart
+
+### One real bug it caught
+
+`Moment.value()` came back **negative**: `-1875788896`. Monkey C `Number` is
+32-bit signed, so any moment past **2038-01-19** wraps — the Y2038 problem, on a
+watch. The simulator hit it immediately because its clock is set to 2046;
+`-1875788896 + 2³²` is `2419178400`, which is exactly the 2046-08-29 the date
+line printed beside it.
+
+A real FR265 in 2026 is nowhere near the cliff, so this changes nothing today.
+It is handled anyway: negatives are unwrapped and labelled, so nobody records a
+wrapped value by mistake. The formatted date is unaffected — `Gregorian.info`
+reads the `Moment` itself, not the wrapped `Number`.
+
+The lesson for ingestion: **the local calendar date is the thing to send**, and
+the epoch is a diagnostic beside it. A 32-bit epoch is not a durable key.
+
 ## Before this stops being disposable
 
 The application id in `manifest.xml` was invented so the project builds today.

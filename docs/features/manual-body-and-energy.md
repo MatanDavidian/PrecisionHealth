@@ -216,6 +216,18 @@ both the active-vs-total question and the day-boundary question at once.
 Source is in [`garmin/`](../../garmin). Only if this gate passes is it worth
 adding the write adapter, the `Communications` permission and an endpoint.
 
+**Simulator status (Sep 2026):** builds and runs. `getHistory()` reports
+SUPPORTED and returns 7 entries; every guarded read works; VO₂ max, resting HR,
+stress, respiration and recovery all return values. The numbers themselves are
+simulator fiction, so the active-vs-total question is untouched — that still
+needs the watch.
+
+It did catch one real bug: `Moment.value()` overflows Monkey C's 32-bit signed
+`Number` past 2038-01-19, coming back negative. Harmless in 2026, handled in the
+probe, and it settles a design question — **the local calendar date is what
+ingestion should send**, with the epoch as a diagnostic beside it. A 32-bit
+epoch is not a durable key.
+
 ## 5. Tests
 
 - `currentGoals`: newest per metric, same-day ties broken by recorded time, one

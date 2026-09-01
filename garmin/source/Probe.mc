@@ -134,7 +134,23 @@ module Probe {
         if (!(at has :value)) {
             return "(no value())";
         }
-        return at.value().toString();
+
+        var seconds = at.value();
+        if (seconds >= 0) {
+            return seconds.toString();
+        }
+
+        /*
+          Monkey C Numbers are 32-bit signed, so any moment past 2038-01-19
+          comes back wrapped negative — the Y2038 problem, alive and well on a
+          watch. The simulator walked into it immediately because its clock is
+          set decades ahead; a real FR265 in 2026 is nowhere near it.
+
+          Unwrapped so the value stays readable, and labelled so nobody records
+          the wrapped one by mistake. The formatted date above is unaffected:
+          Gregorian.info reads the Moment itself, not this Number.
+        */
+        return (seconds.toLong() + 4294967296l).toString() + " (unwrapped, past 2038)";
     }
 
     // ------------------------------------------------------------------ today

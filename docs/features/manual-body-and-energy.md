@@ -159,6 +159,27 @@ Three other things the same reading settled:
   a local calendar date with no arithmetic, and the epoch was positive — the
   negative seen in the simulator was purely its 2046 clock.
 
+### 4.2 It works — end to end, on hardware
+
+**2026-09-02.** A Forerunner 265 sent seven completed days to the backend and
+the watch showed `sent 14 day(s)` — seven days, `TOTAL_ENERGY` and `STEPS` each.
+That count is returned by the endpoint *after* the insert, so it is evidence the
+rows landed rather than evidence a request left.
+
+The Garmin slice is no longer blocked. What began as "the Health API is closed
+to new applicants" is answered by a route that never needed it.
+
+Two things learned the hard way, recorded so nobody repeats them:
+
+- **A sideloaded app has no settings page.** Garmin Connect lists what your
+  Connect IQ *account* installed, not what is on the watch. Configuration is
+  compiled in from a gitignored file; the phone plays no part.
+- **Make the builds distinguishable.** The sync build and the read-only probe
+  were identical on screen until a button was pressed, so "nothing happened"
+  could mean either "the copy failed" or "the button is broken" — and neither
+  end could tell. The bottom line now reads `START to sync`, which answers it
+  before anything is touched.
+
 ### 4.2 The ingestion rule, now that the shape is known
 
 ```

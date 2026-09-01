@@ -12,8 +12,14 @@ class PocView extends WatchUi.View {
 
     private var _lines as Array<String>;
     private var _page as Number = 0;
-    //! What the last sync said, shown along the bottom. Empty until one runs.
-    private var _status as String = "";
+    //! What the last sync said, along the bottom.
+    //!
+    //! Seeded with the affordance rather than left blank, because the sync
+    //! build and the read-only one are otherwise identical on screen — same
+    //! report, same pages — and there was no way to tell which was installed
+    //! without pressing a button that might do nothing. Now the bottom line
+    //! answers it before you touch anything.
+    private var _status as String = "START to sync";
     //! Filled on the first layout, when the real screen height is known.
     private var _perPage as Number = 8;
 

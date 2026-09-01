@@ -123,6 +123,57 @@ aggregator — carries sleep and HRV into the same observations. `APPLE_HEALTH`
 and `HEALTH_CONNECT` are already members of `DataSource`, so that day needs no
 schema change.
 
+### 4.0 Measured on the watch — established
+
+Read from a Forerunner 265 on **2026-09-01**, for **2026-08-31**, with the watch
+synced to Garmin Connect:
+
+| | |
+| --- | --- |
+| POC `History.calories` | **2214** |
+| Connect — **Total** | **2214** |
+| Connect — Active | 131 |
+| Connect — Resting (derived) | 2083 |
+
+**`ActivityMonitor.History.calories` is TOTAL daily energy.** It maps to
+`TOTAL_ENERGY`. Not expected any more — measured.
+
+The margin is the point. Active energy that day was **131 kcal**. Had this been
+mapped to `ACTIVE_ENERGY`, or had the Health API's `ActiveKilocalories` been
+used as the day's expenditure, every day would have been understated by
+**2083 kcal** — about 14,600 kcal a week, which the week view would have
+reported as roughly 1.9 kg of surplus that never existed. This is precisely the
+bug `TOTAL_ENERGY` was split out to prevent, and the numbers are far wider than
+the ~1500 kcal originally guessed.
+
+Three other things the same reading settled:
+
+- **`getHistory()` returns 7 days** — 31 Aug back to 25 Aug, the documented
+  maximum. That is how far any backfill can reach.
+- **`[0]` is yesterday**, not today. The newest history entry is the last
+  *completed* day, which is exactly what the "write completed days, never
+  today" rule needs.
+- **Days are anchored at LOCAL midnight.** `startOfDay` came back as
+  `1788123600` = `2026-08-30 21:00 UTC` = `2026-08-31 00:00` in Asia/Jerusalem.
+  Not UTC midnight, not a device-defined boundary. So a history entry maps onto
+  a local calendar date with no arithmetic, and the epoch was positive — the
+  negative seen in the simulator was purely its 2046 clock.
+
+### 4.2 The ingestion rule, now that the shape is known
+
+```
+on sync
+  ├── getHistory()                 → up to 7 completed days, newest first
+  ├── for each entry
+  │     ├── localDate = Gregorian.info(startOfDay)   // local midnight anchored
+  │     └── write TOTAL_ENERGY = History.calories for that date
+  └── getInfo().calories           → NOT written; it is a partial day
+```
+
+Backfill is free: the same seven entries arrive on every sync, and a day already
+imported from Garmin supersedes rather than duplicating. So a watch that has not
+synced for five days catches up on its own with no extra code.
+
 ### The mapping, and why the old note here was wrong
 
 An earlier version of this section said Garmin's figures map onto
@@ -131,18 +182,16 @@ An earlier version of this section said Garmin's figures map onto
 understates the burn by roughly a basal metabolic rate — about 1500 kcal a day —
 which would make every week read as a surplus.
 
-The expected mapping is:
+The mapping is:
 
 ```
 ActivityMonitor History.calories  →  TOTAL_ENERGY
 ```
 
-**Expected, not established.** Connect IQ documents the field as "calories
-burned so far for the current day" without saying whether that is active only or
-active plus BMR. Confirming it is the POC's job (§4.1), by reading the value and
-comparing it against Garmin Connect's Total and Active figures at the same
-moment. Nothing should be written to the database on the strength of the
-assumption.
+**Established on hardware — see §4.0.** Connect IQ documents the field only as
+"calories burned so far for the current day", without saying whether that is
+active alone or active plus BMR, which is why it was measured rather than
+assumed.
 
 ### Yesterday is authoritative; today is not written
 
@@ -182,7 +231,7 @@ carries the local calendar date and the offset, and the **backend supplies the
 zone from the user's profile** (D7). Inferring `Asia/Jerusalem` from `+03:00`
 would be a guess.
 
-### 4.1 The POC, and the gate it has to pass
+### 4.1 The POC, and the gate it passed
 
 Garmin documents `getHistory()` as returning `Array<ActivityMonitor.History>` —
 at most seven records, most recent first, supported on the FR265 since API level
@@ -215,6 +264,8 @@ both the active-vs-total question and the day-boundary question at once.
 
 Source is in [`garmin/`](../../garmin). Only if this gate passes is it worth
 adding the write adapter, the `Communications` permission and an endpoint.
+
+**Hardware status (Sep 2026): passed — see §4.0.** Simulator notes follow.
 
 **Simulator status (Sep 2026):** builds and runs. `getHistory()` reports
 SUPPORTED and returns 7 entries; every guarded read works; VO₂ max, resting HR,

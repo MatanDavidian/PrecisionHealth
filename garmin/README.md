@@ -67,6 +67,23 @@ Three outcomes are kept apart, because they mean different things:
 Every returned day is printed, not just yesterday, so the dates and calorie
 figures can be read down the screen against Garmin Connect.
 
+## Result — measured on a Forerunner 265, 2026-09-01
+
+All four questions answered. Full detail in
+[`../docs/features/manual-body-and-energy.md`](../docs/features/manual-body-and-energy.md) §4.0.
+
+| | |
+| --- | --- |
+| `getHistory()` | SUPPORTED, **7 days** (31 Aug back to 25 Aug) |
+| `[0]` | **yesterday**, the last completed day |
+| `startOfDay` | **local midnight** (`1788123600` = 2026-08-31 00:00 IDT) |
+| `History.calories` | **TOTAL** — 2214, matching Connect's Total exactly |
+
+Connect's Active for that day was **131 kcal**. Mapping this field to active
+energy would have understated the daily burn by **2083 kcal**.
+
+The original checklist follows, for anyone re-running this on another device.
+
 ## What to check once it runs
 
 1. **Active or total?** This is the one that matters. At a single moment,

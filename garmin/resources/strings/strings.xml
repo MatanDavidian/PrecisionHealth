@@ -1,3 +1,5 @@
 <strings>
   <string id="AppName">Garmin Data POC</string>
+  <string id="SettingUrl">Sync URL</string>
+  <string id="SettingToken">Device token</string>
 </strings>

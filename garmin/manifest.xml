@@ -40,7 +40,13 @@
       <iq:product id="fr265s"/>
     </iq:products>
 
+    <!--
+      Communications is here now because the app sends. It was deliberately
+      absent while this was a read-only probe, so that build could not be
+      accused of doing anything but what it claimed.
+    -->
     <iq:permissions>
+      <iq:uses-permission id="Communications"/>
       <iq:uses-permission id="UserProfile"/>
     </iq:permissions>
 

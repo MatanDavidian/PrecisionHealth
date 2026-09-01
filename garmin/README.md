@@ -164,6 +164,59 @@ reads the `Moment` itself, not the wrapped `Number`.
 The lesson for ingestion: **the local calendar date is the thing to send**, and
 the epoch is a diagnostic beside it. A 32-bit epoch is not a durable key.
 
+## Sending it (the write path)
+
+Press **START** in the app and it POSTs completed days to the backend. Today is
+never sent — `getInfo().calories` is a running total, and writing it would make
+the week compare a full day of eating against a partial day of burning.
+
+### One-time setup
+
+1. **Deploy the endpoint** and the migration:
+   ```sh
+   npx supabase db push
+   npx supabase functions deploy device-sync --no-verify-jwt
+   ```
+   `--no-verify-jwt` matters: the caller is a watch and has no JWT. The function
+   does its own auth against `device_tokens`.
+
+2. **Mint a token** (your user id is in Supabase → Authentication → Users):
+   ```sh
+   node ../scripts/mint-device-token.mjs "My FR265" <user-uuid>
+   ```
+   It prints the token and the SQL. Run the SQL in the Supabase SQL editor —
+   only the **hash** is stored, so a leak of that table yields nothing that
+   works. The plaintext is not recoverable; mint a new one if you lose it.
+
+3. **Put it on the watch**, in Garmin Connect Mobile → the app's settings:
+   - **Sync URL** — `https://<project>.supabase.co/functions/v1/device-sync`
+   - **Device token** — the value from step 2
+
+   Settings rather than a compiled-in constant, so the credential never enters
+   this repository or the `.prg` you might share.
+
+### What the screen says afterwards
+
+| | |
+| --- | --- |
+| `sent 14 day(s)` | it worked — seven days, two metrics each |
+| `set URL and token in Garmin Connect` | a blank setting, the commonest failure |
+| `token rejected` | the token is wrong or revoked |
+| `failed (-104)` | no phone connection — Connect IQ's negative codes are transport errors |
+
+### What it sends
+
+```json
+{ "zone": "device",
+  "observations": [
+    { "day": "2026-08-31", "code": "TOTAL_ENERGY", "value": 2214 },
+    { "day": "2026-08-31", "code": "STEPS",        "value": 3010 }
+  ] }
+```
+
+The local calendar date, never the raw epoch — Monkey C Numbers are 32-bit and
+wrap in 2038, so the epoch is a diagnostic and not a key.
+
 ## Before this stops being disposable
 
 The application id in `manifest.xml` was invented so the project builds today.

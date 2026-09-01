@@ -12,6 +12,8 @@ class PocView extends WatchUi.View {
 
     private var _lines as Array<String>;
     private var _page as Number = 0;
+    //! What the last sync said, shown along the bottom. Empty until one runs.
+    private var _status as String = "";
     //! Filled on the first layout, when the real screen height is known.
     private var _perPage as Number = 8;
 
@@ -29,6 +31,11 @@ class PocView extends WatchUi.View {
         }
     }
 
+    function setStatus(message as String) as Void {
+        _status = message;
+        WatchUi.requestUpdate();
+    }
+
     function onUpdate(dc as Graphics.Dc) as Void {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
         dc.clear();
@@ -44,12 +51,15 @@ class PocView extends WatchUi.View {
             y += line;
         }
 
+        // The sync result displaces the page counter when there is one: the
+        // counter is orientation, and the result is the answer to what you
+        // just did.
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             dc.getWidth() / 2,
             dc.getHeight() - line - 2,
             font,
-            (_page + 1) + "/" + pages(),
+            _status.length() > 0 ? _status : (_page + 1) + "/" + pages(),
             Graphics.TEXT_JUSTIFY_CENTER
         );
     }

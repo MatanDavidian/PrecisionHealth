@@ -1,0 +1,12 @@
+<properties>
+  <!--
+    Both are set from Garmin Connect Mobile, not compiled in.
+
+    The token is a credential. Putting it in source would commit a secret to
+    the repository, and putting it in the .prg would hand it to anyone the file
+    is shared with. Connect IQ's own settings are the right place: they live on
+    the watch, are edited on the phone, and never leave either.
+  -->
+  <property id="syncUrl" type="string"></property>
+  <property id="deviceToken" type="string"></property>
+</properties>

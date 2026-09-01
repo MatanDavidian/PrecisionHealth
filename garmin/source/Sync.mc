@@ -44,19 +44,30 @@ class Syncer {
 
     function readConfig() as SyncConfig {
         var config = new SyncConfig();
+        // Properties first, so a future store build — which DOES get a
+        // settings page — needs no change here.
         try {
             var url = Properties.getValue("syncUrl");
             var token = Properties.getValue("deviceToken");
             config.url = url == null ? "" : url.toString();
             config.token = token == null ? "" : token.toString();
         } catch (e) {
-            config.problem = "settings unreadable";
-            return config;
+            config.url = "";
+            config.token = "";
         }
+
+        // Then what was compiled in. A sideloaded app has no settings page at
+        // all: Garmin Connect lists what your Connect IQ account installed, not
+        // what is on the watch, so Properties are permanently empty here.
+        if (config.url.length() == 0) {
+            config.url = BuildConfig.SYNC_URL;
+        }
+        if (config.token.length() == 0) {
+            config.token = BuildConfig.DEVICE_TOKEN;
+        }
+
         if (config.url.length() == 0 || config.token.length() == 0) {
-            // Named plainly: the commonest failure is a blank setting, and
-            // "connection failed" would send someone hunting the wrong thing.
-            config.problem = "set URL and token in Garmin Connect";
+            config.problem = "no token — see garmin/local.env";
         }
         return config;
     }

@@ -188,12 +188,21 @@ the week compare a full day of eating against a partial day of burning.
    only the **hash** is stored, so a leak of that table yields nothing that
    works. The plaintext is not recoverable; mint a new one if you lose it.
 
-3. **Put it on the watch**, in Garmin Connect Mobile → the app's settings:
-   - **Sync URL** — `https://<project>.supabase.co/functions/v1/device-sync`
-   - **Device token** — the value from step 2
+3. **Put it in `garmin/local.env`** (copy `local.env.example`):
+   ```
+   SYNC_URL=https://<project>.supabase.co/functions/v1/device-sync
+   DEVICE_TOKEN=<the value from step 2>
+   ```
+   Then rebuild — `build.sh` generates `source/BuildConfig.mc` from it. Both
+   that file and `local.env` are gitignored, so neither the credential nor a
+   copy of it can reach the repository.
 
-   Settings rather than a compiled-in constant, so the credential never enters
-   this repository or the `.prg` you might share.
+   **Why not Garmin Connect's settings page?** Because a sideloaded app does
+   not get one. That list is populated from what your Connect IQ *account*
+   installed, not from what is on the watch, so an app you copied over USB
+   never appears in it and its `Properties` are permanently empty. Properties
+   are still read first at runtime, so a future Store build — which does get a
+   settings page — needs no change here.
 
 ### What the screen says afterwards
 

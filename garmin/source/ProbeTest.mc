@@ -81,6 +81,6 @@ module ProbeTest {
             return true;
         }
         logger.debug("refused with: " + config.problem);
-        return config.problem.find("Garmin Connect") != null;
+        return config.problem.find("local.env") != null;
     }
 }

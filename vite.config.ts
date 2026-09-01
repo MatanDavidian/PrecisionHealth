@@ -19,5 +19,15 @@ export default defineConfig(({ mode }) => ({
      * silently skips, which looks identical to "no project configured".
      */
     env: loadEnv(mode, process.cwd(), ''),
+    /**
+     * The browser suite is Playwright's, not Vitest's.
+     *
+     * Both default to `**\/*.spec.ts`, so without this Vitest picks up `e2e/`
+     * and every file there fails to load with "Playwright Test did not expect
+     * test() to be called here" — three red files sitting under a green test
+     * count, which is exactly the kind of noise that trains people to ignore
+     * the output. Run them with `npm run test:e2e`.
+     */
+    exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
   },
 }))

@@ -34,7 +34,7 @@ const en = {
   // ---------------------------------------------------------------- shell --
   'nav.log': 'Log',
   'nav.today': 'Today',
-  'nav.food': 'Food',
+  'nav.nutrition': 'Nutrition',
   'nav.settings': 'Settings',
   'nav.overview': 'Overview',
   'nav.track': 'Track',
@@ -127,9 +127,9 @@ const en = {
   'estimate.keepFood': 'Keep this food',
   'estimate.allRemoved':
     'Every food is removed — there is nothing left to save. Keep one, or discard the whole estimate.',
-  'estimate.savedNote': 'Saved as an estimate you can confirm, correct or delete in Food.',
+  'estimate.savedNote': 'Saved as an estimate you can confirm, correct or delete in Nutrition.',
   'estimate.savedNoteCorrected':
-    'Your corrections are saved as entered; anything you left alone stays an estimate you can confirm in Food.',
+    'Your corrections are saved as entered; anything you left alone stays an estimate you can confirm in Nutrition.',
   'estimate.lowConfidence': 'Low confidence — worth checking the numbers before you trust them.',
   'estimate.fromTextNote':
     "Confidence is lower than a photo's — nothing was seen, so portions were assumed.",
@@ -174,7 +174,7 @@ const en = {
   'when.weeksAgo': { one: '{count} week ago', other: '{count} weeks ago' } as Plural,
 
   // -------------------------------------------------------------- nutrition --
-  'nutrition.title': 'Food',
+  'nutrition.title': 'Nutrition',
   'nutrition.todaysTotal': "Today's total",
   'nutrition.logAMeal': 'Log a meal',
   'nutrition.byHand': 'By hand',
@@ -385,7 +385,7 @@ const en = {
     one: 'One item is an unconfirmed AI estimate —',
     other: '{count} items are unconfirmed AI estimates —',
   } as Plural,
-  'today.reviewInNutrition': 'review in Food',
+  'today.reviewInNutrition': 'review in Nutrition',
   'today.aiTitle': 'See what changed this week',
 
   // ------------------------------------------------------- log, remainder --
@@ -633,7 +633,7 @@ const he: Dictionary = {
   // ---------------------------------------------------------------- shell --
   'nav.log': 'רישום',
   'nav.today': 'היום',
-  'nav.food': 'אוכל',
+  'nav.nutrition': 'תזונה',
   'nav.settings': 'הגדרות',
   'nav.overview': 'סקירה',
   'nav.track': 'מעקב',
@@ -771,7 +771,7 @@ const he: Dictionary = {
   'when.weeksAgo': { one: 'לפני שבוע', other: 'לפני {count} שבועות' },
 
   // -------------------------------------------------------------- nutrition --
-  'nutrition.title': 'אוכל',
+  'nutrition.title': 'תזונה',
   'nutrition.todaysTotal': 'הסך הכל להיום',
   'nutrition.logAMeal': 'רישום ארוחה',
   'nutrition.byHand': 'ידנית',
@@ -981,7 +981,7 @@ const he: Dictionary = {
     one: 'פריט אחד הוא הערכת AI לא מאושרת —',
     other: '{count} פריטים הם הערכות AI לא מאושרות —',
   },
-  'today.reviewInNutrition': 'לסקירה במסך האוכל',
+  'today.reviewInNutrition': 'לסקירה במסך התזונה',
   'today.aiTitle': 'לראות מה השתנה השבוע',
 
   // ------------------------------------------------------- log, remainder --

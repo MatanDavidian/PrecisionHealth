@@ -13,7 +13,7 @@ import type { StringKey } from '../i18n/strings'
 const ITEMS: { to: string; label: StringKey; icon: () => JSX.Element }[] = [
   { to: '/log', label: 'nav.log', icon: CameraIcon },
   { to: '/today', label: 'nav.today', icon: SunIcon },
-  { to: '/nutrition', label: 'nav.food', icon: PlateIcon },
+  { to: '/nutrition', label: 'nav.nutrition', icon: PlateIcon },
   { to: '/settings', label: 'nav.settings', icon: GearIcon },
 ]
 

@@ -24,7 +24,7 @@ assumed.
 | `/training` `/recovery` `/body` `/health` | Still stubs, labelled with the slice that fills them |
 
 **Navigation:** sidebar on desktop (Overview → Log, Today · Track → the rest ·
-App → Settings); a bottom bar on mobile (Log · Today · Food · Settings). The
+App → Settings); a bottom bar on mobile (Log · Today · Nutrition · Settings). The
 phone is the primary device — it holds the camera.
 
 ## The Log screen: three modes

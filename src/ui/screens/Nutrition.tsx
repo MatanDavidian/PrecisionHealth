@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Card } from '../components/Card'
 import { MealForm } from '../components/MealForm'
+import { DescribeMeal } from '../components/DescribeMeal'
+import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { MealEditor } from '../components/MealEditor'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
 import { showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
+import { deviceZone } from '@/data/newRecords'
 import { DataUnavailable } from '../components/DataUnavailable'
 import { evaluateGoal } from '@/data/analytics'
 import {
@@ -35,8 +38,15 @@ export function Nutrition() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
-  const { addMeal, confirmEstimate, resolveMealVersion, editMeal, deleteMeal, undeleteMeal } =
-    useActions()
+  const {
+    addMeal,
+    addEstimatedMeal,
+    confirmEstimate,
+    resolveMealVersion,
+    editMeal,
+    deleteMeal,
+    undeleteMeal,
+  } = useActions()
   const { session } = useDataRevision()
   const [editing, setEditing] = useState<MealId>()
   const [deleted, setDeleted] = useState<JustDeleted>()
@@ -49,6 +59,15 @@ export function Nutrition() {
    * what you ate below the fold on a phone.
    */
   const [manual, setManual] = useState(false)
+  /**
+   * Typed in, or described in words.
+   *
+   * Describe is the same estimator the Log screen's Write mode uses; the only
+   * difference is which day it lands on, which is the entire reason it is
+   * here — Log always means now, and the meal you want to describe is usually
+   * the one you forgot.
+   */
+  const [addMode, setAddMode] = useState<'manual' | 'describe'>('manual')
 
   /*
     Both belong to the day you were looking at. Carried onto another day, the
@@ -59,6 +78,7 @@ export function Nutrition() {
     setEditing(undefined)
     setDeleted(undefined)
     setManual(false)
+    setAddMode('manual')
   }, [day])
 
   if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
@@ -95,7 +115,15 @@ export function Nutrition() {
       </header>
 
       <div className="grid gap-4">
-        <Card label={t('nutrition.todaysTotal')}>
+        {/* The label follows the day on screen. It said "Today's total" on
+            every day, which was wrong the moment you stepped back one. */}
+        <Card
+          label={
+            isToday
+              ? t('nutrition.todaysTotal')
+              : t('nutrition.totalOn', { day: dayLabel(day, today, t) })
+          }
+        >
           {/*
             Two by two on a phone rather than a wrapping row. Four figures in a
             row at 390px either shrink until they stop being headline numbers or
@@ -133,7 +161,7 @@ export function Nutrition() {
                 }`}
               >
                 <PlusIcon />
-                {t('nutrition.byHand')}
+                {t('nutrition.addMeal')}
               </button>
             )
           }
@@ -145,13 +173,57 @@ export function Nutrition() {
           */}
           {manual && (
             <div className="mb-2 rounded-card border border-hairline bg-surface p-3">
-              <MealForm
-                day={day}
-                onSubmit={async (meal) => {
-                  await addMeal(meal)
-                  setManual(false)
-                }}
-              />
+              {/*
+                The heading names the day, because this sheet is reached from
+                whichever day the header is on and "Add meal" alone would not
+                say where the meal is going.
+              */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
+                <p className="text-sm font-medium">
+                  {t('nutrition.addMealTo', { day: dayLabel(day, today, t) })}
+                </p>
+                <div className="flex gap-0.5 rounded-full border border-hairline p-0.5">
+                  {(['manual', 'describe'] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setAddMode(option)}
+                      aria-pressed={addMode === option}
+                      className={`px-3.5 py-1.5 ${PILL} ${addMode === option ? PILL_ON : PILL_OFF}`}
+                    >
+                      {t(option === 'manual' ? 'nutrition.modeManual' : 'nutrition.modeDescribe')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {addMode === 'manual' ? (
+                <MealForm
+                  day={day}
+                  onSubmit={async (meal) => {
+                    await addMeal(meal)
+                    setManual(false)
+                  }}
+                />
+              ) : (
+                <DescribeMeal
+                  day={day}
+                  dayName={dayLabel(day, today, t)}
+                  onCancel={() => setManual(false)}
+                  onSaved={async ({ slot, at, description, result, corrections }) => {
+                    await addEstimatedMeal({
+                      slot,
+                      at,
+                      zone: deviceZone(),
+                      hints: {},
+                      source: { kind: 'text', description },
+                      result,
+                      corrections,
+                    })
+                    setManual(false)
+                  }}
+                />
+              )}
             </div>
           )}
 

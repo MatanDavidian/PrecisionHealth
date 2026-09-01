@@ -48,6 +48,7 @@ import {
   type Sleep,
   type Workout,
 } from '@/domain'
+import { buildEstimatedMeal, type EstimatedMealInput } from '@/data/estimatedMeal'
 import { useDataRevision } from './DataProvider'
 
 /** Sort key for a record's time, whichever shape it has. */
@@ -172,6 +173,29 @@ export function useActions() {
   const addMeal = useCallback(
     async (input: MealInput) => {
       await runWrite('this meal', () => getRepositories().meals.add(buildMeal(currentUserId(), input)))
+    },
+    [runWrite],
+  )
+
+  /**
+   * An AI-estimated meal, with the inference that produced it.
+   *
+   * Two records, written together and referencing each other (D13): the meal
+   * cannot be explained a month later without the inference, and an inference
+   * with no meal is an audit row for something that never happened. The
+   * inference goes first, so a failure between them leaves an unused audit row
+   * rather than a meal pointing at nothing.
+   *
+   * Separate from `addMeal` because that one is for numbers a person typed.
+   * These came from a model and carry its provenance.
+   */
+  const addEstimatedMeal = useCallback(
+    async (input: EstimatedMealInput) => {
+      const { meal, inference } = buildEstimatedMeal(currentUserId(), input)
+      return runWrite('this meal', async () => {
+        await getRepositories().inferences.add(inference)
+        await getRepositories().meals.add(meal)
+      })
     },
     [runWrite],
   )
@@ -365,6 +389,7 @@ export function useActions() {
 
   return {
     addMeal,
+    addEstimatedMeal,
     recordObservation,
     setGoal,
     setObjective,

@@ -143,6 +143,29 @@ no mode to leave, because a mode you have to notice is one people get stuck in.
 A zero-weight item cannot be scaled from nothing, so its numbers are left alone
 rather than zeroed.
 
+### Describing a meal for another day
+
+The **Add meal** pill on the logged list opens a sheet with a **Manual /
+Describe** toggle. Describe is the same estimator the Log screen's Write mode
+uses and the same result card; the only difference is which day it lands on.
+
+That difference is the whole feature. The Log screen always means *now*, and the
+meal you actually want to describe is the one you forgot — which by definition
+was earlier. Stepping the day header back and then opening Add meal is what
+makes this the answer to that, with no separate "backdate" control to learn.
+
+The result is written as two records (D13): the `AIInference` first, then the
+`Meal` that references it, so a failure between them leaves an unused audit row
+rather than a meal pointing at nothing. `addEstimatedMeal` is separate from
+`addMeal` because the latter is for numbers a person typed, and these came from
+a model and carry its provenance.
+
+The totals card's label follows the day too. It read "Today's total" on every
+day, which was wrong the moment you stepped back one — now it says "Total for
+Yesterday" when you are there. The design writes that as "Yesterday's total";
+the possessive form does not survive a label like "Sunday, August 30", so the
+prepositional one is used for every day but today.
+
 ### Logging a meal you forgot
 
 Typing a meal in by hand works on **any day you can navigate to**, not only

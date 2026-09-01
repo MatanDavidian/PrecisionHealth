@@ -25,6 +25,7 @@ export function EstimateCard({
   onDiscard,
   rows,
   onAdjust,
+  saveLabel,
 }: {
   result: EstimateResult
   downgraded?: boolean
@@ -38,6 +39,13 @@ export function EstimateCard({
   rows: EstimateCorrection[]
   /** Opens the adjust screen. */
   onAdjust: () => void
+  /**
+   * Overrides the save button's text.
+   *
+   * On the Log screen the destination is obvious — you are standing in it. Used
+   * from the day view it is not, so the button says which day it is adding to.
+   */
+  saveLabel?: string
 }) {
   const t = useT()
   if (result.refusal) {
@@ -175,7 +183,7 @@ export function EstimateCard({
             disabled={saving || kept.length === 0}
             className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
           >
-            {saving ? t('estimate.saving') : t('estimate.save')}
+            {saving ? t('estimate.saving') : (saveLabel ?? t('estimate.save'))}
           </button>
           <button
             type="button"

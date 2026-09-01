@@ -13,7 +13,7 @@ import { open } from './app'
  */
 
 const caloriesOn = (page: Page) =>
-  page.locator('section').filter({ hasText: "Today's total" }).locator('.tabular').first().textContent()
+  page.locator('section').filter({ hasText: /total/i }).locator('.tabular').first().textContent()
 
 const stepDays = async (page: Page, direction: 'Previous' | 'Next', times: number) => {
   for (let i = 0; i < times; i++) {
@@ -31,8 +31,9 @@ test('lands on the day it was typed for, and nowhere else', async ({ page }) => 
   const pastBefore = await caloriesOn(page)
   expect(pastBefore, 'the seeded fixture should leave this day empty').toBe('0')
 
-  // Manual entry used to be locked to today. It is reachable here now.
-  await page.getByRole('button', { name: 'By hand' }).click()
+  // Manual entry used to be locked to today. It is reachable here now, and
+  // Manual is the mode the sheet opens in.
+  await page.getByRole('button', { name: 'Add meal' }).click()
   const form = page.locator('form')
   await form.getByLabel('Time').fill('07:30')
   await form.getByLabel('Food').fill('Backfilled porridge')

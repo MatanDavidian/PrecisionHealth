@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { open } from './app'
+import { dayKey, open } from './app'
 
 /**
  * Describing a meal in words, for a day that is not today.
@@ -15,7 +15,7 @@ test('describes a meal in words and files it on the day on screen', async ({ pag
 
   await page.getByRole('button', { name: /Previous/i }).click()
   const heading = page.locator('header p').first()
-  await expect(heading).toContainText('2026-08-31')
+  await expect(heading).toContainText(dayKey(-1))
 
   await page.getByRole('button', { name: 'Add meal' }).click()
 
@@ -40,6 +40,6 @@ test('describes a meal in words and files it on the day on screen', async ({ pag
 
   // And not on today.
   await page.getByRole('button', { name: /Next/i }).click()
-  await expect(page.locator('header p').first()).toContainText('2026-09-01')
+  await expect(page.locator('header p').first()).toContainText(dayKey(0))
   await expect(total).toHaveText('2,130')
 })

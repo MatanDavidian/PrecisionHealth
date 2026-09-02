@@ -19,13 +19,27 @@ export function useSelectedDay() {
 
   const goTo = (next: CalendarDate) => {
     if (next > today) return
-    setParams(next === today ? {} : { d: next }, { replace: true })
+    /*
+      The day is changed, and everything else in the URL is left alone.
+
+      Assigning a whole object here replaced the query string, so moving a day
+      silently dropped `view=week` and dumped you back on the day view. It went
+      unnoticed while the stepper only existed in the day view — there was
+      nothing else in the URL to lose — and surfaced the moment the week gained
+      one of its own.
+    */
+    const updated = new URLSearchParams(params)
+    if (next === today) updated.delete('d')
+    else updated.set('d', next)
+    setParams(updated, { replace: true })
   }
 
   return {
     day,
     today,
     isToday: day === today,
+    /** Jump to any day — the week stepper moves seven at a time. */
+    goTo,
     goPrevious: () => goTo(addDays(day, -1)),
     goNext: () => goTo(addDays(day, 1)),
     goToday: () => goTo(today),

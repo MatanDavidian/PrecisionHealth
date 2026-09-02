@@ -19,21 +19,33 @@ beforeEach(async () => {
   await deleteDB(DB_NAME)
 })
 
-const dayAgo = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  return d
-}
-const key = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+/**
+ * A fixed calendar week: Sunday 30 Aug to Saturday 5 Sep 2026.
+ *
+ * Pinned rather than relative to today, because the report now covers the
+ * calendar week a day falls in — so a suite seeded "the last seven days" would
+ * straddle two weeks, and would do it differently depending on which day it
+ * ran. A test whose answer depends on the wall clock is a test that fails on a
+ * Sunday.
+ */
+const WEEK = [
+  '2026-08-30',
+  '2026-08-31',
+  '2026-09-01',
+  '2026-09-02',
+  '2026-09-03',
+  '2026-09-04',
+  '2026-09-05',
+] as const
+/** A Wednesday, to prove the week is found from any day inside it. */
+const MIDWEEK = '2026-09-02'
 
 async function seedWeek() {
   const db = openHealthDB()
   open = await db
   const repos = createIndexedDbRepositories(db)
-  for (let i = 6; i >= 0; i--) {
-    const at = dayAgo(i)
-    at.setHours(13, 0, 0, 0)
+  for (const day of WEEK) {
+    const at = new Date(`${day}T13:00:00+03:00`)
     await repos.meals.add(
       buildMeal(
         USER,
@@ -51,26 +63,40 @@ async function seedWeek() {
     await repos.observations.add(
       buildObservation(
         USER,
-        { code: 'TOTAL_ENERGY', value: 2400, unit: 'kcal', day: key(at) },
+        { code: 'TOTAL_ENERGY', value: 2400, unit: 'kcal', day },
         ZONE,
       ),
     )
   }
-  return { repos, today: key(dayAgo(0)) }
+  return { repos, today: MIDWEEK }
 }
 
 describe('the week report', () => {
-  it('covers seven days ending on the day asked for', async () => {
+  it('covers the calendar week the day falls in, not the seven days before it', async () => {
     const { today, repos } = await seedWeek()
     const report = await readWeekReport(USER, today, 'LOSE_WEIGHT', undefined, repos)
     expect(report.days).toHaveLength(7)
-    expect(report.to).toBe(today)
+    // Asked about a Wednesday; answered with Sunday to Saturday.
+    expect(report.from).toBe('2026-08-30')
+    expect(report.to).toBe('2026-09-05')
+  })
+
+  it('gives the same report for every day in the week', async () => {
+    // This is what lets an insight be saved against a week: the set of days it
+    // describes does not move as the days pass.
+    const { repos } = await seedWeek()
+    const asked = await Promise.all(
+      WEEK.map((day) => readWeekReport(USER, day, 'LOSE_WEIGHT', undefined, repos)),
+    )
+    for (const report of asked) {
+      expect([report.from, report.to]).toEqual(['2026-08-30', '2026-09-05'])
+    }
   })
 
   it('carries the foods as logged — the most useful thing in it', async () => {
     const { today, repos } = await seedWeek()
     const report = await readWeekReport(USER, today, 'LOSE_WEIGHT', undefined, repos)
-    expect(report.days.at(-1)!.meals[0].foods).toEqual(['Rice', 'Chicken'])
+    expect(report.days[0].meals[0].foods).toEqual(['Rice', 'Chicken'])
     expect(reportMealCount(report)).toBe(7)
   })
 
@@ -117,7 +143,7 @@ describe('the week report', () => {
     const { today, repos } = await seedWeek()
     const report = await readWeekReport(USER, today, 'LOSE_WEIGHT', undefined, repos)
     // Nothing was logged before the window, so an 8-day-old end date has gaps.
-    const older = await readWeekReport(USER, key(dayAgo(9)), 'LOSE_WEIGHT', undefined, repos)
+    const older = await readWeekReport(USER, '2026-08-19', 'LOSE_WEIGHT', undefined, repos)
     expect(report.days.every((d) => d.burnedKcal !== undefined)).toBe(true)
     expect(older.days.some((d) => d.burnedKcal === undefined)).toBe(true)
   })
@@ -131,19 +157,18 @@ describe('total expenditure is not the tracker’s activity figure', () => {
     const db = openHealthDB()
     open = await db
     const repos = createIndexedDbRepositories(db)
-    const at = dayAgo(0)
-    at.setHours(13, 0, 0, 0)
+    const at = '2026-09-02'
     await repos.observations.add(
-      buildObservation(USER, { code: 'ACTIVE_ENERGY', value: 640, unit: 'kcal', day: key(at) }, ZONE),
+      buildObservation(USER, { code: 'ACTIVE_ENERGY', value: 640, unit: 'kcal', day: at }, ZONE),
     )
-    const report = await readWeekReport(USER, key(at), 'MAINTAIN', undefined, repos)
+    const report = await readWeekReport(USER, at, 'MAINTAIN', undefined, repos)
     expect(report.totals.burnedKcal).toBe(0)
     expect(report.totals.daysWithBurn).toBe(0)
 
     await repos.observations.add(
-      buildObservation(USER, { code: 'TOTAL_ENERGY', value: 2400, unit: 'kcal', day: key(at) }, ZONE),
+      buildObservation(USER, { code: 'TOTAL_ENERGY', value: 2400, unit: 'kcal', day: at }, ZONE),
     )
-    const withTotal = await readWeekReport(USER, key(at), 'MAINTAIN', undefined, repos)
+    const withTotal = await readWeekReport(USER, at, 'MAINTAIN', undefined, repos)
     expect(withTotal.totals.burnedKcal).toBe(2400)
     expect(withTotal.totals.daysWithBurn).toBe(1)
   })

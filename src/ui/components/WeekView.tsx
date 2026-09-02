@@ -1,5 +1,6 @@
 import {
   OBJECTIVE_SHAPE,
+  type CalendarDate,
   dayKey,
   peakOf,
   type Objective,
@@ -27,6 +28,40 @@ export function weekRangeLabel(from: string, to: string, locale?: string): strin
   const end = at(to).toLocaleDateString(locale, { ...short, year: 'numeric' })
   return `${start} – ${end}`
 }
+
+/**
+ * "23 – 29 Aug", for a control with no room for the year.
+ *
+ * The full range is already in the header beneath the title, so repeating it
+ * inside the stepper would spend the width twice on the same fact — and at
+ * 11rem it did not fit, truncating to "Aug 23 – Aug 30, 20…" which was both
+ * ugly and, as it turned out, wrong.
+ */
+export function compactRange(from: CalendarDate, to: CalendarDate, locale?: string): string {
+  if (!from || !to) return ''
+  const at = (d: string) => new Date(`${d}T12:00:00Z`)
+  const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', timeZone: 'UTC' }
+
+  /*
+    `formatRange` rather than two formatted dates joined by a dash. It knows
+    that a range inside one month says the month once — "Aug 23 – 29" — and it
+    knows where each language puts it. Hand-rolling that produced "23 – Aug 29"
+    in English, which is the kind of wrong that only shows up on screen.
+  */
+  try {
+    return new Intl.DateTimeFormat(locale, options).formatRange(at(from), at(to))
+  } catch {
+    return `${at(from).toLocaleDateString(locale, options)} – ${at(to).toLocaleDateString(locale, options)}`
+  }
+}
+
+/** Just the day a week starts on, for a title that already has a range beneath it. */
+export const weekStartLabel = (from: CalendarDate, locale?: string): string =>
+  new Date(`${from}T12:00:00Z`).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
 
 /**
  * Seven days of eating against seven days of burning.
@@ -243,6 +278,27 @@ export function WeekView({
                   ? t('week.short', { count: round(Math.abs(week.gapKcal)) })
                   : t('week.off', { count: round(Math.abs(week.gapKcal)) })}
           </div>
+
+          {/*
+            Said only when there is no target and the gap is large.
+
+            Refusing to GRADE an untargeted goal is right — scoring someone
+            against a target they never set is inventing one for them. But "you
+            are not being scored" is not "nothing here is worth knowing", and
+            eating four thousand more than you burned in a week is worth knowing
+            whatever you told the app you were doing. So it is an observation,
+            never a pass or a fail.
+          */}
+          {week.drift && (
+            <div className="pt-3">
+              <p className="max-w-[38ch] text-[0.86rem] leading-relaxed text-ink-soft">
+                {t(week.drift.direction === 'OVER' ? 'week.driftOver' : 'week.driftUnder', {
+                  count: week.drift.kcal.toLocaleString(),
+                })}
+              </p>
+              <p className="pt-1 text-xs text-ink-muted">{t('week.driftNote')}</p>
+            </div>
+          )}
         </section>
       </div>
 

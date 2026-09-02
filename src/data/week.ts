@@ -16,7 +16,7 @@ import {
   latestVersions,
   liveItems,
   summariseWeek,
-  weekEndingOn,
+  weekContaining,
   type CalendarDate,
   type DayEnergy,
   type Objective,
@@ -34,11 +34,14 @@ const mealKcal = (items: { nutrients: { energy: Parameters<typeof convert>[0] } 
 
 export async function readWeek(
   userId: UserId,
-  endingOn: CalendarDate,
+  anyDayIn: CalendarDate,
   objective: Objective | undefined,
   repos: HealthRepositories,
 ): Promise<WeekEnergy> {
-  const days = weekEndingOn(endingOn)
+  // The calendar week the day belongs to, not the seven days ending on it, so
+  // that navigating to a date and switching to the week shows the week that
+  // date is IN — and so an insight has a stable set of days to be about.
+  const days = weekContaining(anyDayIn)
 
   const [meals, ...burnSets] = await Promise.all([
     repos.meals.listByRange(userId, { from: days[0], to: days.at(-1)! }),
@@ -75,12 +78,14 @@ export async function readWeek(
  */
 export async function readWeekReport(
   userId: UserId,
-  endingOn: CalendarDate,
+  anyDayIn: CalendarDate,
   objective: Objective | undefined,
   body: { weightKg?: number; targetKg?: number } | undefined,
   repos: HealthRepositories,
 ): Promise<WeekReport> {
-  const days = weekEndingOn(endingOn)
+  // The same week the view is showing, so an insight is about what is on
+  // screen rather than about a rolling window that has since moved.
+  const days = weekContaining(anyDayIn)
 
   const [meals, ...burnSets] = await Promise.all([
     repos.meals.listByRange(userId, { from: days[0], to: days.at(-1)! }),

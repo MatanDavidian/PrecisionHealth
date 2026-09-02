@@ -98,3 +98,36 @@ export const weekAimKcal = (objective: Objective, days = 7): number | null => {
 /** How far off the aim a week landed. Zero when there is nothing to grade. */
 export const weekGapKcal = (netKcal: number, aim: number | null): number =>
   aim === null ? 0 : netKcal - aim
+
+
+/**
+ * How far a week has to drift before it is worth mentioning without a target.
+ *
+ * Roughly half a kilogram's worth of energy. Below it, a week's imbalance is
+ * noise — logging gaps, a heavy meal, a rest day — and calling it out would
+ * train someone to ignore the app. Above it, something is actually happening.
+ */
+export const NOTABLE_DRIFT_KCAL = 3500
+
+/**
+ * A remark for a goal that sets no calorie target.
+ *
+ * `FITNESS` is deliberately UNGRADED: scoring someone against a target they
+ * never set is inventing one for them, and that stays true. But "you are not
+ * being scored" is not the same as "nothing here is worth knowing", and eating
+ * four thousand more than you burned in a week is worth knowing whatever you
+ * told the app you were doing.
+ *
+ * So this is an observation, not a verdict — it never says on track or off
+ * target, and it stays quiet until the number is large enough to mean
+ * something.
+ */
+export type Drift = { direction: 'OVER' | 'UNDER'; kcal: number } | undefined
+
+export function driftOf(netKcal: number, aimKcal: number | null): Drift {
+  // A graded week already has a verdict; a second opinion beside it would be
+  // noise at best and a contradiction at worst.
+  if (aimKcal !== null) return undefined
+  if (Math.abs(netKcal) < NOTABLE_DRIFT_KCAL) return undefined
+  return { direction: netKcal > 0 ? 'OVER' : 'UNDER', kcal: Math.round(Math.abs(netKcal)) }
+}

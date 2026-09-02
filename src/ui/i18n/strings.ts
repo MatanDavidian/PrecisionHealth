@@ -559,6 +559,14 @@ const en = {
 
 
   // ---------------------------------------------------------- the week view --
+  'week.previousWeek': 'Previous week',
+  'week.nextWeek': 'Next week',
+  'week.thisWeek': 'This week',
+  'week.weekOf': 'Week of {date}',
+  'week.backToThisWeek': 'Back to this week',
+  'week.driftOver': 'You ate {count} kcal more than you burned across the week.',
+  'week.driftUnder': 'You ate {count} kcal less than you burned across the week.',
+  'week.driftNote': 'No target to grade against — but worth knowing.',
   'week.day': 'Day',
   'week.week': 'Week',
   'week.title': 'This week',
@@ -1175,6 +1183,14 @@ const he: Dictionary = {
 
 
   // ---------------------------------------------------------- the week view --
+  'week.previousWeek': 'השבוע הקודם',
+  'week.nextWeek': 'השבוע הבא',
+  'week.thisWeek': 'השבוע',
+  'week.weekOf': 'השבוע של {date}',
+  'week.backToThisWeek': 'חזרה לשבוע הנוכחי',
+  'week.driftOver': 'אכלתם {count} קלוריות יותר ממה ששרפתם לאורך השבוע.',
+  'week.driftUnder': 'אכלתם {count} קלוריות פחות ממה ששרפתם לאורך השבוע.',
+  'week.driftNote': 'אין יעד לדרג מולו — אבל שווה לדעת.',
   'week.day': 'יום',
   'week.week': 'שבוע',
   'week.title': 'השבוע',

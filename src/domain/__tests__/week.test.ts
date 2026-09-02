@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { peakOf, summariseWeek, weekEndingOn, type DayEnergy } from '../week'
+import {
+  addWeeks,
+  peakOf,
+  summariseWeek,
+  weekContaining,
+  weekEndingOn,
+  weekStartOf,
+  type DayEnergy,
+} from '../week'
+import type { CalendarDate } from '../time'
 
 const day = (d: string, eaten: number, burned?: number): DayEnergy => ({
   day: d,
@@ -101,5 +110,110 @@ describe('scaling the chart', () => {
   it('never returns zero, so a blank week cannot divide by it', () => {
     expect(peakOf([day('2026-08-22', 0)])).toBe(1)
     expect(peakOf([])).toBe(1)
+  })
+})
+
+describe('calendar weeks', () => {
+  it('runs Sunday to Saturday, whichever day you ask about', () => {
+    // 2026-09-02 is a Wednesday.
+    const week = weekContaining('2026-09-02' as CalendarDate)
+    expect(week).toHaveLength(7)
+    expect(week[0]).toBe('2026-08-30') // Sunday
+    expect(week[6]).toBe('2026-09-05') // Saturday
+  })
+
+  it('gives the same week for every day inside it', () => {
+    const sunday = weekContaining('2026-08-30' as CalendarDate)
+    for (const day of sunday) {
+      expect(weekContaining(day), `${day} landed in a different week`).toEqual(sunday)
+    }
+  })
+
+  it('files a Sunday under itself, not under the week before', () => {
+    // The boundary that a naive "subtract getDay()" gets wrong.
+    expect(weekStartOf('2026-08-30' as CalendarDate)).toBe('2026-08-30')
+    expect(weekStartOf('2026-08-29' as CalendarDate)).toBe('2026-08-23')
+  })
+
+  it('survives the day the clocks change', () => {
+    // Israel leaves DST on 2026-10-25, a Sunday. A week built by adding hours
+    // rather than days would lose or gain one here.
+    const week = weekContaining('2026-10-28' as CalendarDate)
+    expect(week[0]).toBe('2026-10-25')
+    expect(week[6]).toBe('2026-10-31')
+  })
+
+  it('steps whole weeks, landing on Sundays', () => {
+    expect(addWeeks('2026-09-02' as CalendarDate, -1)).toBe('2026-08-23')
+    expect(addWeeks('2026-09-02' as CalendarDate, 1)).toBe('2026-09-06')
+  })
+})
+
+describe('the net compares like with like', () => {
+  const day = (d: string, eaten: number, burned?: number) =>
+    ({ day: d as CalendarDate, eatenKcal: eaten, ...(burned === undefined ? {} : { burnedKcal: burned }) })
+
+  it('leaves a day with no burn out of the balance entirely', () => {
+    // Six days weighed, one day of food that cannot be weighed. Counting that
+    // food against nothing is what turned a real deficit into a surplus.
+    const week = summariseWeek([
+      day('2026-08-30', 2000, 2400),
+      day('2026-08-31', 2000, 2400),
+      day('2026-09-01', 2000, 2400),
+      day('2026-09-02', 2200), // today: eaten, but the watch has not reported
+    ])
+    expect(week.balance.eatenKcal).toBe(6000)
+    expect(week.balance.burnedKcal).toBe(7200)
+    expect(week.balance.netKcal, 'today’s food must not count against nothing').toBe(-1200)
+    expect(week.daysWithBurn).toBe(3)
+  })
+
+  it('still reports everything eaten, because it was eaten', () => {
+    const week = summariseWeek([
+      day('2026-08-30', 2000, 2400),
+      day('2026-09-02', 2200),
+    ])
+    expect(week.eatenAllDays).toBe(4200)
+    expect(week.balance.eatenKcal).toBe(2000)
+    expect(week.daysWithFood).toBe(2)
+  })
+
+  it('ignores days that have not happened yet', () => {
+    const week = summariseWeek([day('2026-08-30', 2000, 2400), day('2026-09-05', 0)])
+    expect(week.daysWithFood).toBe(1)
+    expect(week.balance.netKcal).toBe(-400)
+  })
+})
+
+describe('a goal with no calorie target', () => {
+  const flat = (eaten: number, burned: number) =>
+    Array.from({ length: 7 }, (_, i) => ({
+      day: `2026-08-${30 + i}` as CalendarDate,
+      eatenKcal: eaten,
+      burnedKcal: burned,
+    }))
+
+  it('stays ungraded, but says so when the drift is large', () => {
+    const week = summariseWeek(flat(3000, 2200), 'FITNESS')
+    expect(week.verdict, 'an untargeted goal is never scored').toBe('UNGRADED')
+    expect(week.drift).toEqual({ direction: 'OVER', kcal: 5600 })
+  })
+
+  it('keeps quiet when the week is merely uneven', () => {
+    const week = summariseWeek(flat(2300, 2200), 'FITNESS')
+    expect(week.drift, '700 kcal across a week is noise').toBeUndefined()
+  })
+
+  it('names an underspend too — it is not only about eating too much', () => {
+    expect(summariseWeek(flat(1500, 2200), 'FITNESS').drift).toEqual({
+      direction: 'UNDER',
+      kcal: 4900,
+    })
+  })
+
+  it('says nothing beside a goal that already has a verdict', () => {
+    const week = summariseWeek(flat(3000, 2200), 'LOSE_WEIGHT')
+    expect(week.verdict).toBe('OFF_TARGET')
+    expect(week.drift, 'a second opinion beside a verdict is noise').toBeUndefined()
   })
 })

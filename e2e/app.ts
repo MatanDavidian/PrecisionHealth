@@ -45,3 +45,17 @@ export const documentBox = (page: Page, selector: string) =>
       width: Math.round(box.width),
     }
   })
+
+/**
+ * A calendar date relative to today, as the app writes it.
+ *
+ * Dates are derived rather than written down. A spec with `2026-08-31` in it
+ * passes on the day it was written and fails the next morning — which is
+ * exactly what happened here, and it makes the suite look broken when the code
+ * is fine.
+ */
+export const dayKey = (offset = 0): string => {
+  const at = new Date()
+  at.setDate(at.getDate() + offset)
+  return `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}`
+}

@@ -8,11 +8,12 @@ import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
 import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
+import { WeekNav } from '../components/WeekNav'
 import { DataUnavailable } from '../components/DataUnavailable'
 import { AdoptionPrompt } from '../components/AdoptionPrompt'
 import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
-import { convert, goalFor, isObjective } from '@/domain'
+import { convert, goalFor, isObjective, weekStartOf } from '@/domain'
 import { useLang } from '../i18n'
 import { InsightsCard, type InsightsState } from '../components/InsightsCard'
 import { BurnedRow } from '../components/BurnedRow'
@@ -22,6 +23,7 @@ import { reportMealCount, type WeekReport } from '@/domain'
 import { useNudged } from '../useNudged'
 import {
   WeekView,
+  weekStartLabel,
   WeekTeaser,
   WeekBlocked,
   weekBlocker,
@@ -154,21 +156,33 @@ export function Today() {
       {/*
         The switch does not move when you use it.
 
-        It used to. The day view carries a date stepper beside the switch and
-        the week view does not, so the row's contents changed width with the
-        view — which on a phone made it wrap differently, and on a desktop slid
-        the switch sideways. Either way the control jumped out from under the
-        finger that had just pressed it, and the page appeared to rebuild
-        itself. Both halves are fixed here rather than in CSS alone: on a phone
-        the switch is a full-width row of its own with the stepper BELOW it, so
-        the stepper's coming and going cannot reach it; from `sm` up the
-        stepper keeps its space in the row even in the week view, where it is
-        present but inert.
+        It used to: the day view carried a stepper the week view lacked, so the
+        row's contents changed width with the view — wrapping differently on a
+        phone, sliding the switch sideways on a desktop. Either way the control
+        jumped out from under the finger that had just pressed it.
+
+        Now both views carry a stepper — days in one, weeks in the other — and
+        the two reserve the same width, so there is nothing left to move. On a
+        phone the switch still takes a full-width row of its own above them.
       */}
       <header className="flex flex-col gap-3.5 pb-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
         <div>
           <h1 className="font-display text-4xl">
-            {view === 'week' ? t('week.title') : dayLabel(day, today, t)}
+            {/*
+              Only the current week is "This week". Saying it over a week from
+              three weeks ago is the same class of untruth as the totals card
+              that said "Today's total" on every day.
+            */}
+            {view === 'week'
+              ? weekStartOf(day) === weekStartOf(today)
+                ? t('week.title')
+                : t('week.weekOf', {
+                    date: weekStartLabel(
+                      weekStartOf(day),
+                      document.documentElement.lang || undefined,
+                    ),
+                  })
+              : dayLabel(day, today, t)}
           </h1>
           <p className="pt-1 text-sm text-ink-muted">
             {view === 'week' && week
@@ -198,19 +212,14 @@ export function Today() {
             ))}
           </div>
           {/*
-            Dropped on a phone, where it sits below the switch and so cannot
-            disturb it. Kept but inert from `sm` up, where removing it would
-            let the switch slide across.
+            One stepper slot, moving whichever unit is on screen: days in the
+            day view, weeks in the week view. Both reserve the same width, so
+            switching between them cannot slide the Day/Week control sideways —
+            the bug this header already had once.
           */}
-          <div
-            className={view === 'day' ? undefined : 'max-sm:hidden sm:invisible'}
-            aria-hidden={view !== 'day'}
-            /* `inert` is the right primitive for "present but not there" — it
-               takes the stepper out of the focus order and the accessibility
-               tree, so an invisible control cannot be tabbed into. React 18's
-               DOM typings predate it, hence the plain attribute. */
-            {...(view === 'day' ? {} : ({ inert: '' } as Record<string, string>))}
-          >
+          {view === 'week' ? (
+            <WeekNav day={day} today={today} onGo={selected.goTo} />
+          ) : (
             <DayNav
               day={day}
               today={today}
@@ -219,7 +228,7 @@ export function Today() {
               onNext={selected.goNext}
               onToday={selected.goToday}
             />
-          </div>
+          )}
         </div>
       </header>
 

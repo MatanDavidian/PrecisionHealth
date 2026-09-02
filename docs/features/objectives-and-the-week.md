@@ -9,6 +9,43 @@ deliberately not built — see §6.
 
 ---
 
+## The week is a calendar week
+
+Sunday to Saturday, not the seven days ending today. The reason is insights
+rather than tidiness: **a rolling window cannot own one.** Generated on a
+Wednesday it describes Thu–Wed, and by Thursday that same "this week" means a
+different set of days — so a saved insight would quietly stop matching what is
+on screen. A calendar week is a stable, nameable thing, which is what makes
+saving possible at all. It is also what makes "previous week" mean anything: a
+rolling window has no natural step size.
+
+`WEEK_STARTS_ON` is a constant rather than a setting. Nobody has a second locale
+to serve, and a preference nobody asked for is a branch to maintain and a screen
+to explain — but it is named, so the day it becomes one there is a single place
+to change.
+
+Selecting a day and switching to the week shows **the week that day is in**.
+Before, the two views disagreed about what you were looking at.
+
+## The net compares like with like
+
+The balance counts only days carrying **both** figures. Summing all the eating
+against only the days that reported a burn is not a comparison, it is a bias —
+and a large one. A watch sends completed days, so today never has a burn figure,
+and every week counted one extra day of food against nothing.
+
+On a real week that turned a deficit of about 1,400 kcal into a surplus of 976:
+not merely imprecise, **the wrong sign**. `eatenAllDays` still reports everything
+eaten, because it was eaten; it just cannot be half of a balance.
+
+## A goal with no target still says when something is happening
+
+`FITNESS` stays `UNGRADED` — scoring someone against a target they never set is
+inventing one for them, and that remains true. But "you are not being scored" is
+not "nothing here is worth knowing". Past `NOTABLE_DRIFT_KCAL` (3,500, roughly
+half a kilo) the week says so as an **observation**, never a pass or a fail, and
+never beside a goal that already has a verdict.
+
 ## 1. Why a goal needed a shape
 
 A target weight says where you want to end up and nothing about how. "75 kg" is

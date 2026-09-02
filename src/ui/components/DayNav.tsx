@@ -33,7 +33,7 @@ export function DayNav({
         onClick={onToday}
         disabled={isToday}
         title={isToday ? undefined : t('today.backToToday')}
-        className="flex-1 rounded-full px-3 py-1.5 text-sm text-ink-muted transition-colors enabled:hover:bg-card-soft disabled:cursor-default sm:min-w-[9.5rem] sm:flex-none"
+        className="flex-1 rounded-full px-3 py-1.5 text-sm text-ink-muted transition-colors enabled:hover:bg-card-soft disabled:cursor-default truncate sm:w-[11rem] sm:flex-none"
       >
         {dayLabel(day, today, t)}
       </button>

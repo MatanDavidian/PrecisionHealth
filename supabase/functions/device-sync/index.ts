@@ -30,20 +30,48 @@ const json = (body: unknown, status = 200) =>
 
 /** The most days a single sync may carry. getHistory() returns seven. */
 const MAX_DAYS = 14
-/** Beyond this a "day's calories" is not a reading, it is a bug or an attack. */
-const MAX_KCAL = 20000
+/**
+ * The largest plausible value per code.
+ *
+ * One ceiling for everything meant a stress score of 19,000 was accepted as
+ * readily as a day's calories. These are generous — the job is to reject
+ * nonsense and attacks, not to second-guess a device — but a value outside a
+ * metric's own scale is not a reading.
+ */
+const MAX_VALUE: Record<string, number> = {
+  TOTAL_ENERGY: 20000,
+  ACTIVE_ENERGY: 20000,
+  STEPS: 200000,
+  DISTANCE: 500000,
+  RESTING_HEART_RATE: 250,
+  RESPIRATION_RATE: 80,
+  STRESS: 100,
+  VO2_MAX: 100,
+}
 
-/** Codes a device is allowed to write. Not every code — only what a watch measures. */
-const ALLOWED = new Set(['TOTAL_ENERGY', 'ACTIVE_ENERGY', 'STEPS', 'DISTANCE', 'ACTIVE_MINUTES'])
-
-/** Canonical units, matching D8. The device sends plain numbers; we brand them here. */
+/**
+ * Codes a device may write, and the canonical unit each is stored in (D8).
+ *
+ * The two lists are one object so they cannot drift: a code with no unit
+ * cannot be accepted, which is what stops a value being stored unbranded.
+ *
+ * ACTIVE_MINUTES was in the earlier allowlist and is gone. The domain has no
+ * such code, so accepting it wrote observations the app could never read back —
+ * a row that exists and means nothing is worse than a rejection.
+ */
 const UNIT: Record<string, string> = {
+  // Accumulating over a day: only completed days are meaningful.
   TOTAL_ENERGY: 'kcal',
   ACTIVE_ENERGY: 'kcal',
   STEPS: 'count',
   DISTANCE: 'm',
-  ACTIVE_MINUTES: 's',
+  // Point measurements: today's value is simply today's value.
+  RESTING_HEART_RATE: 'bpm',
+  RESPIRATION_RATE: 'bpm',
+  STRESS: 'score',
+  VO2_MAX: 'ml/kg/min',
 }
+const ALLOWED = new Set(Object.keys(UNIT))
 
 const sha256Hex = async (value: string): Promise<string> => {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
@@ -113,7 +141,7 @@ Deno.serve(async (request) => {
       continue
     }
     const amount = Number(value)
-    if (!Number.isFinite(amount) || amount < 0 || amount > MAX_KCAL) {
+    if (!Number.isFinite(amount) || amount < 0 || amount > MAX_VALUE[code]) {
       rejected.push(`${code}:${String(value)}`)
       continue
     }
@@ -155,6 +183,40 @@ Deno.serve(async (request) => {
 
   if (rows.length === 0) return json({ error: 'nothing_valid', rejected }, 400)
 
+  /*
+    A device supersedes its own earlier readings rather than arguing with them.
+
+    The same seven days arrive on every sync, so without this each one added a
+    second row for a day already recorded. Two GARMIN readings of one day are
+    not a disagreement worth showing anyone — they are the same device saying
+    the same thing again, or correcting itself — and left as rivals they would
+    raise a conflict against themselves the moment Garmin revised a figure.
+
+    Only GARMIN rows are superseded. A value the person typed by hand outranks
+    this one anyway (D6), and quietly retiring their entry because a watch
+    reported later would be the device overruling the human.
+  */
+  const { data: existing } = await admin
+    .from('observations')
+    .select('id, day, code, data')
+    .eq('user_id', token.user_id)
+    .in('day', [...new Set(rows.map((r) => r.day))])
+    .in('code', [...new Set(rows.map((r) => r.code))])
+
+  const priorBySlot = new Map<string, string[]>()
+  for (const row of existing ?? []) {
+    if ((row.data as { provenance?: { source?: string } })?.provenance?.source !== 'GARMIN') continue
+    const slot = `${row.day}:${row.code}`
+    priorBySlot.set(slot, [...(priorBySlot.get(slot) ?? []), row.id])
+  }
+
+  for (const row of rows) {
+    const prior = priorBySlot.get(`${row.day}:${row.code}`)
+    if (prior?.length) {
+      ;(row.data.provenance as Record<string, unknown>).supersedes = prior
+    }
+  }
+
   const { error } = await admin.from('observations').insert(rows)
   if (error) return json({ error: 'write_failed' }, 500)
 
@@ -164,5 +226,5 @@ Deno.serve(async (request) => {
     .eq('id', token.id)
 
   // A count, and what was thrown away. Never a record.
-  return json({ written: rows.length, rejected })
+  return json({ written: rows.length, rejected, superseded: [...priorBySlot.values()].flat().length })
 })

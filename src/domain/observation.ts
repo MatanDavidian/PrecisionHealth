@@ -55,6 +55,13 @@ export type ObservationCode =
   | 'RESPIRATION_RATE'
   | 'STRESS'
   | 'SLEEP_SCORE'
+  /**
+   * Estimated VO2 max, ml/kg/min.
+   *
+   * A watch's own figure, not a lab's. It moves slowly and means little day to
+   * day, which is exactly why it belongs in a record that keeps history.
+   */
+  | 'VO2_MAX'
   // BODY
   | 'WEIGHT'
   | 'BODY_FAT'
@@ -82,6 +89,10 @@ export const CATEGORY_OF: Record<ObservationCode, ObservationCategory> = {
   RESPIRATION_RATE: 'RECOVERY',
   STRESS: 'RECOVERY',
   SLEEP_SCORE: 'RECOVERY',
+  // ACTIVITY rather than a new TRAINING category. It is a capacity measure,
+  // which sits closer to what the body did than to how it recovered, and one
+  // code is a poor reason to widen an enum other code switches on.
+  VO2_MAX: 'ACTIVITY',
   WEIGHT: 'BODY',
   BODY_FAT: 'BODY',
   MUSCLE_MASS: 'BODY',
@@ -112,6 +123,11 @@ export const CONFLICT_TOLERANCE: Partial<Record<ObservationCode, number>> = {
   TOTAL_ENERGY: 100, // kcal — a bigger number, so a wider band before it is a disagreement
   HRV: 5, // ms
   RESTING_HEART_RATE: 3, // bpm
+  RESPIRATION_RATE: 2, // breaths/min
+  STRESS: 10, // 0-100, a coarse index — small moves are not disagreements
+  DISTANCE: 200, // m
+  // Two devices differing by more than a point are measuring different things.
+  VO2_MAX: 1,
 }
 
 /** Extra fields that only clinical observations carry. */

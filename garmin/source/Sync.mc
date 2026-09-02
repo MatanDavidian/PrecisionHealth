@@ -110,8 +110,78 @@ class Syncer {
             if (day has :steps && day.steps != null) {
                 out.add({ "day" => date, "code" => "STEPS", "value" => day.steps });
             }
+            // Metres. The endpoint stores distance canonically in metres, and
+            // Connect IQ reports it in centimetres.
+            if (day has :distance && day.distance != null) {
+                out.add({ "day" => date, "code" => "DISTANCE", "value" => day.distance / 100 });
+            }
+        }
+
+        out.addAll(todaysMeasurements());
+        return out;
+    }
+
+    //! Today's point measurements.
+    //!
+    //! The "only completed days" rule is about ACCUMULATING metrics. Calories
+    //! and steps climb all day, so today's figure is an undercount and writing
+    //! it would make a week compare a full day of eating against a partial day
+    //! of burning.
+    //!
+    //! A resting heart rate is not like that. It is a measurement of a moment,
+    //! not a total in progress, and today's value is simply today's value.
+    //! Holding these back until tomorrow would lose nothing but a day.
+    function todaysMeasurements() as Array<Dictionary> {
+        var out = [] as Array<Dictionary>;
+        var today = todayKey();
+        if (today == null) {
+            return out;
+        }
+
+        var info = null;
+        try {
+            info = ActivityMonitor.getInfo();
+        } catch (e) {
+            info = null;
+        }
+        if (info != null) {
+            if (info has :stressScore && info.stressScore != null) {
+                out.add({ "day" => today, "code" => "STRESS", "value" => info.stressScore });
+            }
+            if (info has :respirationRate && info.respirationRate != null) {
+                out.add({ "day" => today, "code" => "RESPIRATION_RATE", "value" => info.respirationRate });
+            }
+        }
+
+        var mine = null;
+        try {
+            mine = UserProfile.getProfile();
+        } catch (e) {
+            mine = null;
+        }
+        if (mine != null) {
+            if (mine has :restingHeartRate && mine.restingHeartRate != null) {
+                out.add({ "day" => today, "code" => "RESTING_HEART_RATE", "value" => mine.restingHeartRate });
+            }
+            // Running only. A cycling figure is a different measurement of a
+            // different activity, and storing both under one code would have
+            // them supersede each other on alternate days.
+            if (mine has :vo2maxRunning && mine.vo2maxRunning != null) {
+                out.add({ "day" => today, "code" => "VO2_MAX", "value" => mine.vo2maxRunning });
+            }
         }
         return out;
+    }
+
+    //! Today, as the local calendar names it.
+    function todayKey() as String or Null {
+        try {
+            var at = Gregorian.info(Time.now(), Time.FORMAT_SHORT);
+            return at.year.format("%04d") + "-" + at.month.format("%02d") + "-" +
+                at.day.format("%02d");
+        } catch (e) {
+            return null;
+        }
     }
 
     //! Send them. `onDone` is called with a short line to put on screen.

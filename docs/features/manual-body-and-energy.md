@@ -191,9 +191,30 @@ on sync
   └── getInfo().calories           → NOT written; it is a partial day
 ```
 
-Backfill is free: the same seven entries arrive on every sync, and a day already
-imported from Garmin supersedes rather than duplicating. So a watch that has not
-synced for five days catches up on its own with no extra code.
+Backfill is free: the same seven entries arrive on every sync, and the endpoint
+**supersedes** prior GARMIN readings for the same day and code rather than
+adding a rival. So a watch that has not synced for five days catches up on its
+own, and one that syncs twice an hour costs nothing but rows.
+
+That superseding is not automatic — it was written after the endpoint was found
+plain-inserting, which this document had already claimed it did not. Two GARMIN
+readings of one day are not a disagreement worth showing anyone; left as rivals
+they would have raised a conflict against themselves the moment Garmin revised a
+figure. **Only GARMIN rows are retired.** A value typed by hand outranks the
+watch anyway (D6), and quietly retiring someone's own entry because a device
+reported later would be the device overruling the human.
+
+### What a device may write
+
+`TOTAL_ENERGY`, `ACTIVE_ENERGY`, `STEPS`, `DISTANCE` accumulate over a day, so
+only completed days are sent. `RESTING_HEART_RATE`, `RESPIRATION_RATE`,
+`STRESS` and `VO2_MAX` are point measurements — today's value is simply today's
+value, and holding them back until tomorrow would lose a day for nothing.
+
+Every code has its own ceiling. One shared limit meant a stress score of 19,000
+was accepted as readily as a day's calories. `ACTIVE_MINUTES` was in the earlier
+allowlist and is gone: the domain has no such code, so accepting it wrote rows
+the app could never read back.
 
 ### The mapping, and why the old note here was wrong
 

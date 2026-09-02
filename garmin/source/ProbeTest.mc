@@ -72,6 +72,54 @@ module ProbeTest {
     }
 
     (:test)
+    function everyCodeSentIsOneTheServerAccepts(logger as Logger) as Boolean {
+        // The endpoint rejects an unknown code, and a rejection is invisible
+        // from the watch — the sync reports how many were written, not which
+        // were dropped. So the two lists have to be checked against each other
+        // somewhere, and here is the only place that can.
+        var allowed = [
+            "TOTAL_ENERGY", "ACTIVE_ENERGY", "STEPS", "DISTANCE",
+            "RESTING_HEART_RATE", "RESPIRATION_RATE", "STRESS", "VO2_MAX",
+        ];
+        var days = new Syncer().completedDays();
+        for (var i = 0; i < days.size(); i++) {
+            var code = days[i]["code"];
+            var ok = false;
+            for (var j = 0; j < allowed.size(); j++) {
+                if (allowed[j].equals(code)) { ok = true; }
+            }
+            if (!ok) {
+                logger.error("code the server will drop: " + code);
+                return false;
+            }
+        }
+        logger.debug(days.size() + " observations, every code accepted");
+        return true;
+    }
+
+    (:test)
+    function todaysMeasurementsAreDatedToday(logger as Logger) as Boolean {
+        // Point measurements carry TODAY, unlike the accumulating ones which
+        // only ever carry completed days. Dating them yesterday would file a
+        // resting heart rate against the wrong morning.
+        var syncer = new Syncer();
+        var today = syncer.todayKey();
+        var points = syncer.todaysMeasurements();
+        if (today == null) {
+            logger.error("no local date");
+            return false;
+        }
+        for (var i = 0; i < points.size(); i++) {
+            if (!today.equals(points[i]["day"])) {
+                logger.error(points[i]["code"] + " dated " + points[i]["day"] + ", not " + today);
+                return false;
+            }
+            logger.debug(points[i]["code"] + " " + points[i]["value"] + " on " + points[i]["day"]);
+        }
+        return true;
+    }
+
+    (:test)
     function refusesToSendWithoutSettings(logger as Logger) as Boolean {
         // The commonest failure by far is a blank setting, and it has to say so
         // rather than surfacing as a connection error an hour later.

@@ -243,6 +243,45 @@ simply today's value, and holding them back would lose a day for nothing.
 The local calendar date, never the raw epoch — Monkey C Numbers are 32-bit and
 wrap in 2038, so the epoch is a diagnostic and not a key.
 
+## What gets sent, and why so little
+
+```
+BACKGROUND   completed-day TOTAL_ENERGY, nothing else
+FOREGROUND   the full metric set, when you open the app
+```
+
+The background service has roughly thirty seconds and a small memory
+allowance, so it does one narrow thing. That is a **technical** reason, not a
+privacy one — the richer metrics go to your own database in an app built to
+hold them, and sending your own resting heart rate to your own health record is
+the product rather than an exposure.
+
+The payload carries **only** `{ day, code, value }` and an opaque token. No
+name, email, age, weight, GPS, heart-rate samples, Garmin account id or serial.
+The server already knows whose token it is. Deleting the account cascades to
+both the observations and the device credential, so erasure is structural rather
+than promised.
+
+## Before publishing to the Store
+
+**The credential is the blocker, not Garmin's data access.** The token is
+compiled into the `.prg`, so today's build works for exactly one watch. Store
+apps do get a settings page — the thing sideloading lacks — so the first version
+can be "paste a token from the web app", with a pairing code later. `Cfg` reads
+`Properties` before the compiled-in value precisely so that change needs no code.
+
+Each installation should keep its own narrow, revocable credential rather than
+anything shared with a web session, so a lost watch or a leaked `.prg` is
+revoked without touching the account. That is what `device_tokens` already is.
+
+On compliance, briefly, and **confirm it with a lawyer before launch rather than
+with a model**: HIPAA generally binds covered entities and their business
+associates, not an independent consumer app. The FTC's Health Breach
+Notification Rule is the more relevant US instrument. GDPR treats health data as
+special category, and Garmin puts that responsibility on the developer. Israel's
+Privacy Protection Law treats health information as specially sensitive. None of
+that binds a single-user POC; all of it binds a published one.
+
 ## Before this stops being disposable
 
 The application id in `manifest.xml` was invented so the project builds today.

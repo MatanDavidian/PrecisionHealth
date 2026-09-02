@@ -1,5 +1,6 @@
 import Toybox.Application;
 import Toybox.Lang;
+import Toybox.System;
 import Toybox.WatchUi;
 
 //! A watch app that reads, prints, and saves nothing.
@@ -13,6 +14,16 @@ class PocApp extends Application.AppBase {
 
     function initialize() {
         AppBase.initialize();
+    }
+
+    //! The daily background send.
+    //!
+    //! A separate process with its own small budget, which is why it does one
+    //! narrow thing — completed-day calories — and leaves everything richer to
+    //! the foreground sync.
+    (:background)
+    function getServiceDelegate() as [System.ServiceDelegate] {
+        return [new BgService()];
     }
 
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {

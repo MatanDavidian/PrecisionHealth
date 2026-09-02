@@ -225,6 +225,30 @@ class Syncer {
         return out;
     }
 
+    //! The newest completed day this watch can see, or null.
+    function newestCompletedDay() as String or Null {
+        if (!(ActivityMonitor has :getHistory)) {
+            return null;
+        }
+        var days = null;
+        try {
+            days = ActivityMonitor.getHistory();
+        } catch (e) {
+            return null;
+        }
+        if (days == null || !(days has :size) || days.size() == 0) {
+            return null;
+        }
+        // getHistory is newest first.
+        var day = days[0];
+        if (!(day has :startOfDay) || day.startOfDay == null) {
+            return null;
+        }
+        var at = Gregorian.info(day.startOfDay, Time.FORMAT_SHORT);
+        return at.year.format("%04d") + "-" + at.month.format("%02d") + "-" +
+            at.day.format("%02d");
+    }
+
     //! Today, as the local calendar names it.
     function todayKey() as String or Null {
         try {
@@ -283,6 +307,16 @@ class Syncer {
 
         if (code == 200 && data instanceof Dictionary && data.hasKey("written")) {
             markSynced();
+            /*
+              The foreground and the background share one marker. Opening the
+              app is a successful sync of every completed day, so the morning
+              service has nothing left to send — and neither resends what the
+              other already delivered.
+            */
+            var newest = newestCompletedDay();
+            if (newest != null) {
+                Cfg.setLastSyncedDay(newest);
+            }
             onDone.invoke("sent " + data["written"] + " reading(s)");
             return;
         }

@@ -164,6 +164,91 @@ module ProbeTest {
     }
 
     (:test)
+    function backgroundSendsOnlyCompletedCalories(logger as Logger) as Boolean {
+        // The narrow payload is the point: a background service has about
+        // thirty seconds and a small allowance, and everything richer is the
+        // foreground's job.
+        Storage.deleteValue("lastSyncedDay");
+        var unsent = new BgService().unsentCalories();
+        if (unsent.size() == 0) {
+            logger.error("nothing to send with no marker set");
+            return false;
+        }
+        for (var i = 0; i < unsent.size(); i++) {
+            if (!unsent[i]["code"].equals("TOTAL_ENERGY")) {
+                logger.error("background sent " + unsent[i]["code"] + "; it may send only calories");
+                return false;
+            }
+        }
+        // Oldest first, so the marker set from the last entry is the newest.
+        var first = unsent[0]["day"] as String;
+        var last = unsent[unsent.size() - 1]["day"] as String;
+        if (first.compareTo(last) > 0) {
+            logger.error("payload is newest-first; the marker would go backwards");
+            return false;
+        }
+        logger.debug(unsent.size() + " day(s), " + first + " to " + last);
+        return true;
+    }
+
+    (:test)
+    function theMarkerStopsDaysBeingResent(logger as Logger) as Boolean {
+        var service = new BgService();
+
+        Storage.deleteValue("lastSyncedDay");
+        var all = service.unsentCalories();
+        if (all.size() == 0) {
+            logger.error("no history to work with");
+            return false;
+        }
+
+        // Everything already delivered: nothing left to send.
+        Cfg.setLastSyncedDay(all[all.size() - 1]["day"] as String);
+        if (service.unsentCalories().size() != 0) {
+            logger.error("days were resent after being marked delivered");
+            return false;
+        }
+
+        // A day missed: exactly the days after the marker come back. This is
+        // the whole retry mechanism — no queue, no state but one date.
+        if (all.size() > 1) {
+            Cfg.setLastSyncedDay(all[all.size() - 2]["day"] as String);
+            var caughtUp = service.unsentCalories();
+            if (caughtUp.size() != 1) {
+                logger.error("expected 1 day to catch up, got " + caughtUp.size());
+                return false;
+            }
+            logger.debug("catch-up returns " + caughtUp[0]["day"]);
+        }
+
+        Storage.deleteValue("lastSyncedDay");
+        return true;
+    }
+
+    (:test)
+    function theDailyWakeIsAlwaysInTheFuture(logger as Logger) as Boolean {
+        // A moment already past would fire at once or be refused, and either
+        // way the schedule stops being daily.
+        var next = Schedule.nextWake();
+        if (next.lessThan(Time.now())) {
+            logger.error("the next wake is in the past");
+            return false;
+        }
+        var at = Gregorian.info(next, Time.FORMAT_SHORT);
+        if (at.hour != WAKE_HOUR || at.min != WAKE_MINUTE) {
+            logger.error("woke at " + at.hour + ":" + at.min + ", not the configured time");
+            return false;
+        }
+        // And never more than a day out, or a missed day waits two.
+        if (next.subtract(Time.now()).value() > Gregorian.SECONDS_PER_DAY) {
+            logger.error("the next wake is more than a day away");
+            return false;
+        }
+        logger.debug("next wake " + at.year + "-" + at.month + "-" + at.day + " " + at.hour + ":" + at.min);
+        return true;
+    }
+
+    (:test)
     function refusesToSendWithoutSettings(logger as Logger) as Boolean {
         // The commonest failure by far is a blank setting, and it has to say so
         // rather than surfacing as a connection error an hour later.

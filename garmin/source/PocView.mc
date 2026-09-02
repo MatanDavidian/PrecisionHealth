@@ -38,6 +38,17 @@ class PocView extends WatchUi.View {
     //! started, and the interesting moment is "it is on screen now", not "it
     //! was constructed". The throttle is what makes that safe to do every time.
     function onShow() as Void {
+        /*
+          Repairing the schedule is the first thing, and it happens whether or
+          not a sync is due.
+
+          The daily wake is a one-shot Moment that re-registers itself, so a
+          registration that fails once would otherwise end the schedule
+          permanently and silently. Opening the app puts it back, which turns
+          "it never syncs again" into "it syncs the next time you look at it".
+        */
+        Schedule.ensure();
+
         if (!_sending && _syncer.isDue()) {
             syncNow();
         }

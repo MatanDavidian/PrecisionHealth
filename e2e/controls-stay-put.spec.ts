@@ -26,7 +26,7 @@ test('the day/week switch does not move when you use it', async ({ page }) => {
   const inDayView = await where()
 
   await week.click()
-  await expect(page.getByRole('heading', { name: 'This week' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'This week', exact: true })).toBeVisible()
   expect(await where(), 'moved when switching to the week').toEqual(inDayView)
 
   await day.click()

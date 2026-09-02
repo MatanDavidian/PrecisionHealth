@@ -1,0 +1,4 @@
+{
+  "//": "Type-checking config for the edge functions. Deliberately OUTSIDE supabase/functions, because everything in that directory is uploaded with a deploy and this is a local tool, not part of any function. `nodeModulesDir: auto` lets the checker resolve the npm packages the Supabase client pulls in; without it the check stops at the first import and the functions ship unverified — which is how a missing import reached a live deploy and answered 500.",
+  "nodeModulesDir": "auto"
+}

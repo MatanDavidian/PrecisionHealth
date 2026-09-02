@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "check:functions": "deno check --config supabase/deno-check.json supabase/functions/*/index.ts",
     "test:e2e:ui": "playwright test --ui",
     "db:verify": "./supabase/test/run.sh",
     "supabase:check": "node scripts/check-supabase.mjs"

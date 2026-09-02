@@ -575,9 +575,9 @@ const en = {
   'week.eaten': 'Eaten',
   'week.burned': 'Burned',
   'week.perDay': '{total} · {average}/day',
-  'week.levelSentence': 'You ate exactly what you burned across the seven days.',
-  'week.underSentence': 'You ate {count} kcal less than you burned across the seven days.',
-  'week.overSentence': 'You ate {count} kcal more than you burned across the seven days.',
+  'week.levelSentence': 'You ate exactly what you burned.',
+  'week.underSentence': 'You ate {count} kcal less than you burned.',
+  'week.overSentence': 'You ate {count} kcal more than you burned.',
   'week.againstGoal': 'Against your goal',
   'week.aimsFor': 'Aims for {aim}, and you landed at {net}.',
   'week.levelWeek': 'a level week',
@@ -596,7 +596,8 @@ const en = {
   'week.askForInsights': 'Ask for insights',
   'week.noBurnData':
     'No calories burned recorded this week — set them on the day view and the balance becomes real.',
-  'week.partialBurn': 'Burn recorded on {count} of 7 days; the target is scaled to match.',
+  'week.partialBurn': 'Compared over the {count} days with both figures.',
+  'week.eatenElsewhere': 'A further {count} kcal was eaten on days with no burn figure, so it is not in the balance.',
 
 
   // ------------------------------------------------------------- the plan --
@@ -1199,9 +1200,9 @@ const he: Dictionary = {
   'week.eaten': 'נאכל',
   'week.burned': 'נשרף',
   'week.perDay': '{total} · {average} ליום',
-  'week.levelSentence': 'אכלתם בדיוק את מה ששרפתם לאורך שבעת הימים.',
-  'week.underSentence': 'אכלתם {count} קלוריות פחות ממה ששרפתם לאורך שבעת הימים.',
-  'week.overSentence': 'אכלתם {count} קלוריות יותר ממה ששרפתם לאורך שבעת הימים.',
+  'week.levelSentence': 'אכלתם בדיוק את מה ששרפתם.',
+  'week.underSentence': 'אכלתם {count} קלוריות פחות ממה ששרפתם.',
+  'week.overSentence': 'אכלתם {count} קלוריות יותר ממה ששרפתם.',
   'week.againstGoal': 'מול היעד שלכם',
   'week.aimsFor': 'שואף ל{aim}, ונחתתם על {net}.',
   'week.levelWeek': 'שבוע מאוזן',
@@ -1219,7 +1220,8 @@ const he: Dictionary = {
     'שולח את שבעת הימים האלה ואת היעד שלכם, ומחזיר מה כדאי לשנות. שום דבר לא נשלח עד שתבקשו.',
   'week.askForInsights': 'לבקש תובנות',
   'week.noBurnData': 'לא נרשמו קלוריות שנשרפו השבוע — הזינו אותן בתצוגת היום והמאזן יהפוך לאמיתי.',
-  'week.partialBurn': 'נרשמה שריפה ב-{count} מתוך 7 ימים; היעד מותאם בהתאם.',
+  'week.partialBurn': 'ההשוואה היא על {count} הימים שיש בהם את שני הנתונים.',
+  'week.eatenElsewhere': 'עוד {count} קלוריות נאכלו בימים ללא נתון שריפה, ולכן אינן במאזן.',
 
 
   // ------------------------------------------------------------- the plan --

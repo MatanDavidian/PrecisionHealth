@@ -217,3 +217,57 @@ describe('a goal with no calorie target', () => {
     expect(week.drift, 'a second opinion beside a verdict is noise').toBeUndefined()
   })
 })
+
+describe('the summary card can be read as one thing', () => {
+  const d = (day: string, eaten: number, burned?: number) =>
+    ({ day: day as CalendarDate, eatenKcal: eaten, ...(burned === undefined ? {} : { burnedKcal: burned }) })
+
+  /**
+   * The three numbers on the card — eaten, burned, and the net between them —
+   * have to be over the same days, or they cannot be read together.
+   *
+   * The card divided eaten by seven while the total counted only the days with
+   * a burn figure, so it reported 1,088 kcal a day where the real average was
+   * 2,538: not a rounding difference, less than half. These assertions are what
+   * the card computes, so the arithmetic is pinned somewhere a screenshot is
+   * not the only witness.
+   */
+  it('averages eaten and burned over the same days', () => {
+    // Three days compared, four with food but no burn figure.
+    const week = summariseWeek([
+      d('2026-08-30', 2600, 2400),
+      d('2026-08-31', 2500, 2300),
+      d('2026-09-01', 2515, 2423),
+      d('2026-09-02', 1200),
+      d('2026-09-03', 0),
+      d('2026-09-04', 0),
+      d('2026-09-05', 0),
+    ])
+
+    expect(week.daysWithBurn).toBe(3)
+    expect(week.balance.eatenKcal).toBe(7615)
+    expect(week.balance.burnedKcal).toBe(7123)
+    expect(week.balance.netKcal).toBe(492)
+
+    // What the card shows per day. Both over daysWithBurn, never over 7.
+    expect(Math.round(week.balance.eatenKcal / week.daysWithBurn)).toBe(2538)
+    expect(Math.round(week.balance.burnedKcal / week.daysWithBurn)).toBe(2374)
+
+    // And the eating left out of the balance is still known, so it can be said.
+    expect(week.eatenAllDays).toBe(8815)
+    expect(week.eatenAllDays - week.balance.eatenKcal).toBe(1200)
+  })
+
+  it('keeps net equal to eaten minus burned, whatever is missing', () => {
+    // The invariant the card depends on: three numbers, one subtraction.
+    const weeks = [
+      [d('2026-08-30', 2000, 2400), d('2026-08-31', 1800)],
+      [d('2026-08-30', 2000, 2400), d('2026-08-31', 2200, 2100)],
+      [d('2026-08-30', 0, 2400), d('2026-08-31', 3000)],
+    ]
+    for (const days of weeks) {
+      const week = summariseWeek(days)
+      expect(week.balance.netKcal).toBe(week.balance.eatenKcal - week.balance.burnedKcal)
+    }
+  })
+})

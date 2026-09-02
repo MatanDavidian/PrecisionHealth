@@ -30,3 +30,6 @@ blob-report/
 # Garmin: the device credential, and the source generated from it
 garmin/local.env
 garmin/source/BuildConfig.mc
+
+# Playwright MCP scratch output
+.playwright-mcp/

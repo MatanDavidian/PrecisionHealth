@@ -210,9 +210,19 @@ export function WeekView({
           <div className="mt-4 border-t border-hairline pt-3">
             <Row
               name={t('week.eaten')}
+              /*
+                Averaged over the days being COMPARED, not over seven.
+
+                `balance.eatenKcal` counts only days that also carry a burn
+                figure, so dividing it by seven mixed one basis with another and
+                produced a daily figure roughly half the truth — 1,088 where the
+                real average was 2,538. Both rows now use the same denominator
+                as the net above them, which is the only way the three numbers
+                can be read together.
+              */
               value={t('week.perDay', {
                 total: round(week.balance.eatenKcal),
-                average: round(week.balance.eatenKcal / week.days.length),
+                average: round(week.balance.eatenKcal / Math.max(1, week.daysWithBurn)),
               })}
             />
             <Row
@@ -230,9 +240,22 @@ export function WeekView({
 
           {/* Said out loud, because averaging four days as if they were seven
               would quietly understate the burn. */}
+          {/*
+            Says what the three numbers above are actually over, and how much
+            eating is not in them. A card that silently reports part of a week
+            as if it were the whole is worse than one that shows less.
+          */}
           {week.daysWithBurn > 0 && week.daysWithBurn < week.days.length && (
-            <p className="pt-2 text-xs text-ink-muted">
+            <p className="max-w-[38ch] pt-2 text-xs leading-relaxed text-ink-muted">
               {t('week.partialBurn', { count: week.daysWithBurn })}
+              {week.eatenAllDays > week.balance.eatenKcal && (
+                <>
+                  {' '}
+                  {t('week.eatenElsewhere', {
+                    count: round(week.eatenAllDays - week.balance.eatenKcal),
+                  })}
+                </>
+              )}
             </p>
           )}
           {week.daysWithBurn === 0 && (

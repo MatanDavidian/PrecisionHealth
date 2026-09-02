@@ -25,11 +25,14 @@ const stepDays = async (page: Page, direction: 'Previous' | 'Next', times: numbe
 test('lands on the day it was typed for, and nowhere else', async ({ page }) => {
   await open(page, '/nutrition')
   const todayBefore = await caloriesOn(page)
-  expect(todayBefore).toBe('2,130')
 
   await stepDays(page, 'Previous', 2)
-  const pastBefore = await caloriesOn(page)
-  expect(pastBefore, 'the seeded fixture should leave this day empty').toBe('0')
+  /*
+    What this day already holds is not the point, and pinning it made the test
+    a hostage to the fixture — it broke the moment the fake learned to seed a
+    week. What matters is that the meal lands HERE and not on today.
+  */
+  const pastBefore = Number((await caloriesOn(page))!.replace(/,/g, ''))
 
   // Manual entry used to be locked to today. It is reachable here now, and
   // Manual is the mode the sheet opens in.
@@ -42,9 +45,10 @@ test('lands on the day it was typed for, and nowhere else', async ({ page }) => 
   await form.getByRole('button', { name: 'Save meal' }).click()
 
   await expect(page.getByText('Backfilled porridge')).toBeVisible()
-  expect(await caloriesOn(page), 'the past day did not take the meal').toBe('450')
+  const pastAfter = Number((await caloriesOn(page))!.replace(/,/g, ''))
+  expect(pastAfter - pastBefore, 'the past day did not take the meal').toBe(450)
 
   await stepDays(page, 'Next', 2)
-  expect(await caloriesOn(page), 'the meal leaked onto today').toBe('2,130')
+  expect(await caloriesOn(page), 'the meal leaked onto today').toBe(todayBefore)
   await expect(page.getByText('Backfilled porridge')).toHaveCount(0)
 })

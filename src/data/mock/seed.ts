@@ -19,6 +19,7 @@ import {
   type CalendarDate,
   type Condition,
   type ExerciseId,
+  weekContaining,
   type FoodItemId,
   type Goal,
   type GoalId,
@@ -300,6 +301,25 @@ export function buildSeed(
 
   const goals: Goal[] = [
   {
+    /*
+      A programme, so the week can be judged rather than only added up.
+
+      Without one the week view stops at "pick what you are working towards"
+      and no browser test can reach the summary card — which, together with the
+      week having no burn data, is why the card's arithmetic went uncovered
+      until it was wrong on a real phone.
+    */
+    id: asId<'Goal'>('goal-objective') as GoalId,
+    userId: DEMO_USER_ID,
+    metric: 'ENERGY',
+    direction: 'AT_MOST',
+    target: canonical(2200, 'kcal'),
+    objective: 'LOSE_FAT',
+    startsOn: addDays(day, -17),
+    active: true,
+    provenance: userEntered(zonedTimeToUtc(addDays(day, -17), '08:00', zone)),
+  },
+  {
     id: asId<'Goal'>('goal-protein') as GoalId,
     userId: DEMO_USER_ID,
     metric: 'PROTEIN',
@@ -321,7 +341,77 @@ export function buildSeed(
   },
 ]
 
-  return { profile, sleep, observations, meals, workouts, goals }
+  /*
+    The rest of the week, so the week view has something to be about.
+
+    Without this the fake carried a single day, every week rendered "Set what
+    you burn first", and no browser test could reach the summary card at all —
+    which is exactly how a card that divided by the wrong number of days
+    reached a phone with every unit test passing.
+
+    Deliberately PARTIAL: burn on some days and not others, and one day with
+    food but no burn figure. That is the shape a watch actually produces — it
+    sends completed days, so today never has one — and it is the shape that
+    breaks naive arithmetic.
+  */
+  const weekDays = weekContaining(day)
+  const extraMeals: Meal[] = []
+  const extraObservations: Observation[] = []
+
+  weekDays.forEach((weekDay: CalendarDate, index: number) => {
+    // Days after today have not happened; the demo day has its own detailed
+    // meals above and must not be doubled.
+    if (weekDay > day || weekDay === day) return
+
+    const kcal = 1900 + index * 130
+    extraMeals.push({
+      id: asId<'Meal'>(`meal-week-${index}`) as MealId,
+      recordId: `meal-week-${index}-v1`,
+      version: 1,
+      userId: DEMO_USER_ID,
+      slot: 'DINNER',
+      time: { kind: 'instant', at: zonedTimeToUtc(weekDay, '19:30', zone), zone: ZONE },
+      items: [
+        {
+          id: asId<'FoodItem'>(`food-week-${index}`) as FoodItemId,
+          mealId: asId<'Meal'>(`meal-week-${index}`) as MealId,
+          name: 'Dinner',
+          amount: canonical(450, 'g'),
+          nutrients: {
+            energy: canonical(kcal, 'kcal'),
+            protein: canonical(90, 'g'),
+            carbs: canonical(180, 'g'),
+            fat: canonical(45, 'g'),
+          },
+          provenance: userEntered(zonedTimeToUtc(weekDay, '19:30', zone)),
+        },
+      ],
+      provenance: userEntered(zonedTimeToUtc(weekDay, '19:30', zone)),
+    })
+
+    // The most recent completed day is left WITHOUT a burn figure, so the
+    // "compared over N days" path is always exercised.
+    const isMostRecentCompleted = weekDay === addDays(day, -1)
+    if (!isMostRecentCompleted) {
+      extraObservations.push({
+        id: asId<'Observation'>(`obs-week-burn-${index}`) as ObservationId,
+        userId: DEMO_USER_ID,
+        code: 'TOTAL_ENERGY',
+        time: { kind: 'daily', date: weekDay, zone: ZONE },
+        value: canonical(2300 + index * 40, 'kcal'),
+        provenance: deviceReading('GARMIN', zonedTimeToUtc(weekDay, '23:50', zone)),
+      })
+    }
+  })
+
+  return {
+    profile,
+    sleep,
+    observations: [...observations, ...extraObservations],
+    meals: [...meals, ...extraMeals],
+    workouts,
+    goals,
+  }
 }
 
 /** Fixed sample set on DEMO_DAY, used by tests. */

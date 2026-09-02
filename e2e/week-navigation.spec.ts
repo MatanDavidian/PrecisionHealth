@@ -21,7 +21,7 @@ test('shows the week the selected day falls in, and keeps the day', async ({ pag
   await page.getByRole('button', { name: 'Week', exact: true }).click()
 
   // Either heading is correct — "This week" only when it really is this week.
-  await expect(page.getByRole('heading', { name: /This week|Week of/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /^(This week|Week of )/ })).toBeVisible()
   await expect(page.locator('header p').first(), 'the week names a range').toContainText('–')
 
   /*
@@ -37,7 +37,7 @@ test('shows the week the selected day falls in, and keeps the day', async ({ pag
 test('steps whole weeks, and the switch does not move while it does', async ({ page }) => {
   await open(page, '/today')
   await page.getByRole('button', { name: 'Week', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'This week' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'This week', exact: true })).toBeVisible()
 
   const where = () => documentBox(page, 'header [aria-pressed]')
   const atStart = await where()
@@ -64,7 +64,7 @@ test('steps whole weeks, and the switch does not move while it does', async ({ p
 test('will not step into a week that has not happened', async ({ page }) => {
   await open(page, '/today')
   await page.getByRole('button', { name: 'Week', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'This week' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'This week', exact: true })).toBeVisible()
 
   // Disabled rather than hidden, so the control does not jump as you navigate.
   await expect(page.getByRole('button', { name: 'Next week' })).toBeDisabled()

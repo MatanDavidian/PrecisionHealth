@@ -1,4 +1,5 @@
 import Toybox.Application;
+import Toybox.Application.Storage;
 import Toybox.ActivityMonitor;
 import Toybox.Communications;
 import Toybox.Lang;
@@ -39,6 +40,57 @@ class Syncer {
     private var _onDone as Method or Null = null;
 
     function initialize() {
+    }
+
+    //! How long a sync stays fresh, in seconds.
+    //!
+    //! Half an hour. The data barely moves: completed days appear once, at
+    //! midnight, and the point measurements drift slowly. Syncing on every
+    //! glance would spend the phone's radio to send figures the server already
+    //! has, and a watch app is opened far more often than its data changes.
+    static const FRESH_FOR = 1800;
+
+    //! Whether enough time has passed to be worth sending again.
+    //!
+    //! A stored time from the future — a clock change, or the 32-bit wrap this
+    //! project has already met once — reads as "due" rather than locking the
+    //! app out of syncing until the date catches up.
+    function isDue() as Boolean {
+        var last = null;
+        try {
+            last = Storage.getValue("lastSyncAt");
+        } catch (e) {
+            return true;
+        }
+        if (last == null || !(last instanceof Lang.Number)) {
+            return true;
+        }
+        var elapsed = Time.now().value() - last;
+        return elapsed < 0 || elapsed > FRESH_FOR;
+    }
+
+    function markSynced() as Void {
+        try {
+            Storage.setValue("lastSyncAt", Time.now().value());
+        } catch (e) {
+            // A throttle that cannot remember is a throttle that syncs every
+            // time, which is worse than nothing but not worth failing over.
+        }
+    }
+
+    //! Minutes since the last successful sync, or null if there has not been one.
+    function minutesSinceSync() as Number or Null {
+        var last = null;
+        try {
+            last = Storage.getValue("lastSyncAt");
+        } catch (e) {
+            return null;
+        }
+        if (last == null || !(last instanceof Lang.Number)) {
+            return null;
+        }
+        var elapsed = Time.now().value() - last;
+        return elapsed < 0 ? null : (elapsed / 60).toNumber();
     }
 
 
@@ -230,7 +282,8 @@ class Syncer {
         }
 
         if (code == 200 && data instanceof Dictionary && data.hasKey("written")) {
-            onDone.invoke("sent " + data["written"] + " day(s)");
+            markSynced();
+            onDone.invoke("sent " + data["written"] + " reading(s)");
             return;
         }
         if (code == 401) {

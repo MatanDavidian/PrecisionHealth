@@ -1,4 +1,6 @@
 import Toybox.Lang;
+import Toybox.Time;
+import Toybox.Application.Storage;
 import Toybox.Test;
 
 //! Runs the probe and the sync payload inside the simulator, on the real
@@ -116,6 +118,48 @@ module ProbeTest {
             }
             logger.debug(points[i]["code"] + " " + points[i]["value"] + " on " + points[i]["day"]);
         }
+        return true;
+    }
+
+    (:test)
+    function freshnessThrottleOpensAndCloses(logger as Logger) as Boolean {
+        var syncer = new Syncer();
+
+        // Nothing recorded yet: the first open must send.
+        Storage.deleteValue("lastSyncAt");
+        if (!syncer.isDue()) {
+            logger.error("a watch that has never synced must be due");
+            return false;
+        }
+
+        // Just synced: opening again must not send.
+        syncer.markSynced();
+        if (syncer.isDue()) {
+            logger.error("a sync from a moment ago should still be fresh");
+            return false;
+        }
+
+        // Older than the window: due again.
+        Storage.setValue("lastSyncAt", Time.now().value() - (Syncer.FRESH_FOR + 60));
+        if (!syncer.isDue()) {
+            logger.error("a sync older than the window should be due");
+            return false;
+        }
+
+        /*
+          A stored time in the FUTURE reads as due, not as fresh forever. A
+          clock change or the 32-bit wrap this project has already met once
+          would otherwise lock the watch out of syncing until the date caught
+          up — silently, since nothing on screen would say why.
+        */
+        Storage.setValue("lastSyncAt", Time.now().value() + 86400);
+        if (!syncer.isDue()) {
+            logger.error("a future timestamp must not disable syncing");
+            return false;
+        }
+
+        Storage.deleteValue("lastSyncAt");
+        logger.debug("throttle opens, closes, and survives a bad clock");
         return true;
     }
 

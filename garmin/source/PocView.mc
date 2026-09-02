@@ -22,10 +22,49 @@ class PocView extends WatchUi.View {
     private var _status as String = "START to sync";
     //! Filled on the first layout, when the real screen height is known.
     private var _perPage as Number = 8;
+    private var _syncer as Syncer;
+    private var _sending as Boolean = false;
 
     function initialize() {
         View.initialize();
         _lines = Probe.report();
+        _syncer = new Syncer();
+        _status = _syncer.isDue() ? "" : agoLine();
+    }
+
+    //! Sends on open, unless a recent sync makes it pointless.
+    //!
+    //! onShow rather than initialize: a watch app is resumed as well as
+    //! started, and the interesting moment is "it is on screen now", not "it
+    //! was constructed". The throttle is what makes that safe to do every time.
+    function onShow() as Void {
+        if (!_sending && _syncer.isDue()) {
+            syncNow();
+        }
+    }
+
+    //! Sends regardless of freshness — what the button does.
+    function syncNow() as Void {
+        if (_sending) {
+            return;
+        }
+        _sending = true;
+        setStatus("sending...");
+        _syncer.send(method(:onSyncDone));
+    }
+
+    function onSyncDone(message as String) as Void {
+        _sending = false;
+        setStatus(message);
+    }
+
+    //! "synced 12m ago" — so a quiet screen still says it is up to date.
+    function agoLine() as String {
+        var minutes = _syncer.minutesSinceSync();
+        if (minutes == null) {
+            return "START to sync";
+        }
+        return minutes < 1 ? "synced just now" : "synced " + minutes + "m ago";
     }
 
     function onLayout(dc as Graphics.Dc) as Void {

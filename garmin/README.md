@@ -166,9 +166,25 @@ the epoch is a diagnostic beside it. A 32-bit epoch is not a durable key.
 
 ## Sending it (the write path)
 
-Press **START** in the app and it POSTs completed days to the backend. Today is
-never sent — `getInfo().calories` is a running total, and writing it would make
-the week compare a full day of eating against a partial day of burning.
+**It sends when you open it.** No button press in the ordinary case.
+
+Opening the app POSTs to the backend, at most once every **30 minutes**. The
+data barely moves — completed days appear once, at midnight — and a watch app is
+opened far more often than its contents change, so syncing on every glance would
+spend the phone's radio resending what the server already has.
+
+**START forces one anyway**, freshness or not: for a send that failed, or data
+you know has just changed. When the app decides not to sync, the bottom line
+says when it last did — "synced 12m ago" — so a quiet screen still tells you it
+is up to date.
+
+Accumulating metrics — calories, steps, distance — carry **completed days only**.
+`getInfo().calories` is a running total, and writing today's would make the week
+compare a full day of eating against a partial day of burning.
+
+Point measurements — resting HR, VO₂ max, respiration, stress — carry **today**.
+They measure a moment rather than a total in progress, so today's value is
+simply today's value, and holding them back would lose a day for nothing.
 
 ### One-time setup
 
@@ -208,7 +224,8 @@ the week compare a full day of eating against a partial day of burning.
 
 | | |
 | --- | --- |
-| `sent 14 day(s)` | it worked — seven days, two metrics each |
+| `sent 24 reading(s)` | it worked |
+| `synced 12m ago` | recent enough that it did not bother; START forces one |
 | `set URL and token in Garmin Connect` | a blank setting, the commonest failure |
 | `token rejected` | the token is wrong or revoked |
 | `failed (-104)` | no phone connection — Connect IQ's negative codes are transport errors |

@@ -229,6 +229,27 @@ does. Pressing Apply agrees to record the claim; it does not vouch for it. That
 is why applying is its own write rather than a merge into the edit in progress —
 `applyMealEdit` stamps `USER_CONFIRMED`, which would be a lie here.
 
+### Leftovers and unsaved edits
+
+**Log leftover is unavailable while the editor has unsaved changes**, and an
+open result closes if an edit appears beneath it.
+
+A leftover is judged against the meal **as recorded**: the model is shown the
+saved plate, and applying writes a new version from it. So with an edit pending
+there were two changes on screen computed from different numbers, and applying
+silently discarded the typed one — grams nudged to 187 came back 170, with
+nothing to say why.
+
+Refusing is the honest version. Saving the edit first and then applying is a
+real alternative, but it writes two versions from one press, and that is a
+decision to make deliberately rather than to fall into.
+
+A second leftover measures against what the first one left: the plate comes from
+`liveItems`, so the reduced amounts are what the model sees. Rice at 280 g,
+halved twice, is 70 g — and each superseding item is a **new record with a new
+id**, which is why anything asserting on ids across a leftover is asserting on
+the wrong thing.
+
 ### Editing on a phone
 
 Below `md` — the width at which the app shows its bottom bar — editing opens as

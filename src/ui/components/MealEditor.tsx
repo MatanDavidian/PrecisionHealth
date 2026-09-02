@@ -375,23 +375,44 @@ export function MealEditor({
       {onLeftover && remaining.length > 0 && (
         <div className="mt-4 border-t border-hairline pt-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <p className="max-w-[46ch] text-[0.78rem] text-ink-soft">{t('leftover.prompt')}</p>
+            <p className="max-w-[46ch] text-[0.78rem] text-ink-soft">
+              {dirty ? t('leftover.saveFirst') : t('leftover.prompt')}
+            </p>
             <button
               type="button"
               onClick={() => setLeftoverOpen((open) => !open)}
               aria-expanded={leftoverOpen}
-              title={t('leftover.openTitle')}
-              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              /*
+                Not available while there are unsaved changes.
+
+                A leftover is judged against the meal as RECORDED — the model is
+                shown the saved plate, and applying writes a new version from
+                it. So with edits pending there were two changes on screen
+                computed from different numbers, and applying threw the typed
+                one away without a word: grams nudged to 187 came back 170.
+
+                Refusing is the honest version. The alternative — saving the
+                edit first and then applying — is a real option, but it writes
+                two versions from one press, and that is a decision to make
+                deliberately rather than to fall into.
+              */
+              disabled={dirty}
+              title={dirty ? t('leftover.saveFirst') : t('leftover.openTitle')}
+              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                 leftoverOpen
                   ? 'border-accent bg-accent-soft text-accent'
-                  : 'border-hairline text-ink-soft hover:border-accent hover:bg-card-soft hover:text-accent'
+                  : 'border-hairline text-ink-soft enabled:hover:border-accent enabled:hover:bg-card-soft enabled:hover:text-accent'
               }`}
             >
               <LeftoverIcon />
               {t('leftover.open')}
             </button>
           </div>
-          {leftoverOpen && onLeftover(() => setLeftoverOpen(false))}
+          {/*
+            Closed the moment an edit appears, so a result computed from the
+            saved numbers cannot sit on screen next to different ones.
+          */}
+          {leftoverOpen && !dirty && onLeftover(() => setLeftoverOpen(false))}
         </div>
       )}
 

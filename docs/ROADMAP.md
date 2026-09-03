@@ -241,21 +241,28 @@ serialises a real report and fails on any identity in it.
 **Ships:** the first advice the app gives, and the first thing it sends
 anywhere on purpose.
 
-## Slice 4 — Import from Garmin ⚠️ blocked
+## Slice 4 — Import from Garmin ✅ built
 
 Sleep, HRV, resting heart rate, steps, weight. The first time two sources
 describe the same day.
 
-**Blocked (Aug 2026):** Garmin's Health API is partner-approval only, and new
-applications appear to be closed — the request form has been removed with no
-published reopening date. The three routes still open (file import, the API if
-access reopens, or a paid aggregator that would also cover Apple Health and
-Samsung) are weighed up in
-[`features/manual-body-and-energy.md`](features/manual-body-and-energy.md) §4.
+**Was blocked, then wasn't (Sep 2026).** Garmin's Health API is still
+partner-approval only with applications closed. **Connect IQ turned out to be a
+different door entirely** — no approval needed, an app that runs on the watch,
+sideloaded over USB. It reads `ActivityMonitor.getHistory()` and posts completed
+days to an edge function.
 
-Slice 3.10 covers the immediate need by hand, and deliberately writes through
-the same observation path an import would use — so whichever route opens, it is
-an adapter rather than a rewrite.
+Established on hardware rather than assumed: `History.calories` is **total**
+daily energy (2214, matching Garmin Connect exactly, against an active figure of
+131 — mapping it to `ACTIVE_ENERGY` would have understated every day by 2,083
+kcal). Days anchor at local midnight, seven are available, and `[0]` is
+yesterday.
+
+It syncs when the app opens, and once each morning from a background service
+without being opened at all. Sleep and HRV remain out of reach — Connect IQ does
+not expose them — so the Recovery section still needs a second adapter. See
+[`features/manual-body-and-energy.md`](features/manual-body-and-energy.md) §4
+and [`../garmin/README.md`](../garmin/README.md).
 
 **Proves:** conflict detection (D6) against real device noise, and whether the
 tolerances are tuned anywhere near right.
@@ -277,6 +284,22 @@ linked to the records it came from, refusing to conclude where data is thin.
 
 **Proves:** AI reading structured data rather than becoming it.
 **Ships:** the "See what changed this week" card that is currently a placeholder.
+
+## Phase 1 — a product rather than a tool
+
+Everything above assumes one user, one watch, and a developer on hand.
+**[`PHASE-1.md`](PHASE-1.md)** is the plan that stops that being true: repeat a
+meal onto another day, cover what exists with tests, a name and a domain,
+per-device authentication and the Connect IQ Store, the legal floor, and
+payments.
+
+Its companion **[`COMPLIANCE.md`](COMPLIANCE.md)** works out which parts of
+Israeli, EU and US law fall on the architecture — the parts that are nearly free
+to build now and expensive to retrofit.
+
+The slices below are Phase 2 and beyond. **None of them should start while
+Phase 1 is unfinished**, because each one adds surface that Phase 1 would then
+have to cover.
 
 ## Later, in rough order
 

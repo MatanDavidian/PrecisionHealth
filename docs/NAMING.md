@@ -29,164 +29,127 @@ down on someone else's word.
 
 ---
 
+## The lesson from HealthLog
+
+`healthlog.io` was free, and **HealthLog was still the wrong answer** — there
+is an active self-hosted personal health tracker by that name, with wearable
+integrations, timelines and AI insights, plus several Play Store apps. The
+domain being available told us nothing.
+
+That was a bad check, so the method changed. **Domain availability is the last
+filter, not the first.** A name has to survive product collision before it is
+worth pricing.
+
+Two more from the same round, found the same way: **HealthTrace** is an AI
+health journal, **HealthLens** is heavily occupied, and **Vitaloop** is almost
+exactly this product's pitch already.
+
+The conclusion is structural: **descriptive two-word names in this category are
+saturated.** Health/Vital/Life/Bio × Log/Path/Signal/Trace/Lens/Loop is a grid
+that has been filled in.
+
+---
+
 ## What I actually checked
 
-Availability by RDAP — the registries' own API, so these are real answers.
-Checked 2026-09-04; **re-check before buying.**
+| Check | How | Reliable? |
+| --- | --- | --- |
+| `.com` / `.app` | RDAP — the registries' own API | yes |
+| iOS App Store | Apple's public iTunes Search API | yes |
+| Web / product collision | search | **partial** — this is what missed HealthLog |
+| Google Play | — | **not checked**, no public API |
+| Garmin Connect IQ | — | **not checked** |
+| Trademark registers | spot checks only | **not checked properly** |
 
-### The ones you named
+Checked 2026-09-04. The last three are yours to do, and the trademark one
+should be done by someone who does it for a living.
 
-| Domain | Status |
+---
+
+## Ruled out — occupied
+
+These are dead. Not "crowded": there is a named product in the way.
+
+| Name | What is already there |
 | --- | --- |
-| `precisionhealth.com` | taken |
-| `precisionhealth.app` | taken |
-| `precisionhealth.io` | **available** |
-| `aiprecisionhealth.com` | taken |
-| `precisionhealthinsights.com` | **available** |
-| `aitimelineforhealth.com` | **available** |
-| `healthtimeline.app` | **available** |
+| **HealthLog** | self-hosted health tracker, same category (your finding) |
+| **HealthLoop** | *HealthLoop: Nutrition & Gym* — this exact app |
+| **HealthOrbit** | *HealthOrbit Ai* |
+| **VitalPath** | *VitalPath* and *Vital Path: Watch Readiness* |
+| **VitalStory** | AI health-log product with "AI-Guided Health Logs" |
+| **HealthSignal** | *dIAgnoser Health Signal* |
+| **Traceline** | *Traceline: Health Tracker* |
+| **HealthTrace**, **HealthLens**, **Vitaloop** | your findings |
+| **Reckon**, **Cairn**, **Daybook**, **Waypoint** | every single English word is gone, domains and App Store |
+| **Continua**, **Chronon**, **Wayline**, **Steadwell**, **Aveline**, **Tessara**, **Everso**, **Velmora** | occupied on the App Store |
+| **LifeMetric**, **BodySignals**, **Perenna**, **Selfward** | clear on the App Store, but `.com` and `.app` both taken |
 
-### The HealthLog family
+---
 
-Added after `HealthLogAIInsights` was proposed. **The short form is free, and
-it is the best name in this whole document.**
+## Survived screening
 
-| Domain | Status |
+Clear on the App Store, `.app` free, nothing obvious on the web. **None has
+been through Play, Connect IQ, or a proper trademark search.**
+
+### Descriptive — findable, but weak to defend
+
+| Name | Notes |
 | --- | --- |
-| `healthlog.io` | **available** |
-| `healthlog.health` | **available** |
-| `healthlog.app` | taken |
-| `healthlog.com` | taken |
-| `healthlogai.com` | **available** |
-| `healthlogai.app` | **available** |
-| `healthloginsights.com` | **available** |
-| `healthlogaiinsights.com` | **available** |
+| **MetricPath** | nothing found anywhere. Reads slightly corporate/analytics. |
+| **WellSignal** | nothing found. "Well" leans wellness-industry. |
+| **BioTimeline** | nothing found. "Bio-" leans laboratory. |
+| **VitalHistory** | nothing found. "History" is honest for an append-only record; also the most clinical-sounding here. |
+| **LifeSignals** | clear on the App Store, but **check this one first** — I believe there is a medical-device biosensor company by this name. |
+| **Vitalign** | clear on the App Store, but there is a live USPTO mark (VDF FutureCeuticals) for a supplement ingredient. Adjacent enough to matter. |
 
-### Others in the same spirit
+### Coined — ownable, and you pay for it in marketing
 
-| Domain | Status |
+| Name | Notes |
 | --- | --- |
-| `plateline.app` | **available** |
-| `precisionlog.app` | **available** |
-| `tallyhealth.app` | **available** |
-| `caliper.*`, `tally.health`, `datum.health`, `vernier.health`, `truelog.app`, `clearplate.app` | taken |
+| **Nomari** | zero hits anywhere. `.app` free. |
+| **Kestara** | zero hits. `.app` free. |
+| **Tavella** | zero hits. `.app` free. Reads Italian, pronounces itself. |
+| **Ardenna** | zero App Store hits, `.app` taken. |
+
+`.com` is taken for every single one of these. That is simply the state of
+four-to-six-letter `.com` in 2026 and should not, by itself, kill a name.
 
 ---
 
-## Two things in those names that will cost you
+## What I would actually do
 
-Said once, plainly, because you asked for suggestions and this is the useful
-part of the answer.
+**Pick a coined name.** The screening above is the argument: every descriptive
+combination worth having is either taken or one search away from being taken,
+and you have now been bitten by that twice. A coined name is the only kind you
+can own, and your own framing already solves its weakness —
 
-### "AI" in the name dates the product
+```
+Tavella
+Track nutrition, training, recovery and health
+```
 
-It is 2026 and every health app has a model in it. Putting **AI** in the name
-now reads the way **e-** read in 2001 and **Cyber** read in 1998: it stamps the
-year it was built onto the thing forever. It also names the *mechanism* rather
-than what the user gets — and the mechanism will change. When the estimator is
-something else in three years, the name is still advertising a component.
+The subtitle does the explaining, is free to change, and can be keyword-tuned
+for the stores. The name only has to be sayable, spellable, and yours.
 
-Look at what the products in this exact category are called: **Whoop, Oura,
-Levels, Zoe, Cronometer, MacroFactor, Lose It.** All of them use AI heavily.
-None of them say so in the name.
+Of the four, **Tavella** and **Kestara** are the easiest to say and spell in
+both English and Hebrew, and neither sounds like a clinic or a device.
+**Nomari** is the cleanest legally — literally nothing found — and the flattest.
 
-### Stacking category words makes a name less distinctive, not more
+If you would rather stay descriptive, **MetricPath** is the strongest survivor,
+and you should expect to share the name eventually.
 
-*Precision*, *Health*, *Timeline* and *Insights* are four category words. Every
-competitor may use all four — which is exactly why adding them cannot make you
-easier to find. `AIPrecisionHealthInsights` is 25 characters. Practical limits:
+### Before you commit, whichever you pick
 
-- iOS and Play cap the name at 30 characters and truncate to roughly 12–15
-  under the icon in search results.
-- A Garmin Connect IQ listing shows on a **watch face**.
-- Nobody can say it aloud in one breath or type it from memory.
-
-Descriptive names are also the category trademark law protects least. You could
-not stop a competitor using `PrecisionHealthInsights`, and someone with a prior
-mark could have your Store listing pulled.
-
----
-
----
-
-## HealthLog
-
-`HealthLogAIInsights` contains a good name and three words weighing it down.
-Take them off and you get **HealthLog** — nine characters, says precisely what
-the app is for, and someone can hear it once and type it correctly. That is the
-whole test a name has to pass.
-
-It also drops the two weakest words rather than the strongest: *AI* names a
-component that will be replaced, and *Insights* is a generic SaaS suffix that
-adds five characters and no meaning. What is left — **log your health** — is
-the actual promise, and it is the one thing in the phrase a competitor cannot
-make more true of themselves than of you.
-
-`healthlog.io` is free. So is `healthlog.health`, though that one reads
-clinical, which this app deliberately is not.
-
-The honest cost is the same as Route 1 below: it is descriptive, so it is weak
-as a trademark and the search results are crowded. It is not *unusable* the way
-`Timeline` is — "health log" is a phrase, not a platform feature named by
-Facebook — but you would not be able to stop anyone else using it.
-
----
-
-## Three routes, and what each one costs
-
-### 1. Keep it plain — **Precision Health**, on `precisionhealth.io`
-
-Available, matches the repository, zero rename friction, and says exactly what
-it is. The honest cost: unregisterable, several existing companies use the
-phrase, and search is crowded — someone who hears it at the gym will not find
-you.
-
-**Right if** this stays a personal or small paid product and you would rather
-spend the effort on the app.
-
-### 2. Fuse the same words into one — the **MacroFactor** pattern
-
-Take your ideas and make them one coined word instead of four stacked ones.
-`precisionlog.app` and `plateline.app` are both free. *Plateline* in particular
-carries this app's actual idea: the plate, and the continuous line of them.
-
-**Right if** you want something defensible without inventing a word nobody can
-place. This is the pattern most of the category uses.
-
-### 3. Short and arbitrary — the **Whoop / Oura** pattern
-
-Strongest trademark, and the most expensive: nobody guesses what it does, so
-every impression has to teach it. Only worth it with a marketing budget.
-
----
-
-## My recommendation
-
-**HealthLog, on `healthlog.io`.**
-
-It is the shortest, clearest thing that has come out of this — it survives
-truncation on a phone and on a watch face, it can be said aloud, and it is
-drawn from your own vocabulary rather than mine. `precisionhealth.io` is the
-runner-up and is also free, but "precision health" is a research field before
-it is a product, and it sounds like a clinic.
-
-Either way, treat the name as a decision you can revisit once there are users
-rather than one to spend another week on. `src/brand.ts` makes changing it one
-edit.
-
-**Do not ship as `Timeline`.** That one is genuinely unusable — a common noun
-in software, unsearchable, and already claimed as a term by much larger
-products.
-
-Whatever you pick:
-
-1. **Search the trademark registers first** — Israeli
+1. **Google Play** and **Garmin Connect IQ** — I could not check either.
+2. **A real trademark search** in class 9 (software) and class 44 (health
+   services), at the Israeli
    [Patent Office](https://www.gov.il/en/departments/israel_patent_office),
-   EUIPO, USPTO — in class 9 (software) and class 44 (health services). A free
-   domain is not a free name.
-2. **Get an address on it** (`hello@`, `privacy@`) before the privacy policy is
-   published. It has to name a contact, and a gmail address there undercuts
-   everything the document says about taking custody of health data.
+   EUIPO and USPTO. This is the check that a free domain most misleads you
+   about, and it is worth paying for.
+3. **Say it out loud to five people and ask them to spell it.** Cheapest test
+   there is.
+4. **Then** buy the domain, and get `privacy@` on it before the privacy policy
+   is published — the policy has to name a contact.
 
 ---
 

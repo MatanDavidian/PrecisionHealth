@@ -11,7 +11,7 @@ const report: WeekReport = {
   days: [
     { day: '2026-08-23', weekday: 'Sunday', meals: [{ slot: 'LUNCH', foods: ['Rice'], kcal: 600, proteinG: 20, carbsG: 90, fatG: 10 }], eatenKcal: 600, burnedKcal: 2400 },
   ],
-  totals: { eatenKcal: 17_890, burnedKcal: 16_980, netKcal: 910, daysWithBurn: 7, proteinG: 618 },
+  totals: { comparedDays: 7, eatenAllDaysKcal: 17_890, daysWithFood: 7, eatenKcal: 17_890, burnedKcal: 16_980, netKcal: 910, daysWithBurn: 7, proteinG: 618 },
   goal: { objective: 'LOSE_WEIGHT', aimKcal: -3500, gapKcal: 4410, verdict: 'OFF_TARGET' },
 }
 

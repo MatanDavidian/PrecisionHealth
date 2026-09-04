@@ -143,7 +143,16 @@ Rules:
   An empty answer is a valid answer; inventing a pattern from three meals is
   not.
 - Do not address the person by name or infer anything about who they are.
-  You have seven days of food and arithmetic, and nothing else.`
+  You have seven days of food and arithmetic, and nothing else.
+
+How to read the totals, because two spans are in play:
+- "comparedDays" is how many days carry BOTH an eaten and a burned figure.
+- "eatenKcal", "burnedKcal" and "netKcal" cover ONLY those days. Divide by
+  "comparedDays", never by seven.
+- "eatenAllDaysKcal" is everything eaten in the week, over "daysWithFood".
+- A day with food but no burn figure is in "eatenAllDaysKcal" and not in the
+  balance. It is not a day of fasting. Never describe a missing burn figure as
+  though the person did not move, or a missing meal as though they did not eat.`
 
 /** The longest free text worth sending. Past this it is a diary, not a meal. */
 export const MAX_DESCRIPTION_CHARS = 500

@@ -44,11 +44,11 @@ things that broke recently, because that is when they were written.
 | Past-day logging, describe-a-meal | good |
 | Layout stability | good |
 | The Log screen — photo, write, again | **now covered** |
-| **Confirming an estimate** | none |
-| **Deleting a meal, and undo** | none |
-| **Conflict resolution (D6)** | none |
-| **Week insights, end to end** | none |
-| **Settings — key, model, goal, weight** | none |
+| Confirming an estimate | **now covered** |
+| Deleting a meal, and undo | **now covered** |
+| Conflict resolution (D6) | **now covered** |
+| Week insights, end to end | **now covered** |
+| Settings — goal, language | **now covered** (key and model still open) |
 | **Sign in and sign out** | none |
 | **Trial exhaustion and quota states** | none |
 | **Error and offline states** | none |
@@ -101,12 +101,11 @@ Worth deciding whether Phase 1 fixes it or documents it.
 - ~~**S2.1** — Log screen, photo path~~ ✅ done
 - ~~**S2.2** — Log screen, write path and the follow-up exchange~~ ✅ done
 - ~~**S2.3** — Log screen, again path~~ ✅ done
-- **S2.4** — Confirm an estimate; the badge changes and the meal stops asking.
-- **S2.5** — Delete a meal and undo it.
-- **S2.6** — A conflict between two sources is surfaced and can be resolved.
-- **S2.7** — Ask for week insights end to end, against the fake.
-- **S2.8** — Settings: set a goal, set weight, switch language, and the app
-  agrees afterwards.
+- ~~**S2.4** — Confirm an estimate~~ ✅ done
+- ~~**S2.5** — Delete a meal and undo it~~ ✅ done
+- ~~**S2.6** — A conflict surfaced and resolved~~ ✅ done
+- ~~**S2.7** — Week insights end to end~~ ✅ done
+- **S2.8** — Settings: goal and language ✅ done; API key and model picker still open.
 - **S2.9** — Sign in, sign out, and what an unauthenticated visitor sees.
 - **S2.10** — Trial exhausted, and the offline/unavailable states.
 

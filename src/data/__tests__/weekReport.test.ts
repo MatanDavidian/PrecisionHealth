@@ -173,3 +173,33 @@ describe('total expenditure is not the tracker’s activity figure', () => {
     expect(withTotal.totals.daysWithBurn).toBe(1)
   })
 })
+describe('the totals name the days they cover', () => {
+  it('separates what was compared from what was eaten', async () => {
+    /*
+      The model receives `totals` and `days` together. `days` lists all seven;
+      the balance covers only those carrying both figures. Given both and told
+      neither, a reader divides by seven — which is exactly what happened, and
+      it reported a daily average roughly half the truth in confident prose.
+
+      So the span travels with the numbers.
+    */
+    const { repos } = await seedWeek()
+    const report = await readWeekReport(USER, MIDWEEK, 'LOSE_WEIGHT', undefined, repos)
+
+    expect(report.totals.comparedDays).toBe(report.totals.daysWithBurn)
+    expect(report.totals.netKcal).toBe(report.totals.eatenKcal - report.totals.burnedKcal)
+
+    // Everything eaten is at least what was eaten on the compared days, and
+    // is reported under a name that says which is which.
+    expect(report.totals.eatenAllDaysKcal).toBeGreaterThanOrEqual(report.totals.eatenKcal)
+    expect(report.totals.daysWithFood).toBeGreaterThanOrEqual(report.totals.comparedDays)
+  })
+
+  it('reports a partial week without pretending it is whole', async () => {
+    const { repos } = await seedWeek()
+    // A week where only some days were compared: ask about one with gaps.
+    const report = await readWeekReport(USER, '2026-08-19', 'LOSE_WEIGHT', undefined, repos)
+    expect(report.totals.comparedDays).toBeLessThanOrEqual(report.days.length)
+    expect(report.totals.netKcal).toBe(report.totals.eatenKcal - report.totals.burnedKcal)
+  })
+})

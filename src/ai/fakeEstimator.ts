@@ -147,7 +147,9 @@ export class FakeEstimator implements FoodEstimator {
         ? `Only ${daysWithBurn} of seven days carry a burn figure, so this is a partial picture.`
         : `You ate ${eatenKcal.toLocaleString()} kcal against ${burnedKcal.toLocaleString()} burned — a net of ${netKcal > 0 ? '+' : ''}${netKcal.toLocaleString()}.`,
       observations: [
-        `Eaten averaged ${Math.round(eatenKcal / Math.max(1, report.days.length)).toLocaleString()} kcal a day.`,
+        // Over the days actually compared, not over seven — dividing by the length
+        // of the week is precisely the misreading the report now names.
+        `Eaten averaged ${Math.round(eatenKcal / Math.max(1, report.totals.comparedDays)).toLocaleString()} kcal a day across the ${report.totals.comparedDays} days compared.`,
         `Protein came to ${Math.round(report.totals.proteinG)} g across the week.`,
         report.goal.aimKcal === null
           ? 'No calorie target on this goal, so the balance is context rather than a score.'

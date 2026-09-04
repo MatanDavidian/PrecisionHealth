@@ -136,9 +136,24 @@ export async function readWeekReport(
     to: days.at(-1)!,
     days: reported,
     totals: {
+      /*
+        Three figures over ONE span, and the span is named.
+
+        `eatenKcal` and `burnedKcal` cover only the days carrying both — which
+        is what makes `netKcal` a comparison rather than a bias. But `days`
+        below lists all seven, and a reader given both and told neither
+        naturally divides the total by seven. The model did exactly that and
+        reported a daily average roughly half the truth, in prose, confidently.
+
+        So the span travels with the numbers, and everything eaten is carried
+        separately under a name that says so.
+      */
+      comparedDays: week.daysWithBurn,
       eatenKcal: Math.round(week.balance.eatenKcal),
       burnedKcal: Math.round(week.balance.burnedKcal),
       netKcal: Math.round(week.balance.netKcal),
+      eatenAllDaysKcal: Math.round(week.eatenAllDays),
+      daysWithFood: week.daysWithFood,
       daysWithBurn: week.daysWithBurn,
       proteinG: reported.reduce(
         (sum, d) => sum + d.meals.reduce((s, m) => s + m.proteinG, 0),

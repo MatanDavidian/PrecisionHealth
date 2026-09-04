@@ -38,10 +38,20 @@ export interface WeekReport {
   to: CalendarDate
   days: ReportedDay[]
   totals: {
+    /** How many days carry BOTH an eaten and a burned figure. */
+    comparedDays: number
+    /** Eaten across `comparedDays` only — the half of a comparison. */
     eatenKcal: number
+    /** Burned across `comparedDays`. */
     burnedKcal: number
+    /** `eatenKcal` minus `burnedKcal`, over the same days. */
     netKcal: number
+    /** Everything eaten in the week, including days with no burn figure. */
+    eatenAllDaysKcal: number
+    /** How many days have any food logged. */
+    daysWithFood: number
     daysWithBurn: number
+    /** Protein across every day, not only the compared ones. */
     proteinG: number
   }
   goal: {

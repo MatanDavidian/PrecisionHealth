@@ -59,3 +59,31 @@ export const dayKey = (offset = 0): string => {
   at.setDate(at.getDate() + offset)
   return `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}`
 }
+
+/**
+ * A number read from the page once it has stopped changing.
+ *
+ * Changing the day refetches without unmounting, so the totals card keeps
+ * showing the PREVIOUS day for a moment after the heading has already switched.
+ * Reading once caught that stale value and looked exactly like the app writing
+ * to the wrong day — the assertion failed with a number that was real, just a
+ * day old.
+ *
+ * Two equal reads in a row is a weak guarantee, but it is the honest one
+ * available without the app exposing a "loading" flag for a day change.
+ */
+export async function settledNumber(
+  locator: import('@playwright/test').Locator,
+  timeoutMs = 10_000,
+): Promise<number> {
+  const read = async () => Number(((await locator.textContent()) ?? '').replace(/[^\d.-]/g, ''))
+  const deadline = Date.now() + timeoutMs
+  let previous = await read()
+  while (Date.now() < deadline) {
+    await locator.page().waitForTimeout(150)
+    const current = await read()
+    if (current === previous && Number.isFinite(current)) return current
+    previous = current
+  }
+  return previous
+}

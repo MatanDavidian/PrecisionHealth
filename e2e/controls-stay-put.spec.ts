@@ -67,6 +67,6 @@ test('neither moves in Hebrew, where the subtitles wrap differently', async ({ p
   const switchAt = () => documentBox(page, 'header [aria-pressed]')
   const before = await switchAt()
   await page.locator('header [aria-pressed]').nth(1).click()
-  await expect(page.getByRole('heading', { name: 'השבוע' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'השבוע', exact: true })).toBeVisible()
   expect(await switchAt(), 'day/week switch moved in Hebrew').toEqual(before)
 })

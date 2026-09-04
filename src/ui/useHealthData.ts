@@ -299,15 +299,19 @@ export function useActions() {
   )
 
   /**
-   * Logs a meal you have eaten before.
+   * Logs a meal you have eaten before, onto now or onto a chosen moment.
    *
    * No photo, no model, no estimate to review — the numbers were already
    * settled the first time. Returns the meal so the caller can offer Undo.
+   *
+   * `at` defaults to now because the Log screen means now. The add-meal sheet
+   * passes the day on screen instead, which is the whole point of repeating
+   * from there: the meal you forgot was not eaten today.
    */
   const logRepeat = useCallback(
-    async (usual: UsualMeal, slot: MealSlot): Promise<Meal | undefined> => {
+    async (usual: UsualMeal, slot: MealSlot, at: Date = new Date()): Promise<Meal | undefined> => {
       const meal = repeatMeal(usual.template, currentUserId(), {
-        at: new Date(),
+        at,
         zone: deviceZone(),
         slot,
         newId,

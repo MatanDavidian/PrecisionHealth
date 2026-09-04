@@ -83,6 +83,19 @@ export interface Meal {
    */
   retracted?: boolean
   provenance: Provenance
+  /**
+   * The meal this one was copied from, when it was logged with Repeat.
+   *
+   * Lineage, not a feature. It records how this record came to exist, in the
+   * same spirit as `supersedes` and `inferenceId` elsewhere in the domain — an
+   * answer to "where did this come from?" a month later.
+   *
+   * It is deliberately NOT what answers "what do you eat often". `mealSignature`
+   * does that, by content, which also catches the same dinner typed twice on
+   * different evenings. Building frequency on this field instead would count
+   * only the meals someone happened to repeat through this button.
+   */
+  repeatedFromMealId?: MealId
 }
 
 export type AttachmentKind = 'FOOD_PHOTO' | 'BODY_PHOTO' | 'LAB_DOCUMENT'

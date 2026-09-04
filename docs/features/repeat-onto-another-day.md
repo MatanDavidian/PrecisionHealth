@@ -3,7 +3,7 @@
 **One line:** the add-meal sheet gains a third mode, beside Manual and Describe,
 that repeats a meal you have logged before onto whichever day is on screen.
 
-Status: **specified, not built.** Epic E1 in [`../PHASE-1.md`](../PHASE-1.md).
+Status: **built** (Sep 2026). Epic E1 in [`../PHASE-1.md`](../PHASE-1.md).
 
 ---
 
@@ -36,7 +36,14 @@ A **Repeat** pill joins Manual and Describe. Choosing it lists the usuals — th
 same ones the Log screen offers — and picking one writes that meal onto the
 selected day.
 
-The meal is a **new record**, not a reference to the old one. It carries the
+The meal is a **new record**, not a reference to the old one. It carries
+`repeatedFromMealId` — lineage, in the same spirit as `supersedes` and
+`inferenceId`: an answer to "where did this come from?" a month later.
+
+That field is deliberately **not** what answers "what do you eat often".
+`mealSignature` does that, by content, which also catches the same dinner typed
+twice on separate evenings. Building frequency on the copy-link would count only
+the meals someone happened to repeat through this button. It carries the
 same foods and numbers, and `userEntered` provenance at the new day's instant.
 The original is untouched. Two dinners a week apart are two meals that happen to
 be identical, and modelling one as a pointer to the other would make editing one

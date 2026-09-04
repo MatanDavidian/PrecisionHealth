@@ -205,6 +205,9 @@ export function repeatMeal(template: Meal, userId: UserId, options: RepeatOption
     items: liveItems(template.items).map((item) => copyItem(item, mealId, at, options.newId)),
     notes: template.notes,
     provenance: userEntered(at),
+    // A copy, not a reference. Editing this meal must never reach back into the
+    // one it came from; the link only records where it came from.
+    repeatedFromMealId: template.id,
   }
 }
 

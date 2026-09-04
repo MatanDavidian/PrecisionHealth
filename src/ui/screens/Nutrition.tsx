@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card } from '../components/Card'
 import { MealForm } from '../components/MealForm'
 import { DescribeMeal } from '../components/DescribeMeal'
+import { RepeatMeal } from '../components/RepeatMeal'
 import { LeftoverPanel } from '../components/LeftoverPanel'
 import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { MealEditor } from '../components/MealEditor'
@@ -42,6 +43,7 @@ export function Nutrition() {
   const {
     addMeal,
     addEstimatedMeal,
+    logRepeat,
     applyLeftoverToMeal,
     confirmEstimate,
     resolveMealVersion,
@@ -69,7 +71,7 @@ export function Nutrition() {
    * here — Log always means now, and the meal you want to describe is usually
    * the one you forgot.
    */
-  const [addMode, setAddMode] = useState<'manual' | 'describe'>('manual')
+  const [addMode, setAddMode] = useState<'manual' | 'describe' | 'repeat'>('manual')
 
   /*
     Both belong to the day you were looking at. Carried onto another day, the
@@ -185,7 +187,7 @@ export function Nutrition() {
                   {t('nutrition.addMealTo', { day: dayLabel(day, today, t) })}
                 </p>
                 <div className="flex gap-0.5 rounded-full border border-hairline p-0.5">
-                  {(['manual', 'describe'] as const).map((option) => (
+                  {(['manual', 'describe', 'repeat'] as const).map((option) => (
                     <button
                       key={option}
                       type="button"
@@ -193,13 +195,29 @@ export function Nutrition() {
                       aria-pressed={addMode === option}
                       className={`px-3.5 py-1.5 ${PILL} ${addMode === option ? PILL_ON : PILL_OFF}`}
                     >
-                      {t(option === 'manual' ? 'nutrition.modeManual' : 'nutrition.modeDescribe')}
+                      {t(
+                        option === 'manual'
+                          ? 'nutrition.modeManual'
+                          : option === 'describe'
+                            ? 'nutrition.modeDescribe'
+                            : 'repeat.mode',
+                      )}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {addMode === 'manual' ? (
+              {addMode === 'repeat' ? (
+                <RepeatMeal
+                  day={day}
+                  dayName={dayLabel(day, today, t)}
+                  onCancel={() => setManual(false)}
+                  onRepeat={async ({ usual, at, slot }) => {
+                    const meal = await logRepeat(usual, slot, at)
+                    if (meal) setManual(false)
+                  }}
+                />
+              ) : addMode === 'manual' ? (
                 <MealForm
                   day={day}
                   onSubmit={async (meal) => {

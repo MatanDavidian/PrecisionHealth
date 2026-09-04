@@ -287,3 +287,48 @@ describe('searching what you have logged', () => {
     expect(matchesQuery(['Eggs'], '   ')).toBe(true)
   })
 })
+
+
+describe('repeating onto another day', () => {
+  it('records where the copy came from, without pointing at it', () => {
+    const source = meal('2026-08-30', 'LUNCH', ['Rice'])
+    const copy = repeatMeal(source, USER, {
+      at: new Date('2026-09-02T10:30:00.000Z'),
+      zone: ZONE,
+      slot: 'LUNCH',
+      newId,
+    })
+
+    expect(copy.repeatedFromMealId).toBe(source.id)
+    // A copy, not a reference: nothing about the new meal reaches the old one.
+    expect(copy.id).not.toBe(source.id)
+    expect(copy.items[0].id).not.toBe(source.items[0].id)
+    expect(copy.items[0].mealId).toBe(copy.id)
+  })
+
+  it('leaves the original completely untouched', () => {
+    const source = meal('2026-08-30', 'LUNCH', ['Rice'])
+    const before = JSON.parse(JSON.stringify(source))
+    repeatMeal(source, USER, {
+      at: new Date('2026-09-02T10:30:00.000Z'),
+      zone: ZONE,
+      slot: 'DINNER',
+      newId,
+    })
+    expect(source).toEqual(before)
+  })
+
+  it('lands on the moment it was given, not on now', () => {
+    // The whole reason this exists in the add-meal sheet: the meal you forgot
+    // was not eaten today.
+    const copy = repeatMeal(meal('2026-08-30', 'LUNCH', ['Rice']), USER, {
+      at: new Date('2026-09-02T10:30:00.000Z'),
+      zone: ZONE,
+      slot: 'BREAKFAST',
+      newId,
+    })
+    if (copy.time.kind !== 'instant') throw new Error('expected an instant')
+    expect(copy.time.at).toBe('2026-09-02T10:30:00.000Z')
+    expect(copy.slot).toBe('BREAKFAST')
+  })
+})

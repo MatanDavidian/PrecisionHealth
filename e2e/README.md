@@ -22,6 +22,7 @@ this app. Every one of them was invisible to it:
 | Day/Week switch jumped 209px | identical DOM, different layout |
 | Settings tabs stepped 20px | text length, in one language only |
 | The "this number moved" mark had **never** rendered | two CSS utilities, resolved by stylesheet order |
+| The model list never loaded for anyone with a saved key | a closure over a binding an early return skipped |
 
 The specs here cover the last three, plus Refill, past-day logging, leftovers,
 the week numbers, the weight goal, and — since there is now an account to sign
@@ -67,6 +68,11 @@ code and would have covered less: `readTrialStatus` reads its count out of a
 PostgREST `content-range` header, and a fake that skips the request can never
 catch that header being read wrong. Here the app really builds the URL, sets the
 headers, parses the reply and reacts — only the far end is ours.
+
+`openai.ts` does the same for `api.openai.com`, which is the only host the app
+talks to directly from the browser. Its fixture list is picked to land in every
+branch: three models that can read a photo, three that cannot for three
+different reasons, and three that are not chat models at all.
 
 `signIn(page, options)` fills the real form rather than seeding a session, for
 the same reason `switchToHebrew` clicks the real control. `options` chooses what

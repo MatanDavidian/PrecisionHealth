@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getRepositories } from '@/data'
 import { listChatModels, testApiKey, type ModelChoice } from '@/ai/openaiEstimator'
 import { DEFAULT_SETTINGS } from '@/config'
@@ -70,25 +70,21 @@ export function Settings() {
     })
   }, [])
 
-  useEffect(() => {
-    void getRepositories().settings.get().then((loaded) => {
-      setSettings(loaded)
-      setKeyInput(loaded.apiKey ?? '')
-      if (loaded.apiKey) void loadModels(loaded.apiKey)
-    })
-  }, [])
-
-  if (!settings) return <p className="text-sm text-ink-muted">{t('settings.loading')}</p>
-
-  const update = async (patch: Partial<AppSettings>) => {
-    await getRepositories().settings.save(patch)
-    setSettings((current) => ({ ...current!, ...patch }))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1800)
-  }
-
-  /** Pull the account's own model list, so the choice is real rather than guessed. */
-  const loadModels = async (key: string) => {
+  /**
+   * Pull the account's own model list, so the choice is real rather than guessed.
+   *
+   * Declared HERE, above the early return, and not merely as a tidiness point.
+   * It used to sit below `if (!settings) return`, which meant the effect under
+   * it closed over a binding that render had never reached: the first render
+   * returns early, so `const loadModels` was still in its temporal dead zone
+   * when the effect fired. The throw landed in a floating promise, so nothing
+   * on screen said anything — it just quietly never called OpenAI, and anyone
+   * who had already saved a key was told to "save your key and hit Refresh
+   * list" every time they opened Settings.
+   *
+   * `useCallback` so the effect can name it as a dependency and mean it.
+   */
+  const loadModels = useCallback(async (key: string) => {
     if (!key) return
     setLoadingModels(true)
     setModelsError(undefined)
@@ -103,6 +99,23 @@ export function Settings() {
     } finally {
       setLoadingModels(false)
     }
+  }, [])
+
+  useEffect(() => {
+    void getRepositories().settings.get().then((loaded) => {
+      setSettings(loaded)
+      setKeyInput(loaded.apiKey ?? '')
+      if (loaded.apiKey) void loadModels(loaded.apiKey)
+    })
+  }, [loadModels])
+
+  if (!settings) return <p className="text-sm text-ink-muted">{t('settings.loading')}</p>
+
+  const update = async (patch: Partial<AppSettings>) => {
+    await getRepositories().settings.save(patch)
+    setSettings((current) => ({ ...current!, ...patch }))
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1800)
   }
 
   const runTest = async () => {

@@ -105,7 +105,7 @@ Worth deciding whether Phase 1 fixes it or documents it.
 - ~~**S2.5** — Delete a meal and undo it~~ ✅ done
 - ~~**S2.6** — A conflict surfaced and resolved~~ ✅ done
 - ~~**S2.7** — Week insights end to end~~ ✅ done
-- **S2.8** — Settings: goal and language ✅ done; API key and model picker still open.
+- ~~**S2.8** — Settings: goal, language, API key and model picker~~ ✅ done
 - ~~**S2.9** — Sign in, sign out, and what an unauthenticated visitor sees.~~ ✅ done
 - ~~**S2.10** — Trial exhausted, and the offline/unavailable states.~~ ✅ done
 
@@ -121,9 +121,16 @@ asserts is parsed from a PostgREST header by the real `readTrialStatus`, which a
 `?signedIn=1` flag would have stepped straight over. Remaining fixture gaps are
 the conflict and the unconfirmed estimate.
 
-**S2.8's leftovers** — the API-key and model-picker paths — are the last of E2.
-The model picker is now covered on the trial side; the own-key side still calls
-OpenAI's real `/models` endpoint and needs the same treatment.
+`e2e/openai.ts` does the same for the own-key path, and covering it turned up a
+real bug: `loadModels` sat below `if (!settings) return`, so the mount effect
+closed over a binding that render had never reached. The throw went into a
+floating promise and nothing on screen changed — the model list just never
+loaded, and anyone who had saved a key was told to save it again every time they
+opened Settings. Second time a hooks-after-an-early-return mistake has bitten
+this file.
+
+**E2 is done.** What the fake still cannot express is a conflict and an
+unconfirmed estimate; both have UI, and neither is reachable from a test.
 
 ---
 

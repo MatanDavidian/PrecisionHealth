@@ -43,7 +43,7 @@ things that broke recently, because that is when they were written.
 | Meal editing, Refill, leftovers | good |
 | Past-day logging, describe-a-meal | good |
 | Layout stability | good |
-| **The Log screen — photo, write, again** | **none** |
+| The Log screen — photo, write, again | **now covered** |
 | **Confirming an estimate** | none |
 | **Deleting a meal, and undo** | none |
 | **Conflict resolution (D6)** | none |
@@ -53,10 +53,14 @@ things that broke recently, because that is when they were written.
 | **Trial exhaustion and quota states** | none |
 | **Error and offline states** | none |
 
-**The Log screen is the largest hole and the most-used screen in the app.** It
-is also where the bug you reported first — a photo taken and nothing happening
-until you touched the background — actually lived. Nothing today would catch it
-coming back.
+**The Log screen was the largest hole and the most-used screen in the app.** It
+is also where the bug reported first — a photo taken and nothing happening until
+you touched the background — actually lived.
+
+**Covered as of Sep 2026** (`e2e/log-screen.spec.ts`): the waiting state
+appearing the instant a photo is taken, which is the regression guard for that
+exact bug; photo to estimate to save; the follow-up question producing a
+revision; words to estimate; and Again logging a usual.
 
 That is the shape of the risk: the tests protect what has already gone wrong
 once, and nothing else.
@@ -94,11 +98,9 @@ Worth deciding whether Phase 1 fixes it or documents it.
 
 *Nothing new ships until the existing thing is defensible.*
 
-- **S2.1** — Log screen, photo path: take a photo, the analysing state paints
-  **immediately**, an estimate arrives, save it. Explicitly covers the original
-  bug.
-- **S2.2** — Log screen, write path, and the follow-up question exchange.
-- **S2.3** — Log screen, again path.
+- ~~**S2.1** — Log screen, photo path~~ ✅ done
+- ~~**S2.2** — Log screen, write path and the follow-up exchange~~ ✅ done
+- ~~**S2.3** — Log screen, again path~~ ✅ done
 - **S2.4** — Confirm an estimate; the badge changes and the meal stops asking.
 - **S2.5** — Delete a meal and undo it.
 - **S2.6** — A conflict between two sources is surfaced and can be resolved.

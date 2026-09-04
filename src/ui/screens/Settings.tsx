@@ -13,7 +13,7 @@ import type { StringKey } from '../i18n/strings'
 import { YouSettings } from '../components/YouSettings'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay } from '../useSelectedDay'
-import { convert, goalFor, isObjective } from '@/domain'
+import { convert, directionToward, goalFor, isObjective } from '@/domain'
 
 type SettingsTab = 'you' | 'ai' | 'account'
 
@@ -193,7 +193,20 @@ export function Settings() {
                   void recordObservation({ code: 'WEIGHT', value: kg, unit: 'kg', day: today })
                 }
                 onTarget={(kg) =>
-                  void setGoal({ metric: 'WEIGHT', target: kg, unit: 'kg', direction: 'REACH' })
+                  void setGoal({
+                    metric: 'WEIGHT',
+                    target: kg,
+                    unit: 'kg',
+                    /*
+                      Which way the goal points, worked out from where you are.
+                      It was hardcoded REACH, which asks you to land on a number
+                      exactly — and `directionToward` had been written for this
+                      and called only by its own test. Aiming below your weight
+                      is AT_MOST and above it is AT_LEAST, which is both what
+                      people mean and something that can actually be met.
+                    */
+                    direction: directionToward(weightKg ?? kg, kg),
+                  })
                 }
               />
               <Card label={t('settings.language')}>

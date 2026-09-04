@@ -40,6 +40,14 @@ export function YouSettings({
   const t = useT()
   const wantsTarget = objective ? OBJECTIVE_SHAPE[objective].wantsTarget : false
 
+  /*
+    The note also carries whether a target EXISTS.
+
+    The stepper falls back to the current weight rounded, so an unset target
+    showed as a confident "73.0 kg" that was never saved — the screen claiming
+    a goal nobody had chosen. The number is still a sensible place to start
+    from; it just has to stop pretending.
+  */
   const targetNote = () => {
     if (weightKg === undefined || targetKg === undefined) return undefined
     const gap = Math.round(Math.abs(weightKg - targetKg) * 10) / 10
@@ -89,24 +97,24 @@ export function YouSettings({
             decimals={1}
             note={
               weightRecordedOn
-                  ? t('settings.lastRead', { date: weightRecordedOn })
-                  : t('settings.notRecorded')
-              }
+                ? t('settings.lastRead', { date: weightRecordedOn })
+                : t('settings.notRecorded')
+            }
             onChange={onWeight}
           />
 
           {/* Only programmes that are about a number on the scale ask for one. */}
           {wantsTarget && (
             <Stepper
-                label={t('settings.target')}
-                value={targetKg ?? Math.round(weightKg ?? 75)}
-                unit="kg"
-                step={0.5}
-                min={30}
-                max={200}
-                decimals={1}
-                note={targetNote()}
-            onChange={onTarget}
+              label={t('settings.target')}
+              value={targetKg ?? Math.round(weightKg ?? 75)}
+              unit="kg"
+              step={0.5}
+              min={30}
+              max={200}
+              decimals={1}
+              note={targetNote() ?? t('settings.targetNotSet')}
+              onChange={onTarget}
             />
           )}
         </div>

@@ -74,5 +74,15 @@ export const evaluateGoal = (goal: Goal, actual: number): GoalProgress => ({
       ? actual >= goal.target.value
       : goal.direction === 'AT_MOST'
         ? actual <= goal.target.value
-        : Math.abs(actual - goal.target.value) < 0.001,
+        : /*
+             REACH means "land on this number", and how close is close enough
+             depends on the number's size — which an absolute epsilon cannot
+             know. Values are stored canonically (D8), so 73 kg is 73000 g and
+             a fixed 0.001 asked for a thousandth of a GRAM: a weight goal that
+             could never be met, however precisely someone hit it.
+
+             A tenth of a percent scales with the quantity: 73 g on a 73 kg
+             target, ten steps on ten thousand.
+           */
+          Math.abs(actual - goal.target.value) <= Math.max(0.001, Math.abs(goal.target.value) * 0.001),
 })

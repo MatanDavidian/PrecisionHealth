@@ -261,6 +261,7 @@ const en = {
   'settings.weight': 'Weight',
   'settings.current': 'Current',
   'settings.target': 'Target',
+  'settings.targetNotSet': 'No target set yet — nudge this to set one.',
   'settings.lastRead': 'Last recorded {date}.',
   'settings.notRecorded': 'Not recorded yet.',
 
@@ -895,6 +896,7 @@ const he: Dictionary = {
   'settings.weight': 'משקל',
   'settings.current': 'נוכחי',
   'settings.target': 'יעד',
+  'settings.targetNotSet': 'עוד לא נקבע יעד — הזיזו כדי לקבוע.',
   'settings.lastRead': 'נרשם לאחרונה ב{date}.',
   'settings.notRecorded': 'עוד לא נרשם.',
 

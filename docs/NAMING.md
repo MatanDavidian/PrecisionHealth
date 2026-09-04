@@ -31,97 +31,162 @@ down on someone else's word.
 
 ## What I actually checked
 
-Availability, by RDAP — the registries' own API, so these are real answers and
-not a guess. Checked on 2026-09-04; **re-check before buying**, availability
-moves.
+Availability by RDAP — the registries' own API, so these are real answers.
+Checked 2026-09-04; **re-check before buying.**
+
+### The ones you named
 
 | Domain | Status |
 | --- | --- |
-| `mesila.app` | **available** |
-| `mesila.io` | **available** |
-| `mesila.health` | **available** |
-| `mesila.co` | **available** |
-| `mesila.com` | taken |
-| `kavim.app` | **available** |
-| `kavim.io` | **available** |
-| `roshem.app` | **available** |
-| `yoman.health` | **available** |
-| `truthly.health` | **available** |
-| `throughline.*`, `baseline.*`, `bodyledger.com`, `honestplate.com`, `plainly.health` | taken |
+| `precisionhealth.com` | taken |
+| `precisionhealth.app` | taken |
+| `precisionhealth.io` | **available** |
+| `aiprecisionhealth.com` | taken |
+| `precisionhealthinsights.com` | **available** |
+| `aitimelineforhealth.com` | **available** |
+| `healthtimeline.app` | **available** |
 
-`.co.il` could not be checked from here — the Israeli registry does not answer
-standard whois. Check at [isoc.org.il](https://isoc.org.il) directly if an
-Israel-first launch matters.
+### The HealthLog family
 
-**Be honest about the order this happened in:** I searched for *available*
-names first and then asked which of them meant something useful. That is the
-right way round for a domain and the wrong way round for a brand, so treat the
-list as a starting point rather than a recommendation with conviction behind it.
+Added after `HealthLogAIInsights` was proposed. **The short form is free, and
+it is the best name in this whole document.**
+
+| Domain | Status |
+| --- | --- |
+| `healthlog.io` | **available** |
+| `healthlog.health` | **available** |
+| `healthlog.app` | taken |
+| `healthlog.com` | taken |
+| `healthlogai.com` | **available** |
+| `healthlogai.app` | **available** |
+| `healthloginsights.com` | **available** |
+| `healthlogaiinsights.com` | **available** |
+
+### Others in the same spirit
+
+| Domain | Status |
+| --- | --- |
+| `plateline.app` | **available** |
+| `precisionlog.app` | **available** |
+| `tallyhealth.app` | **available** |
+| `caliper.*`, `tally.health`, `datum.health`, `vernier.health`, `truelog.app`, `clearplate.app` | taken |
 
 ---
 
-## מסילה — what it means
+## Two things in those names that will cost you
 
-**mesila** (mə-see-LAH), from the root ס־ל־ל, "to pave".
+Said once, plainly, because you asked for suggestions and this is the useful
+part of the answer.
 
-- Modern Hebrew: **a railway track**. מסילת ברזל, "track of iron", is the
-  railway; מסילה alone is the track itself.
-- Older and biblical: **a made way** — a road built up and cleared, as opposed
-  to a path worn by walking. Isaiah's "make straight in the desert a highway"
-  is a מסילה.
-- Best-known literary use: **מסילת ישרים**, *Path of the Upright*, Luzzatto's
-  1740 ethics book about improving yourself in deliberate, ordered stages.
+### "AI" in the name dates the product
 
-### Why it fits this app
+It is 2026 and every health app has a model in it. Putting **AI** in the name
+now reads the way **e-** read in 2001 and **Cyber** read in 1998: it stamps the
+year it was built onto the thing forever. It also names the *mechanism* rather
+than what the user gets — and the mechanism will change. When the estimator is
+something else in three years, the name is still advertising a component.
 
-The architecture's central commitment is that **the record is continuous and
-nothing is overwritten** — append-only, versions kept, conflicts surfaced
-rather than resolved away. A track is exactly that: laid down once, continuous,
-and the thing you stay on. "Am I on track?" is also, literally, the question
-the week view answers.
+Look at what the products in this exact category are called: **Whoop, Oura,
+Levels, Zoe, Cronometer, MacroFactor, Lose It.** All of them use AI heavily.
+None of them say so in the name.
 
-The Luzzatto sense is closer still — steady progress by small deliberate
-stages, which is what a nutrition and training log is actually for.
+### Stacking category words makes a name less distinctive, not more
 
-### Why it might not
+*Precision*, *Health*, *Timeline* and *Insights* are four category words. Every
+competitor may use all four — which is exactly why adding them cannot make you
+easier to find. `AIPrecisionHealthInsights` is 25 characters. Practical limits:
 
-- **The religious association is real.** מסילת ישרים is well enough known that
-  some Israeli readers will hear a faint yeshiva echo. Most will just hear
-  "railway". Whether that is a problem is a judgement about your audience that
-  I cannot make for you.
-- **Israel Railways** owns the everyday association in Hebrew. "מסילה" may
-  read as infrastructure rather than as personal.
-- **Meaningless in English.** Arbitrary names are the strongest trademarks and
-  the most expensive marketing — nobody guesses what it does, so every
-  impression has to teach it.
-- Three syllables, and English speakers will stress it wrongly at first.
+- iOS and Play cap the name at 30 characters and truncate to roughly 12–15
+  under the icon in search results.
+- A Garmin Connect IQ listing shows on a **watch face**.
+- Nobody can say it aloud in one breath or type it from memory.
+
+Descriptive names are also the category trademark law protects least. You could
+not stop a competitor using `PrecisionHealthInsights`, and someone with a prior
+mark could have your Store listing pulled.
+
+---
+
+---
+
+## HealthLog
+
+`HealthLogAIInsights` contains a good name and three words weighing it down.
+Take them off and you get **HealthLog** — nine characters, says precisely what
+the app is for, and someone can hear it once and type it correctly. That is the
+whole test a name has to pass.
+
+It also drops the two weakest words rather than the strongest: *AI* names a
+component that will be replaced, and *Insights* is a generic SaaS suffix that
+adds five characters and no meaning. What is left — **log your health** — is
+the actual promise, and it is the one thing in the phrase a competitor cannot
+make more true of themselves than of you.
+
+`healthlog.io` is free. So is `healthlog.health`, though that one reads
+clinical, which this app deliberately is not.
+
+The honest cost is the same as Route 1 below: it is descriptive, so it is weak
+as a trademark and the search results are crowded. It is not *unusable* the way
+`Timeline` is — "health log" is a phrase, not a platform feature named by
+Facebook — but you would not be able to stop anyone else using it.
+
+---
+
+## Three routes, and what each one costs
+
+### 1. Keep it plain — **Precision Health**, on `precisionhealth.io`
+
+Available, matches the repository, zero rename friction, and says exactly what
+it is. The honest cost: unregisterable, several existing companies use the
+phrase, and search is crowded — someone who hears it at the gym will not find
+you.
+
+**Right if** this stays a personal or small paid product and you would rather
+spend the effort on the app.
+
+### 2. Fuse the same words into one — the **MacroFactor** pattern
+
+Take your ideas and make them one coined word instead of four stacked ones.
+`precisionlog.app` and `plateline.app` are both free. *Plateline* in particular
+carries this app's actual idea: the plate, and the continuous line of them.
+
+**Right if** you want something defensible without inventing a word nobody can
+place. This is the pattern most of the category uses.
+
+### 3. Short and arbitrary — the **Whoop / Oura** pattern
+
+Strongest trademark, and the most expensive: nobody guesses what it does, so
+every impression has to teach it. Only worth it with a marketing budget.
 
 ---
 
 ## My recommendation
 
-**Decide the market before the name**, because it changes the answer:
+**HealthLog, on `healthlog.io`.**
 
-- **Israel first** → a Hebrew name is a genuine advantage: distinctive at home,
-  arbitrary and defensible abroad. `mesila.app` is the strongest of the set.
-- **EU/US first** → a Hebrew name costs you the one thing a small product
-  cannot buy, which is being understood in three seconds. Then it is worth
-  spending real time on an English name rather than picking from what happened
-  to be free.
+It is the shortest, clearest thing that has come out of this — it survives
+truncation on a phone and on a watch face, it can be said aloud, and it is
+drawn from your own vocabulary rather than mine. `precisionhealth.io` is the
+runner-up and is also free, but "precision health" is a research field before
+it is a product, and it sounds like a clinic.
 
-Either way:
+Either way, treat the name as a decision you can revisit once there are users
+rather than one to spend another week on. `src/brand.ts` makes changing it one
+edit.
 
-1. **Do not ship as Timeline or PrecisionHealth.** Both are descriptive and
-   neither is defensible.
-2. **Search the trademark registers before buying anything** — Israeli
+**Do not ship as `Timeline`.** That one is genuinely unusable — a common noun
+in software, unsearchable, and already claimed as a term by much larger
+products.
+
+Whatever you pick:
+
+1. **Search the trademark registers first** — Israeli
    [Patent Office](https://www.gov.il/en/departments/israel_patent_office),
    EUIPO, USPTO — in class 9 (software) and class 44 (health services). A free
    domain is not a free name.
-3. **Buy the `.com` if you can get it**, or accept `.app` and be consistent.
-   `.health` reads as clinical, which this app deliberately is not.
-4. **Get an address on the domain** (`hello@`, `privacy@`) before the privacy
-   policy is published — it names a contact, and a gmail address there
-   undercuts everything the document says about taking custody of health data.
+2. **Get an address on it** (`hello@`, `privacy@`) before the privacy policy is
+   published. It has to name a contact, and a gmail address there undercuts
+   everything the document says about taking custody of health data.
 
 ---
 

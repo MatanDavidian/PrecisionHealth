@@ -106,13 +106,24 @@ Worth deciding whether Phase 1 fixes it or documents it.
 - ~~**S2.6** — A conflict surfaced and resolved~~ ✅ done
 - ~~**S2.7** — Week insights end to end~~ ✅ done
 - **S2.8** — Settings: goal and language ✅ done; API key and model picker still open.
-- **S2.9** — Sign in, sign out, and what an unauthenticated visitor sees.
-- **S2.10** — Trial exhausted, and the offline/unavailable states.
+- ~~**S2.9** — Sign in, sign out, and what an unauthenticated visitor sees.~~ ✅ done
+- ~~**S2.10** — Trial exhausted, and the offline/unavailable states.~~ ✅ done
 
 **Architecture:** the fake needs to express more situations. It gained a partial
 week for the week card; it will need an exhausted trial, a conflict, an
 unconfirmed estimate. **Every fixture gap is a test that cannot be written**,
 which is exactly how the week-card bug reached a phone.
+
+The trial and the account arrived as `e2e/supabase.ts`, which answers Supabase's
+network calls inside the tab rather than adding a test-only branch to the
+composition root. That choice is the reason S2.10 covers anything: the count it
+asserts is parsed from a PostgREST header by the real `readTrialStatus`, which a
+`?signedIn=1` flag would have stepped straight over. Remaining fixture gaps are
+the conflict and the unconfirmed estimate.
+
+**S2.8's leftovers** — the API-key and model-picker paths — are the last of E2.
+The model picker is now covered on the trial side; the own-key side still calls
+OpenAI's real `/models` endpoint and needs the same treatment.
 
 ---
 

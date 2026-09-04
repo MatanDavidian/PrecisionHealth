@@ -36,10 +36,28 @@ async function storedWeightGoal(page: Page) {
     })
     db.close()
     const weight = rows
-      .map((row) => row.data as { metric: string; direction: string; target: { value: number } })
+      .map(
+        (row) =>
+          row.data as {
+            metric: string
+            direction: string
+            target: { value: number }
+            provenance: { recordedAt: string }
+          },
+      )
       .filter((goal) => goal.metric === 'WEIGHT')
-    // Goals are append-only (D4), so the last one written is the one in force.
-    return weight.at(-1)
+    /*
+      Goals are append-only (D4), so several are live and the newest wins —
+      by WHEN IT WAS RECORDED, which is the rule `currentGoals` applies.
+
+      Not by position: `getAll` returns rows in key order, and the keys are
+      random ids. Taking the last row read whichever goal happened to sort
+      highest, which was right about two thirds of the time and failed the
+      rest — a test that lied at random rather than one that was simply wrong.
+    */
+    return weight.sort((a, b) =>
+      a.provenance.recordedAt < b.provenance.recordedAt ? -1 : 1,
+    ).at(-1)
   })
 }
 

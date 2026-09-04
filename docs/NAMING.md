@@ -116,42 +116,113 @@ four-to-six-letter `.com` in 2026 and should not, by itself, kill a name.
 
 ---
 
-## What I would actually do
+## Decision: VitalTimeline
 
-**Pick a coined name.** The screening above is the argument: every descriptive
-combination worth having is either taken or one search away from being taken,
-and you have now been bitten by that twice. A coined name is the only kind you
-can own, and your own framing already solves its weakness —
+Reached after a second, better screen that ruled out **HealthThread**,
+**VitalThread**, **HealthTrail**, **VitaLoom**, **WellTrace**, **VitalScope**,
+**HealthArc**, **HealthCanvas**, **VitalFrame**, **VitalLedger**, **VitaChron**
+and **HealthTimeline** — all of them occupied, several by products describing
+almost exactly this roadmap. `WellThread` is a Levi Strauss mark.
 
-```
-Tavella
-Track nutrition, training, recovery and health
-```
+### Verified
 
-The subtitle does the explaining, is free to change, and can be keyword-tuned
-for the stores. The name only has to be sayable, spellable, and yours.
+| Check | Result |
+| --- | --- |
+| `vitaltimeline.com` | **free** |
+| `vitaltimeline.app` | **free** |
+| iOS App Store | nothing |
+| Indexed web presence | nothing under this exact name |
 
-Of the four, **Tavella** and **Kestara** are the easiest to say and spell in
-both English and Hebrew, and neither sounds like a clinic or a device.
-**Nomari** is the cleanest legally — literally nothing found — and the flattest.
+`.com` being free for an exact-match, readable, two-word name is genuinely
+unusual and is the strongest single argument for it. Owning the exact-match
+`.com` is the best available defence against confusion in a crowded space.
+`vitatimeline.com` and `welltimeline.com` are also free, as fallbacks.
 
-If you would rather stay descriptive, **MetricPath** is the strongest survivor,
-and you should expect to share the name eventually.
+### The one piece of luck worth recording
 
-### Before you commit, whichever you pick
+**Vital (tryvital.io) — a wearable-health-data API covering Garmin, Oura,
+Whoop and Apple Health — has rebranded to Junction.** That was the single most
+dangerous "Vital" collision imaginable for this product, and it is vacating the
+name.
 
-1. **Google Play** and **Garmin Connect IQ** — I could not check either.
-2. **A real trademark search** in class 9 (software) and class 44 (health
-   services), at the Israeli
-   [Patent Office](https://www.gov.il/en/departments/israel_patent_office),
-   EUIPO and USPTO. This is the check that a free domain most misleads you
-   about, and it is worth paying for.
-3. **Say it out loud to five people and ask them to spell it.** Cheapest test
-   there is.
-4. **Then** buy the domain, and get `privacy@` on it before the privacy policy
-   is published — the policy has to name a contact.
+### The highest remaining risk
+
+**`vital.io` is a hospital care-experience platform, and it ships a feature
+called "Today's Care Timeline."** A company called Vital with a product feature
+called Timeline is the closest thing to a real conflict found, and it is
+exactly what opposing counsel would point at. Different segment — inpatient
+hospital experience, not personal health tracking — so probably survivable, but
+**take this specific one to the trademark search.**
 
 ---
+
+## One correction to the reasoning behind it
+
+The screening concluded that `Health + noun` is saturated and `Vital + noun`
+has more room. **The evidence gathered says otherwise.** The elimination list
+contains eight Vital/Vita collisions — VitalThread, VitalPath, VitalScope,
+VitalFrame, VitalChronicle, VitalLedger, VitaChron, VitaLoom — which is more
+than the Health ones.
+
+The honest reading is that **`Vital + noun` is equally crowded, and
+VitalTimeline is an unclaimed square on the same board rather than a move to an
+emptier board.**
+
+That does not change the decision. It changes what to expect:
+
+- A neighbour will arrive. Plan on sharing the shelf eventually.
+- The name is descriptive, so it is **findable but weak to defend**. That is a
+  legitimate trade — clarity now against defensibility later — but it should be
+  made knowingly.
+- The **`.com`** and a distinctive wordmark are the real assets here, not the
+  words. Get both.
+
+---
+
+## Why it is still the right pick
+
+- It names the actual architecture. This is not an app that logs health; it is
+  a longitudinal record from which trends, goals, correlations and insights are
+  derived. The append-only model (D4), meal versioning (D15) and surfaced
+  conflicts (D6) all exist to make one honest timeline. The name says that.
+- **The AI is something acting on the timeline, not the brand.** That is the
+  right relationship, and it is what stops the name dating — the estimator will
+  be replaced, and the name will not have to be.
+- It survives the roadmap: clinical data, lab panels, Apple Watch, Samsung,
+  agents, experiments. None of those need a rename.
+- It does not sound like a hospital, an insurer, a diagnostic tool, or a
+  bodybuilding app.
+
+## Presentation
+
+```
+VitalTimeline
+Your health, connected over time.
+```
+
+- **App Store / Play:** `VitalTimeline: Health Tracker`
+- **Garmin Connect IQ:** `VitalTimeline` — 13 characters. **Check how this
+  renders on a 260px watch face before committing to it**; Connect IQ listings
+  are read on the device.
+
+---
+
+## Do these now, in this order
+
+1. **Register `vitaltimeline.com` today.** It is free, it has now been written
+   down, and availability is volatile. This is the cheapest irreversible step
+   and the one that stops being available first.
+2. **Trademark search** — class 9 (software) and class 44 (health services), at
+   the Israeli
+   [Patent Office](https://www.gov.il/en/departments/israel_patent_office),
+   EUIPO and USPTO. **Raise `vital.io` and its "Care Timeline" feature
+   explicitly.** This one is worth paying a professional for; it is the check a
+   free domain most misleads you about.
+3. **Google Play and Garmin Connect IQ** — neither has a public API and neither
+   has been checked here.
+4. **Then** rename: one edit to `src/brand.ts`, plus `package.json` and the
+   repository. And get `privacy@vitaltimeline.com` before the privacy policy is
+   published — it has to name a contact.
 
 ## What this blocks
 

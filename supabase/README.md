@@ -255,6 +255,27 @@ cost-of-trial figures.
 If the migrations are not applied, the app quietly stays in bring-your-own-key
 mode rather than advertising a trial it cannot honour.
 
+### Deleting an account
+
+```bash
+npx supabase functions deploy delete-account
+```
+
+No secrets to set — it uses the `SUPABASE_SERVICE_ROLE_KEY` that functions are
+given automatically. Until it is deployed, **Delete my account** in Settings
+reports a failure and changes nothing, which is the right way round: a delete
+button that silently does nothing is worse than one that says it could not.
+
+It removes the auth user and lets Postgres do the rest. Every table that
+references a person declares `on delete cascade` on `auth.users` (0001, 0003,
+0007, 0008), so the whole account goes in one transaction — all or nothing,
+with no window in which it is half deleted. The function then counts the rows
+that should be gone and reports any that are not, because a table added later
+without the cascade would otherwise strand data silently.
+
+**If you add a table that holds user rows, give it the cascade and add it to
+`TABLES` in the function.** Those two lines are what keep this honest.
+
 ### Watching what it costs
 
 `admin_daily_cost`, `admin_user_summary` and `admin_funnel` (migration 0004)

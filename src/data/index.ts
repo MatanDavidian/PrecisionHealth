@@ -9,13 +9,17 @@
  * because the API key must never sync (D14, Q8), so the Supabase adapter is
  * handed the local settings repository rather than pretending to store them.
  */
-import { createIndexedDbRepositories, seedOnce } from './idb/indexedDbRepositories'
+import {
+  createIndexedDbRepositories,
+  eraseLocalRecords,
+  seedOnce,
+} from './idb/indexedDbRepositories'
 import { openHealthDB } from './idb/schema'
 import { createSupabaseRepositories } from './supabase/supabaseRepositories'
 import { getSupabaseClient, isSupabaseConfigured } from './supabase/client'
 import { buildSeed, type SeedNames } from './mock/seed'
 import type { HealthRepositories } from './repositories'
-import { dayKey } from '@/domain'
+import { dayKey, type UserId } from '@/domain'
 import { FakeEstimator } from '@/ai/fakeEstimator'
 import { OpenAiEstimator } from '@/ai/openaiEstimator'
 import { ProxyEstimator } from '@/ai/proxyEstimator'
@@ -48,6 +52,15 @@ export async function selectRepositoriesFor(session: Session): Promise<HealthRep
       : localRepositories
   return active
 }
+
+/**
+ * Clears the signed-out store — everything this browser holds and nothing else.
+ *
+ * Bound to the one database handle here rather than exported raw, so no caller
+ * can aim it at a store it was not meant for.
+ */
+export const eraseLocalStore = (userId: UserId): Promise<void> =>
+  eraseLocalRecords(dbPromise, userId)
 
 /**
  * First-run sample data, so a fresh install has a day to look at rather than an

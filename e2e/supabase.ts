@@ -87,6 +87,14 @@ export interface StubOptions {
   codeFails?: string
   /** What the analysis endpoint does when the app asks it to read a photo. */
   analysis?: 'exhausted' | 'down'
+  /**
+   * What the delete-account endpoint says.
+   *
+   * `stranded` is the case worth having a name for: the account IS gone but
+   * rows outlived the cascade, which must not be reported as a plain failure —
+   * that would invite someone to try again on an account that no longer exists.
+   */
+  deletion?: 'ok' | 'refused' | 'down' | 'stranded'
 }
 
 const json = (route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -164,6 +172,23 @@ export async function stubSupabase(page: Page, options: StubOptions = {}) {
     }
     if (options.analysis === 'down') return route.abort('connectionfailed')
     return json(route, { error: 'not_stubbed' }, 500)
+  })
+
+  /*
+    After the catch-all above, not before it.
+
+    Playwright tries handlers in REVERSE registration order, so the last one
+    registered wins. Putting this first put it behind the generic functions
+    route, and every delete came back as the catch-all's 500 — which looked
+    exactly like a broken feature.
+  */
+  await page.route('**/functions/v1/delete-account**', (route) => {
+    if (options.deletion === 'down') return route.abort('connectionfailed')
+    if (options.deletion === 'refused') return json(route, { error: 'not_confirmed' }, 400)
+    if (options.deletion === 'stranded') {
+      return json(route, { deleted: true, leftover: ['meals: 3 rows remain'] }, 500)
+    }
+    return json(route, { deleted: true })
   })
 }
 

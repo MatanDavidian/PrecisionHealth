@@ -138,6 +138,45 @@ export interface SettingsRepository {
   save(patch: Partial<AppSettings>): Promise<void>
 }
 
+/**
+ * Every record held about one person, with no window over it.
+ *
+ * Deliberately not assembled from the reads above. Those are all anchored to a
+ * day or a range, which is right for screens and wrong for this: an export has
+ * to be COMPLETE, and a range is a way of quietly missing whatever falls
+ * outside it. "Everything" has to be asked for as everything.
+ */
+export interface PersonalRecords {
+  profile?: UserProfile
+  meals: Meal[]
+  workouts: Workout[]
+  sleep: Sleep[]
+  observations: Observation[]
+  goals: Goal[]
+  labPanels: LabPanel[]
+  conditions: Condition[]
+  regimens: Regimen[]
+  intakeEvents: IntakeEvent[]
+  inferences: AIInference[]
+}
+
+/**
+ * Taking your data with you.
+ *
+ * Its own repository rather than an `everything()` bolted onto each of the
+ * nine above: the question is about the person as a whole, and belongs to
+ * meals no more than to sleep.
+ *
+ * There is deliberately no `erase` here. Deleting an account and clearing this
+ * browser are not two implementations of one operation — one is a privileged
+ * server call that removes an auth user, the other is a local wipe of the
+ * signed-out store — and a shared method would only be a name they both
+ * answer to. `eraseLocalRecords` handles the second, beside `seedOnce`.
+ */
+export interface AccountRepository {
+  everything(userId: UserId): Promise<PersonalRecords>
+}
+
 export interface HealthRepositories {
   profiles: ProfileRepository
   meals: MealRepository
@@ -148,4 +187,5 @@ export interface HealthRepositories {
   clinical: ClinicalRepository
   inferences: InferenceRepository
   settings: SettingsRepository
+  account: AccountRepository
 }

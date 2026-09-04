@@ -311,5 +311,77 @@ export function runRepositoryContract(
         expect(detectMealConflicts(stored)).toHaveLength(1)
       }
     })
+
+    /**
+     * The export is the one read with no window over it, which makes it the
+     * one read a range cannot be blamed for. If an adapter's `everything`
+     * quietly applies a limit or a date filter, this is where it shows.
+     */
+    it('hands back every record, whatever day it is on', async () => {
+      const { ctx, day } = await begin()
+      await ctx.repositories.meals.add(mealFor(ctx, day(), 'export-near'))
+      await ctx.repositories.meals.add(mealFor(ctx, day(DAY_BLOCK - 1), 'export-far'))
+      await ctx.repositories.observations.add(observationFor(ctx, day(), 'export-obs', 80))
+
+      const everything = await ctx.repositories.account.everything(ctx.userId)
+
+      const ids = everything.meals.map((meal) => meal.id)
+      expect(ids).toContain(`${ctx.prefix}-export-near`)
+      // Nine days apart and both present: nothing here is anchored to a day.
+      expect(ids).toContain(`${ctx.prefix}-export-far`)
+      expect(everything.observations.map((o) => o.id)).toContain(`${ctx.prefix}-export-obs`)
+
+      // Every collection is present even when empty, so a reader can tell
+      // "nothing recorded" from "this adapter did not answer".
+      for (const key of [
+        'meals',
+        'workouts',
+        'sleep',
+        'observations',
+        'goals',
+        'labPanels',
+        'conditions',
+        'regimens',
+        'intakeEvents',
+        'inferences',
+      ] as const) {
+        expect(Array.isArray(everything[key]), `${key} should be an array`).toBe(true)
+      }
+    })
+
+    it('keeps every version of a meal, because the history is the record', async () => {
+      const { ctx, day } = await begin()
+      const v1 = mealFor(ctx, day(), 'export-versioned')
+      await ctx.repositories.meals.add(v1)
+      await ctx.repositories.meals.add(
+        nextVersion(v1, { slot: 'DINNER' }, () => `${ctx.prefix}-export-versioned-v2`),
+      )
+
+      const everything = await ctx.repositories.account.everything(ctx.userId)
+      const versions = everything.meals.filter(
+        (meal) => meal.id === `${ctx.prefix}-export-versioned`,
+      )
+      // An export that kept only the winner would be a summary, not a copy.
+      expect(versions).toHaveLength(2)
+      expect(versions.map((meal) => meal.version).sort()).toEqual([1, 2])
+    })
+
+    it('shows nothing belonging to anyone else', async () => {
+      const { ctx, day } = await begin()
+      await ctx.repositories.meals.add(mealFor(ctx, day(), 'export-mine'))
+
+      /*
+        A different, VALID id. Appending a suffix to the real one produced a
+        uuid Postgres refused to parse, which failed the test for a reason
+        that had nothing to do with the thing being tested.
+      */
+      const stranger = '00000000-0000-4000-8000-000000005712' as UserId
+      const everything = await ctx.repositories.account.everything(stranger)
+
+      // The point of the whole feature is that it is YOUR data. An adapter
+      // that ignored the id would look perfect until two people used it.
+      expect(everything.meals.map((meal) => meal.id)).not.toContain(`${ctx.prefix}-export-mine`)
+      expect(everything.profile?.userId).not.toBe(ctx.userId)
+    })
   })
 }

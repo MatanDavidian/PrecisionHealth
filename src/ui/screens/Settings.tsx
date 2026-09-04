@@ -11,6 +11,7 @@ import type { AppSettings } from '@/data/repositories'
 import { useLang, LANGUAGES } from '../i18n'
 import type { StringKey } from '../i18n/strings'
 import { YouSettings } from '../components/YouSettings'
+import { AccountData } from '../components/AccountData'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay } from '../useSelectedDay'
 import { convert, directionToward, goalFor, isObjective } from '@/domain'
@@ -50,7 +51,7 @@ export function Settings() {
           month: 'short',
         })
       : undefined
-  const { session, authAvailable, trial, refreshTrial } = useDataRevision()
+  const { session, authAvailable, trial, refreshTrial, refresh } = useDataRevision()
   const [settings, setSettings] = useState<AppSettings>()
   const [keyInput, setKeyInput] = useState('')
   const [test, setTest] = useState<TestState>({ kind: 'idle' })
@@ -541,13 +542,13 @@ export function Settings() {
               </>
               )}
 
-              <p className="pt-3 text-xs text-ink-muted">
-              <span className="rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-medium">
-              {t('settings.notBuiltYet')}
-              </span>{' '}
-              {t('settings.exportNote')}
-              </p>
               </Card>
+
+              <AccountData
+                session={session}
+                authAvailable={authAvailable}
+                onChanged={refresh}
+              />
             </>
           )}
         </div>

@@ -503,9 +503,36 @@ const en = {
   'settings.storageUsage': ', currently {usage}',
   'settings.storageLocalNote':
     'Clearing your browsing data erases it, and no other device can see it. Signing in copies it to your account and keeps it in step from then on.',
-  'settings.notBuiltYet': 'not built yet',
+  'settings.export': 'Take your data with you',
   'settings.exportNote':
-    'Exporting everything as a JSON file, so you hold a copy independently of both this browser and the account.',
+    'Everything this app holds for you, as a JSON file — so you keep a copy independently of both this browser and the account.',
+  'settings.exportButton': 'Download my data',
+  'settings.exportPreparing': 'Gathering it…',
+  'settings.exportDone': 'Downloaded — {count} records.',
+  'settings.exportFailed': 'The export could not be built.',
+  'settings.exportExcludes':
+    'Your OpenAI key is deliberately left out: it is a credential rather than health data, and an export is a file people email to themselves. Meal photos are never stored, so none appear either.',
+
+  'settings.deleteAccount': 'Delete my account',
+  'settings.deleteAccountBody':
+    'Removes your account and every record in it, everywhere. Data kept only in this browser is separate and is not touched.',
+  'settings.deleteAccountButton': 'Delete my account',
+  'settings.deleteAccountWarn':
+    'Your meals, workouts, sleep, measurements and goals are erased permanently, on every device. This cannot be undone, and we cannot recover it afterwards.',
+  'settings.deleteAccountDone': 'Your account and everything in it have been deleted.',
+  'settings.eraseLocal': 'Erase this browser',
+  'settings.eraseLocalBody':
+    'Removes everything this browser is holding. Nothing else has a copy while you are signed out.',
+  'settings.eraseLocalButton': 'Erase everything here',
+  'settings.eraseLocalWarn':
+    'Everything logged in this browser is erased. Signing in later starts from your account instead, which is untouched by this.',
+  'settings.eraseLocalDone': 'This browser has been cleared.',
+  'settings.deleteSure': 'Are you sure?',
+  'settings.deleteType': 'Type {word} to confirm',
+  'settings.deleteConfirm': 'Yes, delete it',
+  'settings.deleteCancel': 'Keep my data',
+  'settings.deleting': 'Deleting…',
+  'settings.deleteFailed': 'Nothing was deleted.',
 
   // ------------------------------------------------------------ sample day --
   // Written into the store once, on first run, so a fresh install has a day to
@@ -1138,9 +1165,36 @@ const he: Dictionary = {
   'settings.storageUsage': ', כרגע {usage}',
   'settings.storageLocalNote':
     'ניקוי נתוני הגלישה מוחק אותם, ואף מכשיר אחר לא רואה אותם. כניסה לחשבון מעתיקה אותם לחשבון ושומרת על סנכרון מכאן ואילך.',
-  'settings.notBuiltYet': 'עוד לא נבנה',
+  'settings.export': 'קחו את הנתונים אתכם',
   'settings.exportNote':
-    'ייצוא של הכל כקובץ JSON, כדי שיהיה לכם עותק בלתי תלוי גם בדפדפן הזה וגם בחשבון.',
+    'כל מה שהאפליקציה שומרת עליכם, כקובץ JSON — כדי שיהיה לכם עותק בלי תלות בדפדפן הזה ובחשבון.',
+  'settings.exportButton': 'הורדת הנתונים שלי',
+  'settings.exportPreparing': 'אוספים…',
+  'settings.exportDone': 'ירד — {count} רשומות.',
+  'settings.exportFailed': 'לא הצלחנו לבנות את הייצוא.',
+  'settings.exportExcludes':
+    'מפתח ה־OpenAI שלכם מושמט בכוונה: הוא אישור גישה ולא נתוני בריאות, וקובץ ייצוא הוא דבר ששולחים לעצמם במייל. תמונות של ארוחות לא נשמרות בכלל, ולכן גם הן לא מופיעות.',
+
+  'settings.deleteAccount': 'מחיקת החשבון שלי',
+  'settings.deleteAccountBody':
+    'מוחק את החשבון שלכם ואת כל הרשומות בו, בכל מקום. נתונים ששמורים רק בדפדפן הזה הם נפרדים ולא נוגעים בהם.',
+  'settings.deleteAccountButton': 'מחיקת החשבון שלי',
+  'settings.deleteAccountWarn':
+    'הארוחות, האימונים, השינה, המדידות והיעדים שלכם יימחקו לצמיתות, בכל המכשירים. אי אפשר לבטל את זה, ואי אפשר לשחזר אחר כך.',
+  'settings.deleteAccountDone': 'החשבון שלכם וכל מה שבו נמחקו.',
+  'settings.eraseLocal': 'מחיקת הדפדפן הזה',
+  'settings.eraseLocalBody':
+    'מוחק את כל מה שהדפדפן הזה מחזיק. כל עוד אתם לא מחוברים, לאף אחד אחר אין עותק.',
+  'settings.eraseLocalButton': 'מחיקת הכול כאן',
+  'settings.eraseLocalWarn':
+    'כל מה שנרשם בדפדפן הזה יימחק. כניסה לחשבון בהמשך תתחיל מהחשבון שלכם, שלא מושפע מזה.',
+  'settings.eraseLocalDone': 'הדפדפן הזה נוקה.',
+  'settings.deleteSure': 'בטוחים?',
+  'settings.deleteType': 'הקלידו {word} לאישור',
+  'settings.deleteConfirm': 'כן, למחוק',
+  'settings.deleteCancel': 'להשאיר את הנתונים',
+  'settings.deleting': 'מוחקים…',
+  'settings.deleteFailed': 'שום דבר לא נמחק.',
 
   // ------------------------------------------------------------ sample day --
   'seed.eggsAndOats': 'ביצים ושיבולת שועל',

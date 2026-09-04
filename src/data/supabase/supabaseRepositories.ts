@@ -77,6 +77,48 @@ export function createSupabaseRepositories(
       ),
     )
 
+  /**
+   * Every row for one user, with no window over it — see `PersonalRecords`.
+   *
+   * Paged, and that is the whole point of the function. PostgREST answers with
+   * at most `max-rows` (1000 by default) and says nothing about the rest: a
+   * plain select looks like it worked and quietly returns a prefix. An export
+   * built on that is short for exactly the people with the most to lose, and
+   * nothing about the file would show it. Caught by the contract suite against
+   * a real project, where the test account had already passed a thousand rows.
+   */
+  const listAll = async <T>(
+    table: string,
+    userId: UserId,
+    /*
+      The primary key, named rather than assumed.
+
+      Ordering is not optional here: without one, two requests can be served in
+      different orders and a row can be returned twice or missed entirely,
+      which for an export is silent data loss. And it has to be the KEY —
+      `meals` is keyed by `record_id`, because one meal has many versions
+      (D15), so a hardcoded `id` fails on the one table that needed paging most.
+    */
+    key: string = 'id',
+  ): Promise<T[]> => {
+    const PAGE = 1000
+    const all: T[] = []
+    for (let from = 0; ; from += PAGE) {
+      const page = rowsOf<T>(
+        unwrap(
+          await client
+            .from(table)
+            .select('data')
+            .eq('user_id', userId)
+            .order(key, { ascending: true })
+            .range(from, from + PAGE - 1),
+        ),
+      )
+      all.push(...page)
+      if (page.length < PAGE) return all
+    }
+  }
+
   const insert = async (table: string, row: Record<string, unknown>): Promise<void> => {
     const { error } = await client.from(table).insert(row)
     if (error) throw new Error(error.message)
@@ -222,5 +264,40 @@ export function createSupabaseRepositories(
       listRegimens: async () => [],
       listIntakeEvents: async () => [],
     },
+
+    account: {
+      /*
+        No date filter anywhere here, on purpose. RLS already limits these to
+        the caller's own rows (D16, migration 0002), so "everything for this
+        user" is exactly what the policy allows and nothing more.
+
+        The clinical collections come back empty because those tables do not
+        exist server-side yet — the same answer `clinical` above gives. Empty
+        is honest; omitting the keys would make a reader wonder whether the
+        export had failed.
+      */
+      everything: async (userId) => ({
+        profile: (
+          unwrap(
+            await client.from('profiles').select('data').eq('user_id', userId).maybeSingle(),
+          ) as Row<UserProfile> | null
+        )?.data,
+        // Every version (D15), which is what `listAll` on a versioned table
+        // means: the history is the record.
+        meals: (await listAll<Meal>('meals', userId, 'record_id')).map((meal) =>
+          asMealRecord(meal),
+        ),
+        workouts: await listAll<Workout>('workouts', userId),
+        sleep: await listAll<Sleep>('sleep', userId),
+        observations: await listAll<Observation>('observations', userId),
+        goals: await listAll<Goal>('goals', userId),
+        labPanels: [],
+        conditions: [],
+        regimens: [],
+        intakeEvents: [],
+        inferences: await listAll<AIInference>('inferences', userId),
+      }),
+    },
   }
 }
+

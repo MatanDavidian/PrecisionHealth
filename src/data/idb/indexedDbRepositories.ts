@@ -179,8 +179,93 @@ export function createIndexedDbRepositories(
           ),
         ),
     },
+
+    account: {
+      /*
+        Whole stores, filtered by user — not a union of the day-scoped reads
+        above. Those all take a window, and an export assembled from windows is
+        one whose completeness depends on guessing the right dates. Reading
+        everything and filtering cannot miss a record that exists.
+      */
+      everything: async (userId) => {
+        const database = await db()
+        const mine = <T extends { userId: string }>(rows: T[]) =>
+          rows.filter((row) => row.userId === userId)
+
+        return {
+          profile: await database.get('profiles', userId),
+          // Every version, deliberately. Versions are the history (D15), and
+          // an export that kept only the winners would be a summary.
+          meals: mine(await database.getAll('meals')).map(asMeal),
+          workouts: unwrap(mine(await database.getAll('workouts'))),
+          sleep: unwrap(mine(await database.getAll('sleep'))),
+          observations: unwrap(mine(await database.getAll('observations'))),
+          goals: unwrap(mine(await database.getAll('goals'))),
+          labPanels: unwrap(mine(await database.getAll('labPanels'))),
+          conditions: unwrap(mine(await database.getAll('conditions'))),
+          regimens: unwrap(mine(await database.getAll('regimens'))),
+          intakeEvents: unwrap(mine(await database.getAll('intakeEvents'))),
+          inferences: unwrap(mine(await database.getAll('inferences'))),
+        }
+      },
+    },
   }
 }
+
+/**
+ * Erases every record belonging to one user from the local store.
+ *
+ * Standalone, beside `seedOnce`, rather than a method on the repositories:
+ * this is not something the Supabase adapter has a sensible version of.
+ * Deleting an ACCOUNT removes an auth user and lets Postgres cascade; this
+ * clears a browser. Giving both one name on the interface would have made
+ * them look like the same operation with two backends.
+ */
+export async function eraseLocalRecords(
+  dbPromise: Promise<IDBPDatabase<HealthDB>>,
+  userId: UserId,
+): Promise<void> {
+  const db = await dbPromise
+  /*
+    One transaction over every store, so a wipe cannot stop half way and leave
+    a person's data partly erased with nothing to say which half.
+
+    `settings` and `meta` are left alone on purpose: settings are this device's
+    preferences and its API key rather than anyone's health data, and clearing
+    `meta` would un-set the seeded flag — so the very last act of a deletion
+    would be to write the sample day back in.
+  */
+  const tx = db.transaction(ERASABLE, 'readwrite')
+  // The profile is keyed by the user, so it goes by key; everything else is
+  // keyed by record id and has to be looked at to know whose it is.
+  await tx.objectStore('profiles').delete(userId)
+  await Promise.all(
+    RECORD_STORES.map(async (name) => {
+      const store = tx.objectStore(name)
+      for (const row of await store.getAll()) {
+        if (row.userId === userId) await store.delete(row.id)
+      }
+    }),
+  )
+  await tx.done
+}
+
+/** Stores of records that carry a `userId`, keyed by their own id. */
+const RECORD_STORES = [
+  'meals',
+  'workouts',
+  'sleep',
+  'observations',
+  'goals',
+  'labPanels',
+  'conditions',
+  'regimens',
+  'intakeEvents',
+  'inferences',
+] as const
+
+/** Everything a deletion touches, profile included. */
+const ERASABLE = ['profiles', ...RECORD_STORES] as const
 
 /**
  * Writes the seed day the first time the app runs, so a new install has

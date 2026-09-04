@@ -186,10 +186,17 @@ here.*
   payment provider.
 - **S5.2** — **Consent capture.** Which policy version, agreed when. Health data
   in the EU needs explicit consent, and "explicit" means recorded.
-- **S5.3** — **Export.** Everything held about a person, in a machine-readable
-  file. `settings.exportNote` already promises this and nothing implements it.
-- **S5.4** — **Delete my account.** The cascade already works at the database
-  level; what is missing is a button and a confirmation.
+- ~~**S5.3** — **Export.** Everything held about a person, in a machine-readable
+  file.~~ ✅ done. Assembled from `account.everything`, a read with no window
+  over it — the day- and range-scoped reads the screens use would have made
+  completeness depend on guessing dates. The API key is deliberately excluded
+  and the file says so. Building it against a real project found that PostgREST
+  caps a response at 1000 rows, so the first version silently truncated the
+  export for exactly the accounts with the most to lose; it pages now.
+- ~~**S5.4** — **Delete my account.**~~ ✅ done, as `supabase/functions/delete-account`.
+  It removes the auth user and lets the existing cascade take the rows in one
+  transaction, then counts what should be gone and reports anything that is
+  not. Deployment is still outstanding — see `supabase/README.md`.
 - **S5.5** — **Data residency decision.** Which Supabase region, and what that
   means for EU users. This is an architecture decision that is expensive to
   change later and free to make now.

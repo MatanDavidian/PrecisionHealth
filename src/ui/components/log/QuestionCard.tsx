@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { EstimateResult } from '@/ai/estimator'
 import { useT } from '../../i18n'
+import { PRODUCT_NAME } from '@/brand'
 
 /**
  * The model asking for the one thing it could not see.
@@ -77,7 +78,7 @@ export function QuestionCard({
       <section className="mt-4 rounded-card border border-hairline bg-surface p-5">
         <div className="flex items-center gap-2.5">
           <span className="size-6 shrink-0 rounded-full bg-accent" />
-          <span className="text-[0.78rem] font-medium">{t('ask.appName')}</span>
+          <span className="text-[0.78rem] font-medium">{PRODUCT_NAME}</span>
           <span className="text-[0.72rem] text-ink-muted">{t('ask.justNow')}</span>
         </div>
 

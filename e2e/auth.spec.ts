@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test'
 import { open } from './app'
-import { dismissLanguagePrompt, openSignedIn, signIn, stubSupabase, STUB_ACCOUNT } from './supabase'
+import {
+  acceptPolicies,
+  dismissLanguagePrompt,
+  openSignedIn,
+  signIn,
+  stubSupabase,
+  STUB_ACCOUNT,
+} from './supabase'
 
 /**
  * Signing in, signing out, and what someone who has done neither sees.
@@ -111,6 +118,10 @@ test('the language question is asked on first sign-in, and can be waved off', as
   await page.getByRole('button', { name: 'Email me a code' }).click()
   await page.getByLabel(/Or enter a code/).fill('123456')
   await page.getByRole('button', { name: 'Sign in with code' }).click()
+
+  // Consent comes first — it gates processing, so it cannot queue behind a
+  // question about wording.
+  await acceptPolicies(page)
 
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()

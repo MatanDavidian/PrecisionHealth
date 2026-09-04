@@ -36,7 +36,7 @@ test('the export is the whole store, and the key is not in it', async ({ page })
   await page.getByRole('button', { name: 'Photo analysis' }).click()
   await page.getByLabel('Key', { exact: true }).fill('sk-a-real-looking-secret')
   await page.getByRole('button', { name: 'Save key' }).click()
-  await expect(page.getByText('Saved')).toBeVisible()
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
   await accountTab(page)
 
   const { filename, body } = await downloadExport(page)

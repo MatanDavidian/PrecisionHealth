@@ -659,6 +659,27 @@ const en = {
 
 
   // ------------------------------------------------------ language prompt --
+  'consent.title': 'Before we hold your health data',
+  'consent.body':
+    'This app records what you eat and how your body is doing, and sends what you photograph to a model that reads it. Both need your agreement, and both are recorded — including which version you agreed to.',
+  'consent.privacy':
+    'I agree to my health data being handled as the privacy policy describes.',
+  'consent.terms': 'I accept the terms of use.',
+  'consent.read': 'Read the {title}',
+  'consent.agree': 'Agree and continue',
+  'consent.saving': 'Recording…',
+  'consent.failed': 'That could not be recorded. Nothing has been agreed to.',
+  'consent.orElse': 'Not comfortable with this? You can',
+  'consent.signOut': 'sign out',
+
+  'policy.version': '{name} · version {version}',
+  'policy.notFound': 'There is no such document.',
+  'policy.draftTitle': 'This is a draft.',
+  'policy.draftBody':
+    'Parts of this document are still marked undecided and are shown as they are rather than guessed at. It is not the final policy, and it has not been reviewed by a lawyer.',
+  'policy.readTerms': 'Read the terms of use',
+  'policy.readPrivacy': 'Read the privacy policy',
+
   'chooseLang.title': 'Which language should this be in?',
   'chooseLang.body':
     'It applies everywhere, including the answers the model gives you, and follows you to any device you sign in on. You can change it in Settings whenever you like.',
@@ -668,7 +689,6 @@ const en = {
   // ---------------------------------------------------------- conversation --
   'ask.summaryKcal': '{kcal} kcal',
   'ask.usable': 'A usable estimate already. One thing would sharpen it, and answering takes a tap.',
-  'ask.appName': 'Timeline',
   'ask.justNow': 'just now',
   'ask.ownWords': 'Or say it in your own words — anything about the plate helps',
   'ask.send': 'Send',
@@ -1317,6 +1337,26 @@ const he: Dictionary = {
 
 
   // ------------------------------------------------------ language prompt --
+  'consent.title': 'לפני שנחזיק את נתוני הבריאות שלכם',
+  'consent.body':
+    'האפליקציה מתעדת מה אתם אוכלים ומה מצב הגוף שלכם, ושולחת את מה שאתם מצלמים למודל שקורא את זה. לשניהם צריך את הסכמתכם, ושניהם נרשמים — כולל לאיזו גרסה הסכמתם.',
+  'consent.privacy': 'אני מסכימ/ה שנתוני הבריאות שלי יטופלו כמתואר במדיניות הפרטיות.',
+  'consent.terms': 'אני מקבל/ת את תנאי השימוש.',
+  'consent.read': 'קראו את {title}',
+  'consent.agree': 'מסכימ/ה, להמשיך',
+  'consent.saving': 'רושמים…',
+  'consent.failed': 'לא הצלחנו לרשום את זה. שום דבר לא אושר.',
+  'consent.orElse': 'לא מרגישים בנוח? אפשר',
+  'consent.signOut': 'להתנתק',
+
+  'policy.version': '{name} · גרסה {version}',
+  'policy.notFound': 'אין מסמך כזה.',
+  'policy.draftTitle': 'זו טיוטה.',
+  'policy.draftBody':
+    'חלקים מהמסמך עדיין מסומנים כלא־הוכרעו ומוצגים כמו שהם ולא בניחוש. זו לא המדיניות הסופית, והיא לא נבדקה על ידי עורך דין.',
+  'policy.readTerms': 'קראו את תנאי השימוש',
+  'policy.readPrivacy': 'קראו את מדיניות הפרטיות',
+
   'chooseLang.title': 'באיזו שפה שנציג את זה?',
   'chooseLang.body':
     'זה חל בכל מקום, כולל התשובות שהמודל נותן לכם, ומלווה אתכם לכל מכשיר שתתחברו בו. אפשר לשנות בהגדרות בכל רגע.',
@@ -1326,7 +1366,6 @@ const he: Dictionary = {
   // ---------------------------------------------------------- conversation --
   'ask.summaryKcal': '{kcal} קלוריות',
   'ask.usable': 'זו כבר הערכה שאפשר להשתמש בה. דבר אחד יחדד אותה, ותשובה לוקחת הקשה.',
-  'ask.appName': 'Timeline',
   'ask.justNow': 'ממש עכשיו',
   'ask.ownWords': 'או ספרו במילים שלכם — כל דבר על הצלחת עוזר',
   'ask.send': 'שליחה',

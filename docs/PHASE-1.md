@@ -140,7 +140,10 @@ The app calls itself **Timeline** on screen. The repository is
 **PrecisionHealth**. Before anything is published, those need to be one thing.
 
 - **S3.1** — Decide the product name. This gates the domain, the Store listing,
-  the privacy policy and every email that will ever be sent.
+  the privacy policy and every email that will ever be sent. **Options and real
+  availability checks are in [`NAMING.md`](NAMING.md); the decision is still
+  open.** The code side is done and does not wait for it: the name lives in
+  `src/brand.ts` and nowhere else, so renaming is one edit.
 - **S3.2** — Acquire a domain. `precisionhealth.com` is a generic two-word
   `.com` and is almost certainly held; treat availability as unknown until
   checked at a registrar. Realistic options: a coined name, or `.app` / `.health`
@@ -181,11 +184,21 @@ watch and cannot be published.
 *Detail in [`COMPLIANCE.md`](COMPLIANCE.md). The engineering consequences are
 here.*
 
-- **S5.1** — Privacy policy and terms, published, versioned, and linked from
-  sign-up. Must name every sub-processor: Supabase, OpenAI, the host, the
-  payment provider.
-- **S5.2** — **Consent capture.** Which policy version, agreed when. Health data
-  in the EU needs explicit consent, and "explicit" means recorded.
+- ~~**S5.1** — Privacy policy and terms, published, versioned, and linked from
+  sign-up.~~ ✅ **drafted**, at `/privacy` and `/terms`, readable without an
+  account. Every processor is named. They live in `src/policy/documents.ts`
+  rather than on a marketing page, because **they are claims about what the
+  code does** and have to change in the same commit the code does — there are
+  tests asserting the photograph claim and the processor list. Still a draft:
+  the entity, address, contact, jurisdiction, database region and transfer
+  basis are `[UNDECIDED: …]` markers, the page says out loud that it is a
+  draft, and none of it has been read by a lawyer.
+- ~~**S5.2** — **Consent capture.**~~ ✅ done. Migration 0009, an append-only
+  `consents` table verified against real Postgres — a consent log its own
+  subject can edit proves nothing, so there is no update and no delete, and
+  withdrawal is a second row. Records subject, version, action, the locale it
+  was read in, and a SHA-256 of the exact text shown, because versions are set
+  by a human who will fix a typo without bumping one.
 - ~~**S5.3** — **Export.** Everything held about a person, in a machine-readable
   file.~~ ✅ done. Assembled from `account.everything`, a read with no window
   over it — the day- and range-scoped reads the screens use would have made

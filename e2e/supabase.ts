@@ -1,4 +1,7 @@
 import type { Page, Route } from '@playwright/test'
+import { PRIVACY_POLICY } from '../src/policy/documents'
+
+const CURRENT_POLICY_VERSION = PRIVACY_POLICY.version
 
 /**
  * A Supabase project that only exists inside the browser tab.
@@ -95,6 +98,13 @@ export interface StubOptions {
    * that would invite someone to try again on an account that no longer exists.
    */
   deletion?: 'ok' | 'refused' | 'down' | 'stranded'
+  /**
+   * Whether this account has already agreed to the current policy.
+   *
+   * Default false, because that is what a new account is — and every signed-in
+   * test now has to pass the consent gate the way a real person would.
+   */
+  consented?: boolean
 }
 
 const json = (route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -182,6 +192,35 @@ export async function stubSupabase(page: Page, options: StubOptions = {}) {
     route, and every delete came back as the catch-all's 500 — which looked
     exactly like a broken feature.
   */
+  /*
+    Consents are the one thing the stub REMEMBERS.
+
+    Everything else here can answer statelessly, but agreeing to a policy and
+    then being asked again is an infinite loop, not a test — the gate re-reads
+    after it writes. Holding the rows lets the real flow run end to end: the
+    app posts, reads back, and the gate closes because the record is genuinely
+    there.
+  */
+  const granted: Record<string, unknown>[] = options.consented
+    ? ['PRIVACY', 'TERMS'].map((subject) => ({
+        subject,
+        // Read from the app's own documents, so bumping a policy version does
+        // not silently leave every test consenting to something historical.
+        version: CURRENT_POLICY_VERSION,
+        action: 'GRANTED',
+        recorded_at: new Date().toISOString(),
+      }))
+    : []
+
+  await page.route('**/rest/v1/consents**', async (route) => {
+    if (route.request().method() === 'POST') {
+      const posted = JSON.parse(route.request().postData() ?? '[]') as Record<string, unknown>[]
+      granted.push(...posted)
+      return json(route, posted, 201)
+    }
+    return json(route, granted)
+  })
+
   await page.route('**/functions/v1/delete-account**', (route) => {
     if (options.deletion === 'down') return route.abort('connectionfailed')
     if (options.deletion === 'refused') return json(route, { error: 'not_confirmed' }, 400)
@@ -209,9 +248,21 @@ export async function signIn(page: Page, options: StubOptions = {}) {
   await page.getByRole('button', { name: 'Email me a code' }).click()
   await page.getByLabel(/Or enter a code/).fill('123456')
   await page.getByRole('button', { name: 'Sign in with code' }).click()
-  // Asked once per account, and it is a modal: nothing else is clickable
-  // until it is answered or waved off.
+  // Two modals, in the order a real account meets them: consent first, because
+  // it gates processing, then the language question.
+  if (!options.consented) await acceptPolicies(page)
   await dismissLanguagePrompt(page)
+}
+
+/** Ticks both boxes and agrees, the way a person has to. */
+export async function acceptPolicies(page: Page) {
+  const agree = page.getByRole('button', { name: 'Agree and continue' })
+  await agree.waitFor({ timeout: 15_000 })
+  for (const box of await page.locator('[aria-labelledby="consent-title"] input[type=checkbox]').all()) {
+    await box.check()
+  }
+  await agree.click()
+  await agree.waitFor({ state: 'hidden' })
 }
 
 /** The first-sign-in language question, waved off without recording a choice. */
@@ -231,5 +282,6 @@ export async function dismissLanguagePrompt(page: Page) {
  */
 export async function openSignedIn(page: Page, path: string) {
   await page.goto(path)
+  // Consent is remembered by the stub, so only the language question returns.
   await dismissLanguagePrompt(page)
 }

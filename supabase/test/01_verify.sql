@@ -240,3 +240,77 @@ end
 $$;
 
 reset role;
+
+-- ---------------------------------------------------------------- consents --
+-- 0009. The evidence table: append-only by policy, not just by convention.
+
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+insert into public.consents (id, user_id, subject, version, action, locale, document_sha)
+values ('consent-1', '11111111-1111-1111-1111-111111111111',
+        'PRIVACY', '2026-09-04', 'GRANTED', 'he', repeat('a', 64));
+
+select case when count(*) = 1 then 'PASS: a consent is recorded'
+  else 'FAIL: recorded ' || count(*) end
+from public.consents;
+
+-- Withdrawal is a SECOND row. The first stays, which is the whole design:
+-- "what had this person agreed to in March" has to remain answerable.
+insert into public.consents (id, user_id, subject, version, action, locale)
+values ('consent-2', '11111111-1111-1111-1111-111111111111',
+        'PRIVACY', '2026-09-04', 'WITHDRAWN', 'he');
+
+select case when count(*) = 2 then 'PASS: withdrawal is appended, not applied'
+  else 'FAIL: history has ' || count(*) || ' rows' end
+from public.consents;
+
+-- A consent log its subject can edit proves nothing at all.
+do $$
+begin
+  update public.consents set action = 'GRANTED' where id = 'consent-2';
+  raise exception 'FAIL: a consent record was editable';
+exception
+  when insufficient_privilege then raise notice 'PASS: consents cannot be updated';
+end
+$$;
+
+do $$
+begin
+  delete from public.consents where id = 'consent-2';
+  raise exception 'FAIL: a consent record was deletable';
+exception
+  when insufficient_privilege then raise notice 'PASS: consents cannot be deleted';
+end
+$$;
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select case when count(*) = 0 then 'PASS: nobody reads another user''s consents'
+  else 'FAIL: leaked ' || count(*) || ' rows' end
+from public.consents
+where user_id = '11111111-1111-1111-1111-111111111111';
+
+do $$
+begin
+  insert into public.consents (id, user_id, subject, version, action, locale)
+  values ('consent-3', '11111111-1111-1111-1111-111111111111',
+          'TERMS', '2026-09-04', 'GRANTED', 'en');
+  raise exception 'FAIL: consented on somebody else''s behalf';
+exception
+  when insufficient_privilege then raise notice 'PASS: cross-user consent refused';
+end
+$$;
+
+set role postgres;
+do $$
+begin
+  insert into public.consents (id, user_id, subject, version, action, locale)
+  values ('consent-4', '22222222-2222-2222-2222-222222222222',
+          'MARKETING', '2026-09-04', 'GRANTED', 'en');
+  raise exception 'FAIL: an unknown consent subject was accepted';
+exception
+  when check_violation then raise notice 'PASS: consent subject is constrained';
+end
+$$;
+
+reset role;

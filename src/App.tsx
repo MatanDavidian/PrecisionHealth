@@ -6,6 +6,7 @@ import { Log } from './ui/screens/Log'
 import { Settings } from './ui/screens/Settings'
 import { SignIn } from './ui/screens/SignIn'
 import { Placeholder } from './ui/screens/Placeholder'
+import { Policy } from './ui/screens/Policy'
 
 export function App() {
   return (
@@ -22,6 +23,10 @@ export function App() {
         <Route path="/health" element={<Placeholder title="nav.health" phase="phase.health" />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/signin" element={<SignIn />} />
+        {/* Readable without an account: someone deciding whether to hand over
+            their health data has to be able to read what happens to it first. */}
+        <Route path="/privacy" element={<Policy />} />
+        <Route path="/terms" element={<Policy />} />
         <Route path="*" element={<Navigate to="/log" replace />} />
       </Routes>
     </AppShell>

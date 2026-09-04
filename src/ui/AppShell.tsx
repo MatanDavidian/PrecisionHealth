@@ -3,10 +3,11 @@ import { NavLink } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
 import { WriteFailureBanner } from './components/WriteFailureBanner'
 import { AnalysisBar } from './components/AnalysisBar'
-import { LanguagePrompt } from './components/LanguagePrompt'
+import { Interruptions } from './components/ConsentGate'
 import { useLocation } from 'react-router-dom'
 import { useT } from './i18n'
 import type { StringKey } from './i18n/strings'
+import { PRODUCT_NAME } from '@/brand'
 
 const TRACK: { to: string; label: StringKey }[] = [
   { to: '/log', label: 'nav.log' },
@@ -34,7 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="hidden w-60 shrink-0 border-e border-hairline bg-surface px-4 py-6 md:block">
         <div className="flex items-center gap-3 px-3">
           <span className="size-7 rounded-full bg-accent" />
-          <span className="font-display text-xl">Timeline</span>
+          <span className="font-display text-xl">{PRODUCT_NAME}</span>
         </div>
 
         <SectionLabel>{t('nav.overview')}</SectionLabel>
@@ -62,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <BottomNav />
       <AnalysisBar />
       <WriteFailureBanner />
-      <LanguagePrompt />
+      <Interruptions />
     </div>
   )
 }

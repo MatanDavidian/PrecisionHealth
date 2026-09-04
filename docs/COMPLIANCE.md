@@ -192,6 +192,25 @@ people notice, and the one most likely to lose trust if it is buried.
    conversation, with this document in hand, will settle the thresholds that
    this document deliberately does not assert.
 
+### Where this now stands
+
+Of the six above, **3 and 4 are built.** The policy and terms are drafted from
+the code and shipping behind a visible draft banner; consent, export and
+deletion all work and are tested. What remains is entirely decisions and
+paperwork:
+
+| Still open | Why it is blocking |
+| --- | --- |
+| Markets | changes whether the EU obligations apply at all |
+| Data residency | free now, a migration later |
+| Legal entity, address, contact | the policy cannot name a controller without one |
+| DPAs with Supabase and OpenAI | signed, not coded |
+| Transfer basis for OpenAI | DPF or SCCs — needs checking, then naming in the policy |
+| An hour of counsel | before charging anyone |
+
+The `[UNDECIDED: …]` markers in `src/policy/documents.ts` are exactly this
+list, and `isDraft()` fails loudly while any of them remain.
+
 **A single-user personal project is outside almost all of this.** It stops being
 one the moment a stranger's health data is in the database — which is the same
 moment Phase 1 is trying to reach. These become real together.

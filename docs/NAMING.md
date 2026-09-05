@@ -116,90 +116,84 @@ four-to-six-letter `.com` in 2026 and should not, by itself, kill a name.
 
 ---
 
-## Correction: the `.io` checks in this document were never real
+## Correction: the `.io` checks in earlier versions were never real
 
 `rdap.org` answers **404 for every `.io` domain** — `google.io` and `github.io`
-included. Every "`.io` available" line in earlier versions of this file was
-therefore meaningless, including `healthlog.io`, `precisionhealth.io` and
-`mesila.io`. `.io` now goes through `whois.nic.io`, which was verified against
-`google.io` (found) and a nonsense domain (not found) before being trusted.
-
-The `.com` and `.app` figures, via RDAP, were and are sound.
-
----
-
-## The screen, and what it can and cannot see
-
-Rebuilt after **Tavella**, **Kestara**, **Nomari** and **MetricPath** all
-turned out to be occupied — by a Google Play developer, a Lithuanian company
-with trademark records, a live US/EU filing including class 9, and a marketing
-firm respectively. None of those were visible to a domain-and-App-Store check.
-
-| Check | Method | Trustworthy |
-| --- | --- | --- |
-| `.com`, `.app` | RDAP | yes |
-| `.io` | `whois.nic.io` | yes, now |
-| iOS App Store | Apple iTunes Search API — app names **and seller names** | yes |
-| Live commercial use | does `<name>.com` return 200 | yes, and it is what caught Treliva |
-| Google Play, EUIPO, USPTO, Israel | search only | **indicative, not clearance** |
-
-About 50 coined names went through it. What follows is what survived.
+included — so every "`.io` available" line this file once carried was
+meaningless, `healthlog.io` and `precisionhealth.io` among them. `.io` now goes
+through `whois.nic.io`, verified against a known-registered domain and a
+nonsense one before being trusted. `.com` and `.app`, via RDAP, were always
+sound.
 
 ---
 
-## Survivors
+## Current candidates
 
-All of these are clean on: App Store (name and seller), a live `.com` site,
-and indexed web/Play/trademark search. **`.com` is taken for every one** —
-that is simply four-to-seven-letter `.com` in 2026, and per the brief it is
-not disqualifying.
+A full screen of `Health + noun` and `My Health + noun` rejected almost all of
+it on exact product collisions — Health Journal, Health Story, Health Ledger,
+Health Compass, Health Diary, Health Companion, Health Record, Health Track,
+Health View, Health Trends, Health Dashboard, My Health Story, My Health
+Journal, My Health Journey and more all have live products on the exact name.
+Two survived, and both are clean on every check available here.
 
-### Tier 1 — `.app` and `.io` both free
+| Name | `.com` | `.app` | `.io` | App Store |
+| --- | --- | --- | --- | --- |
+| **Health Daybook** | **free** | **free** | **free** | nothing |
+| **My Health Chronicle** | **free** | **free** | **free** | nothing |
+| Health Chronicle | taken | free | taken | nothing |
+| Health Recordbook | taken | free | free | nothing |
+| Personal Health Book | **live site** | free | free | nothing |
 
-| Name | Say it | Notes |
-| --- | --- | --- |
-| **Velando** | ve-LAN-do | Easiest of the three in both English and Hebrew, and unambiguous to spell from hearing. **But it is a real Spanish/Portuguese word** — "keeping vigil, watching over". Apt, and the same double-edge Mesila had: descriptive in two large markets, so weaker there as a mark. |
-| **Ipsara** | ip-SA-ra | Unambiguous to spell. Latin *ipse*, "self". Slightly awkward onset. Also a Greek island, which is minor. |
-| **Cendara** | sen-DA-ra | Softest and most brandable. **Fails the spelling test**: heard aloud it is as likely to be written *Sendara*. That is a real cost for a product found by search. |
+All three domains free for the top two is unusual and is the strongest
+practical argument for either.
 
-### Tier 2 — `.io` free, `.app` taken
+### Health Daybook
 
-**Tovena**, **Torena**, **Ferova**, **Norvela**, **Pendara**. All clean on
-every other check. Only worth considering if `brand.io` is acceptable.
+```
+Health Daybook
+Your personal health, day by day.
+```
 
-### Rejected during screening, with reasons worth keeping
+A daybook is literally a chronological daily record, which is what the
+append-only model (D4) makes the app. Fourteen characters, fits a watch face,
+spells itself. "Daybook" is less familiar than "diary" to non-native speakers —
+the cost of it being unoccupied.
 
-| Name | Why |
-| --- | --- |
-| **Onvara** | **ONVY** — a German AI health-coaching app supporting Garmin, Polar and Apple Watch. Phonetically adjacent, in exactly this category. |
-| **Amberis** | The *Amber* root is saturated on Play and the App Store. No direct collision; permanent searchability tax. |
-| **Sovena, Corista, Rilana, Palvera, Vestara, Nerova, Talvera, Kalura, Lumara, Modara, Solvera, Diera, Stedra, Tandora** | live site on the `.com` |
-| **Tessel, Fathom, Sonder, Cadena, Ostara, Halden, Marlo, Selvan** | every plain word is gone, domains and App Store |
-| **Filara, Linara, Cordata, Contena, Mesura, Arcova, Perdura, Selora, Ravela, Ondara, Kenora, Journa** | App Store collision |
+### My Health Chronicle
+
+```
+My Health Chronicle
+Track your health. Understand your patterns.
+```
+
+Describes the whole eventual product rather than daily logging — wearables,
+labs, body progress, patterns, experiments. Nineteen characters, which is long
+for a Connect IQ listing; check how it renders on a watch before committing.
+
+### The standing caveat
+
+Both are **descriptive**, so findable and weak to defend, and neither has been
+cleared. Every deeper check in this exercise has killed names the previous one
+passed — HealthLog, Tavella, Kestara, Nomari, Treliva, Chroniva. Before buying
+or renaming: USPTO, EUIPO, the Israeli register, Garmin Connect IQ, and an
+exact Google Play search. That is now a small job, with two names in it.
+
+Nothing has been bought and nothing has been renamed. `src/brand.ts` makes the
+rename one edit whenever the answer arrives.
 
 ---
 
-## What I would take, and what I would not claim
+## Rejected earlier, kept because the reasons still apply
 
-**Velando**, on `velando.app`. It is the only survivor that passes both
-pronunciation and spell-from-hearing in English and Hebrew, and its Spanish
-sense — watching over — is a better fit for this product than an empty
-syllable. The cost is that it is a real word in two large markets, so treat it
-as brandable rather than as ownable there.
-
-If that Spanish meaning is unwelcome, **Ipsara** is the cleanest genuinely
-empty name and the strongest legally. **Cendara** sounds best and should
-probably still be dropped, because a name people mis-spell is one they cannot
-find.
-
-**None of this is clearance.** Google Play, EUIPO, USPTO and the Israeli
-register have been searched, not cleared, and the pattern of this whole
-exercise is that each deeper check has killed names the previous one passed —
-HealthLog, Tavella, Kestara, Nomari, Treliva, Chroniva. Assume that continues.
-Take the finalist to someone who does clearance for a living **before**
-registering anything.
-
-Nothing has been bought and nothing has been renamed.
+- **Coined names** — Tavella, Kestara, Nomari, Treliva, Chroniva all turned out
+  occupied by Play developers, trademark filings or live sites. Velando, Ipsara
+  and Cendara survived a fifty-name screen if a coined direction is ever
+  revisited.
+- **VitalTimeline** — `.com` and `.app` free, but `vital.io` is a hospital
+  platform shipping a "Today's Care Timeline" feature.
+- **HealthLog** — an active self-hosted health tracker of the same name.
+- **Timeline**, **PrecisionHealth** — descriptive and undefendable; the two the
+  app and the repository currently use.
 
 ## What this blocks
 

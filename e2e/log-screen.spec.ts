@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { open, settledNumber } from './app'
+import { NOW, open, pinTime, settledNumber } from './app'
 
 /**
  * The Log screen — the most-used screen in the app, and until now the least
@@ -106,19 +106,8 @@ test('words become an estimate too', async ({ page }) => {
 })
 
 test('Again logs a usual straight onto today', async ({ page }) => {
-  /*
-    Pinned to midday.
-
-    The Again list is filtered by the meal slot the CLOCK says it is, so this
-    test passed for eighteen hours a day and failed between ten at night and
-    four in the morning — when the slot is SNACK and the fixture has none. The
-    date is left alone deliberately: moving it would move the seeded week with
-    it.
-  */
-  const noon = new Date()
-  noon.setHours(12, 0, 0, 0)
-  await page.clock.setFixedTime(noon)
-
+  // `open` pins the clock to midday, which is LUNCH — the Again list is
+  // filtered by the slot the clock says it is, and the fixture has no snacks.
   await open(page, '/nutrition')
   const before = await settledNumber(dayTotal(page))
 
@@ -141,9 +130,9 @@ test('Again still offers something at an hour you never eat', async ({ page }) =
   // Eleven at night: the slot is SNACK, and almost nobody logs snacks often
   // enough to form a habit. The panel used to render empty, with every usual
   // hidden behind a grey "See all" link.
-  const lateTonight = new Date()
+  const lateTonight = new Date(NOW)
   lateTonight.setHours(23, 0, 0, 0)
-  await page.clock.setFixedTime(lateTonight)
+  await pinTime(page, lateTonight)
 
   await open(page, '/log')
   await page.locator('#log-mode-again').click()

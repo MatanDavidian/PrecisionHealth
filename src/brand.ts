@@ -12,12 +12,20 @@
  * same word in Hebrew, exactly as the two language buttons are each written in
  * their own language rather than translated.
  *
- * `-metry` is the process of measuring, as in telemetry and optometry, so the
- * name has a meaning rather than an explanation attached afterwards. See
- * `docs/NAMING.md` for what was screened and what is still outstanding — the
- * trademark search in particular, which has not been done.
+ * `-metry` is the process of measuring, as in telemetry and optometry, and
+ * `vi-` is the Latin combining form behind vital and vivid. So the name means
+ * "measuring life" rather than having a meaning attached afterwards.
+ *
+ * It is built the way real `-metry` words are built, which "Lifemetry" — the
+ * previous choice — was not: geometry, telemetry, biometry and optometry all
+ * join on a linking VOWEL, and "life" ends in a consonant. That is what made
+ * the older name's stress ambiguous. This one also happens to rhyme with
+ * symmetry, which is free help with spelling.
+ *
+ * See `docs/NAMING.md` for what was screened and what is still outstanding —
+ * the trademark search in particular, which has not been done.
  */
-export const PRODUCT_NAME = 'Lifemetry'
+export const PRODUCT_NAME = 'Vimetry'
 
 /**
  * The one-line description, used where a name alone is not enough — the page

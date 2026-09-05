@@ -127,17 +127,37 @@ sound.
 
 ---
 
-## Decided: Lifemetry
+## Decided: Vimetry
 
-`-metry` is the process of measuring — telemetry, optometry, biometry — so the
-name carries a meaning rather than an explanation attached afterwards, and
-"life" keeps the scientific ending warm. Broad enough for meals, sleep,
-training, body, labs and whatever follows, without naming a feature.
+`-metry` is the process of measuring — telemetry, optometry, biometry — and
+`vi-` is the Latin combining form behind *vital* and *vivid*. So the name means
+"measuring life" rather than having a meaning attached afterwards, and it is
+broad enough for meals, sleep, training, body, labs and whatever follows
+without naming a feature.
 
 ```
-Lifemetry
+Vimetry
 Understand your patterns over time
 ```
+
+### Why not Lifemetry, which was chosen first
+
+**LifeMetrics is already in use**, and Lifemetry is close enough to be a real
+confusion and trademark problem rather than a theoretical one. Dropping "life"
+for "vi-" keeps the meaning and loses the collision.
+
+It also fixes the one reservation recorded against Lifemetry. Real `-metry`
+words join on a **linking vowel** — ge-**o**-metry, tel-**e**-metry,
+bi-**o**-metry, opt-**o**-metry — and "life" ends in a consonant, which is what
+made its stress ambiguous. `vi-` is a proper combining form, so *Vimetry* is
+built the way the pattern actually works. It rhymes with *symmetry*, which is
+free help with spelling, and at seven letters it is two shorter — worth having
+on a watch face.
+
+The cost, stated plainly: **"vi-" does not decode on hearing the way "life"
+does.** Vimetry is nearer a coined name than a descriptive one, which is more
+defensible and makes the tagline work harder. That is the trade already made
+deliberately when moving away from descriptive names.
 
 The tagline deliberately says *understand* rather than *measure*. The name
 already carries measurement; the product's actual promise is the pattern.
@@ -146,42 +166,28 @@ already carries measurement; the product's actual promise is the pattern.
 
 | Check | Result |
 | --- | --- |
-| `lifemetry.app` | **free** |
-| `lifemetry.io` | **free** |
-| `lifemetry.com` | registered 2021 — **but the nameservers are `DNS-EXPIRED.COM`** |
+| `vimetry.app` | **free** |
+| `vimetry.io` | **free** |
+| `vimetry.com` | registered, but parked on **Afternic** — a broker's for-sale listing, not a business |
 | iOS App Store | nothing |
-| `github.com/lifemetry` | **free** |
-| `instagram.com/lifemetry` | **taken** |
+| Web / product search | nothing named Vimetry; nearest are Vimory, Vimera, Vimutec, Vidmeter, all in video or dev services |
+| Health / fitness trademark search | nothing surfaced |
+| `github.com/vimetry` | taken |
 
-### Two things to act on
+### The one to act on
 
-**`lifemetry.com` looks like it is expiring.** It sits on GoDaddy's
-expired-domain nameservers behind Domains By Proxy. That means it is somewhere
-in the renewal-grace/redemption cycle and **may drop**. A backorder or
-drop-catch is cheap and is the only way to get it; once it drops it will be
-taken within seconds by a catcher. Worth doing now — this is the single
-time-sensitive item in the whole naming exercise.
+**`vimetry.com` is for sale, not in use.** Afternic nameservers behind Domains
+By Proxy, registered 2023, serving a 114-byte stub. That means a price rather
+than a refusal — domainer money, typically a few hundred to a few thousand.
+Worth deciding early: `.app` alone is perfectly workable per the brief, but the
+`.com` will never be cheaper than before the product has traction.
 
-**Instagram `@lifemetry` is taken** — the motivational account already found.
-Different class of use, not a product collision, but it does mean the obvious
-handle is gone. Settle on the handle before printing anything.
+### Still worth doing
 
-### The reservation worth keeping
-
-Real `-metry` words are built on Greek combining forms that end in a linking
-vowel: **ge-o-metry, tel-e-metry, bi-o-metry, opt-o-metry**. That vowel is what
-makes the stress land and the word sound native. "Life" is an English word
-ending in a consonant, so *Lifemetry* is a hybrid that breaks the pattern —
-which is exactly why its stress is ambiguous and why the hear-and-spell test is
-worth actually running.
-
-Not disqualifying. *Television* is the same kind of hybrid (Greek *tele* +
-Latin *visio*), was criticised for it, and is now universal. But it predicts
-the failure mode: people will hesitate on first hearing and stress it
-differently from one another. **Say it to five people, ask them to spell it and
-say it back.** Spelling matters more than stress — a product has to teach its
-own pronunciation anyway, but a name people cannot spell is one they cannot
-find.
+Say it to five people, ask them to spell it and say it back. The likely
+readings are *VY-me-tree* and *vy-MET-ree*; either is fine, since a product
+teaches its own pronunciation. **Spelling is what matters** — a name people
+cannot spell is one they cannot find.
 
 ### Still outstanding
 
@@ -200,6 +206,7 @@ and `Selfknown` all have live sites on the `.com`.
 
 ## Rejected, kept because the reasons still apply
 
+- **Lifemetry** — too close to **LifeMetrics**, which is in use.
 - **Health Daybook / My Health Chronicle** — both clean, both descriptive.
   Superseded by wanting a name that can be owned.
 - **Coined names** — Tavella, Kestara, Nomari, Treliva, Chroniva all occupied

@@ -78,10 +78,19 @@ export function UsualsPanel({
 
   const zone = deviceZone()
   const searching = query.trim().length > 0
-  // A query means the slot filter is in the way: someone searching "porridge"
-  // at seven in the evening wants the porridge, not to be told there is none
-  // for dinner.
-  const everything = showAll || (searchFirst && searching)
+  /*
+    The slot narrows this list; it must not empty it.
+
+    Two cases where the filter has outlived its usefulness. A query is one:
+    someone searching "porridge" at seven in the evening wants the porridge,
+    not to be told there is none for dinner. An empty slot is the other, and
+    it was missed — open Again at eleven at night and the slot is SNACK, which
+    almost nobody eats consistently enough to form a habit, so the panel
+    rendered with no meals at all while twenty repeatable ones sat behind a
+    grey underline.
+  */
+  const slotIsEmpty = usuals.forThisSlot.length === 0
+  const everything = showAll || (searchFirst && searching) || slotIsEmpty
   const search = everything ? query : ''
   const suggestions = (everything ? usuals.all : usuals.forThisSlot).filter((usual) =>
     matchesQuery(
@@ -170,7 +179,8 @@ export function UsualsPanel({
           </>
         )}
 
-        {usuals.all.length > usuals.forThisSlot.length && !searching && (
+        {/* Nothing to toggle back to when the slot had nothing in it. */}
+        {usuals.all.length > usuals.forThisSlot.length && !searching && !slotIsEmpty && (
           <button
             type="button"
             onClick={() => {

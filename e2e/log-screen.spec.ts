@@ -106,6 +106,19 @@ test('words become an estimate too', async ({ page }) => {
 })
 
 test('Again logs a usual straight onto today', async ({ page }) => {
+  /*
+    Pinned to midday.
+
+    The Again list is filtered by the meal slot the CLOCK says it is, so this
+    test passed for eighteen hours a day and failed between ten at night and
+    four in the morning — when the slot is SNACK and the fixture has none. The
+    date is left alone deliberately: moving it would move the seeded week with
+    it.
+  */
+  const noon = new Date()
+  noon.setHours(12, 0, 0, 0)
+  await page.clock.setFixedTime(noon)
+
   await open(page, '/nutrition')
   const before = await settledNumber(dayTotal(page))
 
@@ -122,4 +135,21 @@ test('Again logs a usual straight onto today', async ({ page }) => {
   await expect
     .poll(async () => await settledNumber(dayTotal(page)), { timeout: 15_000 })
     .toBeGreaterThan(before)
+})
+
+test('Again still offers something at an hour you never eat', async ({ page }) => {
+  // Eleven at night: the slot is SNACK, and almost nobody logs snacks often
+  // enough to form a habit. The panel used to render empty, with every usual
+  // hidden behind a grey "See all" link.
+  const lateTonight = new Date()
+  lateTonight.setHours(23, 0, 0, 0)
+  await page.clock.setFixedTime(lateTonight)
+
+  await open(page, '/log')
+  await page.locator('#log-mode-again').click()
+
+  const usual = page.getByRole('button').filter({ hasText: /\d+ kcal/ }).first()
+  await expect(usual).toBeVisible({ timeout: 10_000 })
+  // And no toggle back to a slot that had nothing in it.
+  await expect(page.getByRole('button', { name: /See all usuals/i })).toBeHidden()
 })

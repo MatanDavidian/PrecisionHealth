@@ -139,7 +139,7 @@ unconfirmed estimate; both have UI, and neither is reachable from a test.
 The app calls itself **Timeline** on screen. The repository is
 **PrecisionHealth**. Before anything is published, those need to be one thing.
 
-- **S3.1** — Decide the product name. This gates the domain, the Store listing,
+- ~~**S3.1** — Decide the product name.~~ ✅ **Lifemetry**, renamed in the app. This gates the domain, the Store listing,
   the privacy policy and every email that will ever be sent. **Options and real
   availability checks are in [`NAMING.md`](NAMING.md); the decision is still
   open.** The code side is done and does not wait for it: the name lives in

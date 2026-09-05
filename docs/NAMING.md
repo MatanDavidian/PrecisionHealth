@@ -127,73 +127,88 @@ sound.
 
 ---
 
-## Current candidates
+## Decided: Lifemetry
 
-A full screen of `Health + noun` and `My Health + noun` rejected almost all of
-it on exact product collisions — Health Journal, Health Story, Health Ledger,
-Health Compass, Health Diary, Health Companion, Health Record, Health Track,
-Health View, Health Trends, Health Dashboard, My Health Story, My Health
-Journal, My Health Journey and more all have live products on the exact name.
-Two survived, and both are clean on every check available here.
-
-| Name | `.com` | `.app` | `.io` | App Store |
-| --- | --- | --- | --- | --- |
-| **Health Daybook** | **free** | **free** | **free** | nothing |
-| **My Health Chronicle** | **free** | **free** | **free** | nothing |
-| Health Chronicle | taken | free | taken | nothing |
-| Health Recordbook | taken | free | free | nothing |
-| Personal Health Book | **live site** | free | free | nothing |
-
-All three domains free for the top two is unusual and is the strongest
-practical argument for either.
-
-### Health Daybook
+`-metry` is the process of measuring — telemetry, optometry, biometry — so the
+name carries a meaning rather than an explanation attached afterwards, and
+"life" keeps the scientific ending warm. Broad enough for meals, sleep,
+training, body, labs and whatever follows, without naming a feature.
 
 ```
-Health Daybook
-Your personal health, day by day.
+Lifemetry
+Understand your patterns over time
 ```
 
-A daybook is literally a chronological daily record, which is what the
-append-only model (D4) makes the app. Fourteen characters, fits a watch face,
-spells itself. "Daybook" is less familiar than "diary" to non-native speakers —
-the cost of it being unoccupied.
+The tagline deliberately says *understand* rather than *measure*. The name
+already carries measurement; the product's actual promise is the pattern.
 
-### My Health Chronicle
+### Verified
 
-```
-My Health Chronicle
-Track your health. Understand your patterns.
-```
+| Check | Result |
+| --- | --- |
+| `lifemetry.app` | **free** |
+| `lifemetry.io` | **free** |
+| `lifemetry.com` | registered 2021 — **but the nameservers are `DNS-EXPIRED.COM`** |
+| iOS App Store | nothing |
+| `github.com/lifemetry` | **free** |
+| `instagram.com/lifemetry` | **taken** |
 
-Describes the whole eventual product rather than daily logging — wearables,
-labs, body progress, patterns, experiments. Nineteen characters, which is long
-for a Connect IQ listing; check how it renders on a watch before committing.
+### Two things to act on
 
-### The standing caveat
+**`lifemetry.com` looks like it is expiring.** It sits on GoDaddy's
+expired-domain nameservers behind Domains By Proxy. That means it is somewhere
+in the renewal-grace/redemption cycle and **may drop**. A backorder or
+drop-catch is cheap and is the only way to get it; once it drops it will be
+taken within seconds by a catcher. Worth doing now — this is the single
+time-sensitive item in the whole naming exercise.
 
-Both are **descriptive**, so findable and weak to defend, and neither has been
-cleared. Every deeper check in this exercise has killed names the previous one
-passed — HealthLog, Tavella, Kestara, Nomari, Treliva, Chroniva. Before buying
-or renaming: USPTO, EUIPO, the Israeli register, Garmin Connect IQ, and an
-exact Google Play search. That is now a small job, with two names in it.
+**Instagram `@lifemetry` is taken** — the motivational account already found.
+Different class of use, not a product collision, but it does mean the obvious
+handle is gone. Settle on the handle before printing anything.
 
-Nothing has been bought and nothing has been renamed. `src/brand.ts` makes the
-rename one edit whenever the answer arrives.
+### The reservation worth keeping
+
+Real `-metry` words are built on Greek combining forms that end in a linking
+vowel: **ge-o-metry, tel-e-metry, bi-o-metry, opt-o-metry**. That vowel is what
+makes the stress land and the word sound native. "Life" is an English word
+ending in a consonant, so *Lifemetry* is a hybrid that breaks the pattern —
+which is exactly why its stress is ambiguous and why the hear-and-spell test is
+worth actually running.
+
+Not disqualifying. *Television* is the same kind of hybrid (Greek *tele* +
+Latin *visio*), was criticised for it, and is now universal. But it predicts
+the failure mode: people will hesitate on first hearing and stress it
+differently from one another. **Say it to five people, ask them to spell it and
+say it back.** Spelling matters more than stress — a product has to teach its
+own pronunciation anyway, but a name people cannot spell is one they cannot
+find.
+
+### Still outstanding
+
+The trademark search — USPTO, EUIPO, Israeli register, classes 9 and 44 — plus
+Google Play and Garmin Connect IQ. **Nothing here is clearance**, and every
+deeper check in this exercise has killed a name the previous one passed.
+
+### Also considered
+
+`Ownpattern` screened cleanest of all — `.com`, `.app` and `.io` **all free**,
+nothing on the App Store — and says the thing this product uniquely becomes.
+It is the fallback if the trademark search goes badly. `Sensearc`, `Ownsense`
+and `Selfknown` all have live sites on the `.com`.
 
 ---
 
-## Rejected earlier, kept because the reasons still apply
+## Rejected, kept because the reasons still apply
 
-- **Coined names** — Tavella, Kestara, Nomari, Treliva, Chroniva all turned out
-  occupied by Play developers, trademark filings or live sites. Velando, Ipsara
-  and Cendara survived a fifty-name screen if a coined direction is ever
-  revisited.
+- **Health Daybook / My Health Chronicle** — both clean, both descriptive.
+  Superseded by wanting a name that can be owned.
+- **Coined names** — Tavella, Kestara, Nomari, Treliva, Chroniva all occupied
+  by Play developers, trademark filings or live sites.
 - **VitalTimeline** — `.com` and `.app` free, but `vital.io` is a hospital
   platform shipping a "Today's Care Timeline" feature.
 - **HealthLog** — an active self-hosted health tracker of the same name.
-- **Timeline**, **PrecisionHealth** — descriptive and undefendable; the two the
-  app and the repository currently use.
+- **Timeline**, **PrecisionHealth** — the two the app and repository used until
+  now; descriptive and undefendable.
 
 ## What this blocks
 

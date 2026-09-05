@@ -307,9 +307,16 @@ Structured workout and nutrition plans → plan adherence evaluation → clinica
 data (labs, conditions, regimens) → body-photo progression → longitudinal
 insights with effect sizes → N-of-1 experiments → proactive agent.
 
-Also parked here: **WhatsApp photo intake** (send a meal photo to a bot, it
-logs it) — needs a server to receive webhooks, so it waits for the backend
-from slice 3; and a **food database / barcode path**, which is the credible
+**WhatsApp intake** was parked here waiting for a backend; slice 3 delivered
+one, so it is now unblocked and planned in
+[`features/whatsapp-intake.md`](features/whatsapp-intake.md). Two findings from
+reviewing it are worth having in the roadmap itself: the webhook is a Deno
+function and **cannot import a line of `src/`**, so sharing the meal builders
+is a prerequisite rather than a detail; and a WhatsApp Business account needs
+**Meta Business verification**, which needs the legal entity E3 has not decided
+— so the channel cannot open before the name does.
+
+Also parked here: a **food database / barcode path**, which is the credible
 route to micronutrients (photo → identity → database), per the slice-2 spec.
 
 Each is a slice on the same pattern. None of them should start before the slice

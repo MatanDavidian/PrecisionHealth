@@ -52,15 +52,25 @@ export interface PolicyDocument {
  */
 const UNDECIDED = (what: string) => `[UNDECIDED: ${what}]`
 
+/**
+ * Where a person reaches a human about any of this.
+ *
+ * On the product's own domain rather than a personal mailbox. A privacy policy
+ * that takes custody of health data and then gives a gmail address for
+ * complaints undercuts itself in its own contact line — and under GDPR Art. 13
+ * naming a controller contact is an obligation, not a courtesy.
+ */
+const CONTACT_EMAIL = 'privacy@vimetry.app'
+
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-09-04',
+  version: '2026-09-06',
   sections: [
     {
       heading: 'Who we are',
       body: [
-        `This app is operated by ${UNDECIDED('legal entity name')}, at ${UNDECIDED('registered address')}. You can reach us about anything on this page at ${UNDECIDED('contact email')}.`,
+        `This app is operated by ${UNDECIDED('legal entity name')}, at ${UNDECIDED('registered address')}. You can reach us about anything on this page at ${CONTACT_EMAIL}.`,
         `We are the controller of the data described below: we decide what is collected and why.`,
       ],
     },
@@ -133,7 +143,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'Delete everything — Settings → Account & data → Delete my account. This removes your account and every record in it, permanently and immediately. We cannot recover it afterwards.',
         'Correct anything — every number in the app is editable, and corrections are kept alongside what they replaced rather than overwriting it.',
         'Withdraw your consent — by deleting your account. The app cannot function without processing the data described here, so there is no partial version of this.',
-        `Complain — in the EU or UK, to your local supervisory authority. In Israel, to the Privacy Protection Authority. We would rather you told us first: ${UNDECIDED('contact email')}.`,
+        `Complain — in the EU or UK, to your local supervisory authority. In Israel, to the Privacy Protection Authority. We would rather you told us first: ${CONTACT_EMAIL}.`,
       ],
     },
     {

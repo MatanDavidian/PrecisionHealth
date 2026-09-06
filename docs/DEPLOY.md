@@ -1,6 +1,6 @@
 # Deploying
 
-**Live at [precisionhealth-9bn.pages.dev](https://precisionhealth-9bn.pages.dev)**,
+**Live at [vimetry.app](https://vimetry.app)**,
 deploying from `main` on every push.
 
 The app is a static bundle plus Supabase, so hosting only has to serve files
@@ -68,16 +68,19 @@ is done the link in your email will bounce you back to `localhost`.
 
 **Authentication → URL Configuration:**
 
-- **Site URL:** `https://<project>.pages.dev` — the deployed app is now the
-  real one.
+- **Site URL:** `https://vimetry.app` — the custom domain, not the
+  `pages.dev` one. This is the host Supabase puts in magic-link emails, so a
+  stale value signs people in on the wrong origin, against a different local
+  store, with nothing on screen to say so.
 - **Redirect URLs:** add
   - `http://localhost:5173/**` so local development keeps working
-  - `https://*.<project>.pages.dev/**` so preview deployments work too
+  - `https://vimetry.app/**`
+  - `https://*.<project>.pages.dev/**` so preview deployments keep working
 
 ## Checking a deploy
 
 ```bash
-curl -I https://<project>.pages.dev/today
+curl -I https://vimetry.app/today
 ```
 
 `200` with `content-type: text/html` means the rewrite is working — a `404`
@@ -114,3 +117,30 @@ Supabase's auth server and the browser is enough. Real sign-ins never hit it —
 the token arrives through the redirect or `verifyOtp`, not from a script racing
 its own request. The machine's clock was checked and is within a second of
 internet time; a fresh token gets 200 from PostgREST directly.
+
+
+## The custom domain
+
+`vimetry.app` is registered at **Porkbun** and its DNS is delegated to
+**Cloudflare** — `heidi.ns.cloudflare.com` and `norm.ns.cloudflare.com`, and
+those two ONLY. Leaving the registrar's own nameservers alongside them is the
+mistake to avoid: nameservers are a set of equally authoritative servers, not a
+fallback chain, so a resolver picking a Porkbun one would get the parking page.
+The site would then work for some visitors and not others, with no pattern, and
+Cloudflare would never finish activating the zone.
+
+**`.app` is on the HSTS preload list.** Browsers refuse plain HTTP for the
+entire TLD, so between pointing DNS and the certificate being issued the site
+is *unreachable* rather than merely insecure. That is expected, and it is also
+a real property worth having: no visitor to this app can ever be downgraded to
+an unencrypted connection.
+
+### Still to do
+
+- **Redirect `www` to the apex.** A Cloudflare Redirect Rule,
+  `www.vimetry.app/*` → `https://vimetry.app/$1` (301). Both currently serve
+  the app, which means two origins, two local stores, two auth origins and
+  duplicate content. The apex is canonical.
+- **Redirect the `pages.dev` address to the apex** for the same reason, keeping
+  the `*.pages.dev` wildcard in Supabase's redirect list so preview
+  deployments still work.

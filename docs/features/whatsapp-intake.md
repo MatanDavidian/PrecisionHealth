@@ -42,13 +42,49 @@ UI invokes" is **not currently possible**, and the choice is:
   from both. `_shared/prompt.ts` is the precedent — that direction already
   works.
 
-**(b), and it is the first task, not a later cleanup.** It is mechanical —
-explicit `.ts` extensions and no `@/` — but it touches the domain, so it wants
-doing while the test suite is the only thing depending on it. **Spike this
-before estimating anything else**: put `buildMeal` behind a Deno `deno check`
-and see what the import graph actually drags in.
+**(b), and it is the first task, not a later cleanup.**
 
-This is the difference between the plan's "1–2 days for a POC" and reality.
+### The spike was run. It is smaller than feared.
+
+Done 2026-09-06, then reverted — a spike produces knowledge, not code, and
+WhatsApp is still blocked behind Meta verification. What it found:
+
+**`src/domain` is already portable.** Every one of its imports is relative to
+itself; it reaches for no path alias, no `@/`, and no browser or Node global.
+Nothing in 2,341 lines touches `window`, `document`, `localStorage`,
+`indexedDB`, `process` or `require`.
+
+So the whole obstacle is import syntax. Adding `.ts` extensions — a regex over
+17 files — was enough for `deno check domain/index.ts` to pass, and for Deno to
+**run** the real arithmetic a webhook needs: canonical units, `dayKey` with an
+IANA zone, provenance, meal versioning.
+
+```
+170 g -> 170 g
+73 kg in g -> 73000
+dayKey('2026-09-06T21:30:00.000Z', 'Asia/Jerusalem') -> 2026-09-07
+provenance -> {"source":"USER","kind":"RAW","recordedAt":"…"}
+```
+
+And the same source still satisfies the existing toolchain: with
+`allowImportingTsExtensions: true` in `tsconfig.json`, `tsc --noEmit` is clean,
+`vite build` is clean, and all 399 unit tests pass. Vitest needed no flag at
+all.
+
+**The recipe, when WhatsApp starts:**
+
+1. Regex `from './x'` → `from './x.ts'` across `src/domain/*.ts` (17 files).
+2. Add `"allowImportingTsExtensions": true` to `tsconfig.json`.
+3. Move or symlink the domain somewhere both toolchains read — `_shared/` is
+   the established direction, since `src/` already imports `_shared/prompt.ts`.
+4. `src/data/newRecords.ts` and `estimatedMeal.ts` additionally import `@/domain`
+   and `@/ai/estimator`; those two aliases are the only remaining edit.
+
+**Revised estimate:** the shared-domain refactor is hours, not the week this
+review first implied. The plan's "1–2 days for a POC" is credible after all.
+What it still omits is everything in §2 to §6 below — Meta verification, the
+signature and idempotency work, and the privacy consequences — which are the
+real bulk.
 
 ---
 
@@ -206,7 +242,7 @@ free and would be the most-used commands.
 **Suggested order:**
 
 ```
-0. Spike: can Deno import the domain?        ← settles every estimate below
+0. Spike: can Deno import the domain?        ← DONE. Yes, in hours.
 1. Shared domain + builders                  ← the refactor, done once
 2. Connections table + issuance (WA-01/S4.1) ← one mechanism, two providers
 3. Webhook: signature, idempotency, 200-fast ← the plumbing that must be right
@@ -240,6 +276,9 @@ stack than it assumed.
 ## Estimate, revised
 
 The plan's "1–2 days POC, 4–7 days for the real thing" is right **for the
-WhatsApp part**. It omits the shared-domain refactor, which is the actual
-gate. Until the spike in step 0 is done, any number is a guess — and that spike
-is an afternoon.
+WhatsApp part**, and the shared-domain refactor it omits turns out to be hours
+rather than days — the spike settled that.
+
+So the estimate stands. What does not stand is the sequencing: the channel
+cannot open until there is a verified Meta Business account, which needs a
+legal entity. **That, not the code, is the critical path.**

@@ -181,8 +181,38 @@ export function Log() {
     language: lang,
   })
 
+  /**
+   * A photo, taken but not yet sent.
+   *
+   * `autoAnalyze` had never been read by anything. It was written by Settings,
+   * stored, exported and covered by data-layer tests, and no screen ever asked
+   * for it — so turning it off changed nothing and the photo went the instant
+   * it was taken. Worse than a dead control: it is a promise about when a
+   * picture of your food leaves the device.
+   */
+  const [held, setHeld] = useState<File>()
+
   async function onPhotoChosen(file: File) {
     setSaved(false)
+    /*
+      Settings are already loaded above and may still be in flight. Undefined
+      means unknown, and unknown must HOLD rather than send: sending a photo
+      that should have waited cannot be taken back, while waiting for one that
+      could have gone costs a tap.
+    */
+    if (!settings?.autoAnalyze) {
+      // Held, not sent. The note field below is the whole point of waiting —
+      // "one slice, not two" is worth more to the model than a better prompt.
+      setHeld(file)
+      return
+    }
+    await start(file, hints(), slot, t(SLOT_LABEL(slot)))
+  }
+
+  async function analyzeHeld() {
+    if (!held) return
+    const file = held
+    setHeld(undefined)
     await start(file, hints(), slot, t(SLOT_LABEL(slot)))
   }
 
@@ -194,6 +224,7 @@ export function Log() {
 
   /** Drops the input and every hint that belonged to it. */
   function clearInput() {
+    setHeld(undefined)
     clear()
     setFoodName('')
     setGrams('')
@@ -319,6 +350,9 @@ export function Log() {
         <PhotoPanel
           note={note}
           onNoteChange={setNote}
+          held={held}
+          onAnalyze={() => void analyzeHeld()}
+          onDiscardHeld={() => setHeld(undefined)}
           onPhoto={(file) => void onPhotoChosen(file)}
           usualNow={usualNow}
           slot={slot}

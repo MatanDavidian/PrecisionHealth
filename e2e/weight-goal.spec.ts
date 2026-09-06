@@ -15,6 +15,18 @@ const target = (page: Page) => page.getByRole('spinbutton', { name: 'Target' })
 const current = (page: Page) => page.getByRole('spinbutton', { name: 'Current' })
 
 /**
+ * Types a value and commits it.
+ *
+ * The stepper holds a draft now and writes only when told to — one weigh-in is
+ * one record, rather than one per keystroke. So a test that fills and walks
+ * away is testing a draft, not a saved value.
+ */
+const setTo = async (page: Page, field: ReturnType<typeof target>, value: string) => {
+  await field.fill(value)
+  await page.getByRole('button', { name: 'Save', exact: true }).first().click()
+}
+
+/**
  * The weight goal as it was actually persisted.
  *
  * `direction` is drawn nowhere: it decides whether the goal can ever be met,
@@ -83,7 +95,7 @@ test('setting a target records which way it points, so it can be met', async ({ 
 
   // Below where you stand is a ceiling: arriving there should read as arrived,
   // not as overshoot. It was written as REACH, which asked for the exact gram.
-  await target(page).fill(String(weight - 4))
+  await setTo(page, target(page), String(weight - 4))
   await expect(page.getByText(/No target set yet/i)).toBeHidden()
   await expect
     .poll(async () => (await storedWeightGoal(page))?.direction, { timeout: 10_000 })
@@ -91,7 +103,7 @@ test('setting a target records which way it points, so it can be met', async ({ 
 
   // Above it is a floor. Nobody states this when they name a target weight, so
   // it is worked out from where they are.
-  await target(page).fill(String(weight + 4))
+  await setTo(page, target(page), String(weight + 4))
   await expect
     .poll(async () => (await storedWeightGoal(page))?.direction, { timeout: 10_000 })
     .toBe('AT_LEAST')
@@ -105,20 +117,20 @@ test('the gap is counted the way you would count it', async ({ page }) => {
   await open(page, '/settings')
   const weight = await settledWeight(page)
 
-  await target(page).fill(String(weight - 3))
+  await setTo(page, target(page), String(weight - 3))
   await expect(page.getByText('3 kg to lose')).toBeVisible()
 
-  await target(page).fill(String(weight + 2))
+  await setTo(page, target(page), String(weight + 2))
   await expect(page.getByText('2 kg to gain')).toBeVisible()
 
-  await target(page).fill(String(weight))
+  await setTo(page, target(page), String(weight))
   await expect(page.getByText('You are there.')).toBeVisible()
 })
 
 test('a target belongs to the person, so it survives a reload', async ({ page }) => {
   await open(page, '/settings')
   await settledWeight(page)
-  await target(page).fill('68')
+  await setTo(page, target(page), '68')
   await expect(page.getByText(/kg to lose/)).toBeVisible()
 
   await open(page, '/settings')

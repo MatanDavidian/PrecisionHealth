@@ -57,6 +57,10 @@ const en = {
 
   'log.photo.take': 'Take a photo',
   'log.photo.orLibrary': 'or choose one from your library',
+  'log.photo.heldAlt': 'The meal you just photographed',
+  'log.photo.analyzeNow': 'Analyze this photo',
+  'log.photo.discard': 'Take another',
+  'log.photo.notSentYet': 'Nothing has been sent yet.',
   'log.photo.addNote': 'Add a note',
   'log.photo.noteHint': 'Optional, and it goes to the model with the photo — "no oil", "half portion".',
   'log.photo.notePlaceholder': 'No oil, half portion, sauce on the side…',
@@ -638,6 +642,7 @@ const en = {
   'plan.youAreThere': 'You are there.',
   'plan.toLose': '{count} kg to lose',
   'plan.toGain': '{count} kg to gain',
+  'plan.save': 'Save',
   'plan.less': 'Less {name}',
   'plan.more': 'More {name}',
 
@@ -763,6 +768,10 @@ const he: Dictionary = {
 
   'log.photo.take': 'צילום תמונה',
   'log.photo.orLibrary': 'או בחירה מגלריית התמונות',
+  'log.photo.heldAlt': 'הארוחה שצילמתם',
+  'log.photo.analyzeNow': 'לנתח את התמונה',
+  'log.photo.discard': 'לצלם שוב',
+  'log.photo.notSentYet': 'עוד לא נשלח כלום.',
   'log.photo.addNote': 'הוספת הערה',
   'log.photo.noteHint': 'לא חובה, ונשלח למודל יחד עם התמונה — "בלי שמן", "חצי מנה".',
   'log.photo.notePlaceholder': 'בלי שמן, חצי מנה, הרוטב בצד…',
@@ -1337,6 +1346,7 @@ const he: Dictionary = {
   'plan.youAreThere': 'אתם שם.',
   'plan.toLose': 'נותרו {count} ק״ג לרדת',
   'plan.toGain': 'נותרו {count} ק״ג לעלות',
+  'plan.save': 'שמירה',
   'plan.less': 'פחות {name}',
   'plan.more': 'יותר {name}',
 

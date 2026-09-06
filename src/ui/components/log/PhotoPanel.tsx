@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { convert, type MealSlot, type UsualMeal } from '@/domain'
 import { useT } from '../../i18n'
 
@@ -15,6 +15,9 @@ export function PhotoPanel({
   note,
   onNoteChange,
   onPhoto,
+  held,
+  onAnalyze,
+  onDiscardHeld,
   usualNow,
   onLogUsual,
   onSeeAll,
@@ -23,6 +26,10 @@ export function PhotoPanel({
   note: string
   onNoteChange: (next: string) => void
   onPhoto: (file: File) => void
+  /** Taken but not sent, because "analyze automatically" is off. */
+  held?: File
+  onAnalyze: () => void
+  onDiscardHeld: () => void
   /** The single thing eaten most often at this hour, if there is one. */
   usualNow?: UsualMeal
   onLogUsual: (usual: UsualMeal) => void
@@ -32,7 +39,27 @@ export function PhotoPanel({
 }) {
   const t = useT()
   const fileInput = useRef<HTMLInputElement>(null)
+  // Open by default once a photo is waiting: adding a detail is the reason it
+  // is waiting at all.
   const [noteOpen, setNoteOpen] = useState(note.trim().length > 0)
+
+  /*
+    An object URL for the held photo, revoked when it changes or goes.
+
+    Not a data URL: these are full-size camera files, and turning several
+    megabytes into base64 on the main thread to show a thumbnail is how a
+    phone drops frames the moment you take a picture.
+  */
+  const [preview, setPreview] = useState<string>()
+  useEffect(() => {
+    if (!held) {
+      setPreview(undefined)
+      return
+    }
+    const url = URL.createObjectURL(held)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [held])
 
   return (
     <div>
@@ -49,15 +76,53 @@ export function PhotoPanel({
         }}
       />
 
-      <button
-        type="button"
-        onClick={() => fileInput.current?.click()}
-        className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-card border border-dashed border-hairline bg-card text-ink-muted transition-colors hover:bg-card-soft"
-      >
-        <CameraIcon />
-        <span className="text-sm font-medium text-ink">{t('log.photo.take')}</span>
-        <span className="text-xs">{t('log.photo.orLibrary')}</span>
-      </button>
+      {held ? (
+        /*
+          Taken, and going nowhere until it is asked to.
+
+          The whole reason to turn automatic analysis off is to say something
+          about the plate first — how it was cooked, what is under the salad —
+          so the photo and the note have to be on screen at the same time.
+        */
+        <div className="overflow-hidden rounded-card border border-hairline bg-card">
+          <img
+            src={preview}
+            alt={t('log.photo.heldAlt')}
+            className="aspect-[4/3] w-full object-cover"
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => fileInput.current?.click()}
+          className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-card border border-dashed border-hairline bg-card text-ink-muted transition-colors hover:bg-card-soft"
+        >
+          <CameraIcon />
+          <span className="text-sm font-medium text-ink">{t('log.photo.take')}</span>
+          <span className="text-xs">{t('log.photo.orLibrary')}</span>
+        </button>
+      )}
+
+      {held && (
+        <div className="flex flex-wrap items-center gap-3 pt-3">
+          <button
+            type="button"
+            onClick={onAnalyze}
+            disabled={busy}
+            className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
+          >
+            {t('log.photo.analyzeNow')}
+          </button>
+          <button
+            type="button"
+            onClick={onDiscardHeld}
+            className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+          >
+            {t('log.photo.discard')}
+          </button>
+          <span className="text-xs text-ink-muted">{t('log.photo.notSentYet')}</span>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3 pt-3">
         {noteOpen ? null : (

@@ -12,6 +12,7 @@ import { useLang, LANGUAGES } from '../i18n'
 import type { StringKey } from '../i18n/strings'
 import { YouSettings } from '../components/YouSettings'
 import { AccountData } from '../components/AccountData'
+import { Devices } from '../components/Devices'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay } from '../useSelectedDay'
 import { convert, directionToward, goalFor, isObjective } from '@/domain'
@@ -553,6 +554,10 @@ export function Settings() {
                   </>
                 )}
               </Card>
+
+              {/* Above export and delete: adding a watch is routine, and the
+                  two destructive actions belong at the bottom. */}
+              <Devices session={session} />
 
               <AccountData session={session} authAvailable={authAvailable} onChanged={refresh} />
             </>

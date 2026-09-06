@@ -255,6 +255,26 @@ cost-of-trial figures.
 If the migrations are not applied, the app quietly stays in bring-your-own-key
 mode rather than advertising a trial it cannot honour.
 
+### Adding a watch
+
+```bash
+npx supabase functions deploy issue-device-token
+```
+
+No secrets to set. Until it is deployed, **Settings → Account & data → Watches
+and devices** reports a failure and creates nothing, which is the right way
+round for a screen that mints credentials.
+
+It is a function rather than a client insert because migration 0008
+deliberately withholds `insert` on `device_tokens` from `authenticated`: only
+the service role may write a row, so the plaintext exists on a server for the
+length of one response and nowhere else. The table stores a sha256 and the
+`select` grant excludes even that column, so **no endpoint can return a token
+after it is created** — losing one means minting another.
+
+`scripts/mint-device-token.mjs` is superseded and can go once the function is
+deployed.
+
 ### Deleting an account
 
 ```bash

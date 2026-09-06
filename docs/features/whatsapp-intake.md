@@ -87,7 +87,20 @@ So:
 - **Store the pairing code hashed**, and expire it in minutes. `device_tokens`
   (migration 0008) already does exactly this — sha256, never plaintext.
 
-### WA-01 and S4.1 are the same feature
+### WA-01 and S4.1 are close, but not the same feature
+
+**Correcting this review.** It first claimed they were one feature. Building
+S4.1 showed the overlap is the *shape* — mint a secret, show it once, list it,
+revoke it — and not the credential. A device token IS the credential: 256 bits,
+long-lived, pasted into Connect IQ once. A WhatsApp pairing code is short,
+human-typeable, short-lived, and **exchanged for** a connection rather than
+being one.
+
+Two different lifetimes and two different threat models, so one table serving
+both would be a table with half its columns null. What should be shared is the
+screen and the revocation path, not the row.
+
+### The original claim, kept because the reasoning still applies to the UI
 
 Phase 1 already has **S4.1 — issue a device token from the web app** for
 Garmin: mint a secret, show it once, list it, revoke it. WA-01 is the same

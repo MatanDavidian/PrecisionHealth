@@ -98,6 +98,10 @@ export interface StubOptions {
    * that would invite someone to try again on an account that no longer exists.
    */
   deletion?: 'ok' | 'refused' | 'down' | 'stranded'
+  /** What the device-token endpoint does when asked for one. */
+  minting?: 'ok' | 'full' | 'down'
+  /** Device tokens the account already holds, by label. */
+  devices?: string[]
   /**
    * Whether this account has already agreed to the current policy.
    *
@@ -211,6 +215,61 @@ export async function stubSupabase(page: Page, options: StubOptions = {}) {
         recorded_at: new Date().toISOString(),
       }))
     : []
+
+  /*
+    Device tokens, remembered like consents and for the same reason: the screen
+    writes and then re-reads, so a stateless stub would show a list that never
+    grows and a revoke that never takes.
+
+    The plaintext token appears only in the mint response, exactly as the real
+    endpoint behaves — nothing here can hand it back afterwards, which is the
+    property the screen is built around.
+  */
+  const devices: Record<string, unknown>[] = (options.devices ?? []).map((label, i) => ({
+    id: `device-${i}`,
+    label,
+    created_at: new Date().toISOString(),
+    revoked_at: null,
+    last_used_at: null,
+  }))
+
+  await page.route('**/rest/v1/device_tokens**', async (route) => {
+    const request = route.request()
+    if (request.method() === 'PATCH') {
+      // Revoking. The row stays; only `revoked_at` is set.
+      const url = new URL(request.url())
+      const id = (url.searchParams.get('id') ?? '').replace('eq.', '')
+      const row = devices.find((d) => d.id === id)
+      if (row) row.revoked_at = new Date().toISOString()
+      return json(route, row ? [row] : [])
+    }
+    return json(route, devices)
+  })
+
+  await page.route('**/functions/v1/issue-device-token**', async (route) => {
+    if (options.minting === 'down') return route.abort('connectionfailed')
+    if (options.minting === 'full') {
+      return json(route, { error: 'too_many_tokens', max: 8 }, 409)
+    }
+    const label = String(
+      (JSON.parse(route.request().postData() ?? '{}') as { label?: string }).label ?? '',
+    )
+    const created = {
+      id: `device-${devices.length}`,
+      label,
+      created_at: new Date().toISOString(),
+      revoked_at: null,
+      last_used_at: null,
+    }
+    devices.unshift(created)
+    return json(route, {
+      // 64 hex characters, the shape the real function returns.
+      token: 'a'.repeat(64),
+      id: created.id,
+      label,
+      createdAt: created.created_at,
+    })
+  })
 
   await page.route('**/rest/v1/consents**', async (route) => {
     if (route.request().method() === 'POST') {

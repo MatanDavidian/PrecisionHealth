@@ -659,6 +659,27 @@ const en = {
 
 
   // ------------------------------------------------------ language prompt --
+  'devices.title': 'Watches and devices',
+  'devices.body':
+    'A watch cannot sign in, so it holds a token instead. Create one here, paste it into the app on the watch, and it can add your activity to this account — and nothing else. It can write readings; it cannot read your history.',
+  'devices.needAccount':
+    'Devices belong to an account. Sign in first, so there is somewhere for a watch to send readings.',
+  'devices.nameLabel': 'What is it',
+  'devices.namePlaceholder': 'My FR265',
+  'devices.add': 'Create a token',
+  'devices.adding': 'Creating…',
+  'devices.copyNow': 'Token for {label}',
+  'devices.onceOnly':
+    'Copy it now. This is the only time it is shown — it is stored hashed, so nobody can look it up again, including us. Lost one is replaced, not recovered.',
+  'devices.copy': 'Copy',
+  'devices.copied': 'Copied',
+  'devices.done': 'Done',
+  'devices.revoke': 'Revoke',
+  'devices.revokeFailed': 'That could not be revoked.',
+  'devices.lastUsed': 'Last sent {date}.',
+  'devices.neverUsed': 'Has not sent anything yet.',
+  'devices.none': 'No devices yet.',
+
   'consent.title': 'Before we hold your health data',
   'consent.body':
     'This app records what you eat and how your body is doing, and sends what you photograph to a model that reads it. Both need your agreement, and both are recorded — including which version you agreed to.',
@@ -1337,6 +1358,27 @@ const he: Dictionary = {
 
 
   // ------------------------------------------------------ language prompt --
+  'devices.title': 'שעונים ומכשירים',
+  'devices.body':
+    'שעון לא יכול להתחבר, ולכן הוא מחזיק אסימון. צרו אחד כאן, הדביקו אותו באפליקציה שבשעון, והוא יוכל להוסיף את הפעילות שלכם לחשבון הזה — ורק אותה. הוא יכול לכתוב מדידות; הוא לא יכול לקרוא את ההיסטוריה שלכם.',
+  'devices.needAccount':
+    'מכשירים שייכים לחשבון. היכנסו קודם, כדי שיהיה לאן שהשעון ישלח מדידות.',
+  'devices.nameLabel': 'מה זה',
+  'devices.namePlaceholder': 'ה־FR265 שלי',
+  'devices.add': 'יצירת אסימון',
+  'devices.adding': 'יוצרים…',
+  'devices.copyNow': 'אסימון עבור {label}',
+  'devices.onceOnly':
+    'העתיקו עכשיו. זו הפעם היחידה שהוא מוצג — הוא נשמר מגובב, ואף אחד לא יכול לשלוף אותו שוב, כולל אנחנו. אסימון שאבד מוחלף, לא משוחזר.',
+  'devices.copy': 'העתקה',
+  'devices.copied': 'הועתק',
+  'devices.done': 'סיימתי',
+  'devices.revoke': 'ביטול',
+  'devices.revokeFailed': 'לא הצלחנו לבטל.',
+  'devices.lastUsed': 'שלח לאחרונה ב{date}.',
+  'devices.neverUsed': 'עוד לא שלח כלום.',
+  'devices.none': 'אין עדיין מכשירים.',
+
   'consent.title': 'לפני שנחזיק את נתוני הבריאות שלכם',
   'consent.body':
     'האפליקציה מתעדת מה אתם אוכלים ומה מצב הגוף שלכם, ושולחת את מה שאתם מצלמים למודל שקורא את זה. לשניהם צריך את הסכמתכם, ושניהם נרשמים — כולל לאיזו גרסה הסכמתם.',

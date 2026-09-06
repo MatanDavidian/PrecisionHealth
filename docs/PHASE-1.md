@@ -162,7 +162,16 @@ The app calls itself **Timeline** on screen. The repository is
 The Garmin credential is compiled into the `.prg`. That works for exactly one
 watch and cannot be published.
 
-- **S4.1** — **Issue a device token from the web app.** Settings → Garmin →
+- ~~**S4.1** — **Issue a device token from the web app.**~~ ✅ done, as
+  `supabase/functions/issue-device-token` plus Settings → Account & data →
+  Watches and devices. Minting is behind the service role because migration
+  0008 withholds `insert` from `authenticated` on purpose; the plaintext exists
+  on a server for the length of one response and is never obtainable again.
+  Revoking sets `revoked_at` rather than deleting, so a revoked token's past
+  writes stay attributable. `scripts/mint-device-token.mjs` is superseded.
+  Deployment outstanding — see `supabase/README.md`.
+
+  *Original:* **Issue a device token from the web app.** Settings → Garmin →
   Create device token, shown once, listed and revocable afterwards. Replaces
   `scripts/mint-device-token.mjs`. The table already supports it; what is
   missing is an endpoint that mints and a screen that shows.

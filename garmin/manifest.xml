@@ -11,23 +11,24 @@
   UserProfile.Profile and are unreachable without it; every use is guarded, so a
   refusal degrades to a dash rather than crashing.
 
-  THE ID BELOW WAS INVENTED, AND SHOULD BE REGENERATED BEFORE THIS IS ANYTHING
-  BUT DISPOSABLE.
+  THE ID BELOW IS REAL AND MUST NEVER CHANGE AGAIN.
 
-  Run `Monkey C: Regenerate UUID` from the VS Code command palette, once, and
-  then never change it again. This is the application's own identity and is NOT
-  the Connect IQ Store identifier — the Store issues a separate public id later,
-  and Garmin's intent API distinguishes the two as manifest-id:// and
-  store-id://. Changing the manifest UUID after release makes an installed app
-  and its update look like two different applications.
+  It was invented while this was a disposable probe, and regenerating it was
+  S4.3 — done once, at the last moment it was free. This is the application's
+  own identity and is NOT the Connect IQ Store identifier; the Store issues a
+  separate public id later, and Garmin's intent API distinguishes the two as
+  manifest-id:// and store-id://.
 
-  A syntactically valid value is left in place so the project builds and runs on
-  a watch today; that is all it is for.
+  Changing it after release makes an installed app and its update look like two
+  different applications: the old one is orphaned on the watch, with its
+  settings — including the device token — stranded inside it. That is why this
+  had to happen before anyone but the author had it installed, and why it
+  cannot happen again.
 -->
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
   <iq:application
       entry="PocApp"
-      id="a7c41e0b93d64f8fa1b25c60d7e3849f"
+      id="a94cbd8994124afb834699207f22977a"
       launcherIcon="@Drawables.LauncherIcon"
       minApiLevel="3.2.0"
       name="@Strings.AppName"

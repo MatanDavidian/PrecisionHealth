@@ -177,7 +177,12 @@ watch and cannot be published.
   missing is an endpoint that mints and a screen that shows.
 - **S4.2** — The watch reads it from Connect IQ settings. **Already works** —
   `Cfg` reads `Properties` before the compiled-in value precisely for this.
-- **S4.3** — Regenerate the manifest UUID, once, and never again.
+- ~~**S4.3** — Regenerate the manifest UUID, once, and never again.~~ ✅ done.
+  Regenerated at the last moment it was free: the id is the application's own
+  identity, and changing it after anyone has installed the app orphans their
+  copy with its settings — including the device token — stranded inside it.
+  **Re-sideload the watch app**; the old one is now a different application and
+  should be deleted.
 - **S4.4** — Store listing: description, screenshots, supported devices, the
   privacy policy URL from E5.
 - **S4.5** — Later, and separately: replace token-paste with a pairing code.

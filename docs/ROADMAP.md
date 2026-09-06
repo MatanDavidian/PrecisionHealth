@@ -301,6 +301,15 @@ The slices below are Phase 2 and beyond. **None of them should start while
 Phase 1 is unfinished**, because each one adds surface that Phase 1 would then
 have to cover.
 
+## The three phases
+
+The owner's phase plan, and what I would change about it, is in
+[`PHASES.md`](PHASES.md). The short version: the shape is right, and it wants
+three reorderings — the legal entity first because it blocks four other things,
+payment last because there is nothing to sell until the rest works, and
+WhatsApp out of Phase 1 because Meta verification is calendar time nobody
+controls.
+
 ## Later, in rough order
 
 Structured workout and nutrition plans → plan adherence evaluation → clinical

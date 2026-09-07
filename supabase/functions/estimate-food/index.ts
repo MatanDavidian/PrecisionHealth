@@ -27,6 +27,7 @@ import {
   MODEL_TERRA,
   SYSTEM_PROMPT,
   TEXT_SYSTEM_PROMPT,
+  dailyBudgetMicros,
   TRIAL_ANALYSES,
   TRIAL_MODEL,
   TRIAL_MODELS,
@@ -204,6 +205,52 @@ Deno.serve(async (request) => {
     // Misconfiguration, not the user's fault — say so rather than blaming them.
     await record({ model: TRIAL_MODEL, key_source: keySource, outcome: 'REFUSED_NO_KEY' })
     return json({ error: 'master_key_missing' }, 503)
+  }
+
+  /*
+    --- the ceiling ---------------------------------------------------------
+
+    Before entitlement, and before anything is sent anywhere.
+
+    The per-user trial bounds what one person costs. Nothing bounded the total:
+    sign-up is open, so the exposure was (accounts × ten analyses) with no
+    upper limit. This is the circuit breaker, and unlike the per-user wall it
+    applies to follow-ups too — a follow-up is free to the USER because the
+    analysis was already paid for, but it is not free to the key, and this is a
+    limit on money rather than a quota on people.
+
+    Measured, not modelled: `cost_micros` is written per call from the
+    provider's own token report, so the number compared here is what was
+    actually spent.
+  */
+  const budgetMicros = dailyBudgetMicros(Deno.env.get('DAILY_BUDGET_MICROS'))
+  if (!isAdmin) {
+    const since = new Date()
+    since.setUTCHours(0, 0, 0, 0)
+    const { data: spentRows, error: spendError } = await admin
+      .from('usage')
+      .select('cost_micros')
+      .in('key_source', ['MASTER_TRIAL', 'MASTER_PLAN', 'MASTER_ADMIN'])
+      .gte('created_at', since.toISOString())
+
+    /*
+      A ledger that cannot be read fails CLOSED here, where the per-user check
+      fails closed too. The difference is what it protects: being unable to
+      count someone's tenth photo is an inconvenience, and being unable to see
+      the day's spend while continuing to spend is how a bill runs away.
+    */
+    if (spendError) return json({ error: 'ledger_unavailable' }, 503)
+
+    const spent = (spentRows ?? []).reduce(
+      (total, row) => total + (Number(row.cost_micros) || 0),
+      0,
+    )
+    if (spent >= budgetMicros) {
+      await record({ model: TRIAL_MODEL, key_source: keySource, outcome: 'REFUSED_BUDGET' })
+      // Named for what happened. "Trial exhausted" would blame the user for a
+      // ceiling that has nothing to do with them.
+      return json({ error: 'service_at_capacity' }, 503)
+    }
   }
 
   // --- entitlement -----------------------------------------------------------

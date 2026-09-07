@@ -280,6 +280,30 @@ export function costMicros(model: string, inputTokens: number, outputTokens: num
   return Math.round(inputTokens * rate.input + outputTokens * rate.output)
 }
 
+/**
+ * The most a single day may cost on the owner's keys, in micros of a dollar.
+ *
+ * The per-user trial bounds what ONE person costs and bounds nothing in total:
+ * sign-up is open, so the exposure is (accounts × ten analyses) with no upper
+ * limit anywhere. This is the circuit breaker for that, and it is the only
+ * failure in this system that costs real money.
+ *
+ * Ten dollars, because sol runs about $0.11 an analysis and a full trial is
+ * roughly a dollar a head — so a day's ceiling still lets about ten new people
+ * try the whole thing, which is far more than arrive today. It is meant to be
+ * invisible in normal use and decisive in abnormal use.
+ *
+ * Overridable by a function secret so it can be raised on a launch day without
+ * a deploy, and lowered instantly if something goes wrong.
+ */
+export const DEFAULT_DAILY_BUDGET_MICROS = 10_000_000
+
+export const dailyBudgetMicros = (fromEnv?: string): number => {
+  const parsed = Number(fromEnv)
+  // A malformed secret must not silently mean "no ceiling".
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_DAILY_BUDGET_MICROS
+}
+
 /** What a trial is worth: ten analyses, once, for the life of the account. */
 export const TRIAL_ANALYSES = 10
 

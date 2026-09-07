@@ -30,6 +30,15 @@ const json = (body: unknown, status = 200) =>
 
 /** The most days a single sync may carry. getHistory() returns seven. */
 const MAX_DAYS = 14
+
+/**
+ * The shortest gap allowed between two syncs from one device.
+ *
+ * Not a security boundary — a leaked token is a leaked token — but a bound on
+ * how fast one can write. The watch syncs on open (throttled to 30 minutes)
+ * and once a day in the background, so this never touches normal use.
+ */
+const MIN_SYNC_SECONDS = 60
 /**
  * The largest plausible value per code.
  *
@@ -105,11 +114,35 @@ Deno.serve(async (request) => {
   // stored — and a dump of this table yields nothing that works.
   const { data: token } = await admin
     .from('device_tokens')
-    .select('id, user_id, revoked_at')
+    .select('id, user_id, revoked_at, last_used_at')
     .eq('token_hash', await sha256Hex(presented))
     .maybeSingle()
 
   if (!token || token.revoked_at) return json({ error: 'bad_device_token' }, 401)
+
+  /*
+    One sync a minute per device, at most.
+
+    This endpoint is the only one anything on the internet can reach holding
+    nothing but a bearer token, and every accepted request writes rows. The
+    watch already throttles itself to once per half hour, and the background
+    job runs daily, so a minute is generous by two orders of magnitude — it
+    exists for the two cases the client cannot be trusted to prevent: a build
+    that loops, and a token that has leaked.
+
+    Measured from `last_used_at`, which is only stamped after a sync SUCCEEDS,
+    so a retry after a failure is never throttled. 429 with Retry-After,
+    because the honest answer is "later", not "no".
+  */
+  const lastUsed = token.last_used_at ? Date.parse(token.last_used_at as string) : 0
+  const sinceLast = (Date.now() - lastUsed) / 1000
+  if (Number.isFinite(sinceLast) && sinceLast < MIN_SYNC_SECONDS) {
+    const wait = Math.ceil(MIN_SYNC_SECONDS - sinceLast)
+    return new Response(JSON.stringify({ error: 'too_soon', retryAfter: wait }), {
+      status: 429,
+      headers: { ...CORS, 'Content-Type': 'application/json', 'Retry-After': String(wait) },
+    })
+  }
 
   let body: { zone?: unknown; observations?: unknown }
   try {

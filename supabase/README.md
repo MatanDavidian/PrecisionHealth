@@ -255,6 +255,42 @@ cost-of-trial figures.
 If the migrations are not applied, the app quietly stays in bring-your-own-key
 mode rather than advertising a trial it cannot honour.
 
+### The spend ceiling
+
+```bash
+npx supabase functions deploy estimate-food
+```
+
+Migration `0010_spend_ceiling.sql` must be applied first, or the ledger will
+reject the `REFUSED_BUDGET` outcome the function writes when it turns someone
+away — and it fails closed, so the function would start refusing every request.
+
+**What it does.** The trial caps analyses at ten *per user*, which bounds what
+one person costs and bounds nothing in total: sign-up is open, so the exposure
+was (accounts × ten) with no upper limit anywhere. Before each analysis the
+function now sums today's `cost_micros` across the owner-funded key sources and
+refuses with `service_at_capacity` (503) once the day's spend reaches the
+ceiling.
+
+Measured, not modelled — `cost_micros` comes from the provider's own token
+report. Default **$10 a day**, which is roughly ten full trials, so it is
+invisible in normal use. Raise or lower it without a deploy:
+
+```bash
+npx supabase secrets set DAILY_BUDGET_MICROS=25000000   # $25
+```
+
+A malformed value falls back to the default rather than meaning "no ceiling".
+
+**Watch it** from the SQL Editor:
+
+```sql
+select * from public.admin_budget order by on_day desc limit 14;
+```
+
+`refused_for_budget` above zero means real people were turned away. There is no
+email alert yet — that needs a mail or webhook integration and is still owed.
+
 ### Adding a watch
 
 ```bash

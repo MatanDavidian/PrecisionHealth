@@ -230,8 +230,17 @@ here.*
 - **S5.6** — **A per-source consent screen.** Activity, Recovery, Body,
   Clinical — enabled separately rather than a blanket grant. Also the honest
   place to say what leaves the device for the AI.
-- **S5.7** — Operational floor: error monitoring, rate limiting on public
-  endpoints, and an alert when the AI spend runs away.
+- **S5.7** — Operational floor. **Partly done:**
+  - ~~an alert when the AI spend runs away~~ → a **ceiling**, which is better
+    than an alert: migration 0010 plus a check in `estimate-food` that sums the
+    day's measured `cost_micros` and refuses at $10 by default
+    (`DAILY_BUDGET_MICROS` to change it). The per-user trial bounded one
+    person and nothing in total.
+  - ~~rate limiting on public endpoints~~ → `device-sync` now allows one sync a
+    minute per device, measured from `last_used_at`, which is only stamped
+    after success so retries are never throttled.
+  - **Still owed:** error monitoring, and an actual notification when the
+    ceiling is hit — `admin_budget` shows it, but only if someone looks.
 
 ---
 

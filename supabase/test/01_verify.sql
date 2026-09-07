@@ -314,3 +314,58 @@ end
 $$;
 
 reset role;
+
+-- ------------------------------------------------------------ spend ceiling --
+-- 0010. The ledger has to be able to say WHY someone was turned away, and the
+-- budget view has to add up what a day cost.
+
+set role postgres;
+
+do $$
+begin
+  insert into public.usage (id, user_id, day, model, key_source, outcome)
+  values ('usage-budget-1', '11111111-1111-1111-1111-111111111111', current_date,
+          'gpt-5.6-sol', 'MASTER_TRIAL', 'REFUSED_BUDGET');
+  raise notice 'PASS: a budget refusal can be recorded';
+exception
+  when check_violation then raise exception 'FAIL: REFUSED_BUDGET was rejected';
+end
+$$;
+
+-- Turning someone away for the ceiling is a different event from turning them
+-- away for their own quota, and the ledger must not conflate them.
+insert into public.usage (id, user_id, day, model, key_source, outcome, cost_micros)
+values
+  ('usage-budget-2', '11111111-1111-1111-1111-111111111111', current_date,
+   'gpt-5.6-sol', 'MASTER_TRIAL', 'OK', 250000),
+  ('usage-budget-3', '11111111-1111-1111-1111-111111111111', current_date,
+   'gpt-5.6-sol', 'MASTER_TRIAL', 'OK_FOLLOWUP', 150000),
+  ('usage-budget-4', '22222222-2222-2222-2222-222222222222', current_date,
+   'gpt-5.6-terra', 'USER_KEY', 'OK', 9999999);
+
+-- The sum is the assertion. 400000 is the two master-key rows above; the
+-- USER_KEY row's 9,999,999 is excluded, which is the whole point — a person
+-- spending their own money must never count against the owner's ceiling.
+-- Earlier tests in this file share today, so served/refused are >= rather
+-- than =.
+select case
+  when spent_micros = 400000 and refused_for_budget >= 1 and calls_served >= 2
+    then 'PASS: the day adds up, and a user''s own key is not counted'
+  else 'FAIL: spent=' || spent_micros || ' served=' || calls_served
+       || ' refused=' || refused_for_budget
+  end
+from public.admin_budget
+where on_day = current_date;
+
+do $$
+begin
+  insert into public.usage (id, user_id, day, model, key_source, outcome)
+  values ('usage-budget-5', '11111111-1111-1111-1111-111111111111', current_date,
+          'gpt-5.6-sol', 'MASTER_TRIAL', 'REFUSED_BECAUSE_MONDAY');
+  raise exception 'FAIL: an unknown outcome was accepted';
+exception
+  when check_violation then raise notice 'PASS: outcome is still constrained';
+end
+$$;
+
+reset role;

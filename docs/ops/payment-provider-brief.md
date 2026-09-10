@@ -36,25 +36,26 @@ the thing this brief exists to specify.**
 > **Lemon Squeezy** and **Stripe Managed Payments**, which is Stripe's own
 > merchant-of-record product built after it acquired Lemon Squeezy in 2024.
 >
-> **Answer these, with a link to the page you found each on:**
+> Israel is a supported seller country for Lemon Squeezy — that much is
+> settled. **Answer these, with a link to the page you found each on:**
 >
-> 1. **Is Israel a supported seller country** for each? Not "can Israelis buy"
->    — can an Israeli seller open a store and receive payouts.
-> 2. **What entity does a seller need?** Specifically: is a sole trader
+> 1. **What entity does a seller need?** Specifically: is a sole trader
 >    (עוסק פטור / עוסק מורשה) accepted, or is a registered company (ח.פ.)
->    required? This is the single answer I most need.
-> 3. **What documents does onboarding ask for?** Tax forms, ID, proof of
+>    required? **This is the single answer I most need** — everything else
+>    waits on it. Israel is already confirmed as a supported seller country, so
+>    do not spend time re-establishing that; I need the entity TYPE.
+> 2. **What documents does onboarding ask for?** Tax forms, ID, proof of
 >    address, bank details, business registration.
-> 4. **What is the total cost** on a $10/month subscription — percentage, fixed
+> 3. **What is the total cost** on a $10/month subscription — percentage, fixed
 >    fee, currency conversion, and payout fee. Give the real number, not the
 >    headline rate.
-> 5. **How do payouts to an Israeli bank account work?** Currency, frequency,
+> 4. **How do payouts to an Israeli bank account work?** Currency, frequency,
 >    minimum, and whether ILS is supported or it converts.
-> 6. **Does either handle EU VAT MOSS and US sales tax nexus for me**, and does
+> 5. **Does either handle EU VAT MOSS and US sales tax nexus for me**, and does
 >    that include issuing compliant invoices to EU customers?
-> 7. **Is Lemon Squeezy still open to new sellers**, and has any migration to
+> 6. **Is Lemon Squeezy still open to new sellers**, and has any migration to
 >    Stripe Managed Payments been announced? Look for a sunset date.
-> 8. **What is the refund and chargeback policy**, and who bears the cost.
+> 7. **What is the refund and chargeback policy**, and who bears the cost.
 >
 > **You may:** browse public documentation and pricing pages, create a free
 > account using the email I give you if that is needed to see the seller
@@ -67,7 +68,7 @@ the thing this brief exists to specify.**
 > completing any KYC or verification step. Those are legal declarations and I
 > will make them myself.
 >
-> **Report back as:** a comparison table answering 1–8 for both providers, then
+> **Report back as:** a comparison table answering 1–7 for both providers, then
 > a one-line recommendation and the single biggest reason for it. If Israel is
 > not supported by one of them, say so first and stop comparing that one.
 
@@ -75,7 +76,7 @@ the thing this brief exists to specify.**
 
 ## What to do with the answer
 
-Question 2 is the one that unblocks everything else. If a sole trader is
+Question 1 is the one that unblocks everything else. If a sole trader is
 accepted, the owner registers as **עוסק פטור** or **עוסק מורשה** depending on
 turnover, and that same registration also fills the privacy policy's
 `[UNDECIDED: legal entity name]` and satisfies Meta Business verification. If a
@@ -84,9 +85,10 @@ company is required, that is a different decision with an accountant in it.
 Either way the answer feeds four blocked things at once — see
 `vimetry-owner-todo` and `PHASES.md`.
 
-## The alternatives, if both say no
+## The alternatives
 
-`Paddle` is the other established merchant of record for software. Stripe
+`Paddle` is the other established merchant of record for software, and is worth
+knowing about if the entity answer comes back badly. Stripe
 direct is not an alternative for this purpose: it is a payment processor, and
 the VAT and sales-tax registrations stay with the seller — which for one person
 selling to the EU and US is the problem this whole choice exists to avoid.

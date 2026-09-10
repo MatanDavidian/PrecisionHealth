@@ -22,8 +22,9 @@ ones.
 >
 > ```
 > Product name        Vimetry
-> What it is          A personal health app — nutrition, training, recovery,
->                     body measurements — sold as a subscription
+> Tagline             Understand your patterns over time
+> Category            Software / SaaS — Health & Fitness
+> What it is          See "How to describe Vimetry" below; use that wording
 > Website             https://vimetry.app
 > Support email       privacy@vimetry.app
 > Account email       <the email to register with>
@@ -56,11 +57,12 @@ ones.
 > 3. **Create the store** using the store name, slug, country and currency
 >    above. Tell me before you confirm the slug — it appears in checkout URLs
 >    and is awkward to change later.
-> 4. Fill in the **store details**: support email, website, and a short product
->    description based on "what it is" above. Keep the description factual;
->    do not describe the app as providing medical advice, diagnosis or
->    treatment, because it does not and that wording would be wrong on a
->    merchant application.
+> 4. Fill in the **store details**: support email, website, and the product
+>    description. **Use the wording I have given you below verbatim** — do not
+>    improve it or make it more enthusiastic. It is written the way it is on
+>    purpose: this is a wellness logging tool and not a medical one, and a
+>    merchant application that implies otherwise is both wrong and a slower
+>    review.
 > 5. Work through **onboarding / store activation** and fill every field you
 >    can from my details block. This includes the business type, legal name,
 >    registration number, address and payout details.
@@ -94,6 +96,65 @@ ones.
 > - A list of every field you filled, with the value, so I can check it.
 > - Anything Lemon Squeezy asked for that was not in my details block.
 > - Screenshots of the final state before and after submission.
+
+---
+
+## How to describe Vimetry
+
+Paste these into the prompt where the agent needs them. Written to be accurate
+first: every claim below is something the app actually does, and the "what it
+is not" section exists because a health product that overclaims gets a slower
+merchant review and a worse regulatory position.
+
+### One line
+
+> A personal health record that keeps your food, training, sleep and body
+> measurements in one timeline, so you can see what actually changes.
+
+### Short — store description, up to about 200 characters
+
+> Log meals by photo or in words, import your watch data, and see your
+> nutrition, training and recovery together over time. Honest estimates you can
+> correct, not a black box.
+
+### Long — product description
+
+> **Vimetry is a personal health record.** It keeps what you eat, how you
+> train, how you sleep and how your body is doing in one continuous timeline,
+> so patterns become visible over weeks rather than guessed at day to day.
+>
+> **Log a meal in seconds.** Photograph it, describe it in a sentence, or enter
+> it by hand. A model estimates the foods and their calories and macronutrients
+> — and tells you how confident it is, so you know which numbers to trust. Every
+> estimate can be corrected before or after you save it, and a correction is
+> kept alongside what it replaced rather than overwriting it.
+>
+> **Bring in your watch.** A Garmin Connect IQ app sends calories burned, steps,
+> sleep, resting heart rate and VO2 max, so what you ate sits next to what you
+> did.
+>
+> **See the week, not just the day.** Eaten against burned, protein against your
+> goal, weight over time, and a written summary of what the week actually
+> showed.
+>
+> **Built to be honest about what it knows.** Estimates are marked as estimates.
+> When two sources disagree — a scale and a phone reporting different weights —
+> it says so instead of quietly picking one. Nothing is overwritten, so your
+> history stays true.
+>
+> **Your data is yours.** Download everything as a single file whenever you
+> want, and delete your account and every record in it permanently, from inside
+> the app. Meal photographs are never stored — each one is analysed once and
+> discarded.
+>
+> Available in English and Hebrew.
+
+### What it is not — say this if asked, and keep it true
+
+> Vimetry is a wellness and fitness logging tool. It does not diagnose, treat or
+> give medical advice, it is not a medical device, and it makes no health
+> outcome claims. Calorie and macronutrient figures produced from a photograph
+> or a description are estimates and are presented as such.
 
 ---
 

@@ -70,9 +70,37 @@ should keep doing for the paid plan.
 
 ---
 
+## One plan or three?
+
+`features/ai-access-plans.md` proposed three tiers, one per model — Everyday on
+luna, Accurate on terra, Precision on sol. **The instinct is right and better
+than a single flat price**: the cost difference between models is twenty-five
+fold, and a tier makes that visible in the price rather than absorbed by it.
+
+But it does not survive the measured numbers.
+
+Sol measured **$0.11 a photo** through the deployed function. At three or four
+meals a day — about 100 analyses a month, which is ordinary use for this app,
+not heavy — that is **$11 of cost**. Add Lemon Squeezy and a Precision tier has
+to be priced near **$20 a month** to be worth selling, against a market whose
+most expensive serious option is MyFitnessPal at $19.99 and whose AI-photo apps
+charge a third of that.
+
+**Sol is not sellable as a consumer subscription tier.** That is the finding,
+and it is better to say it than to publish a price that loses money at normal
+use.
+
+So: **one plan, on terra, with a sol allowance inside it** — exactly the shape
+the trial already has (`TRIAL_SOL_ANALYSES`), which means the machinery exists
+and the behaviour is already familiar to anyone who used the trial. One plan is
+also one thing to explain, one thing to build, and one thing to get wrong.
+
+---
+
 ## Recommendation
 
-**$8.99 a month, or $59 a year.**
+**$8.99 a month, or $59 a year.** One plan. Terra by default, with a monthly
+allowance of sol analyses for the plates that need it.
 
 - **$59/year** undercuts MacroFactor's $72 and matches Cronometer, which reads
   as a serious tool rather than a cheap one — and it is 50% more than Cal AI's
@@ -87,6 +115,17 @@ should keep doing for the paid plan.
   the paid plan turns the one unprofitable case in the table into a bounded
   one, and it is honest: sol is slower as well as dearer, and most plates do
   not need it.
+
+### One thing has to be built first
+
+**There is no daily cap, and no monthly cap.** The `day` column exists for it
+and `estimate-food` still carries a comment about it, but the only limit
+enforced is the lifetime trial count. A paid plan without a cap is a plan whose
+worst case is unbounded — and the table above shows that a sol-heavy user
+already loses money at every price the market accepts.
+
+So before billing: a per-plan monthly allowance, and a sol sub-allowance
+inside it. That is the same shape as the trial, against the same ledger.
 
 ### Why not cheaper
 

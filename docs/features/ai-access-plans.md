@@ -122,7 +122,26 @@ becomes moot for signed-in users.
   The ledger keys by user id, so a new email = a new trial — accepted for a
   family-scale app, revisit if it is ever farmed.
 
-## 4. Feature 3 — paid plans (design only; not being built yet)
+## 4. Feature 3 — paid plans
+
+> **Superseded in part by [`ops/pricing.md`](../ops/pricing.md), 2026-09-11.**
+> The measured cost below is still the best evidence in this repository and is
+> what `pricing.md` builds on. What has changed is everything around it: a
+> provider is chosen (Lemon Squeezy, ~5% **+ $0.50**, not 5%), there is market
+> data, and there is an argument for annual billing that the monthly-only
+> shape below does not account for.
+>
+> Two problems in this section were never resolved and are worth naming rather
+> than leaving in a table:
+>
+> - It says itself that *"Accurate at $9 no longer covers a maxed terra month
+>   (~$15)"* and defers the fix. It is still deferred.
+> - **The daily cap every price here depends on does not exist.** The `day`
+>   column was added for it and the comment in `estimate-food` still says "so a
+>   daily cap means their day and not UTC" — but only the lifetime trial count
+>   (`TRIAL_ANALYSES`) is enforced. Every "worst-case cost" below is therefore
+>   unbounded in the code as it stands.
+
 
 **Plans are model tiers.** The owner's call, and the right one: a user is
 buying a quality level, not an abstract quota, and the cost difference between

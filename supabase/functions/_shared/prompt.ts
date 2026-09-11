@@ -298,6 +298,22 @@ export function costMicros(model: string, inputTokens: number, outputTokens: num
  */
 export const DEFAULT_DAILY_BUDGET_MICROS = 10_000_000
 
+/**
+ * What an analysis is assumed to cost while it is still running.
+ *
+ * The ceiling sums measured cost, and a request in flight has none yet — so
+ * without this, any number of concurrent requests pass the check before the
+ * first one's bill arrives, and the ceiling is exceeded by however many were
+ * in the air. Counting each in-flight claim at an assumed cost bounds that
+ * overshoot to zero rather than to concurrency.
+ *
+ * Set at the measured worst case (a 25-item photo on sol, $0.1108) rather than
+ * an average: the purpose is to over-estimate what is in flight, because the
+ * failure mode of guessing low is spending money and the failure mode of
+ * guessing high is one refusal at the very edge of the ceiling.
+ */
+export const ASSUMED_ANALYSIS_MICROS = 111_000
+
 export const dailyBudgetMicros = (fromEnv?: string): number => {
   const parsed = Number(fromEnv)
   // A malformed secret must not silently mean "no ceiling".

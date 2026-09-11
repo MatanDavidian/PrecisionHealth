@@ -461,3 +461,68 @@ end
 $$;
 
 reset role;
+
+-- A claim that comes back after its slot was retaken must not be counted twice.
+set role postgres;
+
+do $$
+declare v_id text; v_result text;
+begin
+  insert into auth.users (id) values ('55555555-5555-5555-5555-555555555555')
+    on conflict (id) do nothing;
+
+  v_id := public.reserve_analysis('55555555-5555-5555-5555-555555555555',
+          current_date, 'gpt-5.6-sol', 'MASTER_TRIAL', 1);
+
+  -- It strands, expires, and somebody else takes the slot.
+  update public.usage set created_at = now() - interval '10 minutes' where id = v_id;
+  perform public.settle_analysis(
+    public.reserve_analysis('55555555-5555-5555-5555-555555555555',
+      current_date, 'gpt-5.6-sol', 'MASTER_TRIAL', 1),
+    'gpt-5.6-sol', 'OK', 1776, 3398, 110800);
+
+  -- Now the original finally returns.
+  v_result := public.settle_analysis(v_id, 'gpt-5.6-sol', 'OK', 1776, 3398, 110800);
+
+  if v_result <> 'SETTLED_LATE' then
+    raise exception 'FAIL: a late claim settled as % and exceeded the allowance', v_result;
+  end if;
+  raise notice 'PASS: a late claim keeps its cost but does not spend a second slot';
+end
+$$;
+
+-- With a limit of 1 and both rows settled, exactly one may count.
+select case when count(*) = 1 then 'PASS: the allowance held despite the late arrival'
+  else 'FAIL: ' || count(*) || ' analyses counted against a limit of 1' end
+from public.usage
+where user_id = '55555555-5555-5555-5555-555555555555' and outcome in ('OK','OK_FOLLOWUP');
+
+-- The late row still carries what it cost, because the money was really spent.
+select case when cost_micros = 110800 then 'PASS: a late claim still counts against the day''s spend'
+  else 'FAIL: the cost of a late claim was lost' end
+from public.usage
+where user_id = '55555555-5555-5555-5555-555555555555' and outcome = 'SETTLED_LATE';
+
+-- Settling twice, and releasing after settling, must both be no-ops.
+do $$
+declare v_id text; v_again text;
+begin
+  insert into auth.users (id) values ('66666666-6666-6666-6666-666666666666')
+    on conflict (id) do nothing;
+  v_id := public.reserve_analysis('66666666-6666-6666-6666-666666666666',
+          current_date, 'gpt-5.6-terra', 'MASTER_TRIAL', 5);
+  perform public.settle_analysis(v_id, 'gpt-5.6-terra', 'OK', 100, 200, 5000);
+
+  v_again := public.settle_analysis(v_id, 'gpt-5.6-terra', 'OK', 999, 999, 999999);
+  if v_again is not null then raise exception 'FAIL: a duplicate settlement was applied'; end if;
+
+  perform public.release_analysis(v_id);
+  if (select outcome from public.usage where id = v_id) <> 'OK'
+     or (select cost_micros from public.usage where id = v_id) <> 5000 then
+    raise exception 'FAIL: a late release undid a settled analysis';
+  end if;
+  raise notice 'PASS: settling twice and releasing after settling are both no-ops';
+end
+$$;
+
+reset role;

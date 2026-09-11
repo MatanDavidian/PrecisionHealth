@@ -27,6 +27,7 @@ import {
   MODEL_TERRA,
   SYSTEM_PROMPT,
   TEXT_SYSTEM_PROMPT,
+  ASSUMED_ANALYSIS_MICROS,
   dailyBudgetMicros,
   TRIAL_ANALYSES,
   TRIAL_MODEL,
@@ -189,7 +190,19 @@ Deno.serve(async (request) => {
     outcome: 'PROVIDER_ERROR' | 'UNREADABLE',
     tokens?: { input: number; output: number },
   ) => {
-    const cost = tokens ? costMicros(model, tokens.input, tokens.output) : null
+    /*
+      No token count does not mean no bill.
+
+      A timeout or a dropped connection leaves it genuinely unknown whether the
+      provider processed and charged for the request. Recording null there
+      would quietly treat every failure as free and let a run of them spend
+      past the ceiling unrecorded, so an unmeasured failure is booked at the
+      assumed cost instead. It is an over-estimate, and the ledger says which
+      rows are measured by carrying token counts.
+    */
+    const cost = tokens
+      ? costMicros(model, tokens.input, tokens.output)
+      : ASSUMED_ANALYSIS_MICROS
     if (reservationId) {
       await admin.rpc('settle_analysis', {
         p_id: reservationId,
@@ -268,7 +281,7 @@ Deno.serve(async (request) => {
     since.setUTCHours(0, 0, 0, 0)
     const { data: spentRows, error: spendError } = await admin
       .from('usage')
-      .select('cost_micros')
+      .select('cost_micros, outcome')
       .in('key_source', ['MASTER_TRIAL', 'MASTER_PLAN', 'MASTER_ADMIN'])
       .gte('created_at', since.toISOString())
 
@@ -280,10 +293,20 @@ Deno.serve(async (request) => {
     */
     if (spendError) return json({ error: 'ledger_unavailable' }, 503)
 
-    const spent = (spentRows ?? []).reduce(
-      (total, row) => total + (Number(row.cost_micros) || 0),
-      0,
-    )
+    /*
+      Measured cost, plus an assumption for what is still in the air.
+
+      A request in flight has no cost yet, so counting only settled rows let
+      any number of concurrent requests pass the check before the first bill
+      arrived — the ceiling could be exceeded by however many were running.
+      Charging each in-flight claim at the measured worst case bounds the
+      overshoot to zero instead of to concurrency, at the price of refusing
+      slightly early at the very edge.
+    */
+    const spent = (spentRows ?? []).reduce((total, row) => {
+      if (row.outcome === 'RESERVED') return total + ASSUMED_ANALYSIS_MICROS
+      return total + (Number(row.cost_micros) || 0)
+    }, 0)
     if (spent >= budgetMicros) {
       await record({ model: TRIAL_MODEL, key_source: keySource, outcome: 'REFUSED_BUDGET' })
       // Named for what happened. "Trial exhausted" would blame the user for a

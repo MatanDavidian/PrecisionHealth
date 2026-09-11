@@ -293,14 +293,39 @@ email alert yet — that needs a mail or webhook integration and is still owed.
 
 ### The analysis allowance
 
-```bash
-# migration 0011 FIRST, then:
-npx supabase functions deploy estimate-food
-```
+**Order matters and the function fails closed**, so a deploy against the old
+schema refuses every analysis with `ledger_unavailable`. Migrations first,
+verified, then the function, then a smoke test:
 
-Apply `0011_analysis_reservation.sql` before deploying. The function now calls
-`reserve_analysis`, and against the old schema that RPC does not exist — it
-fails closed, so every analysis would be refused with `ledger_unavailable`.
+```bash
+# 1. Apply the migrations. In the SQL Editor, paste in order:
+#      supabase/migrations/0011_analysis_reservation.sql
+#      supabase/migrations/0012_late_settlement.sql
+
+# 2. Verify they took, before deploying anything.
+#    Expect three rows: reserve_analysis, settle_analysis, release_analysis.
+#      select proname from pg_proc
+#       where proname in ('reserve_analysis','settle_analysis','release_analysis');
+#
+#    And that the new outcomes are allowed:
+#      select pg_get_constraintdef(oid) from pg_constraint
+#       where conname = 'usage_outcome_check';
+#    -- must include RESERVED and SETTLED_LATE
+
+# 3. Deploy.
+npx supabase functions deploy estimate-food
+
+# 4. Smoke test: an anonymous call must be refused for auth, not for the
+#    ledger. A 401 means the function is healthy; a 503 with
+#    "ledger_unavailable" means step 1 did not take.
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  -H "apikey: $VITE_SUPABASE_ANON_KEY" -H 'Content-Type: application/json' \
+  -d '{}' "$VITE_SUPABASE_URL/functions/v1/estimate-food"
+
+# 5. Then photograph one real meal in the app and check it landed as one row:
+#      select outcome, model, cost_micros from public.usage
+#       order by created_at desc limit 3;
+```
 
 **What changed.** The trial limit used to be a count, a comparison, and an
 insert much later. Two requests arriving together both read the same number
@@ -312,17 +337,39 @@ Claiming an analysis is now one atomic act in the database:
 
 | Function | What it does |
 | --- | --- |
-| `reserve_analysis` | Advisory-locks the user, counts settled **and in-flight** rows, inserts a `RESERVED` claim. Returns null when the allowance is spent. |
+| `reserve_analysis` | Advisory-locks the user — narrowly scoped and released on commit, though waiting callers still hold a connection — counts settled **and in-flight** rows, inserts a `RESERVED` claim. Returns null when the allowance is spent. |
 | `settle_analysis` | Turns a claim into `OK` with the measured tokens and cost. |
 | `release_analysis` | Gives the slot back when the provider failed. |
 
 All three are service-role only. A client that could reserve its own analyses
 could reserve a hundred.
 
-**A crash cannot eat an allowance.** A claim that is never settled stops
-counting after `reservation_grace()` — five minutes, comfortably longer than
-the slowest measured analysis at 45 seconds. No sweeper process to write and
-forget about.
+**Proved under real concurrency, not sequentially.** `supabase/test/concurrency.sh`
+races eight simultaneous sessions for three slots and asserts exactly three are
+granted. The invariant tests in `01_verify.sql` call these functions in a loop,
+which proves the counting and cannot tell a working lock from no lock at all.
+
+**The daily ceiling counts what is in the air.** A request in flight has no
+measured cost yet, so counting only settled rows let any number of concurrent
+requests pass the check before the first bill arrived. Each `RESERVED` row is
+charged at `ASSUMED_ANALYSIS_MICROS` — the measured worst case — which bounds
+the overshoot to zero rather than to concurrency. A failure with no token count
+is booked the same way, because a timeout leaves it genuinely unknown whether
+the provider billed, and "no measured cost" must not quietly mean "free".
+
+**A crash stops blocking an allowance**, though it does not undo whatever the
+provider was doing. A claim that is never settled stops *counting* after
+`reservation_grace()` — five minutes, comfortably longer than the slowest
+measured analysis at 45 seconds — so no sweeper process is needed. The request
+itself may still be running, and may still be billed; see the next paragraph.
+
+**A claim that comes back late does not spend a second slot.** Expiring a
+reservation does not cancel the provider request behind it, so an analysis can
+succeed after its slot has been given to somebody else. `settle_analysis`
+notices the row is past its grace and writes `SETTLED_LATE` instead of `OK`:
+the cost is kept, because it was really spent and still counts against the
+day's ceiling, and the allowance is not spent twice. Settling twice, and
+releasing after settling, are both no-ops.
 
 **A failure returns the slot but keeps the cost.** An outage or an unparseable
 reply is not the user's fault, so the analysis is not spent; the tokens were

@@ -84,6 +84,16 @@ describe('the documents themselves', () => {
     const text = documentText(PRIVACY_POLICY)
     expect(text).toMatch(/photograph is sent for analysis once and then discarded/i)
     expect(text).toMatch(/not given your name, your email, or any identifier/i)
+    /*
+      And the part that is NOT ours to promise.
+
+      "We never store photographs" is true of us and was being read as true of
+      the whole pipeline. OpenAI retain API inputs for up to 30 days for abuse
+      monitoring, and a privacy policy that leaves that out is accurate about
+      the wrong subject.
+    */
+    expect(text).toMatch(/OpenAI.*retain/i)
+    expect(text).toMatch(/30 days/i)
   })
 
   it('names every processor, because "we use third parties" is not a disclosure', () => {

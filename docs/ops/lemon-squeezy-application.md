@@ -26,7 +26,8 @@ ones.
 > Category            Software / SaaS — Health & Fitness
 > What it is          See "How to describe Vimetry" below; use that wording
 > Website             https://vimetry.app
-> Support email       privacy@vimetry.app
+> Support email       <MUST BE LIVE — vimetry.app has no MX records as of
+>                     2026-09-11, so privacy@vimetry.app currently bounces>
 > Account email       <the email to register with>
 > Store name          Vimetry
 > Store URL slug      vimetry
@@ -108,8 +109,8 @@ merchant review and a worse regulatory position.
 
 ### One line
 
-> A personal health record that keeps your food, training, sleep and body
-> measurements in one timeline, so you can see what actually changes.
+> A personal health and fitness log that keeps your food, training, sleep and
+> body measurements in one timeline, so you can see what actually changes.
 
 ### Short — store description, up to about 200 characters
 
@@ -119,9 +120,10 @@ merchant review and a worse regulatory position.
 
 ### Long — product description
 
-> **Vimetry is a personal health record.** It keeps what you eat, how you
-> train, how you sleep and how your body is doing in one continuous timeline,
-> so patterns become visible over weeks rather than guessed at day to day.
+> **Vimetry is a personal health and fitness log.** It keeps what you eat, how
+> you train, how you sleep and how your body is doing in one continuous
+> timeline, so patterns become visible over weeks rather than guessed at day to
+> day.
 >
 > **Log a meal in seconds.** Photograph it, describe it in a sentence, or enter
 > it by hand. A model estimates the foods and their calories and macronutrients
@@ -129,9 +131,9 @@ merchant review and a worse regulatory position.
 > estimate can be corrected before or after you save it, and a correction is
 > kept alongside what it replaced rather than overwriting it.
 >
-> **Bring in your watch.** A Garmin Connect IQ app sends calories burned, steps,
-> sleep, resting heart rate and VO2 max, so what you ate sits next to what you
-> did.
+> **Bring in your watch.** A Garmin Connect IQ app — in development, not yet
+> published to the Connect IQ Store — sends calories burned, steps, sleep,
+> resting heart rate and VO2 max, so what you ate sits next to what you did.
 >
 > **See the week, not just the day.** Eaten against burned, protein against your
 > goal, weight over time, and a written summary of what the week actually
@@ -144,10 +146,25 @@ merchant review and a worse regulatory position.
 >
 > **Your data is yours.** Download everything as a single file whenever you
 > want, and delete your account and every record in it permanently, from inside
-> the app. Meal photographs are never stored — each one is analysed once and
-> discarded.
+> the app. We do not store your meal photographs: each is sent for analysis once
+> and then discarded.
 >
 > Available in English and Hebrew.
+
+### Verified against the code on 2026-09-11
+
+Every claim above was checked rather than assumed, and three did not survive:
+
+| Claim | Verdict |
+| --- | --- |
+| "personal health record" | **Changed to "health and fitness log".** PHR is a term of art in health IT and reads as a regulated product — the opposite of the positioning. |
+| Garmin integration | **Qualified.** It works, but it is sideloaded; nothing is published to the Connect IQ Store. Naming a live integration that is not live is a review question waiting to happen. |
+| "photographs are never stored" | **Qualified to "we do not store".** True of us; OpenAI retain API inputs for up to 30 days for abuse monitoring. The unqualified sentence claimed something about a pipeline we do not control. |
+| Confidence shown per estimate | ✅ `EstimateCard` |
+| Disagreeing sources surfaced | ✅ `ConflictNotice`, `MealConflictNotice` |
+| Export everything | ✅ shipped |
+| Delete account permanently | ✅ shipped, function deployed |
+| English and Hebrew | ✅ both live |
 
 ### What it is not — say this if asked, and keep it true
 
@@ -172,6 +189,11 @@ choice and it is worth taking now, before the account is even finished.
 will activate a store. If it does, the agent has been told to stop rather than
 invent one — but it is worth having a number in mind before you start, even a
 placeholder you change later.
+
+**`privacy@vimetry.app` does not exist yet.** `vimetry.app` has no MX records,
+so mail to it bounces. Set the forwarding up at Porkbun *before* submitting:
+Lemon Squeezy's verification correspondence would otherwise go nowhere, and the
+published privacy policy already names that address as the contact.
 
 **The entity is still the real gate.** If the business type in the details
 block cannot be filled in, the application cannot be completed, and that is

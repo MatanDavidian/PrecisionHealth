@@ -65,7 +65,7 @@ const CONTACT_EMAIL = 'privacy@vimetry.app'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-09-06',
+  version: '2026-09-11',
   sections: [
     {
       heading: 'Who we are',
@@ -92,8 +92,9 @@ export const PRIVACY_POLICY: PolicyDocument = {
     {
       heading: 'Meal photographs are not stored',
       body: [
-        'This is the part people ask about, so it is stated plainly: a meal photograph is sent for analysis once and then discarded. It is not written to this device, not written to our database, and not kept by us in any form.',
+        'This is the part people ask about, so it is stated plainly. We do not store your meal photographs. A photograph is sent for analysis once and then discarded: it is not written to this device, not written to our database, and not kept by us in any form.',
         'What is kept is the result — the foods identified, the estimated amounts, how confident the model was, and a record of the photograph’s size and fingerprint so that an estimate can be traced back to the request that produced it.',
+        'One thing we cannot promise on someone else’s behalf: OpenAI, who read the photograph for us, retain what is sent to their API for up to 30 days for abuse monitoring before deleting it. That is their policy, not ours, and we would rather tell you than let "never stored" imply more than it means.',
       ],
     },
     {
@@ -115,7 +116,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       ],
       bullets: [
         `Supabase — hosts the database and handles sign-in. Everything in your account is stored there. Region: ${UNDECIDED('database region — see S5.5')}.`,
-        'OpenAI — receives the meal photograph or description you ask us to analyse, and the weekly summary when you ask for an insight. It receives nothing else, and it is not given your name, your email, or any identifier for you.',
+        'OpenAI — receives the meal photograph or description you ask us to analyse, and the weekly summary when you ask for an insight. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
         'Cloudflare — serves the app itself.',
         `${UNDECIDED('payment provider')} — will receive billing details once the app is paid for. It receives no health data.`,
       ],

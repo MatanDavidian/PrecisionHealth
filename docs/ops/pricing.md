@@ -21,8 +21,10 @@ the code stores measured cost rather than estimating it.
 **The model default is a pricing decision, not a product one.** Sol costs
 twenty-five times what luna does for the same photograph.
 
-Lemon Squeezy takes roughly **5% + $0.50** per transaction as merchant of
-record — the fee for VAT and sales tax being their problem.
+Lemon Squeezy takes **5% + $0.50, plus 0.5% for subscriptions** — so **5.5% +
+$0.50** on everything here. International cards, PayPal and payouts can add
+more. An earlier version of this page used 5% and understated every margin
+below as a result.
 
 ---
 
@@ -52,21 +54,22 @@ That is MacroFactor's neighbourhood, not Cal AI's.
 
 ## The margins
 
-Net per month after Lemon Squeezy, against a heavy user logging 60 analyses:
+Net per month after Lemon Squeezy at 5.5% + $0.50, against **100 analyses a
+month** — three or four meals a day, which is ordinary use for a meal log, not
+heavy use. An earlier version of this page modelled 60 and was optimistic by
+two thirds.
 
-| Plan | Net/month | on sol | on terra | on luna |
-| --- | --- | --- | --- | --- |
-| $5.99/mo | $5.19 | **−$1.41** | +$2.79 | +$4.95 |
-| $8.99/mo | $8.04 | +$1.44 | +$5.64 | +$7.80 |
-| $39/yr | $3.05 | **−$3.55** | +$0.65 | +$2.81 |
-| $59/yr | $4.63 | **−$1.97** | +$2.23 | +$4.39 |
-| $79/yr | $6.21 | **−$0.39** | +$3.81 | +$5.97 |
+| Plan | Net/month | terra @ $0.05 | sol @ $0.11 |
+| --- | --- | --- | --- |
+| $8.99/mo | $8.00 | +$3.00 | **−$3.00** |
+| $59/yr | $4.60 | **−$0.40** | **−$6.40** |
+| $79/yr | $6.18 | +$1.18 | **−$4.82** |
+| $99/yr | $7.75 | +$2.75 | **−$3.25** |
 
-**Every negative number in that table is sol.** A heavy user on the best model
-loses money at every price the market would accept — including MyFitnessPal's.
-That is not an argument for charging more. It is an argument for not making the
-expensive model the default, which the app already does for the trial and
-should keep doing for the paid plan.
+**$59 a year loses money at ordinary use on the cheaper model, before any
+hosting, support or failed-request cost.** That is not a thin margin, it is a
+negative one, and it was in the recommendation on this page until it was
+checked properly.
 
 ---
 
@@ -86,9 +89,17 @@ to be priced near **$20 a month** to be worth selling, against a market whose
 most expensive serious option is MyFitnessPal at $19.99 and whose AI-photo apps
 charge a third of that.
 
-**Sol is not sellable as a consumer subscription tier.** That is the finding,
-and it is better to say it than to publish a price that loses money at normal
-use.
+What the evidence actually supports is narrower than "sol is not sellable":
+**the sol tier as proposed, at that price and with no allowance, is not
+financially safe.** Sol could still work behind a small included allowance, as
+a paid add-on, or in a dearer tier. Whether anyone would buy it is a separate
+question that no number here answers.
+
+**And one claim underneath all of this has never been tested.** The tier names
+— *Accurate*, *Precision* — assert that a costlier model gives better
+nutritional estimates. That is plausible and unmeasured. For an app whose whole
+character is refusing to overclaim, selling a quality difference nobody has
+evaluated would be the most expensive kind of inconsistency.
 
 So: **one plan, on terra, with a sol allowance inside it** — exactly the shape
 the trial already has (`TRIAL_SOL_ANALYSES`), which means the machinery exists
@@ -99,24 +110,63 @@ also one thing to explain, one thing to build, and one thing to get wrong.
 
 ## Recommendation
 
-**$8.99 a month, or $59 a year.** One plan. Terra by default, with a monthly
-allowance of sol analyses for the plates that need it.
+**$8.99 a month as a candidate. No annual price yet.** One plan, terra by
+default, with a monthly sol allowance — and the allowance decided before the
+price, not after.
+
+Work the offer out in this order, because any other order prices a hypothesis:
+
+```
+measured usage cost  →  included allowance  →  margin  →  monthly and annual
+```
+
+Only the first step is missing, and it is the only one that cannot be argued —
+it has to be measured.
 
 - **$59/year** undercuts MacroFactor's $72 and matches Cronometer, which reads
   as a serious tool rather than a cheap one — and it is 50% more than Cal AI's
   annual, which is the right signal if the product is not competing on being
   the cheapest way to photograph a sandwich.
-- **$8.99/month** is set deliberately high against the annual: paying monthly
-  costs $108 a year versus $59. That gap is the point. For a one-person
-  product, annual subscriptions mean cash up front and a twelfth of the churn
-  work.
+- **$8.99/month** is the candidate, and it survives the corrected arithmetic at
+  +$3.00 a month on terra.
+- **The annual price is withdrawn.** $59 is negative; $79 is +$1.18, which is
+  not margin, it is rounding. An annual plan is worth having — it is cash up
+  front, and fewer renewal events — but it does **not** reduce the work to a
+  twelfth, because twelve months of service and support are still owed. Set it
+  once the allowance is known.
 - **Default to terra, meter sol.** The machinery exists — `TRIAL_SOL_ANALYSES`
   and the model picker already do exactly this for the trial. Carrying it into
   the paid plan turns the one unprofitable case in the table into a bounded
   one, and it is honest: sol is slower as well as dearer, and most plates do
   not need it.
 
-### One thing has to be built first
+### What the one measurement does and does not establish
+
+$0.1108 came from a single real call on a **25-item grocery display** — chosen
+because it was a hard case. It establishes the cost of that request. It does
+not establish the average cost of an ordinary plate, a maximum, or the
+distribution across real users, and it has been used on this page as though it
+were all three.
+
+The ledger already records measured tokens and cost per call, so this is a
+query rather than a project:
+
+```sql
+select model,
+       count(*)                                   as calls,
+       round(avg(cost_micros)/1000000.0, 4)       as avg_usd,
+       round((percentile_cont(0.5)  within group (order by cost_micros))/1000000.0, 4) as median_usd,
+       round((percentile_cont(0.95) within group (order by cost_micros))/1000000.0, 4) as p95_usd,
+       round(max(cost_micros)/1000000.0, 4)       as max_usd
+from public.usage
+where outcome in ('OK','OK_FOLLOWUP') and cost_micros is not null
+group by model order by calls desc;
+```
+
+The p95 is the number an allowance should be sized against. The median is the
+number a price should be sized against.
+
+### What has to be built first
 
 **There is no daily cap, and no monthly cap.** The `day` column exists for it
 and `estimate-food` still carries a comment about it, but the only limit
@@ -124,8 +174,22 @@ enforced is the lifetime trial count. A paid plan without a cap is a plan whose
 worst case is unbounded — and the table above shows that a sol-heavy user
 already loses money at every price the market accepts.
 
-So before billing: a per-plan monthly allowance, and a sol sub-allowance
-inside it. That is the same shape as the trial, against the same ledger.
+So before billing:
+
+- **A monthly allowance**, with a sol sub-allowance inside it. Monthly governs
+  the economics; a daily cap is worth adding on top, but only as burst
+  protection.
+- **An atomic reservation before the model is called.** The trial's check is
+  read-then-act, which two concurrent requests can both pass. Under a paid plan
+  that is a way to exceed an allowance rather than a rounding error.
+- **Bounded input and output, and bounded retries.** A count of requests does
+  not cap dollars: one request on a crowded photo cost $0.11 while a simple
+  plate costs a fraction of that, and a retry loop multiplies whichever it hit.
+- **A visible reset date and remaining balance** — and monthly allowances for
+  annual subscribers too, or an annual plan is a year-long unbounded liability.
+
+That is the same shape as the trial, against the same ledger, with the race
+closed.
 
 ### Why not cheaper
 

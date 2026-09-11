@@ -175,6 +175,35 @@ Every claim above was checked rather than assumed, and three did not survive:
 
 ---
 
+## Lemon Squeezy has already declined once
+
+`features/ai-access-plans.md` records it as **D18**: an earlier store
+application was refused. The wording was a template, and the likely cause was
+applying **before there was a product** — no live app, no pricing page, no
+terms, no privacy policy for a reviewer to look at.
+
+That is worth knowing before re-applying, because it changes what this
+attempt has to carry. It is now a materially different application:
+
+| Then | Now |
+| --- | --- |
+| No live app | `https://vimetry.app`, working |
+| No privacy policy | Published at `/privacy` |
+| No terms | Published at `/terms` |
+| No pricing | **Still missing — see below** |
+
+**A pricing page is the one thing on that list still absent**, and it was
+plausibly part of why the first application failed. Worth having before
+submitting rather than after.
+
+If it is declined again, `ai-access-plans.md` lists the alternatives — Creem
+(3.9% + $0.40, and 0% on the first $1,000), Paddle, Polar, and Gumroad as the
+lenient fallback at a 10% cut. The integration is identical for all of them:
+hosted checkout, a webhook, one `subscriptions` row. The provider is swappable
+and does not shape the code.
+
+---
+
 ## Notes for the owner, before pasting
 
 **Payout currency.** ILS avoids a conversion on the way into the bank; USD
@@ -185,10 +214,11 @@ question is only who does it and at what spread.
 **The store slug is the one hard-to-change field.** `vimetry` is the obvious
 choice and it is worth taking now, before the account is even finished.
 
-**A price is not decided yet.** Lemon Squeezy may require a product before it
-will activate a store. If it does, the agent has been told to stop rather than
-invent one — but it is worth having a number in mind before you start, even a
-placeholder you change later.
+**The price is not decided, and should not be guessed at.** `ops/pricing.md`
+now ends where it should: the monthly candidate is $8.99, the annual price is
+withdrawn as negative, and both wait on a measured usage cost that the ledger
+can answer with one query. If Lemon Squeezy requires a product to activate the
+store, the agent has been told to stop rather than invent a number.
 
 **`privacy@vimetry.app` does not exist yet.** `vimetry.app` has no MX records,
 so mail to it bounces. Set the forwarding up at Porkbun *before* submitting:

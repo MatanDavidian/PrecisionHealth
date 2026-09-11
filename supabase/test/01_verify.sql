@@ -369,3 +369,95 @@ end
 $$;
 
 reset role;
+
+-- ------------------------------------------------------- analysis reservation --
+-- 0011. The limit has to hold when two requests arrive together, which is the
+-- whole reason this stopped being a count-then-insert.
+
+set role postgres;
+
+-- A fresh user, so earlier tests in this file do not colour the count. The
+-- local shim's auth.users carries an id and nothing else.
+insert into auth.users (id)
+values ('33333333-3333-3333-3333-333333333333')
+on conflict (id) do nothing;
+
+-- Three claims against a limit of three: all granted.
+select case when count(*) = 3 then 'PASS: claims are granted up to the limit'
+  else 'FAIL: granted ' || count(*) end
+from (
+  select public.reserve_analysis('33333333-3333-3333-3333-333333333333',
+         current_date, 'gpt-5.6-terra', 'MASTER_TRIAL', 3) as id
+  from generate_series(1, 3)
+) claims
+where id is not null;
+
+-- The fourth is refused, because three RESERVED rows already count.
+select case when public.reserve_analysis('33333333-3333-3333-3333-333333333333',
+       current_date, 'gpt-5.6-terra', 'MASTER_TRIAL', 3) is null
+  then 'PASS: an unsettled claim still counts, so the fourth is refused'
+  else 'FAIL: the limit was exceeded' end;
+
+-- Releasing one gives the slot back, and records that the attempt happened.
+do $$
+declare v_id text;
+begin
+  select id into v_id from public.usage
+   where user_id = '33333333-3333-3333-3333-333333333333' and outcome = 'RESERVED' limit 1;
+  perform public.release_analysis(v_id);
+  if (select outcome from public.usage where id = v_id) <> 'PROVIDER_ERROR' then
+    raise exception 'FAIL: a released claim was not recorded';
+  end if;
+  raise notice 'PASS: a released claim returns the slot and stays on the ledger';
+end
+$$;
+
+select case when public.reserve_analysis('33333333-3333-3333-3333-333333333333',
+       current_date, 'gpt-5.6-terra', 'MASTER_TRIAL', 3) is not null
+  then 'PASS: the returned slot can be claimed again'
+  else 'FAIL: releasing did not free the slot' end;
+
+-- Settling stamps the real cost, and a settled row keeps counting.
+do $$
+declare v_id text;
+begin
+  select id into v_id from public.usage
+   where user_id = '33333333-3333-3333-3333-333333333333' and outcome = 'RESERVED' limit 1;
+  perform public.settle_analysis(v_id, 'gpt-5.6-terra', 'OK', 1776, 3398, 110800);
+  if (select cost_micros from public.usage where id = v_id) <> 110800 then
+    raise exception 'FAIL: settling did not record the cost';
+  end if;
+  raise notice 'PASS: settling records the measured cost';
+end
+$$;
+
+-- A stranded claim stops counting once it is older than the grace period, so a
+-- crashed function cannot silently eat someone's allowance for ever.
+update public.usage set created_at = now() - interval '10 minutes'
+ where user_id = '33333333-3333-3333-3333-333333333333' and outcome = 'RESERVED';
+
+select case when public.reserve_analysis('33333333-3333-3333-3333-333333333333',
+       current_date, 'gpt-5.6-terra', 'MASTER_TRIAL', 3) is not null
+  then 'PASS: a stranded claim expires rather than blocking for ever'
+  else 'FAIL: a crashed request consumed an allowance permanently' end;
+
+-- A period start is what makes the same function serve a monthly allowance.
+select case when public.reserve_analysis('33333333-3333-3333-3333-333333333333',
+       current_date, 'gpt-5.6-terra', 'MASTER_TRIAL', 1,
+       date_trunc('month', now() + interval '1 month')) is not null
+  then 'PASS: a period start counts only that period'
+  else 'FAIL: the period was ignored' end;
+
+-- The client must never be able to grant itself analyses.
+set role authenticated;
+do $$
+begin
+  perform public.reserve_analysis('33333333-3333-3333-3333-333333333333',
+          current_date, 'gpt-5.6-sol', 'MASTER_TRIAL', 999);
+  raise exception 'FAIL: a signed-in user could reserve their own analyses';
+exception
+  when insufficient_privilege then raise notice 'PASS: reserving is service-role only';
+end
+$$;
+
+reset role;

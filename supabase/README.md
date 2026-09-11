@@ -291,6 +291,48 @@ select * from public.admin_budget order by on_day desc limit 14;
 `refused_for_budget` above zero means real people were turned away. There is no
 email alert yet — that needs a mail or webhook integration and is still owed.
 
+### The analysis allowance
+
+```bash
+# migration 0011 FIRST, then:
+npx supabase functions deploy estimate-food
+```
+
+Apply `0011_analysis_reservation.sql` before deploying. The function now calls
+`reserve_analysis`, and against the old schema that RPC does not exist — it
+fails closed, so every analysis would be refused with `ledger_unavailable`.
+
+**What changed.** The trial limit used to be a count, a comparison, and an
+insert much later. Two requests arriving together both read the same number
+before either wrote, so both passed — the limit was a strong suggestion. Fine
+as a trial rounding error; not fine as the thing between a paid allowance and
+an unbounded bill.
+
+Claiming an analysis is now one atomic act in the database:
+
+| Function | What it does |
+| --- | --- |
+| `reserve_analysis` | Advisory-locks the user, counts settled **and in-flight** rows, inserts a `RESERVED` claim. Returns null when the allowance is spent. |
+| `settle_analysis` | Turns a claim into `OK` with the measured tokens and cost. |
+| `release_analysis` | Gives the slot back when the provider failed. |
+
+All three are service-role only. A client that could reserve its own analyses
+could reserve a hundred.
+
+**A crash cannot eat an allowance.** A claim that is never settled stops
+counting after `reservation_grace()` — five minutes, comfortably longer than
+the slowest measured analysis at 45 seconds. No sweeper process to write and
+forget about.
+
+**A failure returns the slot but keeps the cost.** An outage or an unparseable
+reply is not the user's fault, so the analysis is not spent; the tokens were
+really burned, so the row keeps its measured cost and still counts against the
+day's ceiling. Those are different questions and the ledger answers both.
+
+**Ready for monthly plans.** `p_period_start` is null for the trial, which
+counts the account's whole life. A monthly allowance passes the period start
+instead — same function, no second implementation to drift.
+
 ### Adding a watch
 
 ```bash

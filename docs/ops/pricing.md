@@ -168,6 +168,13 @@ number a price should be sized against.
 
 ### What has to be built first
 
+> **Partly done, 2026-09-11.** The atomic reservation exists — migration 0011,
+> `reserve_analysis`/`settle_analysis`/`release_analysis`, verified against real
+> Postgres. The trial now claims a slot before the model is called rather than
+> counting afterwards, and `p_period_start` makes the same function serve a
+> monthly allowance the day a plan exists. What remains is the plan itself: the
+> sol sub-allowance, a visible balance and reset date, and bounded retries.
+
 **There is no daily cap, and no monthly cap.** The `day` column exists for it
 and `estimate-food` still carries a comment about it, but the only limit
 enforced is the lifetime trial count. A paid plan without a cap is a plan whose

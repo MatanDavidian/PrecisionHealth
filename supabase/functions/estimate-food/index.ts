@@ -173,6 +173,45 @@ Deno.serve(async (request) => {
     })
 
   /**
+   * Ends a claimed analysis that did not produce a usable estimate.
+   *
+   * The slot goes back: neither a provider outage nor a reply we could not
+   * parse is the user's fault, and losing a free analysis to someone else's
+   * bad afternoon is the kind of small injustice people remember.
+   *
+   * The COST does not go back, because it was really spent — an unreadable
+   * reply still burned tokens. So the row keeps its measured cost and counts
+   * against the day's ceiling while not counting against the person's
+   * allowance. Those are different questions and the ledger answers both.
+   */
+  const releaseOrRecord = async (
+    model: string,
+    outcome: 'PROVIDER_ERROR' | 'UNREADABLE',
+    tokens?: { input: number; output: number },
+  ) => {
+    const cost = tokens ? costMicros(model, tokens.input, tokens.output) : null
+    if (reservationId) {
+      await admin.rpc('settle_analysis', {
+        p_id: reservationId,
+        p_model: model,
+        p_outcome: outcome,
+        p_input_tokens: tokens?.input ?? null,
+        p_output_tokens: tokens?.output ?? null,
+        p_cost_micros: cost,
+      })
+      return
+    }
+    await record({
+      model,
+      key_source: keySource,
+      outcome,
+      input_tokens: tokens?.input ?? null,
+      output_tokens: tokens?.output ?? null,
+      cost_micros: cost,
+    })
+  }
+
+  /**
    * Is this a free follow-up, or another analysis?
    *
    * Free requires a conversation that actually exists in the ledger and has
@@ -266,6 +305,14 @@ Deno.serve(async (request) => {
    */
   let effectiveModel: string = TRIAL_MODEL
   let downgraded = false
+  /**
+   * The claim this request is spending, if it took one.
+   *
+   * Settled with the real cost when the model answers, released when it does
+   * not — nobody should lose an analysis to somebody else's outage. Absent for
+   * follow-ups, which spend nothing, and for admins, who have no allowance.
+   */
+  let reservationId: string | undefined
 
   if (!isAdmin) {
     const { count, error: countError } = await admin
@@ -284,9 +331,38 @@ Deno.serve(async (request) => {
      * then refused permission to answer, which would be a strange way to spend
      * someone's last free analysis.
      */
-    if (used >= TRIAL_ANALYSES && !isFollowUp) {
-      await record({ model: TRIAL_MODEL, key_source: 'MASTER_TRIAL', outcome: 'REFUSED_QUOTA' })
-      return json({ error: 'trial_exhausted', used, allowance: TRIAL_ANALYSES }, 402)
+    /*
+      Claimed in the database, not decided here.
+
+      This used to be a count, a comparison, and an insert much later — which
+      two requests arriving together both passed, because both read the same
+      number before either wrote. As a trial rounding error that was tolerable;
+      as the thing between a paid allowance and an unbounded bill it is not.
+
+      `reserve_analysis` takes an advisory lock on the user, counts settled AND
+      in-flight rows, and inserts the claim, all in one transaction. The second
+      caller queues behind the first and sees its row. A claim that is never
+      settled — a crash mid-analysis — stops counting after five minutes, so a
+      failure cannot quietly eat someone's allowance for ever.
+    */
+    if (!isFollowUp) {
+      const { data: reserved, error: reserveError } = await admin.rpc('reserve_analysis', {
+        p_user_id: user.id,
+        p_day: body.day,
+        p_model: TRIAL_MODEL,
+        p_key_source: 'MASTER_TRIAL',
+        p_limit: TRIAL_ANALYSES,
+        // Null counts the account's whole life, which is what a trial is. A
+        // monthly plan passes the period start here instead.
+        p_period_start: null,
+        p_conversation: conversationId ?? null,
+      })
+      if (reserveError) return json({ error: 'ledger_unavailable' }, 503)
+      if (!reserved) {
+        await record({ model: TRIAL_MODEL, key_source: 'MASTER_TRIAL', outcome: 'REFUSED_QUOTA' })
+        return json({ error: 'trial_exhausted', used, allowance: TRIAL_ANALYSES }, 402)
+      }
+      reservationId = reserved as string
     }
 
     const { count: solCount } = await admin
@@ -362,13 +438,13 @@ Deno.serve(async (request) => {
       }),
     })
   } catch {
-    await record({ model, key_source: keySource, outcome: 'PROVIDER_ERROR' })
+    await releaseOrRecord(model, 'PROVIDER_ERROR')
     return json({ error: 'provider_unreachable' }, 502)
   }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '')
-    await record({ model, key_source: keySource, outcome: 'PROVIDER_ERROR' })
+    await releaseOrRecord(model, 'PROVIDER_ERROR')
 
     /**
      * The owner's budget is spent, not the user's trial.
@@ -395,28 +471,35 @@ Deno.serve(async (request) => {
   const outputTokens: number = payload?.usage?.completion_tokens ?? 0
 
   if (!content) {
-    await record({
-      model,
-      key_source: keySource,
-      outcome: 'UNREADABLE',
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cost_micros: costMicros(model, inputTokens, outputTokens),
-    })
+    await releaseOrRecord(model, 'UNREADABLE', { input: inputTokens, output: outputTokens })
     return json({ error: 'empty_reply' }, 502)
   }
 
   // Validation stays on the client, where `validateEstimate` already lives and
   // is tested — the function returns the model's reply and the facts about the
   // call, and does not grow a second copy of the rules.
-  await record({
-    model,
-    key_source: keySource,
-    outcome: okOutcome,
-    input_tokens: inputTokens,
-    output_tokens: outputTokens,
-    cost_micros: costMicros(model, inputTokens, outputTokens),
-  })
+  const cost = costMicros(model, inputTokens, outputTokens)
+  if (reservationId) {
+    // Settling the claim, not writing a second row: the ledger entry already
+    // exists, and inserting again would count the analysis twice.
+    await admin.rpc('settle_analysis', {
+      p_id: reservationId,
+      p_model: model,
+      p_outcome: okOutcome,
+      p_input_tokens: inputTokens,
+      p_output_tokens: outputTokens,
+      p_cost_micros: cost,
+    })
+  } else {
+    await record({
+      model,
+      key_source: keySource,
+      outcome: okOutcome,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cost_micros: cost,
+    })
+  }
 
   /** A free follow-up spends nothing, so the counts it reports do not move. */
   const spent = isFollowUp ? 0 : 1

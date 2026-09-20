@@ -26,6 +26,17 @@ export type DataSource =
   | 'HEALTH_CONNECT'
   | 'SMART_SCALE'
   | 'AI_ESTIMATE'
+  /**
+   * Filled in from this person's own history, because the day was left blank.
+   *
+   * A source rather than a UI flag, and that is the whole design. Two promises
+   * are made about a filled day — that it never feeds back into the average it
+   * came from, and that it never loses its label — and both are enforceable
+   * only if "this was invented" travels with the record itself. A boolean on a
+   * screen is forgotten by the next screen; a `DataSource` is visible to every
+   * reader that already knows how to ask where a number came from.
+   */
+  | 'PATTERN_FILL'
   | 'LAB_DOCUMENT'
 
 /**
@@ -70,6 +81,14 @@ const SOURCE_RANK: Record<DataSource, number> = {
   APPLE_HEALTH: 20,
   HEALTH_CONNECT: 20,
   AI_ESTIMATE: 0,
+  /*
+    Below even an AI estimate, and deliberately so.
+
+    An AI estimate looked at the food. A pattern fill looked at nothing — it is
+    a statement about what you usually do, standing in for a day nobody
+    observed. If anything at all turns up for that day, it should win.
+  */
+  PATTERN_FILL: -10,
 }
 
 export const precedenceOf = (p: Provenance): number => KIND_RANK[p.kind] * 100 + SOURCE_RANK[p.source]

@@ -476,3 +476,15 @@ returns zero rows (D19).
 Add a new numbered file in `migrations/`; never edit one that has been applied.
 Run `npm run db:verify` — it applies every migration from scratch, so a change
 that breaks an invariant fails locally rather than in production.
+
+### Verifying a backlog sync
+
+`npm run test:device-sync` runs the real `device-sync` handler against a
+stand-in PostgREST and asserts that a week of unsent days arrives whole. It
+needs Deno and nothing else — no project, no account, no network beyond
+localhost.
+
+It exists because the bug it covers was a wiring bug, not a logic one: a cap
+named for days was applied to a flat array of entries, so a backlog was
+silently truncated mid-day. The response still said `200` with an empty
+`rejected` list, which is why nobody noticed.

@@ -14,7 +14,8 @@
     "check:functions": "deno check --config supabase/deno-check.json supabase/functions/*/index.ts",
     "test:e2e:ui": "playwright test --ui",
     "db:verify": "./supabase/test/run.sh",
-    "supabase:check": "node scripts/check-supabase.mjs"
+    "supabase:check": "node scripts/check-supabase.mjs",
+    "test:device-sync": "deno run --allow-net --allow-env supabase/test/device-sync.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",

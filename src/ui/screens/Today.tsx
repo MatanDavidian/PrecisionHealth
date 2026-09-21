@@ -8,12 +8,28 @@ import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
 import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
+import { GapsCard } from '../components/GapsCard'
+import { FilledNotice } from '../components/FilledNotice'
 import { WeekNav } from '../components/WeekNav'
 import { DataUnavailable } from '../components/DataUnavailable'
 import { AdoptionPrompt } from '../components/AdoptionPrompt'
 import { useDataRevision } from '../DataProvider'
 import { evaluateGoal } from '@/data/analytics'
-import { convert, goalFor, isObjective, weekStartOf } from '@/domain'
+import {
+  addDays,
+  convert,
+  dayKeyOf,
+  findGaps,
+  FILL_WINDOW_DAYS,
+  goalFor,
+  isObjective,
+  latestVersions,
+  typicalDay,
+  weekStartOf,
+  type DayGap,
+  type Meal,
+  type TypicalDay,
+} from '@/domain'
 import { useLang } from '../i18n'
 import { InsightsCard, type InsightsState } from '../components/InsightsCard'
 import { BurnedRow } from '../components/BurnedRow'
@@ -52,7 +68,7 @@ export function Today() {
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
-  const { resolveConflict, recordObservation } = useActions()
+  const { resolveConflict, recordObservation, fillDayFromPattern, deleteMeals } = useActions()
   const { session, revision } = useDataRevision()
 
   /*
@@ -86,6 +102,63 @@ export function Today() {
    * nobody opened would be paying for the feature whether or not it is used.
    */
   const [week, setWeek] = useState<WeekEnergy>()
+
+  /**
+   * Filling the week's blank days, and being able to take it back.
+   *
+   * `justFilled` holds what was written so Undo has records to retract — the
+   * same shape as a whole-day repeat. It is deliberately not persisted: Undo
+   * is for the seconds after a tap, and a filled day is afterwards corrected
+   * meal by meal like any other.
+   */
+  const [gaps, setGaps] = useState<DayGap[]>([])
+  const [typical, setTypical] = useState<TypicalDay>()
+  const [filling, setFilling] = useState(false)
+  const [justFilled, setJustFilled] = useState<Meal[]>()
+
+  useEffect(() => {
+    if (view !== 'week' || !week) return
+    let cancelled = false
+    void (async () => {
+      const history = await getRepositories().meals.listByRange(currentUserId(), {
+        from: addDays(week.from, -FILL_WINDOW_DAYS),
+        to: week.to,
+      })
+      if (cancelled) return
+      const days = week.days.map((d) => d.day)
+      const open = findGaps(days, latestVersions(history), today).filter((g) => !g.filled)
+      setGaps(open)
+      // Drawn for the FIRST gap: the meals offered are the same either way,
+      // and asking for a typical day per gap would read the same history
+      // several times to produce the same answer.
+      setTypical(
+        open.length
+          ? typicalDay(latestVersions(history), {
+              source: 'RECENT',
+              forDay: open[0].day,
+              today,
+            })
+          : undefined,
+      )
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [view, week, today, revision])
+
+  const fillGaps = async () => {
+    if (!typical || gaps.length === 0) return
+    setFilling(true)
+    try {
+      const written: Meal[] = []
+      for (const gap of gaps) {
+        written.push(...(await fillDayFromPattern(typical, gap.day)))
+      }
+      if (written.length) setJustFilled(written)
+    } finally {
+      setFilling(false)
+    }
+  }
   useEffect(() => {
     if (view !== 'week') return
     let cancelled = false
@@ -245,6 +318,31 @@ export function Today() {
             <WeekView
               week={week}
               objective={objective}
+              gaps={
+                <>
+                  <GapsCard
+                    gaps={gaps}
+                    busy={filling}
+                    canFill={typical !== undefined}
+                    onFill={() => void fillGaps()}
+                    formatDay={(d) =>
+                      new Date(`${d}T12:00:00Z`).toLocaleDateString(
+                        document.documentElement.lang || undefined,
+                        { weekday: 'short', day: 'numeric' },
+                      )
+                    }
+                  />
+                  {justFilled && justFilled.length > 0 && (
+                    <FilledNotice
+                      days={new Set(justFilled.map((m) => dayKeyOf(m.time))).size}
+                      onUndo={() => {
+                        void deleteMeals(justFilled)
+                        setJustFilled(undefined)
+                      }}
+                    />
+                  )}
+                </>
+              }
               insights={
                 <InsightsCard
                   state={insights}

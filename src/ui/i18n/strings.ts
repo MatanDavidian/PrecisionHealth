@@ -706,6 +706,31 @@ const en = {
   'policy.readTerms': 'Read the terms of use',
   'policy.readPrivacy': 'Read the privacy policy',
 
+  'gaps.label': 'Gaps',
+  'gaps.title': {
+    one: '1 day has no meals on it',
+    other: '{count} days have no meals on them',
+  },
+  'gaps.body': '{days} sit at zero, which is not the same as eating nothing.',
+  'gaps.andMore': '{days} and {count} more',
+  'gaps.fillOne': 'Fill it from your average',
+  'gaps.fillAll': 'Fill all {count} from your average',
+  'gaps.filling': 'Filling…',
+  'gaps.notEnoughHistory':
+    'Not enough logged days yet to call anything typical — a few more and this can be filled from your own history.',
+  'gaps.estimated': 'Estimated',
+  'gaps.filledOne': 'Filled from your average.',
+  'gaps.filledMany': '{count} days filled from your average.',
+  'gaps.undo': 'Undo',
+  'gaps.correct': 'Correct it',
+  'gaps.fromRecent': 'Last 14 days',
+  'gaps.fromWeekday': 'Same weekday',
+  'gaps.drawnFrom': {
+    one: 'From 1 logged day.',
+    other: 'From {count} logged days.',
+  },
+  'gaps.dayIsEstimate': 'This day is an estimate — nobody logged it.',
+
   'chooseLang.title': 'Which language should this be in?',
   'chooseLang.body':
     'It applies everywhere, including the answers the model gives you, and follows you to any device you sign in on. You can change it in Settings whenever you like.',
@@ -1408,6 +1433,31 @@ const he: Dictionary = {
     'חלקים מהמסמך עדיין מסומנים כלא־הוכרעו ומוצגים כמו שהם ולא בניחוש. זו לא המדיניות הסופית, והיא לא נבדקה על ידי עורך דין.',
   'policy.readTerms': 'קראו את תנאי השימוש',
   'policy.readPrivacy': 'קראו את מדיניות הפרטיות',
+
+  'gaps.label': 'ימים חסרים',
+  'gaps.title': {
+    one: 'ביום אחד אין ארוחות',
+    other: 'ב־{count} ימים אין ארוחות',
+  },
+  'gaps.body': '{days} עומדים על אפס, וזה לא אותו דבר כמו לא לאכול.',
+  'gaps.andMore': '{days} ועוד {count}',
+  'gaps.fillOne': 'למלא מהממוצע שלכם',
+  'gaps.fillAll': 'למלא את כל {count} מהממוצע שלכם',
+  'gaps.filling': 'ממלאים…',
+  'gaps.notEnoughHistory':
+    'עוד אין מספיק ימים רשומים כדי לדעת מה טיפוסי — עוד כמה, ואפשר יהיה למלא מההיסטוריה שלכם.',
+  'gaps.estimated': 'הערכה',
+  'gaps.filledOne': 'מולא מהממוצע שלכם.',
+  'gaps.filledMany': '{count} ימים מולאו מהממוצע שלכם.',
+  'gaps.undo': 'ביטול',
+  'gaps.correct': 'לתקן',
+  'gaps.fromRecent': '14 הימים האחרונים',
+  'gaps.fromWeekday': 'אותו יום בשבוע',
+  'gaps.drawnFrom': {
+    one: 'מיום רשום אחד.',
+    other: 'מ־{count} ימים רשומים.',
+  },
+  'gaps.dayIsEstimate': 'היום הזה הוא הערכה — אף אחד לא רשם אותו.',
 
   'chooseLang.title': 'באיזו שפה שנציג את זה?',
   'chooseLang.body':

@@ -12,6 +12,7 @@
  */
 import {
   convert,
+  isPatternFilled,
   dayKeyOf,
   latestVersions,
   liveItems,
@@ -53,13 +54,24 @@ export async function readWeek(
   const live = latestVersions(meals).map((meal) => ({
     day: dayKeyOf(meal.time),
     kcal: mealKcal(liveItems(meal.items)),
+    filled: isPatternFilled(meal),
   }))
 
   const rows: DayEnergy[] = days.map((day, i) => {
     const burn = effectiveObservation(burnSets[i])
+    const onDay = live.filter((m) => m.day === day)
     return {
       day,
-      eatenKcal: live.filter((m) => m.day === day).reduce((sum, m) => sum + m.kcal, 0),
+      eatenKcal: onDay.reduce((sum, m) => sum + m.kcal, 0),
+      /*
+        Estimated only when EVERY meal on the day was filled.
+
+        One real breakfast logged after the fact makes the day partly observed,
+        and striping it whole would understate what the person actually did.
+        The finer distinction — this meal but not that one — is the meal list's
+        job, where there is room to say it.
+      */
+      estimated: onDay.length > 0 && onDay.every((m) => m.filled),
       // Left undefined rather than zeroed when nothing was recorded — a day we
       // know nothing about is not a day of no expenditure.
       burnedKcal: burn ? convert(burn.value, 'kcal') : undefined,

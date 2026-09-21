@@ -354,14 +354,85 @@ export function buildSeed(
     sends completed days, so today never has one — and it is the shape that
     breaks naive arithmetic.
   */
+  /** One repeated meal, so a typical day has something to be typical about. */
+  const usualMeal = (
+    id: string,
+    on: CalendarDate,
+    slot: Meal['slot'],
+    at: string,
+    name: string,
+    kcal: number,
+    protein: number,
+    carbs: number,
+    fat: number,
+  ): Meal => ({
+    id: asId<'Meal'>(`meal-${id}`) as MealId,
+    recordId: `meal-${id}-v1`,
+    version: 1,
+    userId: DEMO_USER_ID,
+    slot,
+    time: { kind: 'instant', at: zonedTimeToUtc(on, at, zone), zone: ZONE },
+    items: [
+      {
+        id: asId<'FoodItem'>(`item-${id}`) as FoodItemId,
+        mealId: asId<'Meal'>(`meal-${id}`) as MealId,
+        name,
+        amount: canonical(400, 'g'),
+        nutrients: {
+          energy: canonical(kcal, 'kcal'),
+          protein: canonical(protein, 'g'),
+          carbs: canonical(carbs, 'g'),
+          fat: canonical(fat, 'g'),
+        },
+        provenance: userEntered(zonedTimeToUtc(on, at, zone)),
+      },
+    ],
+    provenance: userEntered(zonedTimeToUtc(on, at, zone)),
+  })
+
   const weekDays = weekContaining(day)
   const extraMeals: Meal[] = []
   const extraObservations: Observation[] = []
+
+  /*
+    Yesterday is left EMPTY on purpose.
+
+    A day with nothing on it reads as a zero, which is what the gap-filling
+    offer exists to correct — and until the fixture could produce one, nothing
+    about that offer was reachable from a test. It is the same day the Day tab
+    shows when you step back once, so both entry points are exercised by the
+    same hole.
+  */
+  const gapDay = addDays(day, -1)
+
+  /*
+    A fortnight of history BEFORE this week, so "what you usually eat" has
+    something to be drawn from.
+
+    Without it the sample account has two logged days ahead of the gap, which
+    is below the threshold for calling anything typical — so the fill offer
+    appeared permanently disabled and no test could reach the feature at all.
+    The same fixture gap that hid the week-card bug, in a new place.
+  */
+  const priorDays: CalendarDate[] = []
+  for (let back = 8; back <= 20; back += 1) {
+    const priorDay = addDays(day, -back)
+    if (weekDays.includes(priorDay)) continue
+    priorDays.push(priorDay)
+  }
+  priorDays.forEach((priorDay, i) => {
+    extraMeals.push(
+      usualMeal(`prior-b-${i}`, priorDay, 'BREAKFAST', '07:40', names.eggsAndOats, 520, 34, 48, 18),
+      usualMeal(`prior-l-${i}`, priorDay, 'LUNCH', '13:10', names.grilledChicken, 690, 58, 62, 20),
+      usualMeal(`prior-d-${i}`, priorDay, 'DINNER', '19:40', names.salmonPotatoesSalad, 780, 46, 70, 30),
+    )
+  })
 
   weekDays.forEach((weekDay: CalendarDate, index: number) => {
     // Days after today have not happened; the demo day has its own detailed
     // meals above and must not be doubled.
     if (weekDay > day || weekDay === day) return
+    if (weekDay === gapDay) return
 
     const kcal = 1900 + index * 130
     extraMeals.push({
@@ -391,7 +462,7 @@ export function buildSeed(
 
     // The most recent completed day is left WITHOUT a burn figure, so the
     // "compared over N days" path is always exercised.
-    const isMostRecentCompleted = weekDay === addDays(day, -1)
+    const isMostRecentCompleted = weekDay === addDays(day, -2)
     if (!isMostRecentCompleted) {
       extraObservations.push({
         id: asId<'Observation'>(`obs-week-burn-${index}`) as ObservationId,

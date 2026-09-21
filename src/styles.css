@@ -102,3 +102,30 @@ body {
     transform: translateY(420%);
   }
 }
+
+/*
+ * A quantity we are less sure of: the accent, in stripes.
+ *
+ * Used for a day filled from someone's own average rather than logged. A
+ * different hue would read as a third category next to eaten and burned; the
+ * stripe says "same thing, held less firmly", which is what it is.
+ *
+ * `currentColor` is not used: these sit on a chart where the surrounding text
+ * colour has nothing to do with the bar.
+ */
+.estimated-fill {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-accent) 0 4px,
+    color-mix(in srgb, var(--color-accent) 32%, transparent) 4px 8px
+  );
+}
+
+/* The legend key, small enough that the stripe needs to be tighter to read. */
+.estimated-swatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-accent) 0 2px,
+    color-mix(in srgb, var(--color-accent) 30%, transparent) 2px 4px
+  );
+}

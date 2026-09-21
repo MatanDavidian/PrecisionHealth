@@ -120,11 +120,20 @@ export function WeekView({
   week,
   objective,
   insights,
+  gaps,
 }: {
   week: WeekEnergy
   objective?: Objective
   /** The AI card, owned by the screen because it holds the request state. */
   insights?: React.ReactNode
+  /**
+   * The unlogged-days offer, owned by the screen for the same reason.
+   *
+   * Rendered FIRST, above the chart: it explains why two of the bars below are
+   * missing, and an explanation that arrives after the thing it explains has
+   * already been misread is worth much less.
+   */
+  gaps?: React.ReactNode
 }) {
   const t = useT()
   const zone = deviceZone()
@@ -139,6 +148,7 @@ export function WeekView({
 
   return (
     <div className="grid gap-4">
+      {gaps}
       <section className="rounded-card bg-card p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">
@@ -153,6 +163,14 @@ export function WeekView({
               <span className="size-2.5 rounded-full bg-leaf" />
               {t('week.burned')}
             </span>
+            {/* Only when there is something striped to explain. A permanent
+                key for a state that is usually absent is noise. */}
+            {week.days.some((d) => d.estimated) && (
+              <span className="flex items-center gap-1.5">
+                <span className="estimated-swatch size-2.5 rounded-full" />
+                {t('gaps.estimated')}
+              </span>
+            )}
           </div>
         </div>
 
@@ -162,10 +180,27 @@ export function WeekView({
               <div className="flex flex-1 items-end gap-1.5">
                 {/* An unlogged day is a hairline, not a missing bar: the gap is
                     information, and an absent column reads as a chart error. */}
+                {/*
+                  A filled day is striped, not a different colour.
+
+                  Colour would read as a third category alongside eaten and
+                  burned. The stripe says "this is the same quantity, held less
+                  firmly" — which is exactly what it is.
+                */}
                 <div
-                  className={`flex-1 rounded-t-md ${d.eatenKcal > 0 ? 'bg-accent' : 'bg-hairline'}`}
+                  className={`flex-1 rounded-t-md ${
+                    d.eatenKcal > 0
+                      ? d.estimated
+                        ? 'estimated-fill'
+                        : 'bg-accent'
+                      : 'bg-hairline'
+                  }`}
                   style={{ height: d.eatenKcal > 0 ? `${(d.eatenKcal / peak) * 100}%` : 2 }}
-                  title={`${t('week.eaten')} ${round(d.eatenKcal)}`}
+                  title={
+                    d.estimated
+                      ? `${t('week.eaten')} ${round(d.eatenKcal)} · ${t('gaps.estimated')}`
+                      : `${t('week.eaten')} ${round(d.eatenKcal)}`
+                  }
                 />
                 <div
                   className={`flex-1 rounded-t-md ${d.burnedKcal ? 'bg-leaf' : 'bg-hairline'}`}

@@ -24,6 +24,15 @@ export interface DayEnergy {
   /** Total logged from meals. Zero is a real answer: you logged nothing. */
   eatenKcal: number
   /**
+   * True when everything on this day was filled from a pattern, not logged.
+   *
+   * Carried on the day rather than worked out by each screen, so a chart, a
+   * list and a report cannot disagree about which days are real. The figure is
+   * still counted — it is this person's best available answer for that day —
+   * but nothing may present it as though somebody weighed it.
+   */
+  estimated?: boolean
+  /**
    * What was burned, or undefined when nothing was recorded.
    *
    * Undefined and zero must not be confused. A day with no figure is a day we

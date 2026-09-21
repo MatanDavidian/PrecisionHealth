@@ -48,7 +48,10 @@ import {
   type Sleep,
   type Workout,
   type LeftoverEstimate,
+  type CalendarDate,
+  type TypicalDay,
 } from '@/domain'
+import { buildPatternFilledDay } from '@/data/patternFilledDay'
 import { buildEstimatedMeal, type EstimatedMealInput } from '@/data/estimatedMeal'
 import { buildLeftoverMeal } from '@/data/leftoverMeal'
 import { useDataRevision } from './DataProvider'
@@ -396,6 +399,25 @@ export function useActions() {
     [runWrite],
   )
 
+  /**
+   * Fills a blank day from what this person usually eats.
+   *
+   * Written as ordinary meals with `PATTERN_FILL` provenance, so every screen
+   * that already knows how to ask where a number came from can see that
+   * nobody observed this day. Returns what it wrote, so Undo has the records
+   * to take back — the same shape as a whole-day repeat, for the same reason.
+   */
+  const fillDayFromPattern = useCallback(
+    async (typical: TypicalDay, day: CalendarDate): Promise<Meal[]> => {
+      const meals = buildPatternFilledDay(currentUserId(), typical, day)
+      const ok = await runWrite('that estimate', async () => {
+        for (const meal of meals) await getRepositories().meals.add(meal)
+      })
+      return ok ? meals : []
+    },
+    [runWrite],
+  )
+
   /** Takes back everything a whole-day repeat wrote. */
   const deleteMeals = useCallback(
     async (meals: Meal[]) => {
@@ -419,6 +441,7 @@ export function useActions() {
   return {
     addMeal,
     addEstimatedMeal,
+    fillDayFromPattern,
     applyLeftoverToMeal,
     recordObservation,
     setGoal,

@@ -380,6 +380,41 @@ day's ceiling. Those are different questions and the ledger answers both.
 counts the account's whole life. A monthly allowance passes the period start
 instead — same function, no second implementation to drift.
 
+### After a long gap in syncing
+
+```bash
+npx supabase functions deploy device-sync
+```
+
+Fixes a real bug, not a defensive one: after not syncing for a while, a sync
+could silently lose data. `MAX_DAYS` was named and commented as a limit on
+DAYS but was applied with `.slice(0, MAX_DAYS)` to the flat array of
+OBSERVATIONS — up to 3 entries per history day (TOTAL_ENERGY, STEPS, DISTANCE)
+plus up to 4 same-day point measurements (STRESS, RESPIRATION_RATE,
+RESTING_HEART_RATE, VO2_MAX) appended after them. A full 7-day backlog is
+7 × 3 + 4 = 25 entries; the old slice kept only the first 14, which cut off
+mid-day — the two oldest history days, and on **every** occasion, **all** of
+that day's point measurements, since they sat at the very end of the array.
+
+Ordinary daily syncing (one or two unsent days) was always far under the old
+cap, which is exactly why this took a real gap to surface: the more a watch
+had to catch up on, the more of what it sent went missing, silently — the
+client only ever learns how many rows were written, never which were dropped.
+
+Fixed in `supabase/functions/_shared/deviceSync.ts`, `keepRecentDays`: entries
+are grouped by day first, so a day's readings now arrive together or are
+dropped together — never split. Unit-tested directly (`npm test`), including a
+test that reproduces the old slice's exact behaviour on a full backlog, to
+prove the fix is fixing something real.
+
+The same deploy also fixes a dormant one found while touching this code: the
+watch sends the sentinel `"device"` as its zone — Connect IQ knows a UTC
+offset, never an IANA name — meaning "look up my zone", and the server was
+storing that literal string as the observation's `time.zone` instead of
+resolving it against the person's profile. Nothing reads it back today, so it
+was invisible rather than visibly broken; `resolveDeviceZone` now does the
+lookup the original comment already promised.
+
 ### Adding a watch
 
 ```bash

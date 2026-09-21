@@ -16,6 +16,12 @@
  * done below against `device_tokens`, hashed.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  keepRecentDays,
+  MAX_DEVICE_SYNC_DAYS,
+  MAX_DEVICE_SYNC_ENTRIES,
+  resolveDeviceZone,
+} from '../_shared/deviceSync.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -27,9 +33,6 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...CORS, 'Content-Type': 'application/json' },
   })
-
-/** The most days a single sync may carry. getHistory() returns seven. */
-const MAX_DAYS = 14
 
 /**
  * The shortest gap allowed between two syncs from one device.
@@ -152,20 +155,33 @@ Deno.serve(async (request) => {
   }
 
   /*
-    The zone comes from the request rather than being inferred, and it is the
-    caller's job to send an IANA name. Connect IQ cannot supply one — it knows
-    the offset, not the zone — so the watch sends what the PERSON's profile
-    says, and an offset is never guessed into a zone here.
+    The zone the watch cannot name for itself.
+
+    Connect IQ exposes a UTC offset, never an IANA name, so the watch sends
+    the sentinel "device" and this resolves it against the person's own
+    profile — the only place an authoritative zone name exists. Reading it
+    here rather than trusting whatever the request claims means a forged zone
+    string cannot land on someone else's observations.
   */
-  const zone = typeof body.zone === 'string' && body.zone.length < 64 ? body.zone : 'UTC'
+  const { data: profileRow } = await admin
+    .from('profiles')
+    .select('data')
+    .eq('user_id', token.user_id)
+    .maybeSingle()
+  const zone = resolveDeviceZone(
+    body.zone,
+    (profileRow?.data as { timezone?: string } | null)?.timezone,
+  )
 
-  const incoming = Array.isArray(body.observations) ? body.observations.slice(0, MAX_DAYS) : []
-  if (incoming.length === 0) return json({ error: 'nothing_to_write' }, 400)
+  const rawIncoming = Array.isArray(body.observations)
+    ? body.observations.slice(0, MAX_DEVICE_SYNC_ENTRIES)
+    : []
+  if (rawIncoming.length === 0) return json({ error: 'nothing_to_write' }, 400)
 
-  const rows = []
   const rejected: string[] = []
+  const valid: { day: string; code: string; value: number }[] = []
 
-  for (const entry of incoming) {
+  for (const entry of rawIncoming) {
     if (!entry || typeof entry !== 'object') continue
     const { day, code, value } = entry as Record<string, unknown>
 
@@ -178,9 +194,26 @@ Deno.serve(async (request) => {
       rejected.push(`${code}:${String(value)}`)
       continue
     }
+    valid.push({ day, code, value: amount })
+  }
 
+  /*
+    Bounded by DAYS, on the validated entries — never mid-day.
+
+    `MAX_DAYS` used to slice the raw, unvalidated array of observations, which
+    conflated a day count with an entry count: a full backlog (7 history days
+    at up to 3 codes each, plus today's up to 4 point measurements) is 25
+    entries, and the old slice(0, 14) cut off the oldest history days AND, on
+    every single occasion, all of today's readings — silently, since a client
+    only ever sees how many rows were written. Grouping by day first means a
+    day's readings arrive together or are dropped together, and normal use
+    (one or two unsent days) never approaches the cap at all.
+  */
+  const incoming = keepRecentDays(valid, MAX_DEVICE_SYNC_DAYS)
+
+  const rows = incoming.map(({ day, code, value: amount }) => {
     /*
-      Midday on the named day, in the person's zone.
+      Midday on the named day, in the resolved zone.
 
       The watch anchors its history at local midnight, and midnight is the one
       instant that lands on a different date depending on which way the zone is
@@ -190,8 +223,7 @@ Deno.serve(async (request) => {
     */
     const at = new Date(`${day}T12:00:00Z`).toISOString()
     const id = crypto.randomUUID()
-
-    rows.push({
+    return {
       id,
       user_id: token.user_id,
       day,
@@ -211,8 +243,8 @@ Deno.serve(async (request) => {
         */
         provenance: { source: 'GARMIN', kind: 'RAW', recordedAt: at },
       },
-    })
-  }
+    }
+  })
 
   if (rows.length === 0) return json({ error: 'nothing_valid', rejected }, 400)
 

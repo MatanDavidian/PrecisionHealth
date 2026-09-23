@@ -1,9 +1,26 @@
+import { execSync } from 'node:child_process'
 import { fileURLToPath, URL } from 'node:url'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { PAGE_TITLE } from './src/brand'
+
+/**
+ * Which commit this build is.
+ *
+ * Cloudflare Pages names the commit it is building; a local build asks git.
+ * Neither available — a tarball, a CI without history — says so rather than
+ * guessing, because a wrong answer here is worse than none.
+ */
+function buildCommit(): string {
+  if (process.env.CF_PAGES_COMMIT_SHA) return process.env.CF_PAGES_COMMIT_SHA
+  try {
+    return execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return 'unknown'
+  }
+}
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -19,6 +36,22 @@ export default defineConfig(({ mode }) => ({
       */
       name: 'product-name',
       transformIndexHtml: (html) => html.replace('%PAGE_TITLE%', PAGE_TITLE),
+    },
+    {
+      /*
+        The commit, in the page itself, where `curl` can read it.
+
+        Once it was not obvious whether the live site was running the code
+        being discussed — it was not, and the only way to tell was to download
+        its JavaScript and search it for a string. This makes that one request
+        and one comparison: `npm run check:live`.
+      */
+      name: 'build-commit',
+      transformIndexHtml: (html) =>
+        html.replace(
+          '<meta charset="UTF-8" />',
+          `<meta charset="UTF-8" />\n    <meta name="build-commit" content="${buildCommit()}" />`,
+        ),
     },
   ],
   resolve: {
@@ -43,6 +76,6 @@ export default defineConfig(({ mode }) => ({
      * count, which is exactly the kind of noise that trains people to ignore
      * the output. Run them with `npm run test:e2e`.
      */
-    exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
+    exclude: ['node_modules/**', 'dist/**', 'e2e/**', 'e2e-live/**'],
   },
 }))

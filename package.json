@@ -15,7 +15,8 @@
     "test:e2e:ui": "playwright test --ui",
     "db:verify": "./supabase/test/run.sh",
     "supabase:check": "node scripts/check-supabase.mjs",
-    "test:device-sync": "deno run --allow-net --allow-env supabase/test/device-sync.ts"
+    "test:device-sync": "deno run --allow-net --allow-env supabase/test/device-sync.ts",
+    "check:live": "playwright test -c playwright.live.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",

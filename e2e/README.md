@@ -3,6 +3,7 @@
 ```sh
 npm run test:e2e        # headless, both viewports
 npm run test:e2e:ui     # the picker, for writing new ones
+npm run check:live      # after a deploy: is vimetry.app serving what was pushed?
 ```
 
 Runs against `vite preview` — the production build, not the dev server, because
@@ -85,3 +86,20 @@ have watched every weight goal being written as unattainable and said nothing.
 When you do that, order by what the domain orders by: `getAll` returns rows in
 key order, the keys are random ids, and taking the last row was right about two
 thirds of the time.
+
+## Checking the live site
+
+`npm run check:live` runs `e2e-live/` against https://vimetry.app (or
+`LIVE_URL`) — read-only, no sign-in, no writes. It asks three things the local
+suite cannot:
+
+- **Is it the pushed code?** Every build stamps its commit into
+  `<meta name="build-commit">`; the check compares that with `origin/main`.
+  A mismatch means the deploy is still building, failed, or was never pushed.
+- **Does it start?** `/today` renders the sample day with no page errors,
+  console errors, or failed requests for our own files.
+- **Is a secret in the bundle?** A Supabase secret or service-role key, or an
+  OpenAI key — none of which may ever reach the browser.
+
+Kept out of `npm run test:e2e` deliberately: that suite must not need a
+network, and this one exists only to look at one.

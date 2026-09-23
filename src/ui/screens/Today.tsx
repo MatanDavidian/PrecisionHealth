@@ -9,7 +9,7 @@ import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
 import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { GapsCard } from '../components/GapsCard'
-import { EstimatedDayRow } from '../components/EstimatedDayRow'
+import { EstimatedTotals } from '../components/EstimatedTotals'
 import { FilledNotice } from '../components/FilledNotice'
 import { WeekNav } from '../components/WeekNav'
 import { DataUnavailable } from '../components/DataUnavailable'
@@ -225,6 +225,11 @@ export function Today() {
   const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
   const proteinProgress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
   const weightConflict = conflicts.find((c) => c.effective.code === 'WEIGHT')
+  // A filled day's estimate is in the totals, never in the list of meals:
+  // nobody logged it. (Once a real meal lands, `countedMeals` has already
+  // taken the estimate out, so the two never appear together.)
+  const logged = data.meals.filter((meal) => !isPatternFilled(meal))
+  const estimatedDay = logged.length < data.meals.length
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -375,6 +380,7 @@ export function Today() {
           />
           <StatRow name={t('estimate.carbs')} value={show(nutrients.carbs, 'g')} />
           <StatRow name={t('estimate.fat')} value={show(nutrients.fat, 'g')} />
+          {estimatedDay && <EstimatedTotals />}
           {unconfirmed.length > 0 && (
             <p className="pt-3 text-xs text-ink-muted">
               {t('today.unconfirmed', { count: unconfirmed.length })}{' '}
@@ -440,14 +446,13 @@ export function Today() {
         </Card>
 
         <Card label={t('today.meals')}>
-          {data.meals.length === 0 && (
+          {logged.length === 0 && (
             <p className="py-1.5 text-sm text-ink-muted">
               {isToday ? t('today.nothingToday') : t('today.nothingThatDay')}
             </p>
           )}
-          {data.meals.map((meal) => {
+          {logged.map((meal) => {
             const kcal = meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0)
-            if (isPatternFilled(meal)) return <EstimatedDayRow key={meal.id} kcal={kcal} />
             const estimate = meal.items.find((item) => item.provenance.source === 'AI_ESTIMATE')
             return (
               <div key={meal.id} className="flex items-baseline justify-between gap-4 py-1.5">

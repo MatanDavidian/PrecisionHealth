@@ -101,11 +101,12 @@ test('the week total moves by what was filled, not by a fiction', async ({ page 
   expect(height).toBeGreaterThan(10)
 })
 
-test('a filled day shows one estimate, never a list of meals', async ({ page }) => {
+test('a filled day shows its totals, marked as estimated, and no meals', async ({ page }) => {
   /*
-    A filled day is a claim about how much, not about what. Showing it as
-    breakfast, lunch and dinner would put dishes on the record that may never
-    have been eaten — and a month later the person would believe them.
+    A filled day is a claim about how much, not about what. The numbers go in
+    the day's totals — that is what filling is for — and the meal list stays
+    empty, because nobody logged anything. The note on the totals is what
+    stops the number passing as observed.
   */
   await open(page, '/today?view=week')
   await expect(gapsCard(page)).toBeVisible({ timeout: 15_000 })
@@ -113,11 +114,16 @@ test('a filled day shows one estimate, never a list of meals', async ({ page }) 
   await expect(page.getByText('Filled from your average.')).toBeVisible({ timeout: 15_000 })
 
   const yesterday = dayKey(-1)
-  for (const path of [`/today?d=${yesterday}`, `/nutrition?d=${yesterday}`]) {
+  const checks: [string, string][] = [
+    [`/today?d=${yesterday}`, 'Nothing was logged on this day.'],
+    [`/nutrition?d=${yesterday}`, 'Nothing logged for this day yet.'],
+  ]
+  for (const [path, empty] of checks) {
     await open(page, path)
-    await expect(page.getByText('Estimated day', { exact: true })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText(/^~\d+ kcal$/)).toBeVisible()
-    await expect(page.getByText(/replaces the estimate/)).toBeVisible()
+    await expect(page.getByText(/these are your average day/)).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(empty)).toBeVisible()
+    // The totals carry the average — not zero.
+    await expect(page.getByText(/^1,9\d\d$|^2,0\d\d$/).first()).toBeVisible()
     // None of the foods the average was drawn from, and no meal slots.
     for (const food of ['Eggs and oats', 'Grilled chicken', 'Salmon']) {
       await expect(page.getByText(new RegExp(food))).toHaveCount(0)
@@ -128,4 +134,8 @@ test('a filled day shows one estimate, never a list of meals', async ({ page }) 
   }
   // Nobody logged anything; the count must not say otherwise.
   await expect(page.getByText('Logged (0)')).toBeVisible()
+
+  // And the estimate can still be taken away from where it is shown.
+  await page.getByRole('button', { name: 'Remove the estimate' }).click()
+  await expect(page.getByText(/these are your average day/)).toHaveCount(0)
 })

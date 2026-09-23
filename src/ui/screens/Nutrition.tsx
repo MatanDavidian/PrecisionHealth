@@ -7,7 +7,7 @@ import { LeftoverPanel } from '../components/LeftoverPanel'
 import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { MealEditor } from '../components/MealEditor'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
-import { EstimatedDayRow } from '../components/EstimatedDayRow'
+import { EstimatedTotals } from '../components/EstimatedTotals'
 import { showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
@@ -91,6 +91,10 @@ export function Nutrition() {
   if (!data) return <p className="text-sm text-ink-muted">{t('usuals.looking')}</p>
 
   const { nutrients, meals, goals } = data
+  // A filled day has totals and no meals: the estimate is shown with the
+  // numbers it produced, and the list counts only what somebody logged.
+  const logged = meals.filter((meal) => !isPatternFilled(meal))
+  const estimate = meals.find(isPatternFilled)
   const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
   const progress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
 
@@ -153,14 +157,23 @@ export function Nutrition() {
             <Total name={t('estimate.carbs')} value={showNumber(nutrients.carbs, 'g')} sub="g" />
             <Total name={t('estimate.fat')} value={showNumber(nutrients.fat, 'g')} sub="g" />
           </div>
+          {estimate && (
+            <EstimatedTotals
+              action={
+                <IconButton
+                  label={t('gaps.removeEstimate')}
+                  onClick={() => void remove(estimate)}
+                  tone="danger"
+                >
+                  <TrashIcon />
+                </IconButton>
+              }
+            />
+          )}
         </Card>
 
         <Card
-          // An estimate is not something anybody logged; a filled day reads
-          // "Logged (0)" above the row that says why it still has a total.
-          label={t('nutrition.loggedCount', {
-            count: meals.filter((meal) => !isPatternFilled(meal)).length,
-          })}
+          label={t('nutrition.loggedCount', { count: logged.length })}
           action={
             (
               <button
@@ -289,34 +302,14 @@ export function Nutrition() {
             </div>
           )}
 
-          {meals.length === 0 && !deleted && (
+          {logged.length === 0 && !deleted && (
             <p className="py-2 text-sm text-ink-muted">
               {t('nutrition.nothingLogged')}
             </p>
           )}
 
-          {meals.map((meal) =>
-            isPatternFilled(meal) ? (
-              /*
-                No editor and no item list: there are no foods to correct,
-                only a number standing in for a day. Removing it is the one
-                action that makes sense besides logging over it.
-              */
-              <div key={meal.id} className="border-t border-hairline py-1.5 first:border-t-0">
-                <EstimatedDayRow
-                  kcal={mealKcal(meal)}
-                  action={
-                    <IconButton
-                      label={t('gaps.removeEstimate')}
-                      onClick={() => void remove(meal)}
-                      tone="danger"
-                    >
-                      <TrashIcon />
-                    </IconButton>
-                  }
-                />
-              </div>
-            ) : editing === meal.id ? (
+          {logged.map((meal) =>
+            editing === meal.id ? (
               <div key={meal.recordId}>
                 {/*
                   A sheet on a phone, a card in the list on a desktop — one

@@ -109,6 +109,48 @@ export interface StubOptions {
    * test now has to pass the consent gate the way a real person would.
    */
   consented?: boolean
+  /**
+   * Keep what is written to `meals` and `observations`, and answer reads from it.
+   *
+   * Off by default, so every other spec still meets the empty account it was
+   * written against. On for anything that has to see what the app actually
+   * sent — moving local data into an account is the case that needs it: an
+   * account that forgets every write cannot show that the move happened, or
+   * that running it twice duplicates nothing.
+   */
+  keep?: boolean
+}
+
+/** The rows a `keep: true` stub holds, by table — the test's view of the account. */
+export interface StubTables {
+  meals: Record<string, unknown>[]
+  observations: Record<string, unknown>[]
+}
+
+/**
+ * What makes a row unique, per table, as the real schema has it.
+ *
+ * A meal is keyed by its VERSION's record id (D15), so the same meal id may
+ * appear several times; an observation by its own id.
+ */
+const PRIMARY_KEY: Record<keyof StubTables, string> = { meals: 'record_id', observations: 'id' }
+
+/**
+ * The small part of PostgREST's filter language the app uses: `eq`, `gte`,
+ * `lte`. Anything else in the query string — `select`, `order`, `limit`,
+ * `offset` — shapes the reply rather than filtering it, and is ignored.
+ */
+function matches(row: Record<string, unknown>, params: URLSearchParams): boolean {
+  for (const [column, filter] of params) {
+    if (['select', 'order', 'limit', 'offset'].includes(column)) continue
+    const [op, ...rest] = filter.split('.')
+    const expected = rest.join('.')
+    const actual = String(row[column] ?? '')
+    if (op === 'eq' && actual !== expected) return false
+    if (op === 'gte' && actual < expected) return false
+    if (op === 'lte' && actual > expected) return false
+  }
+  return true
 }
 
 const json = (route: Route, body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -125,8 +167,9 @@ const json = (route: Route, body: unknown, status = 200, headers: Record<string,
  * `page.route` patterns are matched in reverse registration order, so the
  * catch-all goes on first and the specific paths override it.
  */
-export async function stubSupabase(page: Page, options: StubOptions = {}) {
+export async function stubSupabase(page: Page, options: StubOptions = {}): Promise<StubTables> {
   const { trialUsed = 0, solUsed = 0 } = options
+  const tables: StubTables = { meals: [], observations: [] }
 
   /*
     Anything Supabase-shaped that is not handled below is aborted rather than
@@ -157,6 +200,29 @@ export async function stubSupabase(page: Page, options: StubOptions = {}) {
         body: route.request().method() === 'HEAD' ? '' : '[]',
       })
     }
+    const table = url.pathname.split('/').pop() as keyof StubTables
+    if (options.keep && table in tables) {
+      const request = route.request()
+      if (request.method() === 'POST') {
+        const posted = request.postDataJSON() as Record<string, unknown> | Record<string, unknown>[]
+        const key = PRIMARY_KEY[table]
+        for (const row of Array.isArray(posted) ? posted : [posted]) {
+          if (tables[table].some((held) => held[key] === row[key])) {
+            // Postgres's unique_violation, which the app reads to tell "already
+            // there" from a real failure.
+            return json(
+              route,
+              { code: '23505', message: 'duplicate key value violates unique constraint' },
+              409,
+            )
+          }
+          tables[table].push(row)
+        }
+        return json(route, [], 201)
+      }
+      return json(route, tables[table].filter((row) => matches(row, url.searchParams)))
+    }
+
     // A brand new account holds nothing. That is a claim worth testing: the
     // sample day belongs to the local store and must not follow anyone in.
     return json(route, [])
@@ -288,6 +354,8 @@ export async function stubSupabase(page: Page, options: StubOptions = {}) {
     }
     return json(route, { deleted: true })
   })
+
+  return tables
 }
 
 export const STUB_ACCOUNT = ACCOUNT
@@ -300,8 +368,8 @@ export const STUB_ACCOUNT = ACCOUNT
  * form is two fields and a click, and it cannot lie about whether signing in
  * works.
  */
-export async function signIn(page: Page, options: StubOptions = {}) {
-  await stubSupabase(page, options)
+export async function signIn(page: Page, options: StubOptions = {}): Promise<StubTables> {
+  const tables = await stubSupabase(page, options)
   await page.goto('/signin')
   await page.getByLabel('Email').fill(ACCOUNT.email)
   await page.getByRole('button', { name: 'Email me a code' }).click()
@@ -311,6 +379,7 @@ export async function signIn(page: Page, options: StubOptions = {}) {
   // it gates processing, then the language question.
   if (!options.consented) await acceptPolicies(page)
   await dismissLanguagePrompt(page)
+  return tables
 }
 
 /** Ticks both boxes and agrees, the way a person has to. */

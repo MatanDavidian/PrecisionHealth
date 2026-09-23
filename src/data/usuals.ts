@@ -7,6 +7,7 @@
 import {
   findUsualFoods,
   findUsualMeals,
+  isPatternFilled,
   latestVersions,
   addDays,
   dayKey,
@@ -46,6 +47,12 @@ export async function readUsuals(userId: UserId, slot: MealSlot): Promise<Usuals
 
   const yesterdayKey = addDays(today, -1)
   const yesterdayMeals = history.filter((meal) => {
+    /*
+      Not the estimate on a filled day. This list is shown as meals — "Lunch ·
+      …" beside a "Repeat the day" button — and yesterday is exactly the day
+      most likely to have been filled.
+    */
+    if (isPatternFilled(meal)) return false
     const at = meal.time.kind === 'instant' ? meal.time.at : undefined
     return at ? dayKey(at, zone) === yesterdayKey : false
   })

@@ -74,4 +74,9 @@ export interface WeekReport {
 
 /** Rough size of the payload, for the "here is what will be sent" line. */
 export const reportMealCount = (report: WeekReport): number =>
-  report.days.reduce((sum, day) => sum + day.meals.length, 0)
+  /*
+    An estimated day's one entry is the person's average, not a meal. The
+    consent line reads "Sends N meals", and counting it would promise a meal
+    nobody ate; its numbers are already covered by "your totals".
+  */
+  report.days.reduce((sum, day) => sum + (day.estimated ? 0 : day.meals.length), 0)

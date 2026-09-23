@@ -383,8 +383,13 @@ instead — same function, no second implementation to drift.
 ### After a long gap in syncing
 
 ```bash
-npx supabase functions deploy device-sync
+npx supabase functions deploy device-sync --no-verify-jwt
 ```
+
+`--no-verify-jwt` is not optional. The watch sends only `x-device-token` — it
+has no Supabase JWT — and there is no `config.toml` in this repo to remember
+the setting, so a plain deploy switches verification back on and every sync
+fails with 401 before the function runs.
 
 Fixes a real bug, not a defensive one: after not syncing for a while, a sync
 could silently lose data. `MAX_DAYS` was named and commented as a limit on

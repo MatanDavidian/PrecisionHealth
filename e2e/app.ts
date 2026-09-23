@@ -141,3 +141,26 @@ export async function settledNumber(
   }
   return previous
 }
+
+/**
+ * Every row in one IndexedDB store, read directly rather than through a screen.
+ *
+ * For asserting what was SAVED. Reading it back through a screen couples the
+ * check to that screen's loading and timing, and several specs found that
+ * round trip flaky while the data itself was right. The rows are the store's
+ * own shape — `{ id, userId, day, data }` — with the record under `data`.
+ */
+export const storedRows = <T = unknown>(page: Page, store: string): Promise<T[]> =>
+  page.evaluate(async (name) => {
+    const db: IDBDatabase = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('timeline-health')
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const rows = await new Promise<unknown[]>((resolve) => {
+      const request = db.transaction(name).objectStore(name).getAll()
+      request.onsuccess = () => resolve(request.result)
+    })
+    db.close()
+    return rows as never
+  }, store)

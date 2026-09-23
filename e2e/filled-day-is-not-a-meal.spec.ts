@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
-import { dayKey, open, settledNumber } from './app'
+import { dayKey, open, settledNumber, storedRows } from './app'
 
 /**
  * A filled day is a total, never a meal — everywhere, not only on one screen.
@@ -33,21 +33,7 @@ interface StoredMeal {
   }
 }
 
-/** Every row in the meals store, read straight from IndexedDB — not through the app. */
-const storedMeals = (page: Page): Promise<StoredMeal[]> =>
-  page.evaluate(async () => {
-    const db: IDBDatabase = await new Promise((resolve, reject) => {
-      const request = indexedDB.open('timeline-health')
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
-    })
-    const rows: StoredMeal[] = await new Promise((resolve) => {
-      const request = db.transaction('meals').objectStore('meals').getAll()
-      request.onsuccess = () => resolve(request.result)
-    })
-    db.close()
-    return rows
-  })
+const storedMeals = (page: Page) => storedRows<StoredMeal>(page, 'meals')
 
 async function fillTheGap(page: Page) {
   await open(page, '/today?view=week')

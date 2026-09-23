@@ -51,6 +51,7 @@ export function Nutrition() {
     resolveMealVersion,
     editMeal,
     deleteMeal,
+    deleteMeals,
     undeleteMeal,
   } = useActions()
   const { session } = useDataRevision()
@@ -94,7 +95,13 @@ export function Nutrition() {
   // A filled day has totals and no meals: the estimate is shown with the
   // numbers it produced, and the list counts only what somebody logged.
   const logged = meals.filter((meal) => !isPatternFilled(meal))
-  const estimate = meals.find(isPatternFilled)
+  /*
+    Every estimate record on the day, not the first. The current fill writes
+    one, but the version before it copied whole meals in — three records for
+    one estimate — and a remove that took one of them left the day still
+    "estimated", at two thirds of the number.
+  */
+  const estimates = meals.filter(isPatternFilled)
   const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
   const progress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
 
@@ -102,13 +109,7 @@ export function Nutrition() {
     const retraction = await deleteMeal(meal)
     if (!retraction) return
     setEditing(undefined)
-    setDeleted({
-      retraction,
-      // The slot on a filled day is a placeholder; "Lunch deleted" would be
-      // the only place it ever surfaced.
-      slot: isPatternFilled(meal) ? t('gaps.estimatedDay') : t(slotKey(meal)),
-      kcal: mealKcal(meal),
-    })
+    setDeleted({ retraction, slot: t(slotKey(meal)), kcal: mealKcal(meal) })
   }
 
   return (
@@ -157,12 +158,12 @@ export function Nutrition() {
             <Total name={t('estimate.carbs')} value={showNumber(nutrients.carbs, 'g')} sub="g" />
             <Total name={t('estimate.fat')} value={showNumber(nutrients.fat, 'g')} sub="g" />
           </div>
-          {estimate && (
+          {estimates.length > 0 && (
             <EstimatedTotals
               action={
                 <IconButton
                   label={t('gaps.removeEstimate')}
-                  onClick={() => void remove(estimate)}
+                  onClick={() => void deleteMeals(estimates)}
                   tone="danger"
                 >
                   <TrashIcon />

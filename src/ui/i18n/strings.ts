@@ -730,7 +730,6 @@ const en = {
     other: 'From {count} logged days.',
   },
   'gaps.dayIsEstimate': 'This day is an estimate — nobody logged it.',
-  'gaps.estimatedDay': 'Estimated day',
   'gaps.estimatedDayNote':
     'Nothing was logged, so these are your average day. Log a meal here and it replaces the estimate.',
   'gaps.removeEstimate': 'Remove the estimate',
@@ -1462,7 +1461,6 @@ const he: Dictionary = {
     other: 'מ־{count} ימים רשומים.',
   },
   'gaps.dayIsEstimate': 'היום הזה הוא הערכה — אף אחד לא רשם אותו.',
-  'gaps.estimatedDay': 'יום משוער',
   'gaps.estimatedDayNote':
     'לא נרשם כלום, אז אלה ערכי היום הממוצע שלכם. רשמו כאן ארוחה והיא תחליף את ההערכה.',
   'gaps.removeEstimate': 'להסיר את ההערכה',

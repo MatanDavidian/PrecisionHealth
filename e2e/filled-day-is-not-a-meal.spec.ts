@@ -190,3 +190,86 @@ test('the export carries the estimate as an estimate, and nothing that looks eat
   )
   expect(estimateItems.map((item) => item.name)).toEqual([ESTIMATE_NAME])
 })
+
+test('a day filled by the OLD code — whole meals copied in — still shows only a total', async ({
+  page,
+}) => {
+  /*
+    Before the fill wrote one record, it copied breakfast, lunch and dinner
+    from the person's usual day, each tagged PATTERN_FILL. Anyone who filled a
+    day on that version has those records now, and deploying the new code does
+    not rewrite them. They must read the same way: a total, no foods, and one
+    remove that takes the whole estimate away.
+  */
+  await open(page, `/nutrition?d=${GAP}`)
+  await expect(page.getByText('Logged (0)')).toBeVisible({ timeout: 15_000 })
+
+  const copied = [
+    { slot: 'BREAKFAST', hour: '05', name: 'Eggs and oats', kcal: 520 },
+    { slot: 'LUNCH', hour: '10', name: 'Grilled chicken breast', kcal: 690 },
+    { slot: 'DINNER', hour: '16', name: 'Salmon, potatoes, salad', kcal: 780 },
+  ]
+  await page.evaluate(
+    async ({ day, copied }) => {
+      const db: IDBDatabase = await new Promise((resolve, reject) => {
+        const request = indexedDB.open('timeline-health')
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const store = db.transaction('meals', 'readwrite').objectStore('meals')
+      const provenance = { source: 'PATTERN_FILL', kind: 'DERIVED', recordedAt: `${day}T20:00:00.000Z` }
+      for (const [i, meal] of copied.entries()) {
+        const id = `old-fill-${i}`
+        const q = (value: number, unit: string) => ({ value, unit, __canonical: true })
+        store.put({
+          id: `${id}-v1`,
+          mealId: id,
+          version: 1,
+          userId: 'user-demo',
+          day,
+          data: {
+            id,
+            recordId: `${id}-v1`,
+            version: 1,
+            userId: 'user-demo',
+            slot: meal.slot,
+            time: { kind: 'instant', at: `${day}T${meal.hour}:30:00.000Z`, zone: 'Asia/Jerusalem' },
+            items: [
+              {
+                id: `${id}-item`,
+                mealId: id,
+                name: meal.name,
+                amount: q(300, 'g'),
+                nutrients: {
+                  energy: q(meal.kcal, 'kcal'),
+                  protein: q(40, 'g'),
+                  carbs: q(50, 'g'),
+                  fat: q(20, 'g'),
+                },
+                provenance,
+              },
+            ],
+            provenance,
+          },
+        })
+      }
+      await new Promise((resolve) => (store.transaction.oncomplete = resolve))
+      db.close()
+    },
+    { day: GAP, copied },
+  )
+
+  await open(page, `/nutrition?d=${GAP}`)
+  await expect(estimateNote(page)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('Logged (0)')).toBeVisible()
+  expect(await dayCalories(page)).toBe(520 + 690 + 780)
+  for (const { name } of copied) await expect(page.getByText(name)).toHaveCount(0)
+  for (const slot of ['Breakfast', 'Lunch', 'Dinner']) {
+    await expect(page.getByText(slot, { exact: true })).toHaveCount(0)
+  }
+
+  // One remove clears the estimate — all three copies, not one of them.
+  await page.getByRole('button', { name: 'Remove the estimate' }).click()
+  await expect(estimateNote(page)).toHaveCount(0)
+  await expect.poll(() => dayCalories(page), { timeout: 10_000 }).toBe(0)
+})

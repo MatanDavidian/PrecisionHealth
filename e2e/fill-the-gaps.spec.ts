@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dayKey, open } from './app'
+import { dayKey, open, storedRows, switchToHebrew } from './app'
 
 /**
  * Filling a day nobody logged, from the days they did.
@@ -138,4 +138,104 @@ test('a filled day shows its totals, marked as estimated, and no meals', async (
   // And the estimate can still be taken away from where it is shown.
   await page.getByRole('button', { name: 'Remove the estimate' }).click()
   await expect(page.getByText(/these are your average day/)).toHaveCount(0)
+})
+
+/**
+ * Removes every meal on the given days, straight from the store.
+ *
+ * The demo data has exactly one gap (yesterday) and a fortnight of history,
+ * which is the one shape the tests above can see. Blanking more days is how
+ * the other two shapes are reached: several gaps at once, and too little
+ * history to call anything typical. A test setup step, not a product action —
+ * hence the raw delete rather than a retraction.
+ */
+async function blankDays(page: import('@playwright/test').Page, match: (day: string) => boolean) {
+  await open(page, '/today?view=week')
+  await expect(page.getByRole('heading', { name: /This week/ })).toBeVisible({ timeout: 15_000 })
+  const rows = await storedRows<{ id: string; day: string }>(page, 'meals')
+  const ids = rows.filter((row) => match(row.day)).map((row) => row.id)
+  await page.evaluate(async (ids) => {
+    const db: IDBDatabase = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('timeline-health')
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const tx = db.transaction('meals', 'readwrite')
+    for (const id of ids) tx.objectStore('meals').delete(id)
+    await new Promise((resolve) => (tx.oncomplete = resolve))
+    db.close()
+  }, ids)
+}
+
+test('several blank days are filled together, one estimate each, and undone together', async ({
+  page,
+}) => {
+  // Sunday and Monday join yesterday: three gaps before today.
+  const blank = [dayKey(-3), dayKey(-2)]
+  await blankDays(page, (day) => blank.includes(day))
+
+  await open(page, '/today?view=week')
+  await expect(page.getByText('3 days have no meals on them')).toBeVisible({ timeout: 15_000 })
+  const before = (await storedRows(page, 'meals')).length
+
+  await page.getByRole('button', { name: 'Fill all 3 from your average' }).click()
+  await expect(page.getByText('3 days filled from your average.')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.estimated-fill')).toHaveCount(3)
+
+  // One record per day — never one per meal, and never two on one day.
+  const written = (await storedRows<{ day: string; data: { provenance: { source: string } } }>(
+    page,
+    'meals',
+  )).filter((row) => row.data.provenance.source === 'PATTERN_FILL')
+  expect(written.map((row) => row.day).sort()).toEqual([dayKey(-3), dayKey(-2), dayKey(-1)])
+  expect((await storedRows(page, 'meals')).length).toBe(before + 3)
+
+  // Undo takes all three back, and the offer returns for all three.
+  await page.getByRole('button', { name: 'Undo', exact: true }).click()
+  await expect(page.getByText('3 days have no meals on them')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.estimated-fill')).toHaveCount(0)
+})
+
+test('with too little history, the gap is named but no fill is offered', async ({ page }) => {
+  /*
+    Every day before today blanked. There is nothing to average, and a fill
+    drawn from nothing would be a number with no basis dressed as a habit —
+    so the card says why instead of offering a button.
+  */
+  const today = dayKey(0)
+  await blankDays(page, (day) => day < today)
+
+  await open(page, '/today?view=week')
+  await expect(page.getByText(/days have no meals on them/)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/Not enough logged days yet/)).toBeVisible()
+  await expect(page.getByRole('button', { name: /from your average/ })).toHaveCount(0)
+})
+
+test('in Hebrew the offer, the fill and the estimate note all read right to left', async ({
+  page,
+}) => {
+  await switchToHebrew(page)
+  await open(page, '/today?view=week')
+
+  await expect(page.getByText('ימים חסרים')).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: 'למלא מהממוצע שלכם' }).click()
+  await expect(page.getByText('מולא מהממוצע שלכם.')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.estimated-fill').first()).toBeVisible()
+  await expect(page.getByText('הערכה', { exact: true })).toBeVisible()
+
+  await open(page, `/nutrition?d=${dayKey(-1)}`)
+  const note = page.getByText(/ערכי היום הממוצע/)
+  await expect(note).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+  await expect(page.getByText('נרשמו (0)')).toBeVisible()
+
+  /*
+    The layout, not just the words. A right-to-left page that overflows
+    sideways is the classic symptom of a physical margin or position left in
+    a component — it is invisible in English and breaks the page in Hebrew.
+  */
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow).toBeLessThanOrEqual(0)
 })

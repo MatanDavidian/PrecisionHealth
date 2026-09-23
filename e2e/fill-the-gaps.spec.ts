@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { open, settledNumber } from './app'
+import { dayKey, open } from './app'
 
 /**
  * Filling a day nobody logged, from the days they did.
@@ -99,4 +99,33 @@ test('the week total moves by what was filled, not by a fiction', async ({ page 
   await expect(bars.first()).toBeVisible()
   const height = await bars.first().evaluate((el) => (el as HTMLElement).offsetHeight)
   expect(height).toBeGreaterThan(10)
+})
+
+test('a filled day shows one estimate, never a list of meals', async ({ page }) => {
+  /*
+    A filled day is a claim about how much, not about what. Showing it as
+    breakfast, lunch and dinner would put dishes on the record that may never
+    have been eaten — and a month later the person would believe them.
+  */
+  await open(page, '/today?view=week')
+  await expect(gapsCard(page)).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: /Fill it from your average/ }).click()
+  await expect(page.getByText('Filled from your average.')).toBeVisible({ timeout: 15_000 })
+
+  const yesterday = dayKey(-1)
+  for (const path of [`/today?d=${yesterday}`, `/nutrition?d=${yesterday}`]) {
+    await open(page, path)
+    await expect(page.getByText('Estimated day', { exact: true })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(/^~\d+ kcal$/)).toBeVisible()
+    await expect(page.getByText(/replaces the estimate/)).toBeVisible()
+    // None of the foods the average was drawn from, and no meal slots.
+    for (const food of ['Eggs and oats', 'Grilled chicken', 'Salmon']) {
+      await expect(page.getByText(new RegExp(food))).toHaveCount(0)
+    }
+    for (const slot of ['Breakfast', 'Lunch', 'Dinner']) {
+      await expect(page.getByText(slot, { exact: true })).toHaveCount(0)
+    }
+  }
+  // Nobody logged anything; the count must not say otherwise.
+  await expect(page.getByText('Logged (0)')).toBeVisible()
 })

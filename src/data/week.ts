@@ -12,6 +12,7 @@
  */
 import {
   convert,
+  countedMeals,
   isPatternFilled,
   dayKeyOf,
   latestVersions,
@@ -51,7 +52,9 @@ export async function readWeek(
 
   // The store returns every version; take the newest of each meal and drop
   // items a correction superseded, or a confirmed estimate counts twice.
-  const live = latestVersions(meals).map((meal) => ({
+  // A real meal logged on a filled day replaces the estimate rather than
+  // adding to it: the estimate was standing in for the day.
+  const live = countedMeals(latestVersions(meals)).map((meal) => ({
     day: dayKeyOf(meal.time),
     kcal: mealKcal(liveItems(meal.items)),
     filled: isPatternFilled(meal),
@@ -64,12 +67,8 @@ export async function readWeek(
       day,
       eatenKcal: onDay.reduce((sum, m) => sum + m.kcal, 0),
       /*
-        Estimated only when EVERY meal on the day was filled.
-
-        One real breakfast logged after the fact makes the day partly observed,
-        and striping it whole would understate what the person actually did.
-        The finer distinction — this meal but not that one — is the meal list's
-        job, where there is room to say it.
+        After `countedMeals`, a day is either all estimate or all observed:
+        the first real meal on a filled day takes the estimate out.
       */
       estimated: onDay.length > 0 && onDay.every((m) => m.filled),
       // Left undefined rather than zeroed when nothing was recorded — a day we
@@ -104,10 +103,11 @@ export async function readWeekReport(
     ...days.map((day) => repos.observations.listByDay(userId, day, 'TOTAL_ENERGY')),
   ])
 
-  const live = latestVersions(meals).map((meal) => {
+  const live = countedMeals(latestVersions(meals)).map((meal) => {
     const items = liveItems(meal.items)
     return {
       day: dayKeyOf(meal.time),
+      filled: isPatternFilled(meal),
       meal: {
         slot: meal.slot,
         foods: items.map((i) => i.name),
@@ -138,6 +138,11 @@ export async function readWeekReport(
       timeZone: 'UTC',
     }),
     meals: live.filter((m) => m.day === day).map((m) => m.meal),
+    /*
+      Said outright, so the model does not read an average as a day's eating
+      and remark on how consistent Tuesday was with the rest of the week.
+    */
+    estimated: live.some((m) => m.day === day && m.filled) || undefined,
     eatenKcal: Math.round(energy[i].eatenKcal),
     burnedKcal:
       energy[i].burnedKcal === undefined ? undefined : Math.round(energy[i].burnedKcal!),

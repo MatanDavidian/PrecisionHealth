@@ -29,6 +29,11 @@ export interface ReportedDay {
   /** Which weekday, so the model can see a weekend pattern without a calendar. */
   weekday: string
   meals: ReportedMeal[]
+  /**
+   * Nobody logged this day; its one "meal" is the person's average day,
+   * filled in so the week is not graded against a zero.
+   */
+  estimated?: true
   eatenKcal: number
   burnedKcal?: number
 }

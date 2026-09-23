@@ -152,7 +152,12 @@ How to read the totals, because two spans are in play:
 - "eatenAllDaysKcal" is everything eaten in the week, over "daysWithFood".
 - A day with food but no burn figure is in "eatenAllDaysKcal" and not in the
   balance. It is not a day of fasting. Never describe a missing burn figure as
-  though the person did not move, or a missing meal as though they did not eat.`
+  though the person did not move, or a missing meal as though they did not eat.
+- A day marked "estimated": true was not logged. Its one entry is the person's
+  own average day, filled in so the week is not judged against a zero. Count
+  it in the totals, but never comment on what was eaten that day, and never
+  treat its similarity to other days as a pattern — it is similar by
+  construction.`
 
 /** The longest free text worth sending. Past this it is a diary, not a meal. */
 export const MAX_DESCRIPTION_CHARS = 500

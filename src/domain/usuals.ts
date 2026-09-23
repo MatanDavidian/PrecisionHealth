@@ -16,6 +16,7 @@ import { zonedTimeToUtc, type CalendarDate, type IanaZone } from './time'
 import type { UserId } from './user'
 import { needsConfirmation, userEntered, type Provenance } from './provenance'
 import { liveItems } from './corrections'
+import { isPatternFilled } from './patternFill'
 
 /** Names differ by capitals and spacing far more often than by meaning. */
 const normalise = (name: string): string => name.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -85,6 +86,9 @@ export function findUsualMeals(
 
   for (const meal of meals) {
     if (meal.retracted) continue
+    // An estimate is not a habit. Counting it would make the average day
+    // look like something the person keeps choosing to eat.
+    if (isPatternFilled(meal)) continue
     const signature = mealSignature(meal)
     if (!signature) continue
     const group = groups.get(signature)
@@ -132,6 +136,7 @@ export function findUsualFoods(
 
   for (const meal of meals) {
     if (meal.retracted) continue
+    if (isPatternFilled(meal)) continue
     const at = instantOf(meal)
     for (const item of liveItems(meal.items)) {
       const key = normalise(item.name)
@@ -273,6 +278,12 @@ export function repeatDay(
 
   for (const meal of [...source].sort((a, b) => instantOf(a).localeCompare(instantOf(b)))) {
     if (meal.retracted) continue
+    /*
+      Never copied. `repeatMeal` writes an ordinary user-entered record, so
+      repeating a filled day would turn an estimate into something that looks
+      observed — the one thing a filled day must never become.
+    */
+    if (isPatternFilled(meal)) continue
     const at = new Date(zonedTimeToUtc(options.onDate, timeOfDay(meal, options.zone), options.zone))
     if (at.getTime() > options.now.getTime()) {
       skipped.push(meal)

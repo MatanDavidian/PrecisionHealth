@@ -28,6 +28,7 @@ import {
   retractMeal,
   dayKey,
   detectMealConflicts,
+  countedMeals,
   latestVersions,
   nextVersion,
   resolveMealConflict,
@@ -49,7 +50,7 @@ import {
   type Workout,
   type LeftoverEstimate,
   type CalendarDate,
-  type TypicalDay,
+  type TypicalIntake,
 } from '@/domain'
 import { buildPatternFilledDay } from '@/data/patternFilledDay'
 import { buildEstimatedMeal, type EstimatedMealInput } from '@/data/estimatedMeal'
@@ -134,9 +135,10 @@ export function useDay(day: string): DayState {
 
       // The store returns every version; take the newest of each meal, then
       // drop superseded items inside it, so a confirmed correction replaces
-      // the estimate rather than double-counting with it. Sorted by time so
-      // the day reads as a timeline, not in insertion order.
-      const live = latestVersions(meals)
+      // the estimate rather than double-counting with it. A filled day's
+      // estimate drops out once a real meal is on the day, for the same reason.
+      // Sorted by time so the day reads as a timeline, not in insertion order.
+      const live = countedMeals(latestVersions(meals))
         .map((meal) => ({ ...meal, items: liveItems(meal.items) }))
         .sort((a, b) => instantOf(a.time).localeCompare(instantOf(b.time)))
 
@@ -400,20 +402,18 @@ export function useActions() {
   )
 
   /**
-   * Fills a blank day from what this person usually eats.
+   * Fills a blank day with this person's average day.
    *
-   * Written as ordinary meals with `PATTERN_FILL` provenance, so every screen
-   * that already knows how to ask where a number came from can see that
-   * nobody observed this day. Returns what it wrote, so Undo has the records
-   * to take back — the same shape as a whole-day repeat, for the same reason.
+   * One record with `PATTERN_FILL` provenance, so every screen that already
+   * knows how to ask where a number came from can see that nobody observed
+   * this day. Returns what it wrote, so Undo has the record to take back —
+   * the same shape as a whole-day repeat, for the same reason.
    */
   const fillDayFromPattern = useCallback(
-    async (typical: TypicalDay, day: CalendarDate): Promise<Meal[]> => {
-      const meals = buildPatternFilledDay(currentUserId(), typical, day)
-      const ok = await runWrite('that estimate', async () => {
-        for (const meal of meals) await getRepositories().meals.add(meal)
-      })
-      return ok ? meals : []
+    async (typical: TypicalIntake, day: CalendarDate): Promise<Meal[]> => {
+      const estimate = buildPatternFilledDay(currentUserId(), typical, day)
+      const ok = await runWrite('that estimate', () => getRepositories().meals.add(estimate))
+      return ok ? [estimate] : []
     },
     [runWrite],
   )

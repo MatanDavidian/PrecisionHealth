@@ -1,31 +1,48 @@
 /**
- * Turning a typical day into records for a day that was left blank.
+ * Turning a typical day into a record for a day that was left blank.
  *
  * The arithmetic lives in `@/domain/patternFill`; this is the part that writes,
  * and it exists separately for the same reason `estimatedMeal.ts` does — the
  * domain does not know about ids, clocks or repositories.
  */
-import { instantOn, newId } from './newRecords'
+import { instantOn, newId, deviceZone } from './newRecords'
 import {
   asId,
+  canonical,
   type CalendarDate,
-  type FoodItem,
   type FoodItemId,
   type Meal,
   type MealId,
-  type TypicalDay,
+  type TypicalIntake,
   type UserId,
 } from '@/domain'
-import { deviceZone } from './newRecords'
-import { liveItems } from '@/domain'
 
 /**
- * A day's worth of meals, copied from what the person usually eats.
+ * What the record calls itself where no screen is translating it.
  *
- * Every record carries `PATTERN_FILL` provenance — the meal AND each item
- * inside it. Marking only the meal would leave the items looking user-entered
- * to anything that reads an item on its own, and the nutrition screen does
- * exactly that.
+ * Screens never show this — they recognise the record by its provenance and
+ * say "Estimated day" in the reader's language. It exists for the export and
+ * for the insights model, which read names, and should read one that cannot
+ * be mistaken for food.
+ */
+export const ESTIMATED_DAY_NAME = 'Estimated day (average of logged days)'
+
+/**
+ * One record carrying a day's average, and nothing that looks like a meal.
+ *
+ * Stored as a meal with a single item because that is the shape every total
+ * already sums — the week bars, the day's calories, the export, Undo. A new
+ * record type would have needed teaching to each of them, and the one that
+ * was missed would have read the day as zero again.
+ *
+ * The slot is a placeholder and nothing displays it: every screen that lists
+ * meals renders a filled record as the estimate it is. Lunch because it is
+ * stamped at midday, and a record whose time and slot disagree invites
+ * somebody to "fix" one of them.
+ *
+ * The amount is zero grams. A day does not weigh anything, and any number
+ * here would be invented; zero is also what stops a portion editor from
+ * scaling it, since there is nothing to scale from.
  *
  * `confidence` is deliberately absent. It is documented as belonging to an AI
  * estimate, and a number here would be invented twice over: there is no model,
@@ -33,50 +50,38 @@ import { liveItems } from '@/domain'
  */
 export function buildPatternFilledDay(
   userId: UserId,
-  typical: TypicalDay,
+  typical: TypicalIntake,
   day: CalendarDate,
   zone = deviceZone(),
-): Meal[] {
+): Meal {
   const recordedAt = new Date().toISOString()
+  const provenance = { source: 'PATTERN_FILL' as const, kind: 'DERIVED' as const, recordedAt }
+  const mealId = asId<'Meal'>(newId()) as MealId
 
-  return typical.meals.map(({ slot, template }) => {
-    const mealId = asId<'Meal'>(newId()) as MealId
-    /*
-      Timed at the hour the original was eaten, on the new day.
-
-      Not midday for everything: a breakfast stamped 12:00 sorts after lunch
-      and reads as nonsense in a day view. `instantOn` puts a past day at
-      midday local; this keeps the shape of the day it is copying.
-    */
-    const at = template.time.kind === 'instant'
-      ? `${day}T${template.time.at.slice(11)}`
-      : instantOn(day, zone)
-
-    /*
-      Only the items that are still current.
-
-      A template can carry a correction chain — "170 g" superseded by "190 g" —
-      and copying the whole list would resurrect the number the person already
-      replaced. `liveItems` is the same resolver the rest of the app reads
-      through, so the copy sees what a screen would show.
-    */
-    const items: FoodItem[] = liveItems(template.items).map((item) => ({
-      ...item,
-      id: asId<'FoodItem'>(newId()) as FoodItemId,
-      mealId,
-      // A fresh record, not a correction of the one it was copied from.
-      provenance: { source: 'PATTERN_FILL' as const, kind: 'DERIVED' as const, recordedAt },
-    }))
-
-    return {
-      id: mealId,
-      recordId: newId(),
-      version: 1,
-      userId,
-      slot,
-      time: { kind: 'instant' as const, at, zone },
-      items,
-      provenance: { source: 'PATTERN_FILL' as const, kind: 'DERIVED' as const, recordedAt },
-    }
-  })
+  return {
+    id: mealId,
+    recordId: newId(),
+    version: 1,
+    userId,
+    slot: 'LUNCH',
+    time: { kind: 'instant', at: instantOn(day, zone), zone },
+    items: [
+      {
+        id: asId<'FoodItem'>(newId()) as FoodItemId,
+        mealId,
+        name: ESTIMATED_DAY_NAME,
+        amount: canonical(0, 'g'),
+        nutrients: {
+          energy: canonical(Math.round(typical.energyKcal), 'kcal'),
+          protein: canonical(Math.round(typical.proteinG), 'g'),
+          carbs: canonical(Math.round(typical.carbsG), 'g'),
+          fat: canonical(Math.round(typical.fatG), 'g'),
+        },
+        // Marked on the item too: the nutrition screen reads items on their
+        // own, and an unmarked item would look user-entered to it.
+        provenance,
+      },
+    ],
+    provenance,
+  }
 }

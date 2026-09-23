@@ -7,6 +7,7 @@ import { LeftoverPanel } from '../components/LeftoverPanel'
 import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { MealEditor } from '../components/MealEditor'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
+import { EstimatedDayRow } from '../components/EstimatedDayRow'
 import { showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
@@ -16,6 +17,7 @@ import { DataUnavailable } from '../components/DataUnavailable'
 import { evaluateGoal } from '@/data/analytics'
 import {
   convert,
+  isPatternFilled,
   needsConfirmation,
   type Meal,
   type MealConflict,
@@ -96,7 +98,13 @@ export function Nutrition() {
     const retraction = await deleteMeal(meal)
     if (!retraction) return
     setEditing(undefined)
-    setDeleted({ retraction, slot: t(slotKey(meal)), kcal: mealKcal(meal) })
+    setDeleted({
+      retraction,
+      // The slot on a filled day is a placeholder; "Lunch deleted" would be
+      // the only place it ever surfaced.
+      slot: isPatternFilled(meal) ? t('gaps.estimatedDay') : t(slotKey(meal)),
+      kcal: mealKcal(meal),
+    })
   }
 
   return (
@@ -148,7 +156,11 @@ export function Nutrition() {
         </Card>
 
         <Card
-          label={t('nutrition.loggedCount', { count: meals.length })}
+          // An estimate is not something anybody logged; a filled day reads
+          // "Logged (0)" above the row that says why it still has a total.
+          label={t('nutrition.loggedCount', {
+            count: meals.filter((meal) => !isPatternFilled(meal)).length,
+          })}
           action={
             (
               <button
@@ -284,7 +296,27 @@ export function Nutrition() {
           )}
 
           {meals.map((meal) =>
-            editing === meal.id ? (
+            isPatternFilled(meal) ? (
+              /*
+                No editor and no item list: there are no foods to correct,
+                only a number standing in for a day. Removing it is the one
+                action that makes sense besides logging over it.
+              */
+              <div key={meal.id} className="border-t border-hairline py-1.5 first:border-t-0">
+                <EstimatedDayRow
+                  kcal={mealKcal(meal)}
+                  action={
+                    <IconButton
+                      label={t('gaps.removeEstimate')}
+                      onClick={() => void remove(meal)}
+                      tone="danger"
+                    >
+                      <TrashIcon />
+                    </IconButton>
+                  }
+                />
+              </div>
+            ) : editing === meal.id ? (
               <div key={meal.recordId}>
                 {/*
                   A sheet on a phone, a card in the list on a desktop — one

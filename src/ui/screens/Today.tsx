@@ -9,6 +9,7 @@ import { useSelectedDay, dayLabel } from '../useSelectedDay'
 import { DayNav } from '../components/DayNav'
 import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { GapsCard } from '../components/GapsCard'
+import { EstimatedDayRow } from '../components/EstimatedDayRow'
 import { FilledNotice } from '../components/FilledNotice'
 import { WeekNav } from '../components/WeekNav'
 import { DataUnavailable } from '../components/DataUnavailable'
@@ -24,11 +25,12 @@ import {
   goalFor,
   isObjective,
   latestVersions,
-  typicalDay,
+  typicalIntake,
+  isPatternFilled,
   weekStartOf,
   type DayGap,
   type Meal,
-  type TypicalDay,
+  type TypicalIntake,
 } from '@/domain'
 import { useLang } from '../i18n'
 import { InsightsCard, type InsightsState } from '../components/InsightsCard'
@@ -108,11 +110,11 @@ export function Today() {
    *
    * `justFilled` holds what was written so Undo has records to retract — the
    * same shape as a whole-day repeat. It is deliberately not persisted: Undo
-   * is for the seconds after a tap, and a filled day is afterwards corrected
-   * meal by meal like any other.
+   * is for the seconds after a tap. Afterwards a filled day is corrected by
+   * logging what was really eaten, which replaces the estimate.
    */
   const [gaps, setGaps] = useState<DayGap[]>([])
-  const [typical, setTypical] = useState<TypicalDay>()
+  const [typical, setTypical] = useState<TypicalIntake>()
   const [filling, setFilling] = useState(false)
   const [justFilled, setJustFilled] = useState<Meal[]>()
 
@@ -128,12 +130,12 @@ export function Today() {
       const days = week.days.map((d) => d.day)
       const open = findGaps(days, latestVersions(history), today).filter((g) => !g.filled)
       setGaps(open)
-      // Drawn for the FIRST gap: the meals offered are the same either way,
-      // and asking for a typical day per gap would read the same history
-      // several times to produce the same answer.
+      // Drawn for the FIRST gap: the average is the same either way, and
+      // asking for one per gap would read the same history several times to
+      // produce the same answer.
       setTypical(
         open.length
-          ? typicalDay(latestVersions(history), {
+          ? typicalIntake(latestVersions(history), {
               source: 'RECENT',
               forDay: open[0].day,
               today,
@@ -445,6 +447,7 @@ export function Today() {
           )}
           {data.meals.map((meal) => {
             const kcal = meal.items.reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0)
+            if (isPatternFilled(meal)) return <EstimatedDayRow key={meal.id} kcal={kcal} />
             const estimate = meal.items.find((item) => item.provenance.source === 'AI_ESTIMATE')
             return (
               <div key={meal.id} className="flex items-baseline justify-between gap-4 py-1.5">

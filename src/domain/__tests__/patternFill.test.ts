@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   canonical,
+  countedMeals,
   findGaps,
+  findUsualFoods,
+  findUsualMeals,
   isPatternFilled,
   MIN_DAYS_FOR_FILL,
-  typicalDay,
+  repeatDay,
+  typicalIntake,
   userEntered,
   type CalendarDate,
   type Meal,
@@ -22,6 +26,7 @@ const meal = (
   slot: MealSlot,
   name: string,
   provenance: Provenance = userEntered(`${day}T09:00:00.000Z`),
+  kcal = 400,
 ): Meal => ({
   id: `${day}-${slot}-${name}` as MealId,
   recordId: `${day}-${slot}-${name}-v1`,
@@ -36,7 +41,7 @@ const meal = (
       name,
       amount: canonical(200, 'g'),
       nutrients: {
-        energy: canonical(400, 'kcal'),
+        energy: canonical(kcal, 'kcal'),
         protein: canonical(30, 'g'),
         carbs: canonical(40, 'g'),
         fat: canonical(12, 'g'),
@@ -47,12 +52,15 @@ const meal = (
   provenance,
 })
 
-const filled = (day: string, slot: MealSlot, name: string) =>
+const filled = (day: string, slot: MealSlot, name: string, kcal = 400) =>
   meal(day, slot, name, {
     source: 'PATTERN_FILL',
     kind: 'DERIVED',
     recordedAt: `${day}T09:00:00.000Z`,
-  })
+  }, kcal)
+
+const real = (day: string, slot: MealSlot, name: string, kcal: number) =>
+  meal(day, slot, name, undefined, kcal)
 
 /** A fortnight of the same breakfast and lunch, ending before the gap. */
 const history = (days: string[]) =>
@@ -65,25 +73,25 @@ describe('the rule that keeps this honest', () => {
       the baseline is eventually made of guesses about guesses. So a filled day
       is not evidence, and the count of days drawn from proves it.
     */
-    const real = history(['2026-09-01', '2026-09-02', '2026-09-03'])
+    const logged = history(['2026-09-01', '2026-09-02', '2026-09-03'])
     const invented = [
       filled('2026-09-04', 'BREAKFAST', 'Eggs and oats'),
       filled('2026-09-05', 'BREAKFAST', 'Eggs and oats'),
     ]
 
-    const withInvented = typicalDay([...real, ...invented], {
+    const withInvented = typicalIntake([...logged, ...invented], {
       source: 'RECENT',
       forDay: '2026-09-06' as CalendarDate,
       today: '2026-09-06' as CalendarDate,
     })
-    const realOnly = typicalDay(real, {
+    const realOnly = typicalIntake(logged, {
       source: 'RECENT',
       forDay: '2026-09-06' as CalendarDate,
       today: '2026-09-06' as CalendarDate,
     })
 
     expect(withInvented?.drawnFrom).toBe(3)
-    expect(withInvented?.drawnFrom).toBe(realOnly?.drawnFrom)
+    expect(withInvented).toEqual(realOnly)
   })
 
   it('marks a filled meal in the record, not on a screen', () => {
@@ -95,64 +103,134 @@ describe('the rule that keeps this honest', () => {
 
 describe('what a typical day is drawn from', () => {
   const days = ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04']
+  const opts = (forDay: string, today = forDay) => ({
+    source: 'RECENT' as const,
+    forDay: forDay as CalendarDate,
+    today: today as CalendarDate,
+  })
 
-  it('offers the meals actually eaten, not an average of them', () => {
-    // Averaging two breakfasts gives 1.5 eggs and a meal nobody ate. This
-    // copies a real one, which is also what makes "correct it" a small edit.
-    const typical = typicalDay(history(days), {
-      source: 'RECENT',
-      forDay: '2026-09-05' as CalendarDate,
-      today: '2026-09-05' as CalendarDate,
-    })
-    expect(typical?.meals.map((m) => m.slot).sort()).toEqual(['BREAKFAST', 'LUNCH'])
-    expect(typical?.meals[0].template.items[0].name).toBe('Eggs and oats')
+  it('is the mean of each logged day\'s total', () => {
+    const typical = typicalIntake(history(days), opts('2026-09-05'))
+    // Two 400 kcal meals a day, every day.
+    expect(typical?.energyKcal).toBe(800)
+    expect(typical?.proteinG).toBe(60)
+    expect(typical?.carbsG).toBe(80)
+    expect(typical?.fatG).toBe(24)
+  })
+
+  it('is the true average on a varied fortnight — where the old picker filled 1,200 of 1,920', () => {
+    /*
+      The case that retired the earlier method. It chose the most frequent
+      meal per slot, and the meals that repeat are the plain ones: yogurt,
+      salad, soup won every slot, the shawarma and the pizza never did, and
+      a snack on four days of ten was dropped as "occasional". The result
+      was consistently low under a button that said "average".
+    */
+    const lunches = [450, 450, 950, 800, 900, 1100, 450, 850, 1000, 900]
+    const dinners = [400, 900, 400, 850, 800, 400, 750, 700, 1000, 650]
+    const tenDays = lunches.map((_, i) => `2026-09-${String(i + 1).padStart(2, '0')}`)
+    const varied = tenDays.flatMap((d, i) => [
+      real(d, 'BREAKFAST', 'Yogurt', 350),
+      real(d, 'LUNCH', `Lunch ${i}`, lunches[i]),
+      real(d, 'DINNER', `Dinner ${i}`, dinners[i]),
+      ...(i % 3 === 0 ? [real(d, 'SNACK', 'Chocolate', 250)] : []),
+    ])
+    const typical = typicalIntake(varied, opts('2026-09-11'))
+    expect(typical?.drawnFrom).toBe(10)
+    expect(typical?.energyKcal).toBe(1920)
+  })
+
+  it('averages over days, not meals — a day with a snack is a bigger day', () => {
+    const typical = typicalIntake(
+      [
+        real('2026-09-01', 'LUNCH', 'A', 1000),
+        real('2026-09-02', 'LUNCH', 'A', 1000),
+        real('2026-09-03', 'LUNCH', 'A', 1000),
+        real('2026-09-03', 'SNACK', 'B', 300),
+      ],
+      opts('2026-09-04'),
+    )
+    // Per meal would say 825. The person ate 1,000, 1,000 and 1,300.
+    expect(typical?.energyKcal).toBe(1100)
+  })
+
+  it('ignores a retracted meal', () => {
+    const deleted = { ...real('2026-09-02', 'SNACK', 'Cake', 900), retracted: true }
+    const typical = typicalIntake([...history(days), deleted], opts('2026-09-05'))
+    expect(typical?.energyKcal).toBe(800)
   })
 
   it('refuses when there is not enough history to call anything typical', () => {
     // Two days wearing a statistical hat is not a habit, and the offer should
     // not appear at all rather than appear and produce something silly.
     const thin = history(days.slice(0, MIN_DAYS_FOR_FILL - 1))
-    expect(
-      typicalDay(thin, {
-        source: 'RECENT',
-        forDay: '2026-09-05' as CalendarDate,
-        today: '2026-09-05' as CalendarDate,
-      }),
-    ).toBeUndefined()
-  })
-
-  it('leaves out a slot that is occasional rather than usual', () => {
-    // One late snack in a fortnight is not a typical snack, and inventing one
-    // on every filled day would inflate them above what the person eats.
-    const withOneSnack = [...history(days), meal('2026-09-02', 'SNACK', 'Crisps')]
-    const typical = typicalDay(withOneSnack, {
-      source: 'RECENT',
-      forDay: '2026-09-05' as CalendarDate,
-      today: '2026-09-05' as CalendarDate,
-    })
-    expect(typical?.meals.map((m) => m.slot)).not.toContain('SNACK')
+    expect(typicalIntake(thin, opts('2026-09-05'))).toBeUndefined()
   })
 
   it('can draw from the same weekday instead, when the week has a shape', () => {
     // Four Tuesdays. A Sunday long-run diet should not colour a Tuesday.
     const tuesdays = ['2026-09-01', '2026-09-08', '2026-09-15', '2026-09-22']
-    const typical = typicalDay(history(tuesdays), {
+    const sunday = real('2026-09-20', 'DINNER', 'Feast', 3000)
+    const typical = typicalIntake([...history(tuesdays), sunday], {
       source: 'SAME_WEEKDAY',
       forDay: '2026-09-29' as CalendarDate,
       today: '2026-09-29' as CalendarDate,
     })
     expect(typical?.drawnFrom).toBe(4)
     expect(typical?.source).toBe('SAME_WEEKDAY')
+    expect(typical?.energyKcal).toBe(800)
   })
 
   it('never draws on the day it is filling, or after it', () => {
     const withLater = [...history(days), ...history(['2026-09-05', '2026-09-06'])]
-    const typical = typicalDay(withLater, {
-      source: 'RECENT',
-      forDay: '2026-09-05' as CalendarDate,
-      today: '2026-09-06' as CalendarDate,
+    expect(typicalIntake(withLater, opts('2026-09-05', '2026-09-06'))?.drawnFrom).toBe(4)
+  })
+})
+
+describe('a real meal on a filled day', () => {
+  it('replaces the estimate instead of adding to it', () => {
+    /*
+      Fill Tuesday with an average 2,000 kcal day, then log Tuesday's dinner.
+      Summing both would say 2,700 — a whole estimated day on top of the
+      dinner it was standing in for.
+    */
+    const estimate = filled('2026-09-02', 'LUNCH', 'Estimated day', 2000)
+    const dinner = real('2026-09-02', 'DINNER', 'Pasta', 700)
+    expect(countedMeals([estimate, dinner])).toEqual([dinner])
+  })
+
+  it('keeps the estimate where nothing real was logged', () => {
+    const estimate = filled('2026-09-02', 'LUNCH', 'Estimated day', 2000)
+    const elsewhere = real('2026-09-03', 'DINNER', 'Pasta', 700)
+    expect(countedMeals([estimate, elsewhere])).toEqual([estimate, elsewhere])
+  })
+
+  it('falls back to the estimate if the real meal is deleted again', () => {
+    const estimate = filled('2026-09-02', 'LUNCH', 'Estimated day', 2000)
+    const deleted = { ...real('2026-09-02', 'DINNER', 'Pasta', 700), retracted: true }
+    expect(countedMeals([estimate, deleted])).toContain(estimate)
+  })
+})
+
+describe('an estimate is never mistaken for eating', () => {
+  const estimate = filled('2026-09-02', 'LUNCH', 'Estimated day', 2000)
+
+  it('is not a usual meal or a usual food, however many days were filled', () => {
+    const many = ['2026-09-02', '2026-09-03', '2026-09-04'].map((d) =>
+      filled(d, 'LUNCH', 'Estimated day', 2000),
+    )
+    expect(findUsualMeals(many)).toEqual([])
+    expect(findUsualFoods(many)).toEqual([])
+  })
+
+  it('is never copied by repeating a day — a copy would look observed', () => {
+    const result = repeatDay([estimate], USER, {
+      onDate: '2026-09-10' as CalendarDate,
+      zone: ZONE,
+      now: new Date('2026-09-11T00:00:00Z'),
+      newId: () => crypto.randomUUID(),
     })
-    expect(typical?.drawnFrom).toBe(4)
+    expect(result.meals).toEqual([])
   })
 })
 

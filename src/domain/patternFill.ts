@@ -41,13 +41,30 @@ export interface DayGap {
  * Where a typical day is drawn from.
  *
  * Two answers, because they disagree for good reasons. `RECENT` is the last
- * fortnight of whatever you ate, which follows a changing diet quickly.
+ * fortnight of LOGGED days, which follows a changing diet quickly.
  * `SAME_WEEKDAY` is the last several Mondays, which is better when the week
  * has a shape — a long run on Sundays, a canteen lunch on weekdays.
  */
 export type FillSource = 'RECENT' | 'SAME_WEEKDAY'
 
+/**
+ * How many logged days the recent average is taken over.
+ *
+ * Logged days, not calendar days. It was calendar days, and since a filled day
+ * is not evidence (rule 1), every fill shrank the window the next fill drew
+ * from: two weeks of filling instead of logging and the feature switched
+ * itself off, with a full history sitting just outside the window.
+ */
 export const FILL_WINDOW_DAYS = 14
+
+/**
+ * How far back a logged day can be and still describe how someone eats now.
+ *
+ * Without a bound, one enthusiastic week in January would be filling gaps in
+ * September. A season is long enough to survive a holiday or a busy month of
+ * not logging, and short enough that the person would recognise the number.
+ */
+export const FILL_LOOKBACK_DAYS = 90
 /** How many same-weekday instances to look back over. */
 export const SAME_WEEKDAY_WEEKS = 6
 
@@ -72,6 +89,14 @@ export interface TypicalIntake {
   source: FillSource
   /** Days with at least one real meal that the average was drawn from. */
   drawnFrom: number
+  /**
+   * The first and last of those days.
+   *
+   * Shown to the person, because "your average" drawn from a month ago is a
+   * different claim from one drawn from last week, and they should know which.
+   */
+  from: CalendarDate
+  to: CalendarDate
   energyKcal: number
   proteinG: number
   carbsG: number
@@ -105,12 +130,14 @@ const sumOf = (meal: Meal, pick: (item: FoodItem) => number): number =>
  */
 export function typicalIntake(
   history: readonly Meal[],
-  options: { source: FillSource; forDay: CalendarDate; today: CalendarDate },
+  options: { source: FillSource; forDay: CalendarDate },
 ): TypicalIntake | undefined {
   const target = new Date(`${options.forDay}T00:00:00Z`)
-  const earliest = new Date(`${options.today}T00:00:00Z`)
-  earliest.setUTCDate(earliest.getUTCDate() - FILL_WINDOW_DAYS)
-  const from = earliest.toISOString().slice(0, 10)
+  // Back from the day being filled, not from today: filling a week from
+  // last spring should draw on how you ate last spring.
+  const earliest = new Date(`${options.forDay}T00:00:00Z`)
+  earliest.setUTCDate(earliest.getUTCDate() - FILL_LOOKBACK_DAYS)
+  const oldest = earliest.toISOString().slice(0, 10)
 
   const byDay = new Map<CalendarDate, Meal[]>()
   for (const meal of history) {
@@ -124,7 +151,7 @@ export function typicalIntake(
       if (at.getUTCDay() !== target.getUTCDay()) continue
       const weeksBack = (target.getTime() - at.getTime()) / (7 * 86_400_000)
       if (weeksBack <= 0 || weeksBack > SAME_WEEKDAY_WEEKS) continue
-    } else if (day < from) {
+    } else if (day < oldest) {
       continue
     }
     const group = byDay.get(day)
@@ -132,9 +159,14 @@ export function typicalIntake(
     else byDay.set(day, [meal])
   }
 
-  if (byDay.size < MIN_DAYS_FOR_FILL) return undefined
+  // The most recent logged days first, however far apart they fell.
+  const chosen = [...byDay.keys()]
+    .sort()
+    .reverse()
+    .slice(0, options.source === 'RECENT' ? FILL_WINDOW_DAYS : undefined)
+  if (chosen.length < MIN_DAYS_FOR_FILL) return undefined
 
-  const days = [...byDay.values()]
+  const days = chosen.map((day) => byDay.get(day)!)
   const mean = (pick: (item: FoodItem) => number) =>
     days.reduce((total, meals) => total + meals.reduce((s, m) => s + sumOf(m, pick), 0), 0) /
     days.length
@@ -142,6 +174,8 @@ export function typicalIntake(
   return {
     source: options.source,
     drawnFrom: days.length,
+    from: chosen[chosen.length - 1],
+    to: chosen[0],
     energyKcal: mean((item) => convert(item.nutrients.energy, 'kcal')),
     proteinG: mean((item) => convert(item.nutrients.protein, 'g')),
     carbsG: mean((item) => convert(item.nutrients.carbs, 'g')),

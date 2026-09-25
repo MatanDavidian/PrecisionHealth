@@ -21,7 +21,7 @@ import {
   convert,
   dayKeyOf,
   findGaps,
-  FILL_WINDOW_DAYS,
+  FILL_LOOKBACK_DAYS,
   goalFor,
   isObjective,
   latestVersions,
@@ -123,7 +123,9 @@ export function Today() {
     let cancelled = false
     void (async () => {
       const history = await getRepositories().meals.listByRange(currentUserId(), {
-        from: addDays(week.from, -FILL_WINDOW_DAYS),
+        // As far back as a fill may draw from — the last fortnight of LOGGED
+        // days can sit well before the last fortnight of the calendar.
+        from: addDays(week.from, -FILL_LOOKBACK_DAYS),
         to: week.to,
       })
       if (cancelled) return
@@ -138,7 +140,6 @@ export function Today() {
           ? typicalIntake(latestVersions(history), {
               source: 'RECENT',
               forDay: open[0].day,
-              today,
             })
           : undefined,
       )
@@ -331,6 +332,11 @@ export function Today() {
                     gaps={gaps}
                     busy={filling}
                     canFill={typical !== undefined}
+                    basis={
+                      typical
+                        ? { count: typical.drawnFrom, from: typical.from, to: typical.to }
+                        : undefined
+                    }
                     onFill={() => void fillGaps()}
                     formatDay={(d) =>
                       new Date(`${d}T12:00:00Z`).toLocaleDateString(

@@ -82,12 +82,10 @@ describe('the rule that keeps this honest', () => {
     const withInvented = typicalIntake([...logged, ...invented], {
       source: 'RECENT',
       forDay: '2026-09-06' as CalendarDate,
-      today: '2026-09-06' as CalendarDate,
     })
     const realOnly = typicalIntake(logged, {
       source: 'RECENT',
       forDay: '2026-09-06' as CalendarDate,
-      today: '2026-09-06' as CalendarDate,
     })
 
     expect(withInvented?.drawnFrom).toBe(3)
@@ -103,10 +101,9 @@ describe('the rule that keeps this honest', () => {
 
 describe('what a typical day is drawn from', () => {
   const days = ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04']
-  const opts = (forDay: string, today = forDay) => ({
+  const opts = (forDay: string) => ({
     source: 'RECENT' as const,
     forDay: forDay as CalendarDate,
-    today: today as CalendarDate,
   })
 
   it('is the mean of each logged day\'s total', () => {
@@ -174,7 +171,6 @@ describe('what a typical day is drawn from', () => {
     const typical = typicalIntake([...history(tuesdays), sunday], {
       source: 'SAME_WEEKDAY',
       forDay: '2026-09-29' as CalendarDate,
-      today: '2026-09-29' as CalendarDate,
     })
     expect(typical?.drawnFrom).toBe(4)
     expect(typical?.source).toBe('SAME_WEEKDAY')
@@ -183,7 +179,51 @@ describe('what a typical day is drawn from', () => {
 
   it('never draws on the day it is filling, or after it', () => {
     const withLater = [...history(days), ...history(['2026-09-05', '2026-09-06'])]
-    expect(typicalIntake(withLater, opts('2026-09-05', '2026-09-06'))?.drawnFrom).toBe(4)
+    expect(typicalIntake(withLater, opts('2026-09-05'))?.drawnFrom).toBe(4)
+  })
+})
+
+describe('when the recent days were filled rather than logged', () => {
+  const back = (n: number) => {
+    const d = new Date('2026-09-25T00:00:00Z')
+    d.setUTCDate(d.getUTCDate() - n)
+    return d.toISOString().slice(0, 10)
+  }
+  const forToday = { source: 'RECENT' as const, forDay: '2026-09-25' as CalendarDate }
+
+  it('reaches back past a fortnight of estimates to the last days that were logged', () => {
+    /*
+      From real use: two weeks filled, a full history before them, and the
+      offer said "not enough history". The window was 14 calendar days, and
+      filled days are not evidence — so filling emptied its own window.
+    */
+    const estimates = Array.from({ length: 14 }, (_, i) => filled(back(i + 1), 'LUNCH', 'Estimated day', 2000))
+    const logged = [20, 21, 22, 23, 24].map((n) => real(back(n), 'LUNCH', 'Pasta', 1800))
+    const typical = typicalIntake([...estimates, ...logged], forToday)
+    expect(typical?.drawnFrom).toBe(5)
+    expect(typical?.energyKcal).toBe(1800)
+    expect(typical?.from).toBe(back(24))
+    expect(typical?.to).toBe(back(20))
+  })
+
+  it('takes the most recent fourteen logged days, and no more', () => {
+    const recent = Array.from({ length: 14 }, (_, i) => real(back(i + 30), 'LUNCH', 'Recent', 2000))
+    const older = Array.from({ length: 10 }, (_, i) => real(back(i + 50), 'LUNCH', 'Older', 1000))
+    const typical = typicalIntake([...recent, ...older], forToday)
+    expect(typical?.drawnFrom).toBe(14)
+    expect(typical?.energyKcal).toBe(2000)
+  })
+
+  it('stops at a season: a logged week from long ago is not how someone eats now', () => {
+    const longAgo = [95, 96, 97, 98].map((n) => real(back(n), 'LUNCH', 'Old', 2500))
+    expect(typicalIntake(longAgo, forToday)).toBeUndefined()
+  })
+
+  it('counts the season back from the day being filled, not from today', () => {
+    // Filling a day in June draws on May, even though May is long past now.
+    const may = ['2026-05-10', '2026-05-11', '2026-05-12'].map((d) => real(d, 'LUNCH', 'May', 1700))
+    const typical = typicalIntake(may, { source: 'RECENT', forDay: '2026-06-15' as CalendarDate })
+    expect(typical?.energyKcal).toBe(1700)
   })
 })
 

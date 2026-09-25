@@ -717,7 +717,11 @@ const en = {
   'gaps.fillAll': 'Fill all {count} from your average',
   'gaps.filling': 'Filling…',
   'gaps.notEnoughHistory':
-    'Not enough logged days yet to call anything typical — a few more and this can be filled from your own history.',
+    'Not enough logged days in the last three months to call anything typical — a few more and this can be filled from your own history.',
+  'gaps.basis': {
+    one: 'Average of 1 logged day ({range}).',
+    other: 'Average of your last {count} logged days ({range}).',
+  },
   'gaps.estimated': 'Estimated',
   'gaps.filledOne': 'Filled from your average.',
   'gaps.filledMany': '{count} days filled from your average.',
@@ -1448,7 +1452,11 @@ const he: Dictionary = {
   'gaps.fillAll': 'למלא את כל {count} מהממוצע שלכם',
   'gaps.filling': 'ממלאים…',
   'gaps.notEnoughHistory':
-    'עוד אין מספיק ימים רשומים כדי לדעת מה טיפוסי — עוד כמה, ואפשר יהיה למלא מההיסטוריה שלכם.',
+    'אין מספיק ימים רשומים בשלושת החודשים האחרונים כדי לדעת מה טיפוסי — עוד כמה, ואפשר יהיה למלא מההיסטוריה שלכם.',
+  'gaps.basis': {
+    one: 'ממוצע של יום רשום אחד ({range}).',
+    other: 'ממוצע של {count} הימים הרשומים האחרונים שלכם ({range}).',
+  },
   'gaps.estimated': 'הערכה',
   'gaps.filledOne': 'מולא מהממוצע שלכם.',
   'gaps.filledMany': '{count} ימים מולאו מהממוצע שלכם.',

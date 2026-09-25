@@ -18,6 +18,7 @@ export function GapsCard({
   gaps,
   busy,
   canFill,
+  basis,
   onFill,
   formatDay,
 }: {
@@ -32,6 +33,15 @@ export function GapsCard({
    * as a habit.
    */
   canFill: boolean
+  /**
+   * Which logged days the average comes from.
+   *
+   * Said on the card because it is no longer always "the last two weeks": if
+   * those were filled rather than logged, the average reaches further back,
+   * and a number drawn from August is a different claim from one drawn from
+   * last week.
+   */
+  basis?: { count: number; from: CalendarDate; to: CalendarDate }
   onFill: () => void
   formatDay: (day: CalendarDate) => string
 }) {
@@ -59,6 +69,12 @@ export function GapsCard({
         {t('gaps.body', { days })}
       </p>
 
+      {canFill && basis && (
+        <p className="pt-1.5 text-xs text-ink-muted">
+          {t('gaps.basis', { count: basis.count, range: dateRange(basis.from, basis.to) })}
+        </p>
+      )}
+
       {canFill ? (
         <button
           type="button"
@@ -80,6 +96,17 @@ export function GapsCard({
       )}
     </section>
   )
+}
+
+/** "20 Aug – 8 Sep", in the page's language. One date when both ends agree. */
+function dateRange(from: CalendarDate, to: CalendarDate): string {
+  const format = new Intl.DateTimeFormat(document.documentElement.lang || undefined, {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
+  const show = (day: CalendarDate) => format.format(new Date(`${day}T12:00:00Z`))
+  return from === to ? show(from) : `${show(from)} – ${show(to)}`
 }
 
 /** A scatter of marks — a pattern rather than a measurement. */

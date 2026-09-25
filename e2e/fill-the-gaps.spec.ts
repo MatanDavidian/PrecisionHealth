@@ -207,7 +207,7 @@ test('with too little history, the gap is named but no fill is offered', async (
 
   await open(page, '/today?view=week')
   await expect(page.getByText(/days have no meals on them/)).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByText(/Not enough logged days yet/)).toBeVisible()
+  await expect(page.getByText(/Not enough logged days/)).toBeVisible()
   await expect(page.getByRole('button', { name: /from your average/ })).toHaveCount(0)
 })
 
@@ -238,4 +238,40 @@ test('in Hebrew the offer, the fill and the estimate note all read right to left
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
   expect(overflow).toBeLessThanOrEqual(0)
+})
+
+test('the average reaches back past a fortnight of estimates to the days that were logged', async ({
+  page,
+}) => {
+  /*
+    Reported from real use: two weeks filled rather than logged, plenty of
+    meals before that — and the card said there was not enough history.
+
+    The average was drawn from the last 14 CALENDAR days, and filled days are
+    rightly not evidence. So every fill shrank the window it depended on, and
+    after two weeks of it the feature switched itself off. Here the last
+    fortnight is blanked and six logged days remain, all older than that.
+  */
+  const today = dayKey(0)
+  const fortnightAgo = dayKey(-14)
+  await blankDays(page, (day) => day >= fortnightAgo && day < today)
+
+  await open(page, '/today?view=week')
+  await expect(page.getByText(/days have no meals on them/)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/Not enough logged days/)).toHaveCount(0)
+
+  // It says where the number comes from, because it is not "the last two weeks".
+  await expect(page.getByText(/Average of your last 6 logged days/)).toBeVisible()
+
+  await page.getByRole('button', { name: /from your average/ }).click()
+  await expect(page.getByText(/filled from your average/i)).toBeVisible({ timeout: 15_000 })
+
+  // The six logged days are all the same 1,990 kcal day, so that is the average.
+  const estimates = (
+    await storedRows<{
+      data: { provenance: { source: string }; items: { nutrients: { energy: { value: number } } }[] }
+    }>(page, 'meals')
+  ).filter((row) => row.data.provenance.source === 'PATTERN_FILL')
+  expect(estimates.length).toBeGreaterThan(0)
+  for (const row of estimates) expect(row.data.items[0].nutrients.energy.value).toBe(1990)
 })

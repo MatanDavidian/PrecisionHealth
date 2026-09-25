@@ -14,6 +14,8 @@ const ZONE = 'Asia/Jerusalem'
 const AVERAGE: TypicalIntake = {
   source: 'RECENT',
   drawnFrom: 10,
+  from: '2026-08-20' as CalendarDate,
+  to: '2026-08-31' as CalendarDate,
   energyKcal: 1919.6,
   proteinG: 101.4,
   carbsG: 210.5,

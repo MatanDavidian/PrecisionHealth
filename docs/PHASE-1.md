@@ -12,6 +12,11 @@ That single sentence is what everything below serves.
 
 ---
 
+> **Status, 2026-10-02:** the epics below are largely done — legal floor,
+> accounts, the name and domain. What remains, re-prioritised after the
+> analysis outage of 25 Sep–2 Oct, is in **[PHASE-1-FINISH.md](PHASE-1-FINISH.md)**.
+> The table below is the starting point this document was written from.
+
 ## Where it stands
 
 | | |

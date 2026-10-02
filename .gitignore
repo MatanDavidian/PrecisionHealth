@@ -33,3 +33,7 @@ garmin/source/BuildConfig.mc
 
 # Playwright MCP scratch output
 .playwright-mcp/
+
+# Signed agreements and other personal documents. This repository is public;
+# a signed contract carries a home address and must never be committed.
+*.pdf

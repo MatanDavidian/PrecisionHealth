@@ -21,7 +21,10 @@ docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 docker run -d --name "$CONTAINER" -e POSTGRES_PASSWORD=verify \
   -p "$PORT:5432" postgres:16-alpine >/dev/null
 for _ in $(seq 1 60); do
-  docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1 && break
+  # Over TCP, not the socket: the image's first-boot server listens on the
+    # socket only and then restarts, so a socket "ready" can come from the
+    # server that is about to go away — which is how CI's first run failed.
+    docker exec "$CONTAINER" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break
   sleep 1
 done
 

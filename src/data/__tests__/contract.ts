@@ -81,12 +81,36 @@ const contractDay = (test: number, offset = 0): CalendarDate => {
 
 const ZONE = 'Asia/Jerusalem'
 
+/**
+ * Time allowed for a test that reads a whole account.
+ *
+ * `account.everything` pages through every row the user has, and the Supabase
+ * test account holds every previous run's — thousands, and growing. At the
+ * default five seconds that read timed out whenever the network or the
+ * machine was slow. Moving these tests to a throwaway local Supabase is the
+ * real fix (docs/PHASE-1-FINISH.md); until then, room to finish.
+ */
+const WHOLE_ACCOUNT = 60_000
+
 export function runRepositoryContract(
   name: string,
   setup: () => Promise<ContractContext>,
 ): void {
   describe(`repository contract: ${name}`, () => {
     let testIndex = 0
+    /**
+     * Only this run's records.
+     *
+     * The Supabase store is shared and append-only, and `runOffset` wraps
+     * every ~5.5 hours (`% 20_000`, to stay inside year 9999) — so a day can
+     * already hold an earlier run's rows. Asserting "exactly these on this
+     * day" then failed intermittently, more often as the test account grew.
+     * Every id a run writes starts with its prefix, so filtering to it makes
+     * each assertion about this run alone, whatever else is on the day.
+     */
+    const mine = <T extends { id: string }>(ctx: ContractContext, rows: T[]): T[] =>
+      rows.filter((row) => row.id.startsWith(ctx.prefix))
+
     /** A fresh, unused stretch of calendar for each test. */
     const begin = async () => {
       const ctx = await setup()
@@ -139,7 +163,7 @@ export function runRepositoryContract(
       const meal = mealFor(ctx, day(), 'roundtrip')
       await ctx.repositories.meals.add(meal)
 
-      const [stored] = await ctx.repositories.meals.listByDay(ctx.userId, day())
+      const [stored] = mine(ctx, await ctx.repositories.meals.listByDay(ctx.userId, day()))
       expect(stored.id).toBe(meal.id)
       expect(stored.version).toBe(1)
       expect(stored.items[0].name).toBe('Rice')
@@ -153,8 +177,8 @@ export function runRepositoryContract(
       await ctx.repositories.meals.add(mealFor(ctx, day(0), 'day-a'))
       await ctx.repositories.meals.add(mealFor(ctx, day(1), 'day-b'))
 
-      const first = await ctx.repositories.meals.listByDay(ctx.userId, day(0))
-      const second = await ctx.repositories.meals.listByDay(ctx.userId, day(1))
+      const first = mine(ctx, await ctx.repositories.meals.listByDay(ctx.userId, day(0)))
+      const second = mine(ctx, await ctx.repositories.meals.listByDay(ctx.userId, day(1)))
       expect(first.map((m) => m.id)).toEqual([`${ctx.prefix}-day-a`])
       expect(second.map((m) => m.id)).toEqual([`${ctx.prefix}-day-b`])
     })
@@ -165,10 +189,10 @@ export function runRepositoryContract(
       await ctx.repositories.meals.add(mealFor(ctx, day(1), 'r2'))
       await ctx.repositories.meals.add(mealFor(ctx, day(2), 'r3'))
 
-      const range = await ctx.repositories.meals.listByRange(ctx.userId, {
+      const range = mine(ctx, await ctx.repositories.meals.listByRange(ctx.userId, {
         from: day(0),
         to: day(2),
-      })
+      }))
       expect(range).toHaveLength(3)
     })
 
@@ -180,7 +204,7 @@ export function runRepositoryContract(
         nextVersion(v1, { slot: 'DINNER' }, () => `${ctx.prefix}-versioned-v2`),
       )
 
-      const stored = await ctx.repositories.meals.listByDay(ctx.userId, day())
+      const stored = mine(ctx, await ctx.repositories.meals.listByDay(ctx.userId, day()))
       expect(stored).toHaveLength(2)
       const latest = latestVersions(stored)
       expect(latest).toHaveLength(1)
@@ -196,11 +220,11 @@ export function runRepositoryContract(
         observationFor(ctx, day(), 'phone', 73.7, 'APPLE_HEALTH'),
       )
 
-      const candidates = await ctx.repositories.observations.listByDay(
+      const candidates = mine(ctx, await ctx.repositories.observations.listByDay(
         ctx.userId,
         day(),
         'WEIGHT',
-      )
+      ))
       expect(candidates).toHaveLength(2)
       // The store must not pre-resolve: that is the domain's job, and both
       // adapters must leave the same decision to it.
@@ -211,8 +235,8 @@ export function runRepositoryContract(
     it('filters observations by code', async () => {
       const { ctx, day } = await begin()
       await ctx.repositories.observations.add(observationFor(ctx, day(), 'w', 72.8))
-      const weight = await ctx.repositories.observations.listByDay(ctx.userId, day(), 'WEIGHT')
-      const hrv = await ctx.repositories.observations.listByDay(ctx.userId, day(), 'HRV')
+      const weight = mine(ctx, await ctx.repositories.observations.listByDay(ctx.userId, day(), 'WEIGHT'))
+      const hrv = mine(ctx, await ctx.repositories.observations.listByDay(ctx.userId, day(), 'HRV'))
       expect(weight).toHaveLength(1)
       expect(hrv).toHaveLength(0)
     })
@@ -254,9 +278,9 @@ export function runRepositoryContract(
     it('returns nothing for a day with nothing, rather than failing', async () => {
       const { ctx, day } = await begin()
       const empty = day(5)
-      expect(await ctx.repositories.meals.listByDay(ctx.userId, empty)).toEqual([])
-      expect(await ctx.repositories.observations.listByDay(ctx.userId, empty)).toEqual([])
-      expect(await ctx.repositories.sleep.forDay(ctx.userId, empty)).toEqual([])
+      expect(mine(ctx, await ctx.repositories.meals.listByDay(ctx.userId, empty))).toEqual([])
+      expect(mine(ctx, await ctx.repositories.observations.listByDay(ctx.userId, empty))).toEqual([])
+      expect(mine(ctx, await ctx.repositories.sleep.forDay(ctx.userId, empty))).toEqual([])
     })
 
     it('records an AI inference and reads it back by id', async () => {
@@ -303,7 +327,7 @@ export function runRepositoryContract(
         rejected = true
       }
 
-      const stored = await ctx.repositories.meals.listByDay(ctx.userId, day())
+      const stored = mine(ctx, await ctx.repositories.meals.listByDay(ctx.userId, day()))
       if (rejected) {
         expect(stored).toHaveLength(2)
       } else {
@@ -347,7 +371,7 @@ export function runRepositoryContract(
       ] as const) {
         expect(Array.isArray(everything[key]), `${key} should be an array`).toBe(true)
       }
-    })
+    }, WHOLE_ACCOUNT)
 
     it('keeps every version of a meal, because the history is the record', async () => {
       const { ctx, day } = await begin()
@@ -364,7 +388,7 @@ export function runRepositoryContract(
       // An export that kept only the winner would be a summary, not a copy.
       expect(versions).toHaveLength(2)
       expect(versions.map((meal) => meal.version).sort()).toEqual([1, 2])
-    })
+    }, WHOLE_ACCOUNT)
 
     it('shows nothing belonging to anyone else', async () => {
       const { ctx, day } = await begin()
@@ -382,6 +406,6 @@ export function runRepositoryContract(
       // that ignored the id would look perfect until two people used it.
       expect(everything.meals.map((meal) => meal.id)).not.toContain(`${ctx.prefix}-export-mine`)
       expect(everything.profile?.userId).not.toBe(ctx.userId)
-    })
+    }, WHOLE_ACCOUNT)
   })
 }

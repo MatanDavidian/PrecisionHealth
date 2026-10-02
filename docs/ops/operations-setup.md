@@ -61,9 +61,9 @@ paste.
 
 ## 5. Migration history (P0.5) — once
 
-Checked on 2026-10-02 with read-only probes: production has 0001–0012 (applied
-by hand in the SQL editor) and not 0013. The CLI's own history knows none of
-them, so record them:
+Checked on 2026-10-02 with read-only probes: production has 0001–0013, all
+applied by hand in the SQL editor. The CLI's own history knows none of them,
+so record them:
 
 ```bash
 ./scripts/record-migration-history.sh
@@ -71,8 +71,7 @@ them, so record them:
 
 It asks for the **database** password (Supabase → Project Settings →
 Database), shows the history before and after, and asks before changing
-anything. Expect 0001–0012 on both sides afterwards and 0013 only under
-Local. If the CLI rejects the version names (`0001` rather than a timestamp),
+anything. Expect 0001–0013 on both sides afterwards, nothing pending. If the CLI rejects the version names (`0001` rather than a timestamp),
 stop there and tell Claude.
 
 ## 6. Push, then deploy every function

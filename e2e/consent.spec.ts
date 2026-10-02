@@ -29,12 +29,30 @@ test('the policy is readable without an account, because that is the point', asy
   await expect(page.getByText(/This is not medical advice/i).first()).toBeVisible()
 })
 
-test('a draft says it is a draft', async ({ page }) => {
+test('the published documents are final, and say who runs this and how billing works', async ({
+  page,
+}) => {
+  /*
+    This test once asserted the draft banner, while the documents still had
+    UNDECIDED markers in them. Those were settled on 2026-10-02, and a payment
+    provider reviewing the site reads exactly these two pages — so what is
+    pinned now is what they need to find, and that no placeholder came back.
+  */
   await open(page, '/privacy')
-  // While anything in it is still undecided. A policy that looks finished when
-  // it is not is the one way this page could do real harm.
-  await expect(page.getByText('This is a draft.')).toBeVisible()
-  await expect(page.getByText(/has not been reviewed by a lawyer/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible()
+  await expect(page.getByText('This is a draft.')).toHaveCount(0)
+  await expect(page.getByText(/\[UNDECIDED/)).toHaveCount(0)
+  await expect(page.getByText(/operated by Matan Davidian/).first()).toBeVisible()
+  await expect(page.getByText(/Frankfurt, Germany/).first()).toBeVisible()
+  await expect(page.getByText(/Lemon Squeezy — sells the subscription/)).toBeVisible()
+
+  await open(page, '/terms')
+  await expect(page.getByRole('heading', { name: 'Terms of Use' })).toBeVisible()
+  await expect(page.getByText(/\[UNDECIDED/)).toHaveCount(0)
+  await expect(page.getByText(/US\$8\.99 a month and includes 100 AI meal analyses/)).toBeVisible()
+  await expect(page.getByText(/within 14 days of any charge/)).toBeVisible()
+  await expect(page.getByText(/renews automatically each month until you cancel/)).toBeVisible()
+  await expect(page.getByText(/law of the State of Israel/)).toBeVisible()
 })
 
 test('signing out, nobody is asked to consent to anything', async ({ page }) => {

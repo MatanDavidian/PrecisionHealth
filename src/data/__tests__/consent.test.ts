@@ -61,11 +61,32 @@ describe('the documents themselves', () => {
     expect(documentText(edited)).not.toBe(documentText(PRIVACY_POLICY))
   })
 
-  it('knows it is still a draft', () => {
-    // Both are, today. When the last UNDECIDED marker goes, this test is what
-    // says so out loud rather than letting a draft ship looking finished.
-    expect(isDraft(PRIVACY_POLICY)).toBe(true)
-    expect(isDraft(TERMS)).toBe(true)
+  it('is no longer a draft — every placeholder was settled', () => {
+    /*
+      This test used to assert the opposite, so that the day the last
+      UNDECIDED marker went it would fail and say so out loud. That day was
+      2026-10-02. The facts that replaced the markers are pinned below, so a
+      later edit cannot quietly blank one again.
+    */
+    expect(isDraft(PRIVACY_POLICY)).toBe(false)
+    expect(isDraft(TERMS)).toBe(false)
+
+    const privacy = documentText(PRIVACY_POLICY)
+    const terms = documentText(TERMS)
+    expect(privacy).toContain('Matan Davidian')
+    expect(terms).toContain('Matan Davidian')
+    expect(privacy).toContain('Frankfurt, Germany')
+    expect(privacy).toContain('Lemon Squeezy')
+    expect(terms).toContain('within 14 days of any charge')
+    expect(terms).toContain('State of Israel')
+  })
+
+  it('still recognises a draft when a placeholder comes back', () => {
+    const reopened = {
+      ...TERMS,
+      sections: [...TERMS.sections, { heading: 'New', body: ['[UNDECIDED: something new]'] }],
+    }
+    expect(isDraft(reopened)).toBe(true)
   })
 
   it('never leaves a placeholder reading like an answer', () => {

@@ -9,8 +9,7 @@
  * is missing, because it is a statement someone relied on.
  *
  * Every factual assertion below is traceable to something in this repository.
- * Where a fact is not yet decided — the legal entity, the address, the
- * jurisdiction, the data region — it appears as an UNDECIDED marker rather
+ * Where a fact is not yet decided it appears as an UNDECIDED marker rather
  * than a plausible guess. A placeholder that reads like an answer is how a
  * draft gets published by accident.
  *
@@ -44,13 +43,12 @@ export interface PolicyDocument {
   sections: PolicySection[]
 }
 
-/**
- * A fact this document asserts that nobody has decided yet.
- *
- * Deliberately loud, and deliberately not a plausible default. "Tel Aviv,
- * Israel" would look finished and would be a claim nobody had checked.
- */
-const UNDECIDED = (what: string) => `[UNDECIDED: ${what}]`
+/*
+  A fact nobody has decided yet goes in as `[UNDECIDED: what]` — deliberately
+  loud, and deliberately not a plausible default — and `isDraft` below flags the
+  document until it is gone. None remain as of 2026-10-02: the operator, region,
+  payment provider and governing law were all settled by the owner.
+*/
 
 /**
  * Where a person reaches a human about any of this.
@@ -62,15 +60,28 @@ const UNDECIDED = (what: string) => `[UNDECIDED: ${what}]`
  */
 const CONTACT_EMAIL = 'privacy@vimetry.app'
 
+/** For billing and everything that is not about data. Forwarded like the one above. */
+const SUPPORT_EMAIL = 'support@vimetry.app'
+
+/**
+ * Who is answerable for all of this.
+ *
+ * An individual for now — there is no company yet, and an invented one would
+ * be worse than none. No street address on a public page for a sole developer;
+ * the email above is the contact GDPR Art. 13 asks for, and a business address
+ * goes here when one exists.
+ */
+const OPERATOR = 'Matan Davidian, an individual based in Israel'
+
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-09-11',
+  version: '2026-10-02',
   sections: [
     {
       heading: 'Who we are',
       body: [
-        `This app is operated by ${UNDECIDED('legal entity name')}, at ${UNDECIDED('registered address')}. You can reach us about anything on this page at ${CONTACT_EMAIL}.`,
+        `Vimetry is operated by ${OPERATOR}. You can reach us about anything on this page at ${CONTACT_EMAIL}.`,
         `We are the controller of the data described below: we decide what is collected and why.`,
       ],
     },
@@ -86,6 +97,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'Sleep — duration and timing, from the same source.',
         'Goals — the programme you chose and any target you set.',
         'Your email address, if you create an account.',
+        'Whether you subscribe — your plan and when it renews. Card and billing details are held by Lemon Squeezy, not by us.',
         'The language you chose to read the app in.',
       ],
     },
@@ -103,7 +115,8 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'To show you your own record and work out totals, trends and progress against your goals. Without this there is no app.',
         'To produce estimates from what you photograph or describe, which is the feature you came for.',
         'To keep your account working — signing in, and keeping devices in step.',
-        'To meter free AI analyses, so the trial can be offered at all.',
+        'To meter AI analyses — the free trial and a subscription’s monthly allowance.',
+        'To know whether you have a subscription, so it can be honoured.',
       ],
       body: [
         'In the EU and UK, our basis for processing health data is your explicit consent (GDPR Art. 9(2)(a)). You give it when you create an account, we record which version of this policy you agreed to and when, and you can withdraw it at any time by deleting your account.',
@@ -115,10 +128,10 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'These are the only third parties involved. Each is a processor acting on our instructions, not a party we sell anything to. We do not sell your data, and we do not use it for advertising.',
       ],
       bullets: [
-        `Supabase — hosts the database and handles sign-in. Everything in your account is stored there. Region: ${UNDECIDED('database region — see S5.5')}.`,
+        'Supabase — hosts the database and handles sign-in. Everything in your account is stored there, in Frankfurt, Germany.',
         'OpenAI — receives the meal photograph or description you ask us to analyse, and the weekly summary when you ask for an insight. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
         'Cloudflare — serves the app itself.',
-        `${UNDECIDED('payment provider')} — will receive billing details once the app is paid for. It receives no health data.`,
+        'Lemon Squeezy — sells the subscription as our merchant of record: it takes the payment, handles sales tax, and sends receipts, so it holds your name, email, country and payment details. We receive a record that you subscribed, never your card. It receives no health data.',
       ],
     },
     {
@@ -133,7 +146,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       heading: 'Where it is held, and for how long',
       body: [
         'Signed out, everything stays in this browser and nowhere else. Signing in copies it to your account and keeps it in step from then on.',
-        `Our database is hosted by Supabase in ${UNDECIDED('database region — see S5.5')}. OpenAI processes requests in the United States; for people in the EU or UK this is an international transfer, made under ${UNDECIDED('DPF participation or Standard Contractual Clauses — see COMPLIANCE.md')}.`,
+        'Our database is hosted by Supabase in Frankfurt, Germany, inside the EU. OpenAI processes requests in the United States; for people in the EU or UK this is an international transfer, made under the European Commission’s Standard Contractual Clauses in OpenAI’s Data Processing Addendum.',
         'We keep your records until you delete them or delete your account. We do not have a retention timer that quietly removes your history, because a health record that disappears on a schedule is not much of a record.',
       ],
     },
@@ -172,8 +185,14 @@ export const PRIVACY_POLICY: PolicyDocument = {
 export const TERMS: PolicyDocument = {
   id: 'TERMS',
   title: 'Terms of Use',
-  version: '2026-09-04',
+  version: '2026-10-02',
   sections: [
+    {
+      heading: 'Who we are',
+      body: [
+        `Vimetry is operated by ${OPERATOR}. Questions about these terms or your subscription: ${SUPPORT_EMAIL}.`,
+      ],
+    },
     {
       heading: 'This is not medical advice',
       body: [
@@ -199,7 +218,17 @@ export const TERMS: PolicyDocument = {
     {
       heading: 'Free analyses',
       body: [
-        'New accounts get a number of AI analyses on our account, so the app can be tried without setting anything up. That allowance is a courtesy, not an entitlement, and we may change it. When it runs out you can connect your own key and carry on, or keep logging by hand — nothing you have recorded is affected either way.',
+        'New accounts get 10 AI analyses on our account, with no card needed, so the app can be tried without setting anything up. That allowance is a courtesy, not an entitlement, and we may change it. When it runs out you can subscribe, connect your own key, or keep logging by hand — nothing you have recorded is affected either way.',
+      ],
+    },
+    {
+      heading: 'Subscription',
+      body: [
+        'Vimetry Monthly costs US$8.99 a month and includes 100 AI meal analyses a month. Unused analyses do not carry over. Everything else in the app — logging by hand, the week view, exporting your data — is free with or without a subscription.',
+        'Payments are handled by Lemon Squeezy, our merchant of record: your purchase is made from Lemon Squeezy, and its terms apply to the payment. Depending on where you live, sales tax or VAT may be added at checkout.',
+        'Your subscription renews automatically each month until you cancel. You can cancel at any time from the link in your receipt email or in the Lemon Squeezy customer portal. Cancelling stops the next renewal; you keep the analyses and access you have paid for until the end of the current month.',
+        `Refunds: if you are not happy, ask within 14 days of any charge and we will refund that charge in full. Email ${SUPPORT_EMAIL}.`,
+        'If the price changes, we will tell you at least 30 days before, and the new price applies from your next renewal after that — so there is always time to cancel first.',
       ],
     },
     {
@@ -212,7 +241,7 @@ export const TERMS: PolicyDocument = {
     {
       heading: 'Governing law',
       body: [
-        `These terms are governed by the law of ${UNDECIDED('jurisdiction — follows from the legal entity')}. If you are a consumer in the EU or UK, this does not take away rights your own country’s law gives you.`,
+        'These terms are governed by the law of the State of Israel. If you are a consumer in the EU or UK, this does not take away rights your own country’s law gives you.',
       ],
     },
   ],

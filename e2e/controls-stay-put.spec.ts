@@ -70,3 +70,22 @@ test('neither moves in Hebrew, where the subtitles wrap differently', async ({ p
   await expect(page.getByRole('heading', { name: 'השבוע', exact: true })).toBeVisible()
   expect(await switchAt(), 'day/week switch moved in Hebrew').toEqual(before)
 })
+
+test('the day/week switch does not move even when the web fonts fail to load', async ({ page }) => {
+  /*
+    The first CI run, on Linux, caught the switch moving by a pixel: the
+    selected button's heavier text was wider, and each button was sized to
+    its own words. Inter on a Mac happened to round to the same width; the
+    fonts Linux renders, and any fallback, did not. Blocking the web fonts
+    reproduces that here, on any machine, and keeps it fixed.
+  */
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.abort())
+  await open(page, '/today')
+
+  const where = () => documentBox(page, 'header [aria-pressed]')
+  const inDayView = await where()
+
+  await page.getByRole('button', { name: 'Week', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'This week', exact: true })).toBeVisible()
+  expect(await where(), 'moved when switching to the week').toEqual(inDayView)
+})

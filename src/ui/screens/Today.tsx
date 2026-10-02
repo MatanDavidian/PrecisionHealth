@@ -284,7 +284,15 @@ export function Today() {
                 type="button"
                 onClick={() => setView(option)}
                 aria-pressed={view === option}
-                className={`flex-1 py-2 max-sm:text-[13px] sm:flex-none sm:px-4 sm:py-1.5 ${PILL} ${
+                /*
+                  A fixed minimum from `sm` up. Sized to its own words, the
+                  selected button's heavier text made it a pixel wider, so the
+                  switch shifted when used — invisible with Inter on a Mac,
+                  measurable with the fonts Linux renders and with any fallback
+                  font (caught by CI's first run). 4.5rem fits both words, in
+                  both weights, in English and Hebrew.
+                */
+                className={`flex-1 py-2 max-sm:text-[13px] sm:min-w-[4.5rem] sm:flex-none sm:px-4 sm:py-1.5 ${PILL} ${
                   view === option ? PILL_ON : PILL_OFF
                 }`}
               >

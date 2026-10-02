@@ -16,7 +16,10 @@
     "db:verify": "./supabase/test/run.sh",
     "supabase:check": "node scripts/check-supabase.mjs",
     "test:device-sync": "deno run --allow-net --allow-env supabase/test/device-sync.ts",
-    "check:live": "playwright test -c playwright.live.config.ts"
+    "check:live": "playwright test -c playwright.live.config.ts",
+    "test:functions": "deno run --config supabase/deno-check.json --allow-net --allow-env --allow-read --allow-write --allow-sys supabase/test/device-sync.ts && deno run --config supabase/deno-check.json --allow-net --allow-env --allow-read --allow-write --allow-sys supabase/test/health.ts",
+    "check:health": "node scripts/check-health.mjs",
+    "deploy:functions": "./scripts/deploy-functions.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",

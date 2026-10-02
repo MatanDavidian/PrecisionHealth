@@ -526,3 +526,40 @@ end
 $$;
 
 reset role;
+
+-- The health check names what is missing, and only the service role may ask.
+set role postgres;
+
+do $$
+declare v_missing text[];
+begin
+  v_missing := public.health_missing(
+    array['reserve_analysis', 'settle_analysis', 'release_analysis', 'reservation_grace', 'health_missing'],
+    array['meals', 'usage', 'device_tokens'],
+    array['OK', 'RESERVED', 'SETTLED_LATE']);
+  if cardinality(v_missing) <> 0 then
+    raise exception 'FAIL: a complete schema reported missing: %', v_missing;
+  end if;
+
+  v_missing := public.health_missing(
+    array['reserve_analysis', 'no_such_function'],
+    array['meals', 'no_such_table'],
+    array['OK', 'NO_SUCH_OUTCOME']);
+  if v_missing <> array['function no_such_function', 'outcome NO_SUCH_OUTCOME', 'table no_such_table'] then
+    raise exception 'FAIL: missing objects were not named: %', v_missing;
+  end if;
+  raise notice 'PASS: the health check names exactly what is missing';
+end
+$$;
+
+set role authenticated;
+do $$
+begin
+  perform public.health_missing(array['meals'], array[]::text[], array[]::text[]);
+  raise exception 'FAIL: a signed-in user could read the health check';
+exception
+  when insufficient_privilege then raise notice 'PASS: the health check is service-role only';
+end
+$$;
+
+reset role;

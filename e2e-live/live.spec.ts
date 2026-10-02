@@ -32,6 +32,14 @@ test('the live site serves the commit on origin/main', async ({ request, baseURL
   ).toBe(expected)
 })
 
+test('the live site sends its security headers', async ({ request }) => {
+  const headers = (await request.get('/')).headers()
+  const csp = headers['content-security-policy'] ?? headers['content-security-policy-report-only']
+  expect(csp, 'a Content-Security-Policy, enforced or report-only').toContain("default-src 'self'")
+  expect(headers['x-frame-options']).toBe('DENY')
+  expect(headers['x-content-type-options']).toBe('nosniff')
+})
+
 test('the live app starts, and nothing on the page fails to load', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(`page error: ${error.message}`))
@@ -54,7 +62,7 @@ test('the live app starts, and nothing on the page fails to load', async ({ page
   expect(errors, errors.join('\n')).toEqual([])
 })
 
-test('no secret key is shipped in the live JavaScript', async ({ request }) => {
+test('no secret key, and no test code, is shipped in the live JavaScript', async ({ request }) => {
   /*
     The anon key belongs in the bundle; the service-role key must never be —
     it bypasses row-level security (D16), and a bundle is public. The same for
@@ -74,6 +82,9 @@ test('no secret key is shipped in the live JavaScript', async ({ request }) => {
     for (const chunk of body.matchAll(/assets\/[A-Za-z0-9_-]+\.js/g)) queue.push(chunk[0])
 
     if (/sb_secret_[A-Za-z0-9_-]{10,}/.test(body)) leaks.push(`${path}: a Supabase secret key`)
+    // Not a secret, but must not ship either: the test estimator, which once
+    // answered `?fake=1` on the live site with canned numbers.
+    if (body.includes('fake-vision')) leaks.push(`${path}: the test estimator`)
     if (/sk-(proj-)?[A-Za-z0-9_-]{32,}/.test(body)) leaks.push(`${path}: an OpenAI key`)
     // A JWT whose payload says service_role — the legacy form of the same key.
     for (const jwt of body.matchAll(/eyJ[A-Za-z0-9_-]+\.(eyJ[A-Za-z0-9_-]+)\.[A-Za-z0-9_-]+/g)) {

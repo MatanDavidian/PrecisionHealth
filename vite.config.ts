@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
@@ -22,7 +23,40 @@ function buildCommit(): string {
   }
 }
 
+/**
+ * The headers `public/_headers` sets on every path (`/*`), for `vite preview`.
+ *
+ * Cloudflare reads that file; the preview server does not. Without this the
+ * browser suite would run with no Content-Security-Policy at all, and a policy
+ * that broke the app would be found first in production.
+ */
+function headersForEveryPath(): Record<string, string> {
+  const headers: Record<string, string> = {}
+  let inBlock = false
+  for (const line of readFileSync('public/_headers', 'utf8').split('\n')) {
+    if (/^\S/.test(line)) inBlock = line.trim() === '/*'
+    else if (inBlock && line.trim() && !line.trim().startsWith('#')) {
+      const at = line.indexOf(':')
+      headers[line.slice(0, at).trim()] = line.slice(at + 1).trim()
+    }
+  }
+  return headers
+}
+
 export default defineConfig(({ mode }) => ({
+  preview: { headers: headersForEveryPath() },
+  define: {
+    /*
+      Whether this build may use the test estimator at all.
+
+      A build-time constant rather than a runtime check: when it is false the
+      whole FakeEstimator is dead code and leaves the bundle, so `?fake=1` on
+      the live site does nothing — it used to swap in canned estimates for
+      anyone, signed in or not. Only the browser-test build sets it
+      (playwright.config.ts).
+    */
+    __FAKE_ESTIMATOR__: JSON.stringify(process.env.VITE_ENABLE_FAKE === '1'),
+  },
   plugins: [
     react(),
     tailwindcss(),

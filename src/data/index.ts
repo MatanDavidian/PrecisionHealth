@@ -84,7 +84,19 @@ export const ensureSeeded = (names?: SeedNames): Promise<boolean> => {
  * the fake so the whole flow can be exercised without a key or any spend.
  */
 const useFake = (): boolean =>
-  typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('fake')
+  __FAKE_ESTIMATOR__ &&
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).has('fake')
+
+/**
+ * The fake, when this build allows it and the page asked for it.
+ *
+ * Written so the constant guards the `new`: with `__FAKE_ESTIMATOR__` false
+ * the bundler folds this to `undefined`, nothing references FakeEstimator, and
+ * it is not shipped. A `?fake=1` on the live site then changes nothing.
+ */
+const fakeIfAsked = (): FoodEstimator | undefined =>
+  __FAKE_ESTIMATOR__ && useFake() ? new FakeEstimator(undefined, undefined, fakeDelay()) : undefined
 
 /** `?fake=1&slow=6000` makes the fake take its time, so waiting states are visible. */
 const fakeDelay = (): number =>
@@ -104,9 +116,7 @@ const directEstimator = new OpenAiEstimator({
   getModel: async () => (await localRepositories.settings.get()).model,
 })
 
-let activeEstimator: FoodEstimator = useFake()
-  ? new FakeEstimator(undefined, undefined, fakeDelay())
-  : directEstimator
+let activeEstimator: FoodEstimator = fakeIfAsked() ?? directEstimator
 
 /**
  * Whether the ACTIVE estimator needs the user to supply a key.
@@ -151,9 +161,10 @@ export function selectEstimatorFor(options: {
   /** What the app should ask for when the user has expressed no preference. */
   suggestedModel?: string
 }): FoodEstimator {
-  if (useFake()) {
+  const fake = fakeIfAsked()
+  if (fake) {
     requiresKey = false
-    activeEstimator = new FakeEstimator(undefined, undefined, fakeDelay())
+    activeEstimator = fake
     return activeEstimator
   }
 

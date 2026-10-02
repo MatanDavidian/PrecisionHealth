@@ -8,3 +8,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/** True only in the browser-test build. See `define` in vite.config.ts. */
+declare const __FAKE_ESTIMATOR__: boolean

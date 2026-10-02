@@ -50,26 +50,30 @@ the sign-in tests fail.
 
 ## 4. The health token
 
-1. Make one: `openssl rand -hex 32`
-2. Give it to the function: `npx supabase secrets set HEALTH_TOKEN=<it>`
-3. Give it to GitHub: **Secrets** tab → `HEALTH_TOKEN` = the same value.
-4. For local runs, add `HEALTH_TOKEN=<it>` to `.env.local` (gitignored).
+```bash
+./scripts/create-health-token.sh
+```
+
+It generates the token, sets it as the Supabase function secret, adds it to
+`.env.local`, and copies it to the clipboard — it is never printed. Then:
+GitHub → **Secrets** tab → **New repository secret** → name `HEALTH_TOKEN` →
+paste.
 
 ## 5. Migration history (P0.5) — once
 
-Migrations were pasted into the SQL editor, so the Supabase CLI has no record
-of them. Tell it which are already applied:
+Checked on 2026-10-02 with read-only probes: production has 0001–0012 (applied
+by hand in the SQL editor) and not 0013. The CLI's own history knows none of
+them, so record them:
 
 ```bash
-npx supabase link --project-ref vdzphvyoqlkcrovtqdlk   # asks for the database password
-npx supabase migration list                              # Local 0001–0013, Remote empty
-npx supabase migration repair --status applied 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012
-npx supabase migration list                              # Remote now 0001–0012; 0013 pending
+./scripts/record-migration-history.sh
 ```
 
-From now on `npx supabase db push` applies only what is new, in order — and
-the deploy script runs it before any function. If the CLI rejects the version
-names (`0001` rather than a timestamp), stop there and tell Claude.
+It asks for the **database** password (Supabase → Project Settings →
+Database), shows the history before and after, and asks before changing
+anything. Expect 0001–0012 on both sides afterwards and 0013 only under
+Local. If the CLI rejects the version names (`0001` rather than a timestamp),
+stop there and tell Claude.
 
 ## 6. Push, then deploy every function
 

@@ -19,9 +19,12 @@
  * cascade would strand data silently. The check is cheap and it means the
  * answer is observed rather than assumed.
  */
+import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const CORS = {
+  'x-vimetry-version': VERSION,
+  'Access-Control-Expose-Headers': 'x-vimetry-version',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',

@@ -94,6 +94,7 @@ const supersedes = (day: string, code: string) =>
     { provenance: { supersedes?: string[] } } | undefined)?.provenance.supersedes
 
 check('the request succeeds', res.status === 200, JSON.stringify(body))
+check('it says which version answered', res.headers.get('x-vimetry-version') !== null, res.headers.get('x-vimetry-version') ?? 'missing')
 check('every entry is written', inserted.length === observations.length, `${inserted.length} of ${observations.length}`)
 check('every day survives', days.length === 8, days.join(' '))
 check("today's point measurements survive", ['RESPIRATION_RATE', 'RESTING_HEART_RATE', 'STRESS', 'VO2_MAX'].every((c) => codes.includes(c)), codes.join(' '))

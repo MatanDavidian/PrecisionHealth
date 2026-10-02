@@ -15,6 +15,7 @@
  * `verify_jwt` must be off for this function: the caller has no JWT. Auth is
  * done below against `device_tokens`, hashed.
  */
+import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   keepRecentDays,
@@ -24,6 +25,8 @@ import {
 } from '../_shared/deviceSync.ts'
 
 const CORS = {
+  'x-vimetry-version': VERSION,
+  'Access-Control-Expose-Headers': 'x-vimetry-version',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-device-token, content-type',
 }

@@ -16,9 +16,12 @@
  * The id it mints for comes from the verified JWT and is never read from the
  * body. There is no shape of request that mints a token for somebody else.
  */
+import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const CORS = {
+  'x-vimetry-version': VERSION,
+  'Access-Control-Expose-Headers': 'x-vimetry-version',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',

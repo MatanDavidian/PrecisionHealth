@@ -16,6 +16,7 @@
  * for one request), store the description, or return the master key in any
  * form.
  */
+import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   INSIGHTS_SYSTEM_PROMPT,
@@ -54,6 +55,8 @@ const MAX_COMPLETION_TOKENS = 4000
 const MAX_REPORT_CHARS = 12_000
 
 const CORS = {
+  'x-vimetry-version': VERSION,
+  'Access-Control-Expose-Headers': 'x-vimetry-version',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',

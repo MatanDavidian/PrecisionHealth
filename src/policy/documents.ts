@@ -146,7 +146,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       heading: 'Where it is held, and for how long',
       body: [
         'Signed out, everything stays in this browser and nowhere else. Signing in copies it to your account and keeps it in step from then on.',
-        'Our database is hosted by Supabase in Frankfurt, Germany, inside the EU. OpenAI processes requests in the United States; for people in the EU or UK this is an international transfer, and it is governed by OpenAI’s Data Processing Addendum, which we have signed with them.',
+        'Our database is hosted by Supabase in Frankfurt, Germany, inside the EU. OpenAI’s servers are in the United States. For people in the EU, EEA, Switzerland or UK, this is governed by OpenAI’s Data Processing Addendum, which we have signed: EU and Swiss data is processed by OpenAI Ireland, and any onward transfer outside Europe is made under the European Commission’s Standard Contractual Clauses or an adequacy decision; UK data is covered by the Standard Contractual Clauses with the UK Addendum.',
         'We keep your records until you delete them or delete your account. We do not have a retention timer that quietly removes your history, because a health record that disappears on a schedule is not much of a record.',
       ],
     },

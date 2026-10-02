@@ -1,5 +1,13 @@
 {
   "version": "5",
+  "specifiers": {
+    "jsr:@supabase/supabase-js@2": "2.114.0"
+  },
+  "jsr": {
+    "@supabase/supabase-js@2.114.0": {
+      "integrity": "88a6205ef8691db7db4675e838d6ac023e4a077759b7d30274faf82978126f5b"
+    }
+  },
   "redirects": {
     "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.114.0",
     "https://esm.sh/iceberg-js@^0.8.1?target=denonext": "https://esm.sh/iceberg-js@0.8.1?target=denonext"

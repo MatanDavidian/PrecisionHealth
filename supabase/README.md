@@ -482,6 +482,24 @@ Add a new numbered file in `migrations/`; never edit one that has been applied.
 Run `npm run db:verify` — it applies every migration from scratch, so a change
 that breaks an invariant fails locally rather than in production.
 
+### Migrations
+
+**Applied by the deploy script, not by hand.** `./scripts/deploy-functions.sh`
+runs `npx supabase db push` before deploying any function, so code can no
+longer go live ahead of the schema it calls — which is what took analysis
+down from 25 Sep to 2 Oct 2026, when `estimate-food` shipped before 0011–0012.
+
+`db push` applies only what the project's migration history lacks. Migrations
+0001–0012 were pasted into the SQL editor and are not in that history, so it
+must be told about them **once** — the steps are in
+`docs/ops/operations-setup.md`, step 5. After that, `npx supabase migration
+list` shows any drift between the repository and production, and the daily
+health check names any table, function or outcome the code needs that the
+database lacks (`_shared/schema.ts`, migration 0013).
+
+If `db push` ever lists 0001 again, answer **n**: the history has been lost,
+and applying everything twice is not what anyone wants.
+
 ### Verifying a backlog sync
 
 `npm run test:device-sync` runs the real `device-sync` handler against a

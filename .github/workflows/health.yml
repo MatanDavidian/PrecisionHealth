@@ -1,0 +1,53 @@
+# Every morning: is production healthy? If not, GitHub emails the owner.
+#
+# Planned in docs/PHASE-1-FINISH.md → "The daily health check". It runs:
+#   check:live    — the site serves main, starts, sends its security headers,
+#                   and ships no secret and no test code
+#   check:health  — every function is the version on main; `health` reports
+#                   the database whole, the secrets set, spend under 80% of the
+#                   day's ceiling; and a real analysis works end to end
+#
+# A failed run emails whoever owns the schedule (GitHub → Settings →
+# Notifications → Actions → "failed workflows only"). check:health also pings
+# healthchecks.io, which emails if a day passes with NO run — GitHub switches
+# schedules off in public repositories after 60 days without a commit, and a
+# check that silently stops is the same failure as no check.
+#
+# The repository is PUBLIC: the scripts print names and counts only.
+#
+# Needs (Settings → Secrets and variables → Actions):
+#   variables  VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+#   secrets    HEALTH_TOKEN, MONITOR_EMAIL, MONITOR_PASSWORD, HC_PING_URL
+name: Daily health check
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # 07:00 in Israel in summer, 06:00 in winter
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      HEALTH_TOKEN: ${{ secrets.HEALTH_TOKEN }}
+      MONITOR_EMAIL: ${{ secrets.MONITOR_EMAIL }}
+      MONITOR_PASSWORD: ${{ secrets.MONITOR_PASSWORD }}
+      HC_PING_URL: ${{ secrets.HC_PING_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: The live site
+        run: npm run check:live
+      # Runs even if the site check failed, so one email carries everything.
+      - name: The server side
+        if: always()
+        run: npm run check:health

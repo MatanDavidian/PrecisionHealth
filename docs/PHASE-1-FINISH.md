@@ -32,6 +32,20 @@ Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
 Small, protective, and each one would have prevented something that already
 happened or is happening now.
 
+> **Status, 2026-10-02.** The code for P0.3–P0.8 is in the repository and
+> tested. What connects it to the live accounts — and P0.1, P0.2 — is a
+> one-time checklist for the owner: **`docs/ops/operations-setup.md`**.
+>
+> | | |
+> | --- | --- |
+> | P0.1 key rotation, P0.2 SMTP | owner — setup steps 1–2 |
+> | P0.3 fake gate | done: absent from production builds; check:live guards it |
+> | P0.4 versions + deploy script | done: `x-vimetry-version` on every response; `scripts/deploy-functions.sh` |
+> | P0.5 migration tracking | owner, once — setup step 5; then automatic |
+> | P0.6 health check | done: `health` function, migration 0013, `check-health.mjs`, daily workflow; owner wires secrets (steps 4, 7–9) |
+> | P0.7 CI | done: `.github/workflows/ci.yml`; deploy job waits for the Cloudflare token (step 10) |
+> | P0.8 headers | done, CSP report-only; enforce after a clean week (step 11) |
+
 ### P0.1 Rotate the OpenAI key · S · M
 The key pasted into a chat at the start of the project has never been revoked.
 If it is the one Supabase uses, it is live. Create a new key → set it as the
@@ -132,7 +146,7 @@ second wall behind React's escaping.
 | The database has everything the code calls | `health` function → `health_check()` SQL listing missing functions, tables and allowed outcomes | **the 25 Sep outage** |
 | A real analysis works end to end | sign in as a monitoring account, analyse "one banana" through `estimate-food` | a revoked key, a retired model, a broken prompt, the outage |
 | Spend and errors in the last 24 hours | `health` returns aggregate counts only: spend vs the daily ceiling, `PROVIDER_ERROR` and `UNREADABLE` counts | a quietly failing provider, a cost spike |
-| Sign-in email can be sent | `health` reports whether custom SMTP is configured | P0.2 regressing |
+| Sign-in email reaches strangers | **not automated** — a function cannot read Supabase's auth settings, and a real test would send mail daily; checked once by hand (operations-setup step 2) | P0.2 |
 
 ### The parts
 

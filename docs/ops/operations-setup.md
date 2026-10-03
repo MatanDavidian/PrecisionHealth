@@ -20,18 +20,20 @@ Time: about an hour, mostly waiting on dashboards.
    a chat. If several keys exist and you are unsure which, delete every key
    except the new one.
 
-## 2. Sign-in email for strangers (P0.2)
+## 2. Sign-in email for strangers (P0.2) — **done 2026-10-03**
 
-Supabase's built-in email only reaches members of your Supabase organization.
+Custom SMTP was already on, through **Brevo** (EU, France). Finished on
+2026-10-03: `vimetry.app` authenticated in Brevo (DKIM, DMARC `p=none`, its
+records added to Cloudflare automatically — the single SPF record untouched);
+sender **Vimetry <no-reply@vimetry.app>** (a Cloudflare forwarding rule lets
+it receive Brevo's verification and any replies); the Magic Link and Confirm
+signup templates carry the code (`{{ .Token }}`) as well as the link.
 
-1. resend.com → sign up → **Domains** → add `vimetry.app` → add the DNS
-   records it shows in **Cloudflare → vimetry.app → DNS**. Wait for "Verified".
-2. Resend → **API Keys** → create one.
-3. Supabase → **Authentication → Emails → SMTP Settings** → enable custom SMTP:
-   host `smtp.resend.com`, port `465`, user `resend`, password = the API key,
-   sender `no-reply@vimetry.app`, name `Vimetry`.
-4. Test: open vimetry.app in a private window → **Sign in** → use
-   `support@vimetry.app` (it forwards to your Gmail). A code must arrive.
+**Known and accepted:** Brevo adds a List-Unsubscribe header to every
+transactional email, and only its Enterprise plan can remove it. A user who
+clicks "unsubscribe" may stop receiving sign-in codes — if anyone reports
+that, remove them from Brevo's blocked/unsubscribed transactional contacts.
+Resend or Postmark avoid this, at the cost of redoing the DNS setup.
 
 ## 3. GitHub: the values CI needs — **before the next push**
 

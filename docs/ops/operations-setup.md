@@ -35,6 +35,12 @@ clicks "unsubscribe" may stop receiving sign-in codes — if anyone reports
 that, remove them from Brevo's blocked/unsubscribed transactional contacts.
 Resend or Postmark avoid this, at the cost of redoing the DNS setup.
 
+Also accepted (owner's decision, 2026-10-03): Brevo **tracks opens and
+clicks** on transactional email and does not let a free account turn it off
+— sign-in links go through its `sendibt2.com` redirect. The Privacy Policy
+(2026-10-03.2) says so. If that ever needs to change: ask Brevo support to
+disable tracking, or move to Resend (tracking off unless enabled).
+
 ## 3. GitHub: the values CI needs — **before the next push**
 
 github.com/MatanDavidian/PrecisionHealth → **Settings → Secrets and variables

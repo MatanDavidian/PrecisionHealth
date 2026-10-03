@@ -42,7 +42,7 @@ test('the form will not send until it has an email', async ({ page }) => {
   // The link is the real path; the code box is the second offer, because a
   // stock Supabase template does not include a code at all.
   await expect(page.getByText(new RegExp(`Check ${STUB_ACCOUNT.email}`))).toBeVisible()
-  await expect(page.getByLabel(/Or enter a code/)).toBeVisible()
+  await expect(page.getByLabel(/Or enter the code/)).toBeVisible()
 
   await page.getByRole('button', { name: 'Use another email' }).click()
   await expect(send).toBeVisible()
@@ -66,12 +66,12 @@ test('a rejected code keeps you on the code step, so you can retype it', async (
 
   await page.getByLabel('Email').fill(STUB_ACCOUNT.email)
   await page.getByRole('button', { name: 'Email me a code' }).click()
-  await page.getByLabel(/Or enter a code/).fill('000000')
+  await page.getByLabel(/Or enter the code/).fill('000000')
   await page.getByRole('button', { name: 'Sign in with code' }).click()
 
   await expect(page.getByText(/expired or is invalid/)).toBeVisible()
   await expect(page).toHaveURL(/\/signin/)
-  await expect(page.getByLabel(/Or enter a code/)).toHaveValue('000000')
+  await expect(page.getByLabel(/Or enter the code/)).toHaveValue('000000')
 })
 
 test('signing in swaps the store, and the sample day does not follow you in', async ({ page }) => {
@@ -116,7 +116,7 @@ test('the language question is asked on first sign-in, and can be waved off', as
   await page.goto('/signin')
   await page.getByLabel('Email').fill(STUB_ACCOUNT.email)
   await page.getByRole('button', { name: 'Email me a code' }).click()
-  await page.getByLabel(/Or enter a code/).fill('123456')
+  await page.getByLabel(/Or enter the code/).fill('123456')
   await page.getByRole('button', { name: 'Sign in with code' }).click()
 
   // Consent comes first — it gates processing, so it cannot queue behind a

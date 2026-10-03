@@ -67,7 +67,7 @@ test('a new account cannot get past it, and the boxes start empty', async ({ pag
   await page.goto('/signin')
   await page.getByLabel('Email').fill(STUB_ACCOUNT.email)
   await page.getByRole('button', { name: 'Email me a code' }).click()
-  await page.getByLabel(/Or enter a code/).fill('123456')
+  await page.getByLabel(/Or enter the code/).fill('123456')
   await page.getByRole('button', { name: 'Sign in with code' }).click()
 
   const gate = page.locator('[aria-labelledby="consent-title"]')
@@ -93,7 +93,7 @@ test('only one thing interrupts you at a time', async ({ page }) => {
   await page.goto('/signin')
   await page.getByLabel('Email').fill(STUB_ACCOUNT.email)
   await page.getByRole('button', { name: 'Email me a code' }).click()
-  await page.getByLabel(/Or enter a code/).fill('123456')
+  await page.getByLabel(/Or enter the code/).fill('123456')
   await page.getByRole('button', { name: 'Sign in with code' }).click()
 
   /*
@@ -126,7 +126,7 @@ test('you can read what you are agreeing to, from inside the gate', async ({ pag
   await page.goto('/signin')
   await page.getByLabel('Email').fill(STUB_ACCOUNT.email)
   await page.getByRole('button', { name: 'Email me a code' }).click()
-  await page.getByLabel(/Or enter a code/).fill('123456')
+  await page.getByLabel(/Or enter the code/).fill('123456')
   await page.getByRole('button', { name: 'Sign in with code' }).click()
   await expect(page.getByRole('button', { name: 'Agree and continue' })).toBeVisible({
     timeout: 15_000,

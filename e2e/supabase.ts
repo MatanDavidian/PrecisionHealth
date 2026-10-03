@@ -373,7 +373,7 @@ export async function signIn(page: Page, options: StubOptions = {}): Promise<Stu
   await page.goto('/signin')
   await page.getByLabel('Email').fill(ACCOUNT.email)
   await page.getByRole('button', { name: 'Email me a code' }).click()
-  await page.getByLabel(/Or enter a code/).fill('123456')
+  await page.getByLabel(/Or enter the code/).fill('123456')
   await page.getByRole('button', { name: 'Sign in with code' }).click()
   // Two modals, in the order a real account meets them: consent first, because
   // it gates processing, then the language question.

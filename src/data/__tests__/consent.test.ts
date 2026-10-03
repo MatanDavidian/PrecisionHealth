@@ -77,6 +77,8 @@ describe('the documents themselves', () => {
     expect(terms).toContain('Matan Davidian')
     expect(privacy).toContain('Frankfurt, Germany')
     expect(privacy).toContain('Lemon Squeezy')
+    // Every processor that sees personal data is named — Brevo sends sign-in mail.
+    expect(privacy).toContain('Brevo')
     // Section 4 of the signed OpenAI DPA, not a guess at it.
     expect(privacy).toContain('processed by OpenAI Ireland')
     expect(privacy).toContain('UK Addendum')

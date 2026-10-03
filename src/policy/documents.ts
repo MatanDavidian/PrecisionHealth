@@ -76,7 +76,7 @@ const OPERATOR = 'Matan Davidian, an individual based in Israel'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-10-02',
+  version: '2026-10-03',
   sections: [
     {
       heading: 'Who we are',
@@ -130,7 +130,8 @@ export const PRIVACY_POLICY: PolicyDocument = {
       bullets: [
         'Supabase — hosts the database and handles sign-in. Everything in your account is stored there, in Frankfurt, Germany.',
         'OpenAI — receives the meal photograph or description you ask us to analyse, and the weekly summary when you ask for an insight. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
-        'Cloudflare — serves the app itself.',
+        'Cloudflare — serves the app itself, and forwards mail sent to our @vimetry.app addresses.',
+        'Brevo, in France — sends the sign-in emails. It receives your email address and the one-time code and link it delivers, and nothing else.',
         'Lemon Squeezy — sells the subscription as our merchant of record: it takes the payment, handles sales tax, and sends receipts, so it holds your name, email, country and payment details. We receive a record that you subscribed, never your card. It receives no health data.',
       ],
     },

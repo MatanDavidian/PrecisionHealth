@@ -1,5 +1,6 @@
 import type { Page, Route } from '@playwright/test'
 import { PRIVACY_POLICY } from '../src/policy/documents'
+import { NOW } from './app'
 
 const CURRENT_POLICY_VERSION = PRIVACY_POLICY.version
 
@@ -37,6 +38,16 @@ const base64url = (value: string) =>
  * has to be a genuine three-part JWT with a future `exp`, because the client
  * decodes it and would treat a placeholder string as a corrupt session.
  */
+/**
+ * The clock a session has to be valid on.
+ *
+ * The browser's clock is pinned to `NOW`, which `E2E_TODAY` can put weeks in
+ * the future — and a session minted from the real clock then looks long
+ * expired to the app, which signs the user straight back out. Taking the later
+ * of the two keeps a session valid on both.
+ */
+const sessionSeconds = (): number => Math.floor(Math.max(Date.now(), NOW.getTime()) / 1000)
+
 function accessToken(expiresAt: number) {
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const payload = base64url(
@@ -45,7 +56,7 @@ function accessToken(expiresAt: number) {
       email: ACCOUNT.email,
       role: 'authenticated',
       aud: 'authenticated',
-      iat: Math.floor(Date.now() / 1000),
+      iat: sessionSeconds(),
       exp: expiresAt,
     }),
   )
@@ -53,7 +64,7 @@ function accessToken(expiresAt: number) {
 }
 
 function sessionBody() {
-  const expiresAt = Math.floor(Date.now() / 1000) + 3600
+  const expiresAt = sessionSeconds() + 3600
   return {
     access_token: accessToken(expiresAt),
     token_type: 'bearer',

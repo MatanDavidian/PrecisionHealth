@@ -21,6 +21,10 @@ export default defineConfig({
 
   use: {
     baseURL: 'http://localhost:4173',
+    // The browser's zone follows the test runner's, so `TZ=Asia/Jerusalem npx
+    // playwright test` means Israel on both sides — never Node in one zone and
+    // Chromium in another, each computing a different "today".
+    ...(process.env.TZ ? { timezoneId: process.env.TZ } : {}),
     // Kept only for failures: a trace for every passing test is a slow way to
     // fill a disk.
     trace: 'retain-on-failure',

@@ -137,18 +137,39 @@ function offsetMsAt(utcMs: number, zone: IanaZone): number {
  * "13:05" and means 13:05 where they are, which is a different instant in
  * every zone and shifts twice a year with DST.
  *
- * Resolved in two passes because the offset depends on the instant we are
- * trying to find. The second pass corrects the first, which is exact except
- * inside the one ambiguous hour when clocks go back — there, the earlier of the
- * two possible instants wins.
+ * Twice a year the answer is not one instant, and both cases follow the
+ * convention JavaScript's Temporal calls "compatible":
+ *
+ * - When clocks go back, a wall time happens TWICE (01:30 on 25 Oct 2026 in
+ *   Israel is both 22:30 and 23:30 UTC). The EARLIER wins.
+ * - When clocks go forward, a wall time never happens (02:30 on 26 Mar 2027).
+ *   It resolves FORWARD by the size of the gap, to 03:30 — on the same day,
+ *   never an error and never a missing meal.
+ *
+ * Resolved by trying the offset in force just before and just after the
+ * moment: whichever lands on the requested wall time is an answer, and with
+ * two answers the earlier is taken. The previous two-pass version said
+ * "earlier" in this comment and returned the later; a test on the real
+ * transition dates caught it (src/domain/__tests__/clockChanges.test.ts).
  */
 export function zonedTimeToUtc(date: CalendarDate, timeOfDay: string, zone: IanaZone): Instant {
   const [year, month, day] = date.split('-').map(Number)
   const [hour, minute] = timeOfDay.split(':').map(Number)
   const naive = Date.UTC(year, month - 1, day, hour, minute)
-  const corrected = naive - offsetMsAt(naive, zone)
-  const refined = naive - offsetMsAt(corrected, zone)
-  return new Date(refined).toISOString()
+  /*
+    Twelve hours either side is far from any other transition — zones change
+    their offset at most a few times a year — and always on the right side of
+    this one.
+  */
+  const before = offsetMsAt(naive - 12 * 3_600_000, zone)
+  const after = offsetMsAt(naive + 12 * 3_600_000, zone)
+  const matches = [naive - before, naive - after].filter(
+    (candidate) => candidate + offsetMsAt(candidate, zone) === naive,
+  )
+  if (matches.length > 0) return new Date(Math.min(...matches)).toISOString()
+  // In the gap: the wall time does not exist. Read with the offset from
+  // before the jump, which lands the same distance past it.
+  return new Date(naive - before).toISOString()
 }
 
 /** Shift a calendar date by whole days. */

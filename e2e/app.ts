@@ -28,7 +28,15 @@ import type { Page } from '@playwright/test'
  * calendar and nothing here expires.
  */
 export const NOW: Date = (() => {
-  const at = new Date()
+  /*
+    `E2E_TODAY=2026-10-29` runs the whole suite as if that were today — how
+    the clock-change weeks are tested before they arrive:
+
+      TZ=Asia/Jerusalem E2E_TODAY=2026-10-29 npx playwright test
+
+    That week starts on 25 Oct 2026, Israel's 25-hour day.
+  */
+  const at = process.env.E2E_TODAY ? new Date(`${process.env.E2E_TODAY}T12:00:00`) : new Date()
   // 3 = Wednesday. Back up to the most recent one.
   at.setDate(at.getDate() - ((at.getDay() - 3 + 7) % 7))
   at.setHours(12, 0, 0, 0)

@@ -231,7 +231,7 @@ handled; the gaps are marked.
 | **A subscriber hits the daily spend ceiling** | told "free analyses unavailable" | subscribers get their own budget and their own message | P1 (payments) |
 | **Safari clears a signed-out browser's data** | Safari can delete site storage after 7 days without a visit | `navigator.storage.persist()`, and tell signed-out users plainly where their data lives | P1 |
 | **iPhone photo picked on Android or desktop (HEIC)** | Chrome cannot decode HEIC; untested | test with a HEIC file; say "convert to JPEG" rather than fail silently | P1 |
-| **Israel's clocks go back, 25 Oct** | a 25-hour day; untested | unit tests for the week and day keys across both DST changes | P1 — has a date |
+| **Israel's clocks go back, 25 Oct** | ✅ tested on both real dates; the browser suite passes in those weeks (`E2E_TODAY`) | — | done 2026-10-09 |
 | Offline while signed in | the save fails with a banner (D16, online-first) | accept for Phase 1; revisit with real usage | P2 |
 | Session expires mid-analysis | "sign in again" | check the photo survives | P2 |
 | Years of history exported | paged reads; size untested | a bounded test at ~50k records | P2 |
@@ -315,11 +315,11 @@ change. Remaining:
 
 | Priority | Test | Why |
 | --- | --- | --- |
-| High | **Handler test for `estimate-food`** with a fake PostgREST and a fake OpenAI, like the device-sync harness | 600 lines of money-critical logic — reservation, ceiling, free follow-ups, model downgrade — with no direct test |
+| High | ✅ **Handler test for `estimate-food`** (`supabase/test/estimate-food.ts`, 45 checks, 2026-10-09) with a fake PostgREST and a fake OpenAI, like the device-sync harness | 600 lines of money-critical logic — reservation, ceiling, free follow-ups, model downgrade — with no direct test |
 | High | **Deep health check** — P0.6 | Would have caught the outage the next morning |
 | High | **Payment flow** as it is built: webhook signature, duplicate and out-of-order events, refund revoking access, deletion cancelling billing, an e2e with a faked webhook | The first code where a bug costs a customer money |
 | High | **Every callable model has a price** — P1 model upgrade | An unpriced model is invisible to the spend ceiling |
-| Medium | **DST and travel**: day keys and the week across 25 Oct and the spring change | The clocks change in three weeks |
+| Medium | ✅ **DST and travel** (`clockChanges.test.ts`, 2026-10-09; found and fixed an ambiguous-hour bug): day keys and the week across 25 Oct and the spring change | The clocks change in three weeks |
 | Medium | Handler tests for `delete-account` and `issue-device-token` | Deletion is irreversible and has never run on a real account |
 | Medium | Contract tests against a local Supabase instead of production | Stops growing the test account (2,066 meals so far), and lets CI run them without production credentials |
 | Medium | A HEIC photo, a non-food photo, a double-tapped Save | Edge scenarios above |

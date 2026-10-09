@@ -1,21 +1,24 @@
 import {
   MODEL_LABELS,
   MODEL_SOL,
-  MODEL_TERRA,
-  MODEL_LUNA,
+  TRIAL_MODELS,
 } from '../../../supabase/functions/_shared/prompt'
 import type { TrialStatus } from '@/data/trial'
 import { useT } from '../i18n'
 
-const ORDER = [MODEL_SOL, MODEL_TERRA, MODEL_LUNA]
-
 /**
- * Accuracy against speed, while on the free trial.
+ * Which model analyses your photos, while on the free trial.
  *
- * The best model is expensive and slow, so the trial gives it a small budget
- * of its own. Rather than hiding that, the picker shows what is left of it and
- * lets the user spend it where it matters — a crowded plate, an unfamiliar
- * dish — instead of on a bowl of porridge.
+ * A dropdown of every model the SERVER allows (`TRIAL_MODELS`) — the server
+ * refuses anything else, so the list cannot offer a model that would fail.
+ * Adding a model there adds it here; nothing in this file names one.
+ *
+ * Each option shows its plain-language label and the real model id, because
+ * the owner compares models by id while evaluating them, and a user deserves
+ * to know which model read their plate.
+ *
+ * The most expensive model has a small budget of its own; once spent, its
+ * option is disabled rather than hidden, with the reason underneath.
  */
 export function TrialModelPicker({
   trial,
@@ -28,54 +31,45 @@ export function TrialModelPicker({
   onSelect: (model: string) => void
 }) {
   const t = useT()
-  const effective = selected ?? trial.suggestedModel
+  const solLocked = trial.solRemaining === 0
+  const requested = selected ?? trial.suggestedModel
+  // A choice that is no longer allowed falls back to the suggestion.
+  const effective =
+    TRIAL_MODELS.includes(requested as never) && !(requested === MODEL_SOL && solLocked)
+      ? requested
+      : trial.suggestedModel
+  const detail = MODEL_LABELS[effective]?.detail
 
   return (
-    <div className="space-y-2">
-      {ORDER.map((model) => {
-        const label = MODEL_LABELS[model]
-        const isSol = model === MODEL_SOL
-        const locked = isSol && trial.solRemaining === 0
-        const active = effective === model
-
-        return (
-          <label
-            key={model}
-            className={`flex items-start gap-3 rounded-xl border p-3 ${
-              locked
-                ? 'cursor-default border-hairline opacity-50'
-                : 'cursor-pointer border-hairline'
-            } ${active && !locked ? 'bg-card-soft' : ''}`}
-          >
-            <input
-              type="radio"
-              name="trialModel"
-              className="mt-1"
-              checked={active && !locked}
-              disabled={locked}
-              onChange={() => onSelect(model)}
-            />
-            <span>
-              <span className="text-sm font-medium">
-                {label.name}
-                {isSol && !locked && trial.solRemaining <= trial.solAllowance && (
-                  <span className="ms-2 rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-normal text-accent">
-                    {t('trial.left', { count: trial.solRemaining })}
-                  </span>
-                )}
-                {locked && (
-                  <span className="ms-2 rounded-full bg-card-soft px-2 py-0.5 text-[0.65rem] font-normal text-ink-muted">
-                    {t('trial.usedUp')}
-                  </span>
-                )}
-              </span>
-              <span className="block pt-0.5 text-xs text-ink-muted">
-                {locked ? t('trial.availableAgain') : label.detail}
-              </span>
-            </span>
-          </label>
-        )
-      })}
+    <div>
+      <select
+        id="trialModel"
+        name="trialModel"
+        aria-label={t('settings.accuracyOrSpeed')}
+        className="w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm"
+        value={effective}
+        onChange={(event) => onSelect(event.target.value)}
+      >
+        {TRIAL_MODELS.map((model) => {
+          const label = MODEL_LABELS[model]?.name
+          const locked = model === MODEL_SOL && solLocked
+          const suffix =
+            model === MODEL_SOL
+              ? locked
+                ? ` — ${t('trial.usedUp')}`
+                : ` — ${t('trial.left', { count: trial.solRemaining })}`
+              : ''
+          return (
+            <option key={model} value={model} disabled={locked}>
+              {label ? `${label} · ${model}` : model}
+              {suffix}
+            </option>
+          )
+        })}
+      </select>
+      <p className="pt-2 text-xs text-ink-muted">
+        {solLocked ? t('trial.availableAgain') : detail}
+      </p>
     </div>
   )
 }

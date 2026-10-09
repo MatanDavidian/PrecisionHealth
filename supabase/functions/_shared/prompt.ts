@@ -278,10 +278,18 @@ export const MODEL_RATES: Record<string, { input: number; output: number }> = {
   'gpt-4o-mini': { input: 0.15, output: 0.6 },
 }
 
-/** Cost in millionths of a dollar, so the ledger stores an integer. */
+/**
+ * Cost in millionths of a dollar, so the ledger stores an integer.
+ *
+ * A model with no rate here is booked at the assumed worst case, never at
+ * zero. It used to return 0, which made an unpriced model invisible to the
+ * daily spend ceiling — the one mistake adding a new model was most likely to
+ * make. A unit test now also requires a rate for every model the server may
+ * run (src/ai/__tests__/modelRates.test.ts).
+ */
 export function costMicros(model: string, inputTokens: number, outputTokens: number): number {
   const rate = MODEL_RATES[model]
-  if (!rate) return 0
+  if (!rate) return ASSUMED_ANALYSIS_MICROS
   return Math.round(inputTokens * rate.input + outputTokens * rate.output)
 }
 

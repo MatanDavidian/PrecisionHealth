@@ -41,7 +41,8 @@ test('the picker says how much of the best model is left', async ({ page }) => {
   await page.getByRole('button', { name: 'Photo analysis' }).click()
 
   await expect(page.getByText('Accuracy or speed')).toBeVisible()
-  await expect(page.getByText('1 left')).toBeVisible()
+  // In the dropdown, on the most accurate model's own option.
+  await expect(page.locator('select[name="trialModel"] option', { hasText: '1 left' })).toHaveCount(1)
 })
 
 test('and locks it once the budget is spent, without locking the app', async ({ page }) => {
@@ -49,13 +50,13 @@ test('and locks it once the budget is spent, without locking the app', async ({ 
   await openSignedIn(page, '/settings')
   await page.getByRole('button', { name: 'Photo analysis' }).click()
 
-  await expect(page.getByText('used up')).toBeVisible()
+  await expect(page.locator('select[name="trialModel"] option', { hasText: 'used up' })).toHaveCount(1)
   await expect(page.getByText(/Available again with your own key/)).toBeVisible()
 
   // The expensive model is gone; the faster one is still selectable, so the
   // trial keeps working rather than ending early.
-  await expect(page.locator('input[name="trialModel"]:disabled')).toHaveCount(1)
-  await expect(page.locator('input[name="trialModel"]:not(:disabled)')).not.toHaveCount(0)
+  await expect(page.locator('select[name="trialModel"] option:disabled')).toHaveCount(1)
+  await expect(page.locator('select[name="trialModel"] option:not(:disabled)')).not.toHaveCount(0)
 })
 
 test('running out mid-analysis is a full stop with two ways forward', async ({ page }) => {

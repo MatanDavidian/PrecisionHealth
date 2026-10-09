@@ -322,6 +322,15 @@ const NOT_CHAT =
   /embedding|whisper|tts|audio|realtime|moderation|dall-e|image|transcribe|codex|babbage|davinci|sora|veo/i
 
 /**
+ * Models that work but are not offered, by the owner's decision.
+ *
+ * GPT-6 Astra is OpenAI's frontier agentic model — priced and paced for
+ * operating a computer, not for reading a plate. Left in the list, someone
+ * would pick "the best one" and pay for it on every meal.
+ */
+const NOT_OFFERED = /astra/i
+
+/**
  * Vision support is a naming heuristic, because `/v1/models` returns ids and
  * nothing else — no capability metadata at all.
  *
@@ -376,7 +385,7 @@ export async function listChatModels(
 
   const models = payload.data
     .map((model) => model.id)
-    .filter((id) => !NOT_CHAT.test(id))
+    .filter((id) => !NOT_CHAT.test(id) && !NOT_OFFERED.test(id))
     // Newest-looking first: numeric compare puts 5.4 above 4o, descending.
     .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
     .map((id) => ({ id, vision: looksVisionCapable(id), note: noteFor(id) }))

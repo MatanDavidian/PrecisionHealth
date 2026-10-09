@@ -1,8 +1,8 @@
 /**
  * A stand-in Supabase and a fake Lemon Squeezy, for the billing handlers.
  *
- * Just enough PostgREST for supabase-js: select with eq / in / gte, HEAD
- * counts, insert, upsert, update; plus auth's "who is this token" and admin
+ * Just enough PostgREST for supabase-js: select with eq / in / gte / is.null,
+ * HEAD counts, insert (returning the row when asked), upsert, update; plus auth's "who is this token" and admin
  * user deletion, which cascades the way the migrations declare. A row whose
  * user does not exist is refused with Postgres's foreign-key error — the case
  * a deleted account produces.
@@ -30,7 +30,7 @@ export const db = {
 }
 
 /** Tables with a `user_id` that references auth.users. */
-const USER_TABLES = new Set(['subscriptions', 'usage', 'meals', 'observations', 'profiles'])
+const USER_TABLES = new Set(['subscriptions', 'usage', 'meals', 'observations', 'profiles', 'device_tokens'])
 
 export function resetDb() {
   db.tables = {}
@@ -49,6 +49,7 @@ function matches(row: Row, params: URLSearchParams): boolean {
     const value = row[column] === null || row[column] === undefined ? '' : String(row[column])
     if (filter.startsWith('eq.') && value !== filter.slice(3)) return false
     if (filter.startsWith('gte.') && value < filter.slice(4)) return false
+    if (filter === 'is.null' && value !== '') return false
     if (filter.startsWith('in.(')) {
       const options = filter.slice(4, -1).split(',').map((s) => s.replace(/^"|"$/g, ''))
       if (!options.includes(value)) return false
@@ -66,7 +67,12 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
 const foreignKeyError = () =>
   json({ code: '23503', message: 'insert or update violates foreign key constraint' }, 409)
 
-const PRIMARY_KEY: Record<string, string> = { subscriptions: 'id', billing_events: 'id' }
+const PRIMARY_KEY: Record<string, string> = { subscriptions: 'id', billing_events: 'id', device_tokens: 'id' }
+
+/** What the database fills in itself. */
+const DEFAULTS: Record<string, () => Row> = {
+  device_tokens: () => ({ id: crypto.randomUUID(), created_at: new Date().toISOString(), revoked_at: null }),
+}
 
 export function startDb(port = 8997) {
   return Deno.serve({ port, onListen: () => {} }, async (req) => {
@@ -108,7 +114,9 @@ export function startDb(port = 8997) {
       const body = await req.json()
       const incoming: Row[] = Array.isArray(body) ? body : [body]
       const upsert = (req.headers.get('prefer') ?? '').includes('merge-duplicates')
-      for (const fields of incoming) {
+      const written: Row[] = []
+      for (const given of incoming) {
+        const fields = { ...DEFAULTS[name]?.(), ...given }
         if (USER_TABLES.has(name) && fields.user_id && !db.users.has(String(fields.user_id))) {
           return foreignKeyError()
         }
@@ -117,8 +125,11 @@ export function startDb(port = 8997) {
         if (existing && upsert) Object.assign(existing, fields)
         else if (existing) return json({ code: '23505', message: 'duplicate key' }, 409)
         else rows.push({ ...fields })
+        written.push(existing ?? fields)
       }
-      return json(undefined, 201)
+      if (!(req.headers.get('prefer') ?? '').includes('return=representation')) return json(undefined, 201)
+      const single = (req.headers.get('accept') ?? '').includes('vnd.pgrst.object')
+      return json(single ? written[0] : written, 201)
     }
 
     if (req.method === 'PATCH') {

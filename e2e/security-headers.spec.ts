@@ -7,8 +7,8 @@ import { openSignedIn, signIn } from './supabase'
  *
  * The preview server serves `public/_headers` exactly as Cloudflare does (see
  * vite.config.ts), so this runs under the production policy. The CSP ships as
- * report-only first; these tests are what say it is safe to enforce. A
- * violation here is a part of the app the enforced policy would break.
+ * report-only first and has been enforced since 2026-10-09, on the strength
+ * of these tests. A violation here is a part of the app the policy breaks.
  */
 
 const PHOTO = 'e2e/fixtures-meal.jpg'
@@ -29,8 +29,8 @@ const violations = (page: Page) =>
 test('every response carries the security headers', async ({ request }) => {
   const response = await request.get('/')
   const headers = response.headers()
-  expect(headers['content-security-policy-report-only']).toContain("default-src 'self'")
-  expect(headers['content-security-policy-report-only']).toContain("frame-ancestors 'none'")
+  expect(headers['content-security-policy']).toContain("default-src 'self'")
+  expect(headers['content-security-policy']).toContain("frame-ancestors 'none'")
   expect(headers['x-frame-options']).toBe('DENY')
   expect(headers['x-content-type-options']).toBe('nosniff')
   expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin')

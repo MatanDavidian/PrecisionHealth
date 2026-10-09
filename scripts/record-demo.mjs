@@ -128,6 +128,9 @@ const contextFor = (video) =>
     locale: 'en-US',
     timezoneId: 'Asia/Jerusalem',
     acceptDownloads: true,
+    // The captions are an injected <style>, which the site's enforced CSP
+    // rightly blocks. Off for this recording only; the app is unaffected.
+    bypassCSP: true,
     ...(video ? { recordVideo: { dir: OUT, size: { width: 540, height: 1170 } } } : {}),
   })
 const signIn = (context) =>

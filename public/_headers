@@ -13,16 +13,15 @@
 
 # Security, on every response.
 #
-# The CSP starts as REPORT-ONLY: a wrong policy blanks the site for everyone,
-# so it is observed first (violations surface as console errors, which the
-# browser suite and check:live both fail on) and enforced once a week of real
-# use shows nothing. X-Frame-Options is enforced now — clickjacking protection
-# that report-only mode cannot give (frame-ancestors is ignored there).
+# The CSP is ENFORCED (since 2026-10-09), after six days in report-only mode
+# with no violations: the browser suite walks the app under this exact policy
+# on every CI run (e2e/security-headers.spec.ts), and the daily check:live
+# fails on any console error, which is where violations surface.
 #
 # connect-src: our own origin, this Supabase project (https and the realtime
 # socket), and api.openai.com for people who analyse on their own key.
 /*
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://vdzphvyoqlkcrovtqdlk.supabase.co wss://vdzphvyoqlkcrovtqdlk.supabase.co https://api.openai.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://vdzphvyoqlkcrovtqdlk.supabase.co wss://vdzphvyoqlkcrovtqdlk.supabase.co https://api.openai.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

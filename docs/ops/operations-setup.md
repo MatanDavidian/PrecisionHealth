@@ -142,8 +142,7 @@ Until now Cloudflare publishes every push to `main` itself, tests or not.
    Settings → Builds** → turn off **automatic production deployments**. From
    then on, a red build cannot reach production.
 
-## 11. In a week: enforce the security policy
+## 11. Enforce the security policy — **done 2026-10-09**
 
-The Content-Security-Policy ships as report-only. If a week of the daily
-check and normal use shows no violations, tell Claude to switch it to
-enforced — a one-line change in `public/_headers`.
+The Content-Security-Policy is enforced in `public/_headers`; the e2e
+security-headers tests run the app under it.

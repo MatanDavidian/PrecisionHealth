@@ -532,6 +532,12 @@ const en = {
   'settings.storageUsage': ', currently {usage}',
   'settings.storageLocalNote':
     'Clearing your browsing data erases it, and no other device can see it. Signing in copies it to your account and keeps it in step from then on.',
+  'settings.storageKept': 'This browser has agreed to keep it — it will not clear it on its own.',
+  'settings.storageMayClear':
+    'This browser may clear it on its own: Safari does after seven days without a visit. To be sure of keeping it, sign in, add Vimetry to your Home Screen, or export it now and then.',
+  'settings.storageAsk': 'Ask the browser to keep it',
+  'settings.storageRefused':
+    'The browser said not yet — it decides by how much you use the site. Signing in is the sure way.',
   'settings.export': 'Take your data with you',
   'settings.exportNote':
     'Everything this app holds for you, as a JSON file — so you keep a copy independently of both this browser and the account.',
@@ -1296,6 +1302,11 @@ const he: Dictionary = {
   'settings.storageUsage': ', כרגע {usage}',
   'settings.storageLocalNote':
     'ניקוי נתוני הגלישה מוחק אותם, ואף מכשיר אחר לא רואה אותם. כניסה לחשבון מעתיקה אותם לחשבון ושומרת על סנכרון מכאן ואילך.',
+  'settings.storageKept': 'הדפדפן הזה הסכים לשמור אותם — הוא לא ימחק אותם מעצמו.',
+  'settings.storageMayClear':
+    'הדפדפן הזה עלול למחוק אותם מעצמו: Safari עושה זאת אחרי שבעה ימים בלי ביקור. כדי לשמור עליהם בוודאות, היכנסו לחשבון, הוסיפו את Vimetry למסך הבית, או ייצאו אותם מדי פעם.',
+  'settings.storageAsk': 'לבקש מהדפדפן לשמור אותם',
+  'settings.storageRefused': 'הדפדפן אמר שעדיין לא — הוא מחליט לפי כמה אתם משתמשים באתר. כניסה לחשבון היא הדרך הבטוחה.',
   'settings.export': 'קחו את הנתונים אתכם',
   'settings.exportNote':
     'כל מה שהאפליקציה שומרת עליכם, כקובץ JSON — כדי שיהיה לכם עותק בלי תלות בדפדפן הזה ובחשבון.',

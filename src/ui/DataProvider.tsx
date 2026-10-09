@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ensureSeeded, selectRepositoriesFor, selectEstimatorFor } from '@/data'
 import { readTrialStatus, type TrialStatus } from '@/data/trial'
 import { readPlanStatus, type PlanStatus } from '@/data/plan'
+import { askToKeepOnce } from '@/data/persistence'
 import { getSupabaseClient, isSupabaseConfigured } from '@/data/supabase/client'
 import {
   getSession,
@@ -154,6 +155,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const [failure, setFailure] = useState<WriteFailure>()
   const refresh = useCallback(() => setRevision((r) => r + 1), [])
+  const signedIn = useRef(session.authenticated)
+  signedIn.current = session.authenticated
   const dismissFailure = useCallback(() => setFailure(undefined), [])
 
   const runWrite = useCallback(
@@ -162,6 +165,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await write()
         setFailure(undefined)
         setRevision((r) => r + 1)
+        // Signed out, this browser is the only copy: ask it not to clear it.
+        if (!signedIn.current) void askToKeepOnce()
         return true
       } catch (cause) {
         setFailure({

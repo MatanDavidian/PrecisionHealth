@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { askToKeep, storagePersistence, type Persistence } from '@/data/persistence'
 import { useSearchParams } from 'react-router-dom'
 import { getRepositories } from '@/data'
 import { listChatModels, testApiKey, type ModelChoice } from '@/ai/openaiEstimator'
@@ -83,6 +84,11 @@ export function Settings() {
   /** True when the chosen model is not in the account list — shows the text field. */
   const [customModel, setCustomModel] = useState(false)
   const [usage, setUsage] = useState<string>()
+  const [persistence, setPersistence] = useState<Persistence>('unknown')
+  const [askedToKeep, setAskedToKeep] = useState(false)
+  useEffect(() => {
+    void storagePersistence().then(setPersistence)
+  }, [])
 
   // The balance moves with every analysis; read it fresh whenever Settings opens.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -584,6 +590,32 @@ export function Settings() {
                       })}
                     </p>
                     <p className="pt-2 text-xs text-ink-muted">{t('settings.storageLocalNote')}</p>
+                    {persistence === 'kept' ? (
+                      <p className="pt-2 text-xs text-leaf" data-testid="storage-kept">
+                        {t('settings.storageKept')}
+                      </p>
+                    ) : (
+                      <div className="pt-3" data-testid="storage-best-effort">
+                        <p className="text-xs">{t('settings.storageMayClear')}</p>
+                        {persistence === 'best-effort' && (
+                          <button
+                            type="button"
+                            className="mt-2 rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+                            onClick={() => {
+                              setAskedToKeep(true)
+                              void askToKeep().then(setPersistence)
+                            }}
+                          >
+                            {t('settings.storageAsk')}
+                          </button>
+                        )}
+                        {askedToKeep && persistence === 'best-effort' && (
+                          <p className="pt-2 text-xs text-ink-muted" role="status">
+                            {t('settings.storageRefused')}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
               </Card>

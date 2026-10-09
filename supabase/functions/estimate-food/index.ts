@@ -27,6 +27,7 @@ import {
   SYSTEM_PROMPT,
   TEXT_SYSTEM_PROMPT,
   ASSUMED_ANALYSIS_MICROS,
+  DEFAULT_PLAN_DAILY_BUDGET_MICROS,
   dailyBudgetMicros,
   TRIAL_ANALYSES,
   TRIAL_MODEL,
@@ -40,6 +41,13 @@ import {
   type EstimateHints,
   type FollowUp,
 } from '../_shared/prompt.ts'
+import {
+  PLAN_ALLOWANCE,
+  activePlan,
+  type AnalysisKind,
+  type PlanPeriod,
+  type SubscriptionRow,
+} from '../_shared/plan.ts'
 
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
 const MAX_COMPLETION_TOKENS = 4000
@@ -108,6 +116,8 @@ Deno.serve(async (request) => {
    */
   const trialKey = Deno.env.get('OPENAI_TRIAL_KEY') ?? Deno.env.get('OPENAI_MASTER_KEY')
   const adminKey = Deno.env.get('OPENAI_ADMIN_KEY') ?? trialKey
+  // Subscribers' own project and spend limit, once the owner creates one.
+  const planKey = Deno.env.get('OPENAI_PLAN_KEY') ?? trialKey
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
@@ -130,8 +140,24 @@ Deno.serve(async (request) => {
     .eq('user_id', user.id)
     .maybeSingle()
   const isAdmin = Boolean(adminRow)
-  const keySource = isAdmin ? 'MASTER_ADMIN' : 'MASTER_TRIAL'
-  const apiKey = isAdmin ? adminKey : trialKey
+
+  /*
+    Who pays: a subscription while it gives access, otherwise the trial.
+
+    A subscriber whose month is used up is NOT sent back to their trial — the
+    trial is for trying the app, once, and someone who has subscribed has.
+  */
+  let plan: PlanPeriod | undefined
+  if (!isAdmin) {
+    const { data: subs, error: subsError } = await admin
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+    if (subsError) return json({ error: 'ledger_unavailable' }, 503)
+    plan = activePlan((subs ?? []) as SubscriptionRow[], new Date())
+  }
+  const keySource = isAdmin ? 'MASTER_ADMIN' : plan ? 'MASTER_PLAN' : 'MASTER_TRIAL'
+  const apiKey = isAdmin ? adminKey : plan ? planKey : trialKey
 
   let body: RequestBody
   try {
@@ -159,6 +185,9 @@ Deno.serve(async (request) => {
     return json({ error: 'bad_request' }, 400)
   }
 
+  /** Which of the plan's two allowances this draws on. Anything with a picture is a photo. */
+  const kind: AnalysisKind = body.photo || leftover?.photo ? 'PHOTO' : 'TEXT'
+
   const conversationId =
     typeof body.conversationId === 'string' && body.conversationId.length > 0
       ? body.conversationId.slice(0, 64)
@@ -170,6 +199,7 @@ Deno.serve(async (request) => {
       user_id: user.id,
       day: body.day,
       conversation_id: conversationId ?? null,
+      kind,
       ...fields,
     })
 
@@ -275,14 +305,17 @@ Deno.serve(async (request) => {
     provider's own token report, so the number compared here is what was
     actually spent.
   */
-  const budgetMicros = dailyBudgetMicros(Deno.env.get('DAILY_BUDGET_MICROS'))
+  const budgetMicros = plan
+    ? dailyBudgetMicros(Deno.env.get('PLAN_DAILY_BUDGET_MICROS'), DEFAULT_PLAN_DAILY_BUDGET_MICROS)
+    : dailyBudgetMicros(Deno.env.get('DAILY_BUDGET_MICROS'))
   if (!isAdmin) {
     const since = new Date()
     since.setUTCHours(0, 0, 0, 0)
     const { data: spentRows, error: spendError } = await admin
       .from('usage')
       .select('cost_micros, outcome')
-      .in('key_source', ['MASTER_TRIAL', 'MASTER_PLAN', 'MASTER_ADMIN'])
+      // Subscribers and trials each have their own ceiling (see DEFAULT_PLAN_DAILY_BUDGET_MICROS).
+      .in('key_source', plan ? ['MASTER_PLAN'] : ['MASTER_TRIAL', 'MASTER_ADMIN'])
       .gte('created_at', since.toISOString())
 
     /*
@@ -316,8 +349,9 @@ Deno.serve(async (request) => {
   }
 
   // --- entitlement -----------------------------------------------------------
-  // Step 1 has one entitlement: the lifetime trial. Plans land in step 3 and
-  // slot in here, which is why the ledger already records key_source.
+  // The trial: ten analyses of any kind, once. The plan: this month's photos
+  // and this month's written analyses, counted apart.
+  const allowance = plan ? PLAN_ALLOWANCE[kind] : TRIAL_ANALYSES
   let used = 0
   /**
    * The claim this request is spending, if it took one.
@@ -329,12 +363,15 @@ Deno.serve(async (request) => {
   let reservationId: string | undefined
 
   if (!isAdmin) {
-    const { count, error: countError } = await admin
+    const counted = admin
       .from('usage')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .eq('key_source', 'MASTER_TRIAL')
+      .eq('key_source', keySource)
       .eq('outcome', 'OK')
+    const { count, error: countError } = plan
+      ? await counted.eq('kind', kind).gte('created_at', plan.start)
+      : await counted
 
     if (countError) return json({ error: 'ledger_unavailable' }, 503)
 
@@ -364,17 +401,24 @@ Deno.serve(async (request) => {
         p_user_id: user.id,
         p_day: body.day,
         p_model: TRIAL_MODEL,
-        p_key_source: 'MASTER_TRIAL',
-        p_limit: TRIAL_ANALYSES,
-        // Null counts the account's whole life, which is what a trial is. A
-        // monthly plan passes the period start here instead.
-        p_period_start: null,
+        p_key_source: keySource,
+        p_limit: allowance,
+        // Null counts the account's whole life, which is what a trial is; a
+        // plan counts from the start of this billing month.
+        p_period_start: plan?.start ?? null,
         p_conversation: conversationId ?? null,
+        p_kind: kind,
+        p_per_kind: Boolean(plan),
       })
       if (reserveError) return json({ error: 'ledger_unavailable' }, 503)
       if (!reserved) {
-        await record({ model: TRIAL_MODEL, key_source: 'MASTER_TRIAL', outcome: 'REFUSED_QUOTA' })
-        return json({ error: 'trial_exhausted', used, allowance: TRIAL_ANALYSES }, 402)
+        await record({ model: TRIAL_MODEL, key_source: keySource, outcome: 'REFUSED_QUOTA' })
+        return plan
+          ? json(
+            { error: 'plan_exhausted', kind, used, allowance, resetsAt: plan.end, renews: plan.renews },
+            402,
+          )
+          : json({ error: 'trial_exhausted', used, allowance }, 402)
       }
       reservationId = reserved as string
     }
@@ -450,7 +494,8 @@ Deno.serve(async (request) => {
      */
     const outOfBudget = /insufficient_quota|billing_hard_limit|exceeded your current quota/i.test(detail)
     if (outOfBudget || response.status === 429) {
-      return json({ error: 'free_analysis_unavailable' }, 503)
+      // A subscriber is owed analysis, not pointed at their own key.
+      return json({ error: plan ? 'plan_analysis_unavailable' : 'free_analysis_unavailable' }, 503)
     }
 
     // The provider's own message could name the owner's account; never relay it.
@@ -500,13 +545,16 @@ Deno.serve(async (request) => {
     content,
     model,
     followUp: isFollowUp,
-    // Admins have no allowance to report.
-    trial: isAdmin
+    // Admins have no allowance to report; everyone else has exactly one of these.
+    trial: isAdmin || plan
       ? undefined
       : {
           used: used + spent,
           allowance: TRIAL_ANALYSES,
         },
+    plan: plan
+      ? { kind, used: used + spent, allowance, resetsAt: plan.end, renews: plan.renews }
+      : undefined,
   })
 })
 

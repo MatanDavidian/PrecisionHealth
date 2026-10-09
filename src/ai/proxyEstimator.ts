@@ -31,6 +31,15 @@ export interface TrialState {
   allowance: number
 }
 
+/** A subscriber's month, as the server reports it after each analysis. */
+export interface PlanState {
+  kind: 'PHOTO' | 'TEXT'
+  used: number
+  allowance: number
+  resetsAt: string
+  renews: boolean
+}
+
 export interface ProxyEstimatorOptions {
   /** Base URL of the Supabase project, e.g. https://ref.supabase.co */
   supabaseUrl: string
@@ -57,11 +66,30 @@ export class TrialExhaustedError extends EstimateError {
   }
 }
 
+/**
+ * Thrown when a subscriber has used this month's photos, or this month's
+ * written analyses. The other kind may well still be available.
+ */
+export class PlanExhaustedError extends EstimateError {
+  constructor(
+    readonly analysisKind: 'PHOTO' | 'TEXT',
+    readonly allowance: number,
+    /** When it resets — or, if cancelled, when the subscription ends. */
+    readonly resetsAt: string,
+    readonly renews: boolean,
+  ) {
+    super('QUOTA', `This month's ${analysisKind === 'PHOTO' ? 'photo' : 'written'} analyses are used (${allowance})`)
+    this.name = 'PlanExhaustedError'
+  }
+}
+
 export class ProxyEstimator implements FoodEstimator {
   /** Reported by the server after each call; the client never chooses it. */
   model = 'server'
   /** Latest trial state the server reported, for the UI to show. */
   trial?: TrialState
+  /** Latest plan state the server reported, for a subscriber. */
+  plan?: PlanState
 
   constructor(private readonly options: ProxyEstimatorOptions) {}
 
@@ -167,14 +195,26 @@ export class ProxyEstimator implements FoodEstimator {
           content?: string
           model?: string
           trial?: TrialState
+          plan?: PlanState
           error?: string
           used?: number
           allowance?: number
+          kind?: 'PHOTO' | 'TEXT'
+          resetsAt?: string
+          renews?: boolean
         }
       | null
 
     if (response.status === 402 && body?.error === 'trial_exhausted') {
       throw new TrialExhaustedError(body.used ?? 0, body.allowance ?? 0)
+    }
+    if (response.status === 402 && body?.error === 'plan_exhausted') {
+      throw new PlanExhaustedError(
+        body.kind === 'TEXT' ? 'TEXT' : 'PHOTO',
+        body.allowance ?? 0,
+        body.resetsAt ?? '',
+        body.renews !== false,
+      )
     }
     if (response.status === 401) throw new EstimateError('NO_KEY', 'Session expired — sign in again')
     if (!response.ok || !body?.content) {
@@ -184,6 +224,13 @@ export class ProxyEstimator implements FoodEstimator {
         throw new EstimateError(
           'QUOTA',
           'Free analyses are unavailable right now — add your own OpenAI key to carry on',
+          body,
+        )
+      }
+      if (body?.error === 'plan_analysis_unavailable' || body?.error === 'service_at_capacity') {
+        throw new EstimateError(
+          'PROVIDER',
+          'Analysis is unavailable for a little while — try again shortly. Nothing was used up',
           body,
         )
       }
@@ -198,6 +245,7 @@ export class ProxyEstimator implements FoodEstimator {
 
     if (body.model) this.model = body.model
     if (body.trial) this.trial = body.trial
+    if (body.plan) this.plan = body.plan
 
     let parsed: unknown
     try {

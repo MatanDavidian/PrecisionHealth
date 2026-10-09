@@ -24,12 +24,14 @@ import {
   TRIAL_MODEL,
   costMicros,
 } from '../functions/_shared/prompt.ts'
+import { PLAN_ALLOWANCE, type SubscriptionRow } from '../functions/_shared/plan.ts'
 
 Deno.env.set('SUPABASE_URL', 'http://localhost:8997')
 Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'stub-service-key')
 Deno.env.set('SUPABASE_ANON_KEY', 'stub-anon-key')
 const TRIAL_KEY = 'sk-trial-key-for-tests'
 const ADMIN_KEY = 'sk-admin-key-for-tests'
+const PLAN_KEY = 'sk-plan-key-for-tests'
 
 const USER = '11111111-1111-4111-8111-111111111111'
 const ADMIN = '22222222-2222-4222-8222-222222222222'
@@ -51,9 +53,11 @@ interface Row {
   output_tokens: number | null
   cost_micros: number | null
   created_at: string
+  kind: string
 }
 
 let usage: Row[] = []
+let subscriptions: SubscriptionRow[] = []
 let admins: string[] = []
 let failSpendRead = false
 const rpcCalls: string[] = []
@@ -70,6 +74,7 @@ const row = (fields: Partial<Row>): Row => ({
   output_tokens: null,
   cost_micros: null,
   created_at: new Date().toISOString(),
+  kind: 'PHOTO',
   ...fields,
 })
 
@@ -110,6 +115,10 @@ const stub = Deno.serve({ port: 8997, onListen: () => {} }, async (req) => {
     return json(admins.includes(userId ?? '') ? [{ user_id: userId }] : [])
   }
 
+  if (path === '/rest/v1/subscriptions') {
+    return json(subscriptions.filter((r) => matches(r as unknown as Row, url.searchParams)))
+  }
+
   if (path === '/rest/v1/usage') {
     if (req.method === 'POST') {
       const body = await req.json()
@@ -127,8 +136,11 @@ const stub = Deno.serve({ port: 8997, onListen: () => {} }, async (req) => {
   if (path === '/rest/v1/rpc/reserve_analysis') {
     rpcCalls.push('reserve')
     const a = await req.json()
+    // As migration 0014: only OK and in-flight claims count; per kind, and from the period start, when asked.
     const taken = usage.filter(
       (r) => r.user_id === a.p_user_id && r.key_source === a.p_key_source &&
+        (!a.p_period_start || r.created_at >= a.p_period_start) &&
+        (!a.p_per_kind || r.kind === a.p_kind) &&
         (r.outcome === 'OK' || r.outcome === 'RESERVED'),
     ).length
     if (taken >= a.p_limit) return json(null)
@@ -139,6 +151,7 @@ const stub = Deno.serve({ port: 8997, onListen: () => {} }, async (req) => {
       key_source: a.p_key_source,
       outcome: 'RESERVED',
       conversation_id: a.p_conversation,
+      kind: a.p_kind ?? 'PHOTO',
     })
     usage.push(claim)
     return json(claim.id)
@@ -204,6 +217,7 @@ const check = (name: string, ok: boolean, detail = '') => {
 
 function reset(env: Record<string, string | undefined> = {}) {
   usage = []
+  subscriptions = []
   admins = []
   failSpendRead = false
   rpcCalls.length = 0
@@ -213,7 +227,9 @@ function reset(env: Record<string, string | undefined> = {}) {
     OPENAI_TRIAL_KEY: TRIAL_KEY,
     OPENAI_ADMIN_KEY: ADMIN_KEY,
     OPENAI_MASTER_KEY: undefined,
+    OPENAI_PLAN_KEY: PLAN_KEY,
     DAILY_BUDGET_MICROS: undefined,
+    PLAN_DAILY_BUDGET_MICROS: undefined,
   }
   for (const [name, value] of Object.entries({ ...defaults, ...env })) {
     if (value === undefined) Deno.env.delete(name)
@@ -421,6 +437,150 @@ console.log('\nAdmins and configuration')
   reset({ OPENAI_TRIAL_KEY: undefined, OPENAI_MASTER_KEY: TRIAL_KEY })
   const r = await call(meal())
   check('the older OPENAI_MASTER_KEY name still works', r.status === 200 && providerCalls[0]?.key === TRIAL_KEY,
+    String(r.status))
+}
+
+console.log('\nA subscriber')
+
+const DAY_MS = 86_400_000
+/** An active subscription billed on today's date: this month began at midnight UTC today. */
+const subscribed = (fields: Partial<SubscriptionRow> = {}): SubscriptionRow => ({
+  id: 'sub-1',
+  user_id: USER,
+  status: 'active',
+  billing_anchor: new Date().getUTCDate(),
+  renews_at: new Date(Date.now() + 30 * DAY_MS).toISOString(),
+  ends_at: null,
+  refunded_at: null,
+  last_payment_at: new Date().toISOString(),
+  source_created_at: new Date(Date.now() - 40 * DAY_MS).toISOString(),
+  ...fields,
+})
+const monthStart = () => {
+  const d = new Date()
+  d.setUTCHours(0, 0, 0, 0)
+  return d.toISOString()
+}
+const photo = (extra: Record<string, unknown> = {}) =>
+  ({ photo: 'data:image/jpeg;base64,AAAA', day: DAY, ...extra })
+const fill = (n: number, fields: Partial<Row>) => {
+  for (let i = 0; i < n; i++) usage.push(row({ key_source: 'MASTER_PLAN', outcome: 'OK', ...fields }))
+}
+{
+  reset()
+  subscriptions = [subscribed()]
+  for (let i = 0; i < TRIAL_ANALYSES; i++) usage.push(row({ outcome: 'OK' })) // the trial is long gone
+  const r = await call(photo())
+  check('is analysed although the trial is spent', r.status === 200, String(r.status))
+  check('on the plan key, booked as MASTER_PLAN', providerCalls[0]?.key === PLAN_KEY &&
+    usage.some((x) => x.key_source === 'MASTER_PLAN' && x.outcome === 'OK' && x.kind === 'PHOTO'), outcomes())
+  const plan = r.body.plan as Record<string, unknown> | undefined
+  check('the reply reports the month, not the trial', r.body.trial === undefined && plan?.kind === 'PHOTO' &&
+    plan?.used === 1 && plan?.allowance === PLAN_ALLOWANCE.PHOTO && plan?.renews === true, JSON.stringify(r.body))
+}
+{
+  reset()
+  subscriptions = [subscribed()]
+  fill(PLAN_ALLOWANCE.PHOTO - 1, { kind: 'PHOTO' })
+  const last = await call(photo())
+  check(`photo ${PLAN_ALLOWANCE.PHOTO} of ${PLAN_ALLOWANCE.PHOTO} is allowed`, last.status === 200, String(last.status))
+  providerCalls = []
+  const over = await call(photo())
+  check('the next is refused as the plan, with when it resets', over.status === 402 &&
+    over.body.error === 'plan_exhausted' && over.body.kind === 'PHOTO' && typeof over.body.resetsAt === 'string',
+    JSON.stringify(over.body))
+  check('nothing sent, REFUSED_QUOTA recorded on the plan', providerCalls.length === 0 &&
+    usage.some((x) => x.outcome === 'REFUSED_QUOTA' && x.key_source === 'MASTER_PLAN'))
+  const words = await call(meal())
+  check('while written analyses have their own allowance', words.status === 200 &&
+    (words.body.plan as Record<string, unknown>)?.kind === 'TEXT' &&
+    (words.body.plan as Record<string, unknown>)?.allowance === PLAN_ALLOWANCE.TEXT, JSON.stringify(words.body))
+}
+{
+  reset()
+  subscriptions = [subscribed()]
+  fill(PLAN_ALLOWANCE.TEXT, { kind: 'TEXT' })
+  const r = await call(meal())
+  check(`the ${PLAN_ALLOWANCE.TEXT + 1}st description is refused`, r.status === 402 &&
+    r.body.error === 'plan_exhausted' && r.body.kind === 'TEXT', JSON.stringify(r.body))
+}
+{
+  reset()
+  subscriptions = [subscribed()]
+  // Last month's hundred, a second before this month began.
+  fill(PLAN_ALLOWANCE.PHOTO, { kind: 'PHOTO', created_at: new Date(Date.parse(monthStart()) - 1000).toISOString() })
+  const r = await call(photo())
+  check('a new month starts from zero', r.status === 200, String(r.status))
+}
+{
+  reset()
+  subscriptions = [subscribed()]
+  fill(PLAN_ALLOWANCE.PHOTO - 1, { kind: 'PHOTO' })
+  fill(5, { kind: 'PHOTO', outcome: 'OK_FOLLOWUP' })
+  const r = await call(photo())
+  check('answered questions do not use up the allowance', r.status === 200, String(r.status))
+}
+{
+  reset()
+  subscriptions = [subscribed()]
+  fill(1, { kind: 'PHOTO', conversation_id: 'conv-p' })
+  const r = await call(photo({ conversationId: 'conv-p', answers: [{ question: 'Fried?', answer: 'No' }] }))
+  check('a follow-up is free on the plan too', r.status === 200 && !rpcCalls.includes('reserve') &&
+    (r.body.plan as Record<string, unknown>)?.used === 1, JSON.stringify(r.body.plan))
+}
+{
+  reset()
+  subscriptions = [subscribed({ status: 'cancelled', ends_at: new Date(Date.now() + 5 * DAY_MS).toISOString() })]
+  const r = await call(photo())
+  check('cancelled: still analysed until the paid month ends', r.status === 200 &&
+    providerCalls[0]?.key === PLAN_KEY && (r.body.plan as Record<string, unknown>)?.renews === false,
+    JSON.stringify(r.body.plan))
+}
+{
+  reset()
+  subscriptions = [subscribed({ status: 'cancelled', ends_at: new Date(Date.now() - 1000).toISOString() })]
+  for (let i = 0; i < TRIAL_ANALYSES; i++) usage.push(row({ outcome: 'OK' }))
+  const r = await call(photo())
+  check('…and refused once it has', r.status === 402 && r.body.error === 'trial_exhausted', JSON.stringify(r.body))
+}
+for (const status of ['expired', 'unpaid', 'paused']) {
+  reset()
+  subscriptions = [subscribed({ status })]
+  for (let i = 0; i < TRIAL_ANALYSES; i++) usage.push(row({ outcome: 'OK' }))
+  const r = await call(photo())
+  check(`${status}: no paid analyses`, r.status === 402 && r.body.error === 'trial_exhausted', String(r.status))
+}
+{
+  reset()
+  subscriptions = [subscribed({
+    last_payment_at: new Date(Date.now() - DAY_MS).toISOString(),
+    refunded_at: new Date().toISOString(),
+  })]
+  for (let i = 0; i < TRIAL_ANALYSES; i++) usage.push(row({ outcome: 'OK' }))
+  const r = await call(photo())
+  check('refunded: access ends at once, even while still "active"', r.status === 402 &&
+    r.body.error === 'trial_exhausted' && providerCalls.length === 0, String(r.status))
+}
+{
+  reset({ DAILY_BUDGET_MICROS: '200000' })
+  subscriptions = [subscribed()]
+  usage.push(row({ user_id: 'someone-else', outcome: 'OK', cost_micros: 5_000_000 })) // trials spent the day
+  const r = await call(photo())
+  check('a busy trial day does not turn a subscriber away', r.status === 200, String(r.status))
+}
+{
+  reset({ PLAN_DAILY_BUDGET_MICROS: '200000' })
+  subscriptions = [subscribed()]
+  usage.push(row({ user_id: 'someone-else', key_source: 'MASTER_PLAN', outcome: 'OK', cost_micros: 250_000 }))
+  const r = await call(photo())
+  check('but the plan has a ceiling of its own', r.status === 503 && r.body.error === 'service_at_capacity',
+    String(r.status))
+}
+{
+  reset({ OPENAI_PLAN_KEY: undefined })
+  subscriptions = [subscribed()]
+  const r = await call(photo())
+  check('with no plan key yet, subscribers use the trial key', r.status === 200 && providerCalls[0]?.key === TRIAL_KEY,
     String(r.status))
 }
 

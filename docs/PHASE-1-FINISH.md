@@ -21,7 +21,7 @@ Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
 | Product | nutrition (photo, words, manual, repeat, adjust, fill a missed day), week view, insights, Garmin sync, Hebrew |
 | Accounts | sign-in, consent, export, deletion, data moved in on first sign-in |
 | Legal | Terms and Privacy Policy final and live; OpenAI DPA signed; privacy@ and support@ forward |
-| Payments | Lemon Squeezy application under review; **nothing in the app is connected to it** |
+| Payments | Lemon Squeezy approved. Built and tested 2026-10-09 (`docs/ops/payments.md`); **not connected yet** — owner sets it up in test mode first |
 | Tests | 441 unit (82% of lines, 90% of branches on the logic layers), 228 browser, DB invariants, a race test, a device-sync harness, a live-site check |
 | **Operations** | **no CI, migrations applied by hand, no monitoring, no alerting, server versions unknown** |
 
@@ -241,9 +241,9 @@ handled; the gaps are marked.
 | A slow request settles after its slot was retaken | counted once (0012) | — | ✓ |
 | Watch unsynced for a week | fixed, **deploy owed** | P0.4 | P0 |
 | A real meal logged on a filled day | replaces the estimate | — | ✓ |
-| **Account deleted with an active subscription** | billing would continue | cancel the subscription before deleting; refuse until it is | P1 (payments) |
-| **Refund or chargeback** | nothing to revoke yet | the webhook removes access | P1 (payments) |
-| **A subscriber hits the daily spend ceiling** | told "free analyses unavailable" | subscribers get their own budget and their own message | P1 (payments) |
+| **Account deleted with an active subscription** | ~~billing would continue~~ **done 2026-10-09**: cancelled first, deletion refused if that fails | — | P1 (payments) |
+| **Refund or chargeback** | **refund done 2026-10-09**: a full refund ends access and cancels billing. Chargebacks have no event of their own in Lemon Squeezy's docs | see what the first dispute sends | P1 (payments) |
+| **A subscriber hits the daily spend ceiling** | **done 2026-10-09**: their own ceiling and their own message | — | P1 (payments) |
 | **Safari clears a signed-out browser's data** | Safari can delete site storage after 7 days without a visit | `navigator.storage.persist()`, and tell signed-out users plainly where their data lives | P1 |
 | **iPhone photo picked on Android or desktop (HEIC)** | Chrome cannot decode HEIC; untested | test with a HEIC file; say "convert to JPEG" rather than fail silently | P1 |
 | **Israel's clocks go back, 25 Oct** | ✅ tested on both real dates; the browser suite passes in those weeks (`E2E_TODAY`) | — | done 2026-10-09 |
@@ -258,6 +258,17 @@ handled; the gaps are marked.
 ## P2 — The rest of Phase 1
 
 ### Payments · L · C + M
+> **Built 2026-10-09:**
+> - checkout and portal (`billing`)
+> - the signed webhook
+> - `subscriptions`
+> - 100 photo and 200 written analyses a month
+> - cancel to the end of the month; refund ends access at once
+> - deletion cancels billing
+> - tests at every layer
+>
+> Setup: `docs/ops/payments.md`.
+
 Once Lemon Squeezy approves: a webhook with signature verification and
 duplicate-safe handling, a `subscriptions` table under row-level security, the
 monthly allowance on the existing reservation (`p_period_start` already

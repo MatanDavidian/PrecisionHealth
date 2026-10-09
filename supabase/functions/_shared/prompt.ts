@@ -332,10 +332,23 @@ export const DEFAULT_DAILY_BUDGET_MICROS = 10_000_000
  */
 export const ASSUMED_ANALYSIS_MICROS = 111_000
 
-export const dailyBudgetMicros = (fromEnv?: string): number => {
+/**
+ * The same circuit breaker for subscribers, on its own key and its own sum.
+ *
+ * Separate so that a rush of trials cannot turn away someone who pays, and a
+ * subscriber's month cannot use up the trials' day. Fifty dollars is about
+ * three thousand photos on Sol — far past any real day for now, and there to
+ * stop a runaway, not to ration.
+ */
+export const DEFAULT_PLAN_DAILY_BUDGET_MICROS = 50_000_000
+
+export const dailyBudgetMicros = (
+  fromEnv?: string,
+  fallback: number = DEFAULT_DAILY_BUDGET_MICROS,
+): number => {
   const parsed = Number(fromEnv)
   // A malformed secret must not silently mean "no ceiling".
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_DAILY_BUDGET_MICROS
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
 }
 
 /** What a trial is worth: ten analyses, once, for the life of the account. */

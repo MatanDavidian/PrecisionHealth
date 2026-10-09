@@ -105,11 +105,18 @@ test('words become an estimate too', async ({ page }) => {
   await expect(page.getByText(/kcal/).first()).toBeVisible({ timeout: 20_000 })
 })
 
-test('Again logs a usual straight onto today', async ({ page }) => {
+test('Again logs a usual straight onto today, without asking the AI anything', async ({ page }) => {
   // `open` pins the clock to midday, which is LUNCH — the Again list is
   // filtered by the slot the clock says it is, and the fixture has no snacks.
   await open(page, '/nutrition')
   const before = await settledNumber(dayTotal(page))
+
+  // A repeat is a copy of something already known: no analysis, so no
+  // allowance — trial or plan — is ever spent on it.
+  const analyses: string[] = []
+  page.on('request', (request) => {
+    if (/estimate-food|api\.openai\.com/.test(request.url())) analyses.push(request.url())
+  })
 
   await open(page, '/log')
   await page.locator('#log-mode-again').click()
@@ -124,6 +131,7 @@ test('Again logs a usual straight onto today', async ({ page }) => {
   await expect
     .poll(async () => await settledNumber(dayTotal(page)), { timeout: 15_000 })
     .toBeGreaterThan(before)
+  expect(analyses).toEqual([])
 })
 
 test('Again still offers something at an hour you never eat', async ({ page }) => {

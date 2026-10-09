@@ -90,7 +90,7 @@ stop there and tell Claude.
    ```bash
    ./scripts/deploy-functions.sh
    ```
-   It applies migration 0013, deploys all five functions with the right flags
+   It applies any pending migrations, deploys every function with the right flags
    — **this is also the `device-sync` deploy owed since 21 Sep** — and ends by
    checking every function answers with the new version.
 

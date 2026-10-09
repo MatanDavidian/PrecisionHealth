@@ -186,7 +186,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
 export const TERMS: PolicyDocument = {
   id: 'TERMS',
   title: 'Terms of Use',
-  version: '2026-10-02',
+  version: '2026-10-09',
   sections: [
     {
       heading: 'Who we are',
@@ -225,10 +225,11 @@ export const TERMS: PolicyDocument = {
     {
       heading: 'Subscription',
       body: [
-        'Vimetry Monthly costs US$8.99 a month and includes 100 AI meal analyses a month. Unused analyses do not carry over. Everything else in the app — logging by hand, the week view, exporting your data — is free with or without a subscription.',
+        'Vimetry Monthly costs US$8.99 a month and includes, each month, 100 AI analyses of photos and 200 of written descriptions (written leftovers and week insights count as written). The two are counted separately, on whichever of the offered models you choose, and unused analyses do not carry over. Answering a follow-up question about a meal is free. Repeating a meal you have logged before uses no analysis at all. Everything else in the app — logging by hand, the week view, exporting your data — is free with or without a subscription.',
         'Payments are handled by Lemon Squeezy, our merchant of record: your purchase is made from Lemon Squeezy, and its terms apply to the payment. Depending on where you live, sales tax or VAT may be added at checkout.',
-        'Your subscription renews automatically each month until you cancel. You can cancel at any time from the link in your receipt email or in the Lemon Squeezy customer portal. Cancelling stops the next renewal; you keep the analyses and access you have paid for until the end of the current month.',
-        `Refunds: if you are not happy, ask within 14 days of any charge and we will refund that charge in full. Email ${SUPPORT_EMAIL}.`,
+        'Your subscription renews automatically each month until you cancel. You can cancel at any time from Settings → Photo analysis → Manage subscription, or from the link in your receipt email. Cancelling stops the next renewal; you keep the analyses and access you have paid for until the end of the current month.',
+        `Refunds: if you are not happy, ask within 14 days of any charge and we will refund that charge in full. Email ${SUPPORT_EMAIL}. A refunded subscription ends when the refund is made, rather than at the end of the month, and is not charged again.`,
+        'If you delete your account, we cancel your subscription first, so you are not charged again. Deleting does not by itself refund the current month — ask if you would like that.',
         'If the price changes, we will tell you at least 30 days before, and the new price applies from your next renewal after that — so there is always time to cancel first.',
       ],
     },

@@ -6,8 +6,9 @@ and what the market already charges. **Recommendation at the bottom.**
 > **Out of date since 2026-10-09.** This was worked out on the gpt-5.6
 > models. The app now offers only **GPT-6.1 Sol** (the default, $2 / $10 per
 > million tokens) and **GPT-6 Luna** ($0.10 / $0.50). The sol sub-allowance
-> (`TRIAL_SOL_ANALYSES`) mentioned below no longer exists. Re-measure the cost
-> per analysis on GPT-6 before setting the plan's allowance.
+> (`TRIAL_SOL_ANALYSES`) mentioned below no longer exists. The plan as built
+> — $8.99 for 100 photo and 200 written analyses a month — and the GPT-6
+> costs it rests on are in `docs/ops/payments.md`.
 
 ---
 

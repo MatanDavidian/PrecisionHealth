@@ -21,6 +21,7 @@ export const EXPECTED_SCHEMA = {
   ],
   tables: [
     'app_admins',
+    'billing_events',
     'consents',
     'device_tokens',
     'goals',
@@ -29,6 +30,7 @@ export const EXPECTED_SCHEMA = {
     'observations',
     'profiles',
     'sleep',
+    'subscriptions',
     'usage',
     'user_preferences',
     'workouts',

@@ -563,3 +563,111 @@ end
 $$;
 
 reset role;
+
+\echo '== 0014: subscriptions are the webhook''s to write, the owner''s to read =='
+set role postgres;
+insert into auth.users (id) values ('44444444-4444-4444-4444-444444444444') on conflict do nothing;
+insert into public.subscriptions (id, user_id, status)
+values ('sub-alice', '11111111-1111-1111-1111-111111111111', 'active'),
+       ('sub-bob',   '22222222-2222-2222-2222-222222222222', 'active');
+
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select case when count(*) = 1 and bool_and(id = 'sub-alice')
+  then 'PASS: a user sees their own subscription and no one else''s'
+  else 'FAIL: saw ' || count(*) || ' subscriptions' end
+from public.subscriptions;
+
+do $$
+begin
+  insert into public.subscriptions (id, user_id, status)
+  values ('sub-free', '11111111-1111-1111-1111-111111111111', 'active');
+  raise exception 'FAIL: a user could give themselves a subscription';
+exception
+  when insufficient_privilege then raise notice 'PASS: a user cannot create a subscription';
+end
+$$;
+
+do $$
+begin
+  update public.subscriptions set refunded_at = null, ends_at = now() + interval '10 years';
+  raise exception 'FAIL: a user could extend their subscription';
+exception
+  when insufficient_privilege then raise notice 'PASS: a user cannot change a subscription';
+end
+$$;
+
+do $$
+begin
+  perform count(*) from public.billing_events;
+  raise exception 'FAIL: a user could read the billing event log';
+exception
+  when insufficient_privilege then raise notice 'PASS: the billing event log is service-role only';
+end
+$$;
+
+reset role;
+set role postgres;
+delete from auth.users where id = '22222222-2222-2222-2222-222222222222';
+select case when not exists (select 1 from public.subscriptions where id = 'sub-bob')
+  then 'PASS: deleting an account removes its subscription'
+  else 'FAIL: a deleted account''s subscription survived' end;
+
+\echo '== 0014: the plan counts photos and words apart, and never answered questions =='
+-- Two photos and one description this month, an answered question, and a
+-- photo from last month.
+insert into public.usage (id, user_id, day, model, key_source, outcome, kind, created_at) values
+  ('p1', '44444444-4444-4444-4444-444444444444', current_date, 'gpt-6.1-sol', 'MASTER_PLAN', 'OK',          'PHOTO', now()),
+  ('p2', '44444444-4444-4444-4444-444444444444', current_date, 'gpt-6.1-sol', 'MASTER_PLAN', 'OK',          'PHOTO', now()),
+  ('f1', '44444444-4444-4444-4444-444444444444', current_date, 'gpt-6.1-sol', 'MASTER_PLAN', 'OK_FOLLOWUP', 'PHOTO', now()),
+  ('t1', '44444444-4444-4444-4444-444444444444', current_date, 'gpt-6.1-sol', 'MASTER_PLAN', 'OK',          'TEXT',  now()),
+  ('old','44444444-4444-4444-4444-444444444444', current_date, 'gpt-6.1-sol', 'MASTER_PLAN', 'OK',          'PHOTO', now() - interval '40 days');
+
+select case when public.reserve_analysis('44444444-4444-4444-4444-444444444444', current_date,
+       'gpt-6.1-sol', 'MASTER_PLAN', 3, now() - interval '1 day', null, 'PHOTO', true) is not null
+  then 'PASS: an answered question and last month''s photo do not count — the third photo is allowed'
+  else 'FAIL: the third photo was refused' end;
+
+select case when public.reserve_analysis('44444444-4444-4444-4444-444444444444', current_date,
+       'gpt-6.1-sol', 'MASTER_PLAN', 3, now() - interval '1 day', null, 'PHOTO', true) is null
+  then 'PASS: the fourth photo is refused at a limit of three'
+  else 'FAIL: the photo limit was exceeded' end;
+
+select case when public.reserve_analysis('44444444-4444-4444-4444-444444444444', current_date,
+       'gpt-6.1-sol', 'MASTER_PLAN', 2, now() - interval '1 day', null, 'TEXT', true) is not null
+  then 'PASS: descriptions have their own allowance'
+  else 'FAIL: photos used up the description allowance' end;
+
+select case when (select kind from public.usage
+                   where user_id = '44444444-4444-4444-4444-444444444444' and outcome = 'RESERVED'
+                   order by kind limit 1) = 'PHOTO'
+       and exists (select 1 from public.usage
+                   where user_id = '44444444-4444-4444-4444-444444444444' and outcome = 'RESERVED' and kind = 'TEXT')
+  then 'PASS: each claim records its kind'
+  else 'FAIL: a claim lost its kind' end;
+
+-- The trial's ten are one allowance across both kinds.
+insert into public.usage (id, user_id, day, model, key_source, outcome, kind) values
+  ('tp', '44444444-4444-4444-4444-444444444444', current_date, 'gpt-6.1-sol', 'MASTER_TRIAL', 'OK', 'PHOTO'),
+  ('tt', '44444444-4444-4444-4444-444444444444', current_date, 'gpt-6.1-sol', 'MASTER_TRIAL', 'OK', 'TEXT'),
+  ('tf', '44444444-4444-4444-4444-444444444444', current_date, 'gpt-6.1-sol', 'MASTER_TRIAL', 'OK_FOLLOWUP', 'TEXT');
+select case when public.reserve_analysis('44444444-4444-4444-4444-444444444444', current_date,
+       'gpt-6.1-sol', 'MASTER_TRIAL', 2, null, null, 'PHOTO') is null
+  then 'PASS: the trial counts photos and words together'
+  else 'FAIL: the trial counted one kind only' end;
+select case when public.reserve_analysis('44444444-4444-4444-4444-444444444444', current_date,
+       'gpt-6.1-sol', 'MASTER_TRIAL', 3, null, null, 'PHOTO') is not null
+  then 'PASS: …and does not count an answered question (the 0011 bug)'
+  else 'FAIL: an answered question used up a trial analysis' end;
+
+do $$
+begin
+  insert into public.usage (id, user_id, day, model, key_source, outcome, kind)
+  values ('bad-kind', '44444444-4444-4444-4444-444444444444', current_date, 'x', 'MASTER_PLAN', 'OK', 'VIDEO');
+  raise exception 'FAIL: an unknown kind was accepted';
+exception
+  when check_violation then raise notice 'PASS: kind is PHOTO or TEXT';
+end
+$$;
+
+reset role;

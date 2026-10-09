@@ -18,9 +18,16 @@
  * schema is the kind of thing that changes — a table added later without the
  * cascade would strand data silently. The check is cheap and it means the
  * answer is observed rather than assumed.
+ *
+ * And before any of it, billing stops. A subscription still charging is
+ * cancelled at Lemon Squeezy first; if that cannot be confirmed, nothing is
+ * deleted and the person is told — an account that is gone but still being
+ * charged is the one outcome worse than either.
  */
 import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { cancelSubscription } from '../_shared/lemonsqueezy.ts'
+import { STILL_CHARGING } from '../_shared/plan.ts'
 
 const CORS = {
   'x-vimetry-version': VERSION,
@@ -52,6 +59,7 @@ const TABLES = [
   'inferences',
   'usage',
   'device_tokens',
+  'subscriptions',
   'user_preferences',
   'profiles',
 ] as const
@@ -82,6 +90,16 @@ Deno.serve(async (request) => {
   if (body?.confirm !== CONFIRMATION) return json({ error: 'not_confirmed' }, 400)
 
   const admin = createClient(supabaseUrl, serviceRole)
+
+  const { data: subs, error: subsError } = await admin
+    .from('subscriptions')
+    .select('id, status')
+    .eq('user_id', user.id)
+  if (subsError && subsError.code !== UNDEFINED_TABLE) return json({ error: 'billing_unknown' }, 503)
+  for (const sub of subs ?? []) {
+    if (!STILL_CHARGING.has(sub.status)) continue
+    if (!(await cancelSubscription(sub.id))) return json({ error: 'billing_cancel_failed' }, 502)
+  }
 
   const { error: authError } = await admin.auth.admin.deleteUser(user.id)
   if (authError) return json({ error: 'delete_failed', detail: [authError.message] }, 500)

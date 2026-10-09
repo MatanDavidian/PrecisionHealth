@@ -31,6 +31,7 @@ import { readUsuals, type Usuals } from '@/data/usuals'
 import { currentUserId } from '@/data/session'
 import type { Meal, UsualFood, UsualMeal } from '@/domain'
 import { MAX_FOLLOW_UPS } from '../../../supabase/functions/_shared/prompt'
+import { PLAN_PRICE } from '../../../supabase/functions/_shared/plan'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
@@ -79,7 +80,7 @@ const isMode = (value: string | null): value is LogMode =>
  */
 export function Log() {
   const { t, lang } = useLang()
-  const { runWrite, trial, revision } = useDataRevision()
+  const { runWrite, trial, plan, session, revision } = useDataRevision()
   const { logRepeat, logFoods, logDay, deleteMeal, deleteMeals } = useActions()
   const [params, setParams] = useSearchParams()
   const mode: LogMode = isMode(params.get('mode')) ? (params.get('mode') as LogMode) : 'photo'
@@ -462,7 +463,44 @@ export function Log() {
         </p>
       )}
 
-      {analysis?.error?.exhausted && (
+      {analysis?.error?.plan && (
+        <Card>
+          <h2 className="font-display text-xl">
+            {analysis.error.plan.kind === 'PHOTO'
+              ? t('log.planOut.titlePhoto')
+              : t('log.planOut.titleText')}
+          </h2>
+          <p className="pt-1 text-sm text-ink-muted">
+            {t(analysis.error.plan.renews ? 'log.planOut.resets' : 'log.planOut.ends', {
+              allowance: analysis.error.plan.allowance,
+              date: new Date(analysis.error.plan.resetsAt).toLocaleDateString(
+                document.documentElement.lang || undefined,
+                { day: 'numeric', month: 'long' },
+              ),
+            })}
+          </p>
+          {analysis.error.plan.kind === 'PHOTO' && (
+            <p className="pt-2 text-sm">{t('log.planOut.writeInstead')}</p>
+          )}
+          <div className="flex flex-wrap gap-3 pt-4">
+            <Link
+              to="/nutrition"
+              className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+            >
+              {t('log.exhausted.byHand')}
+            </Link>
+            <Link
+              to="/settings?tab=ai"
+              className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+            >
+              {t('log.exhausted.connectKey')}
+            </Link>
+          </div>
+          <p className="pt-3 text-xs text-ink-muted">{t('log.planOut.still')}</p>
+        </Card>
+      )}
+
+      {analysis?.error?.exhausted && !analysis.error.plan && (
         <Card>
           <h2 className="font-display text-xl">{t('log.exhausted.title')}</h2>
           <p className="pt-1 text-sm text-ink-muted">
@@ -470,8 +508,14 @@ export function Log() {
           </p>
           <div className="flex flex-wrap gap-3 pt-4">
             <Link
-              to="/settings"
+              to="/settings?tab=ai"
               className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+            >
+              {t('log.exhausted.subscribe', { price: PLAN_PRICE })}
+            </Link>
+            <Link
+              to="/settings?tab=ai"
+              className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
             >
               {t('log.exhausted.connectKey')}
             </Link>
@@ -492,9 +536,22 @@ export function Log() {
         <Card label={t('log.setup.label')}>
           <p className="text-sm text-ink-muted">{t('log.setup.body')}</p>
           <div className="flex flex-wrap gap-3 pt-3">
+            {/* Signed in, the trial spent: the plan is the other way to keep the AI. */}
+            {session.authenticated && trial?.exhausted && !plan && (
+              <Link
+                to="/settings?tab=ai"
+                className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+              >
+                {t('log.exhausted.subscribe', { price: PLAN_PRICE })}
+              </Link>
+            )}
             <Link
-              to="/settings"
-              className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+              to="/settings?tab=ai"
+              className={
+                session.authenticated && trial?.exhausted && !plan
+                  ? 'rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft'
+                  : 'rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface'
+              }
             >
               {t('log.setup.addKey')}
             </Link>

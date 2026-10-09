@@ -23,7 +23,15 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 
 const AFTER_DEPLOY = process.argv.includes('--after-deploy')
-const FUNCTIONS = ['estimate-food', 'delete-account', 'issue-device-token', 'device-sync', 'health']
+const FUNCTIONS = [
+  'estimate-food',
+  'delete-account',
+  'issue-device-token',
+  'device-sync',
+  'health',
+  'billing',
+  'lemonsqueezy-webhook',
+]
 /** Alert before the ceiling refuses people, not after. */
 const SPEND_WARNING = 0.8
 

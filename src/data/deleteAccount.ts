@@ -35,6 +35,9 @@ const explain = (status: number, body: { error?: string; leftover?: string[] }):
   }
   if (status === 401) return 'You are not signed in, so there is no account to delete.'
   if (body?.error === 'not_confirmed') return 'The confirmation did not match.'
+  if (body?.error === 'billing_cancel_failed' || body?.error === 'billing_unknown') {
+    return 'Your subscription could not be cancelled just now, so your account has not been deleted — deleting it would leave the subscription charging. Try again in a few minutes, or cancel the subscription first from Settings → Photo analysis → Manage subscription.'
+  }
   return 'The account could not be deleted. Nothing has been changed.'
 }
 

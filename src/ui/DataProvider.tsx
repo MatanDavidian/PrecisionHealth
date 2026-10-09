@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { ensureSeeded, selectRepositoriesFor, selectEstimatorFor } from '@/data'
 import { readTrialStatus, type TrialStatus } from '@/data/trial'
+import { readPlanStatus, type PlanStatus } from '@/data/plan'
 import { getSupabaseClient, isSupabaseConfigured } from '@/data/supabase/client'
 import {
   getSession,
@@ -28,7 +29,9 @@ interface DataContextValue {
   authAvailable: boolean
   /** Free analyses left on the owner's key; undefined when not applicable. */
   trial?: TrialStatus
-  /** Re-reads the trial after an analysis spends one. */
+  /** The paid plan, while a subscription gives access; undefined otherwise. */
+  plan?: PlanStatus
+  /** Re-reads the trial and the plan after an analysis spends one. */
   refreshTrial: () => void
   /**
    * Runs a write, refreshes reads on success, and surfaces the failure with a
@@ -67,20 +70,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string>()
   const [session, setSession] = useState<Session>(LOCAL_SESSION)
   const [trial, setTrial] = useState<TrialStatus>()
+  const [plan, setPlan] = useState<PlanStatus>()
 
   /**
    * Points the app at whoever is paying for analysis.
    *
    * Signed in with free analyses left, that is our server on the owner's key —
    * which is what lets a new user photograph a meal before they have ever
-   * heard of an API key.
+   * heard of an API key — and, for a subscriber, the same server on the plan.
    */
   const applyEstimator = useCallback(async (current: Session) => {
-    const status = current.authenticated ? await readTrialStatus(current.userId) : undefined
+    const [status, paid] = current.authenticated
+      ? await Promise.all([readTrialStatus(current.userId), readPlanStatus(current.userId)])
+      : [undefined, undefined]
     setTrial(status)
+    setPlan(paid)
     selectEstimatorFor({
       authenticated: current.authenticated,
-      trialExhausted: status?.exhausted ?? false,
+      // A subscriber is never sent to their own key: the server answers for the
+      // plan, and says so when a month's allowance is spent.
+      trialExhausted: (status?.exhausted ?? false) && !paid,
       suggestedModel: status?.suggestedModel,
       getAccessToken: async () => {
         if (!isSupabaseConfigured) return undefined
@@ -188,6 +197,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         session,
         authAvailable: isAuthAvailable,
         trial,
+        plan,
         refreshTrial,
         runWrite,
         failure,

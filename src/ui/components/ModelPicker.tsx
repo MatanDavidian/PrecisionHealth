@@ -1,9 +1,8 @@
 import { MODEL_LABELS, TRIAL_MODELS } from '../../../supabase/functions/_shared/prompt'
-import type { TrialStatus } from '@/data/trial'
 import { useT } from '../i18n'
 
 /**
- * Which model analyses your photos, while on the free trial.
+ * Which model analyses your photos, on the free trial or the plan.
  *
  * A dropdown of every model the SERVER allows (`TRIAL_MODELS`) — the server
  * refuses anything else, so the list cannot offer a model that would fail.
@@ -13,20 +12,21 @@ import { useT } from '../i18n'
  * the owner compares models by id while evaluating them, and a user deserves
  * to know which model read their plate.
  */
-export function TrialModelPicker({
-  trial,
+export function ModelPicker({
+  suggestedModel,
   selected,
   onSelect,
 }: {
-  trial: TrialStatus
+  /** The server's default, used until the person chooses. */
+  suggestedModel: string
   /** Undefined means "follow the app's suggestion". */
   selected?: string
   onSelect: (model: string) => void
 }) {
   const t = useT()
-  const requested = selected ?? trial.suggestedModel
+  const requested = selected ?? suggestedModel
   // A choice that is no longer offered (a retired model) falls back to the suggestion.
-  const effective = TRIAL_MODELS.includes(requested as never) ? requested : trial.suggestedModel
+  const effective = TRIAL_MODELS.includes(requested as never) ? requested : suggestedModel
   const detail = MODEL_LABELS[effective]?.detail
 
   return (

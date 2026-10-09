@@ -31,5 +31,7 @@
   "include": [
     "src",
     "supabase/functions/_shared"
-  ]
+  ],
+  // Server-only: talks to Lemon Squeezy with Deno's env. `npm run check:functions` checks it.
+  "exclude": ["supabase/functions/_shared/lemonsqueezy.ts"]
 }

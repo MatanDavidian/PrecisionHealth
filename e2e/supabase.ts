@@ -98,7 +98,16 @@ export interface StubOptions {
   /** Reject whatever code is typed. */
   codeFails?: string
   /** What the analysis endpoint does when the app asks it to read a photo. */
-  analysis?: 'exhausted' | 'down'
+  analysis?: 'exhausted' | 'down' | 'planExhausted'
+  /**
+   * A subscription the webhook has stored. Billed on the 1st by default and
+   * active; dates are relative to `NOW`, the browser's pinned clock.
+   */
+  subscription?: { status?: string; endsInDays?: number }
+  /** This month's paid analyses already used, by kind. */
+  planUsed?: { PHOTO?: number; TEXT?: number }
+  /** What the billing function answers. */
+  billing?: 'ok' | 'down'
   /**
    * What the delete-account endpoint says.
    *
@@ -134,7 +143,13 @@ export interface StubOptions {
 export interface StubTables {
   meals: Record<string, unknown>[]
   observations: Record<string, unknown>[]
+  /** Every action asked of the billing function, in order. */
+  billing: string[]
 }
+
+/** Where the stubbed billing function sends the browser. Served by the stub as a stand-in page. */
+export const LEMON_CHECKOUT = 'https://vimetry-test.lemonsqueezy.com/checkout/custom/e2e'
+export const LEMON_PORTAL = 'https://vimetry-test.lemonsqueezy.com/billing?e2e=portal'
 
 /**
  * What makes a row unique, per table, as the real schema has it.
@@ -142,7 +157,7 @@ export interface StubTables {
  * A meal is keyed by its VERSION's record id (D15), so the same meal id may
  * appear several times; an observation by its own id.
  */
-const PRIMARY_KEY: Record<keyof StubTables, string> = { meals: 'record_id', observations: 'id' }
+const PRIMARY_KEY: Record<'meals' | 'observations', string> = { meals: 'record_id', observations: 'id' }
 
 /**
  * The small part of PostgREST's filter language the app uses: `eq`, `gte`,
@@ -178,7 +193,7 @@ const json = (route: Route, body: unknown, status = 200, headers: Record<string,
  */
 export async function stubSupabase(page: Page, options: StubOptions = {}): Promise<StubTables> {
   const { trialUsed = 0 } = options
-  const tables: StubTables = { meals: [], observations: [] }
+  const tables: StubTables = { meals: [], observations: [], billing: [] }
 
   /*
     Anything Supabase-shaped that is not handled below is aborted rather than
@@ -196,7 +211,9 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
       `content-range`, which is exactly the parsing this is here to exercise.
     */
     if (url.pathname.endsWith('/usage')) {
-      const count = trialUsed
+      const plan = url.searchParams.get('key_source') === 'eq.MASTER_PLAN'
+      const kind = (url.searchParams.get('kind') ?? '').replace('eq.', '') as 'PHOTO' | 'TEXT'
+      const count = plan ? (options.planUsed?.[kind] ?? 0) : trialUsed
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -208,8 +225,26 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
         body: route.request().method() === 'HEAD' ? '' : '[]',
       })
     }
-    const table = url.pathname.split('/').pop() as keyof StubTables
-    if (options.keep && table in tables) {
+    const table = url.pathname.split('/').pop() as 'meals' | 'observations'
+    if (url.pathname.endsWith('/subscriptions')) {
+      if (!options.subscription) return json(route, [])
+      const day = 86_400_000
+      const status = options.subscription.status ?? 'active'
+      return json(route, [{
+        id: 'sub-e2e',
+        user_id: ACCOUNT.id,
+        status,
+        billing_anchor: 1,
+        renews_at: new Date(NOW.getTime() + 20 * day).toISOString(),
+        ends_at: options.subscription.endsInDays === undefined
+          ? null
+          : new Date(NOW.getTime() + options.subscription.endsInDays * day).toISOString(),
+        refunded_at: null,
+        last_payment_at: new Date(NOW.getTime() - 5 * day).toISOString(),
+        source_created_at: new Date(NOW.getTime() - 60 * day).toISOString(),
+      }])
+    }
+    if (options.keep && (table === 'meals' || table === 'observations')) {
       const request = route.request()
       if (request.method() === 'POST') {
         const posted = request.postDataJSON() as Record<string, unknown> | Record<string, unknown>[]
@@ -259,8 +294,32 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
       return json(route, { error: 'trial_exhausted', used: 10, allowance: 10 }, 402)
     }
     if (options.analysis === 'down') return route.abort('connectionfailed')
+    if (options.analysis === 'planExhausted') {
+      const sent = (route.request().postDataJSON() ?? {}) as { photo?: string }
+      const kind = sent.photo ? 'PHOTO' : 'TEXT'
+      return json(route, {
+        error: 'plan_exhausted',
+        kind,
+        used: kind === 'PHOTO' ? 100 : 200,
+        allowance: kind === 'PHOTO' ? 100 : 200,
+        resetsAt: '2026-11-01T00:00:00.000Z',
+        renews: true,
+      }, 402)
+    }
     return json(route, { error: 'not_stubbed' }, 500)
   })
+
+  await page.route('**/functions/v1/billing**', (route) => {
+    const action = String((route.request().postDataJSON() as { action?: string } | null)?.action ?? '')
+    tables.billing.push(action)
+    if (options.billing === 'down') return json(route, { error: 'billing_unavailable' }, 502)
+    return json(route, { url: action === 'portal' ? LEMON_PORTAL : LEMON_CHECKOUT })
+  })
+
+  // Lemon Squeezy itself: a stand-in page, so following the link is observable and nothing leaves the machine.
+  await page.route('https://vimetry-test.lemonsqueezy.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html', body: '<h1>Lemon Squeezy (stand-in)</h1>' }),
+  )
 
   /*
     After the catch-all above, not before it.

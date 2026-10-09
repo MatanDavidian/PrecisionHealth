@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getRepositories } from '@/data'
 import { listChatModels, testApiKey, type ModelChoice } from '@/ai/openaiEstimator'
 import { DEFAULT_SETTINGS } from '@/config'
 import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { useDataRevision } from '../DataProvider'
-import { TrialModelPicker } from '../components/TrialModelPicker'
+import { ModelPicker } from '../components/ModelPicker'
+import { PlanCard } from '../components/PlanCard'
+import { TRIAL_MODEL } from '../../../supabase/functions/_shared/prompt'
 import { signOut } from '@/data/session'
 import type { AppSettings } from '@/data/repositories'
 import { useLang, LANGUAGES } from '../i18n'
@@ -33,7 +36,14 @@ type TestState = { kind: 'idle' | 'testing' } | { kind: 'done'; ok: boolean; mes
 
 export function Settings() {
   const { t, lang, setLang } = useLang()
-  const [tab, setTab] = useState<SettingsTab>('you')
+  const [params, setParams] = useSearchParams()
+  /** Back from a Lemon Squeezy checkout: open on the subscription and wait for it. */
+  const justSubscribed = params.get('billing') === 'success'
+  const [tab, setTab] = useState<SettingsTab>(() => {
+    const asked = params.get('tab')
+    if (justSubscribed) return 'ai'
+    return TABS.some((option) => option.tab === asked) ? (asked as SettingsTab) : 'you'
+  })
   const { today } = useSelectedDay()
   const { data } = useDay(today)
   const { recordObservation, setGoal, setObjective } = useActions()
@@ -52,7 +62,17 @@ export function Settings() {
           month: 'short',
         })
       : undefined
-  const { session, authAvailable, trial, refreshTrial, refresh } = useDataRevision()
+  const { session, authAvailable, trial, plan, refreshTrial, refresh } = useDataRevision()
+  const dropReturnMarker = useCallback(() => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('billing')
+        return next
+      },
+      { replace: true },
+    )
+  }, [setParams])
   const [settings, setSettings] = useState<AppSettings>()
   const [keyInput, setKeyInput] = useState('')
   const [test, setTest] = useState<TestState>({ kind: 'idle' })
@@ -63,6 +83,10 @@ export function Settings() {
   /** True when the chosen model is not in the account list — shows the text field. */
   const [customModel, setCustomModel] = useState(false)
   const [usage, setUsage] = useState<string>()
+
+  // The balance moves with every analysis; read it fresh whenever Settings opens.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => refreshTrial(), [])
 
   useEffect(() => {
     // Browsers report this per origin; it is the honest answer to "how much of
@@ -371,11 +395,20 @@ export function Settings() {
                   </p>
                 </div>
               </Card>
-              {trial && !trial.exhausted && (
+              {authAvailable && (
+                <PlanCard
+                  signedIn={session.authenticated}
+                  plan={plan}
+                  justSubscribed={justSubscribed}
+                  refresh={refreshTrial}
+                  onConfirmed={dropReturnMarker}
+                />
+              )}
+              {((trial && !trial.exhausted) || plan) && (
                 <Card label={t('settings.accuracyOrSpeed')}>
                   <p className="pb-3 text-sm text-ink-muted">{t('settings.accuracyBody')}</p>
-                  <TrialModelPicker
-                    trial={trial}
+                  <ModelPicker
+                    suggestedModel={trial?.suggestedModel ?? TRIAL_MODEL}
                     selected={settings.trialModel}
                     onSelect={(model) => {
                       void update({ trialModel: model })

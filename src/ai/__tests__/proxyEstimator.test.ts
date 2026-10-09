@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ProxyEstimator, TrialExhaustedError } from '../proxyEstimator'
+import { PlanExhaustedError, ProxyEstimator, TrialExhaustedError } from '../proxyEstimator'
 import { EstimateError } from '../estimator'
 import { SAMPLE_REPLY } from '../fakeEstimator'
 
@@ -107,6 +107,35 @@ describe('analysis through our own server', () => {
     await expect(new ProxyEstimator(options(fetchImpl)).estimate(photo, {})).rejects.toMatchObject({
       kind: 'UNREADABLE',
     })
+  })
+})
+
+describe('a subscriber', () => {
+  it('records the month as the server reports it', async () => {
+    const plan = { kind: 'PHOTO', used: 37, allowance: 100, resetsAt: '2026-11-15T00:00:00.000Z', renews: true }
+    const fetchImpl = (async () =>
+      reply({ content: JSON.stringify(SAMPLE_REPLY), model: 'gpt-6.1-sol', plan })) as unknown as typeof fetch
+    const estimator = new ProxyEstimator(options(fetchImpl))
+    await estimator.estimate(photo, {})
+    expect(estimator.plan).toEqual(plan)
+  })
+
+  it('is told which allowance ran out, and when it comes back', async () => {
+    const fetchImpl = (async () =>
+      reply(
+        { error: 'plan_exhausted', kind: 'TEXT', used: 200, allowance: 200, resetsAt: '2026-11-15T00:00:00.000Z', renews: false },
+        402,
+      )) as unknown as typeof fetch
+    const error = await new ProxyEstimator(options(fetchImpl)).estimate(photo, {}).catch((e) => e)
+    expect(error).toBeInstanceOf(PlanExhaustedError)
+    expect(error).toMatchObject({ analysisKind: 'TEXT', allowance: 200, resetsAt: '2026-11-15T00:00:00.000Z', renews: false })
+  })
+
+  it('is not pointed at their own key when the service is busy', async () => {
+    const fetchImpl = (async () => reply({ error: 'plan_analysis_unavailable' }, 503)) as unknown as typeof fetch
+    const error = await new ProxyEstimator(options(fetchImpl)).estimate(photo, {}).catch((e) => e)
+    expect((error as Error).message).not.toMatch(/own OpenAI key/i)
+    expect((error as Error).message).toMatch(/Nothing was used up/)
   })
 })
 

@@ -18,7 +18,7 @@ import {
 } from '@/ai/estimator'
 import { MAX_FOLLOW_UPS } from '../../supabase/functions/_shared/prompt'
 import { useT } from './i18n'
-import { TrialExhaustedError } from '@/ai/proxyEstimator'
+import { PlanExhaustedError, TrialExhaustedError } from '@/ai/proxyEstimator'
 import type { MealSlot } from '@/domain'
 
 /**
@@ -60,7 +60,13 @@ export interface Analysis {
   input: AnalysisInput
   hints: EstimateHints
   result?: EstimateResult
-  error?: { message: string; retryable: boolean; exhausted: boolean }
+  error?: {
+    message: string
+    retryable: boolean
+    exhausted: boolean
+    /** Set when it is a subscriber's month that ran out, not the trial. */
+    plan?: { kind: 'PHOTO' | 'TEXT'; allowance: number; resetsAt: string; renews: boolean }
+  }
   model: string
   /**
    * Which meal this is, across every round of questions about it.
@@ -210,7 +216,10 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     } catch (cause) {
       if (runId.current !== id) return
       const known = cause instanceof EstimateError
-      const exhausted = cause instanceof TrialExhaustedError
+      const plan = cause instanceof PlanExhaustedError
+        ? { kind: cause.analysisKind, allowance: cause.allowance, resetsAt: cause.resetsAt, renews: cause.renews }
+        : undefined
+      const exhausted = cause instanceof TrialExhaustedError || Boolean(plan)
       buzz(15)
       setAnalysis((current) =>
         current && current.id === String(id)
@@ -224,6 +233,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
                   : t(input.kind === 'photo' ? 'log.error.photo' : 'log.error.text'),
                 retryable: !known || cause.kind !== 'NO_KEY',
                 exhausted,
+                plan,
               },
             }
           : current,

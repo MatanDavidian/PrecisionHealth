@@ -274,6 +274,28 @@ const en = {
     'Changes the app immediately, and asks the model to answer in the same language. Kept on this device.',
   'settings.apiKey': 'OpenAI API key',
   'settings.accuracyOrSpeed': 'Accuracy or speed',
+  'settings.plan': 'Subscription',
+  'settings.planPitch':
+    '{name}: {photos} photo analyses and {texts} written ones a month, on the most accurate model or the fastest — your choice. {price} a month; cancel any time.',
+  'settings.subscribe': 'Subscribe — {price} a month',
+  'settings.subscribeNote':
+    'Payment is handled by Lemon Squeezy, our merchant of record. Your card never reaches this app.',
+  'settings.planSignIn': 'A subscription belongs to an account — sign in under Account & data to subscribe.',
+  'settings.planActive': '{name} · renews on {date}',
+  'settings.planCancelled': '{name} · cancelled — yours until {date}',
+  'settings.planPastDue':
+    'Your last payment did not go through. Lemon Squeezy will try again; update your card under Manage subscription to keep your plan.',
+  'settings.planPhotos': 'Photo analyses: {used} of {allowance} used this month',
+  'settings.planTexts': 'Written analyses: {used} of {allowance} used this month',
+  'settings.planResets': 'Both start again on {date}.',
+  'settings.manage': 'Manage subscription',
+  'settings.manageNote': 'Change your card, cancel, or download invoices — on Lemon Squeezy.',
+  'settings.billingWait': 'Opening Lemon Squeezy…',
+  'settings.billingUnavailable': 'Payments are not available right now. Please try again in a few minutes.',
+  'settings.alreadySubscribed': 'You already have a subscription.',
+  'settings.billingSuccess': 'Thank you! Your subscription will appear here in a moment.',
+  'settings.billingPending':
+    'Still waiting for Lemon Squeezy to confirm. It usually takes seconds — reload in a minute if this stays.',
   'settings.analysis': 'Analysis',
   'settings.photos': 'Photos',
   'settings.storage': 'Where your data is saved',
@@ -425,12 +447,20 @@ const en = {
   'log.notice.seeOptions': 'See the options',
   'log.exhausted.title': 'That was the last one on us',
   'log.exhausted.body':
-    'The first {count} analyses were run on our account, so you could try the app without setting anything up. To keep going, connect your own OpenAI key — it takes a couple of minutes, and analysing a meal costs a fraction of a cent.',
+    'The first {count} analyses were run on our account, so you could try the app without setting anything up. To keep going, subscribe — or connect your own OpenAI key, which takes a couple of minutes and costs a fraction of a cent a meal.',
   'log.exhausted.connectKey': 'Connect my key',
   'log.exhausted.byHand': 'Log by hand instead',
   'log.exhausted.stillText': 'What you wrote is still here — connect a key and press Try again.',
   'log.exhausted.stillPhoto':
     'Your photo is still here — connect a key and press Analyze to pick up where you left off.',
+  'log.exhausted.subscribe': 'Subscribe — {price} a month',
+  'log.planOut.titlePhoto': 'This month’s photo analyses are used',
+  'log.planOut.titleText': 'This month’s written analyses are used',
+  'log.planOut.resets': 'Your plan includes {allowance} a month, and they start again on {date}.',
+  'log.planOut.ends': 'Your plan includes {allowance} a month, and your subscription ends on {date}.',
+  'log.planOut.writeInstead':
+    'Written analyses are counted separately — you can still describe this meal in words.',
+  'log.planOut.still': 'What you entered is still here.',
   'log.setup.label': 'One-time setup',
   'log.setup.body':
     'Photo and text estimates run on your own OpenAI key, so add one to switch them on. A meal costs a fraction of a cent to analyze.',
@@ -511,7 +541,7 @@ const en = {
 
   'settings.deleteAccount': 'Delete my account',
   'settings.deleteAccountBody':
-    'Removes your account and every record in it, everywhere. Data kept only in this browser is separate and is not touched.',
+    'Removes your account and every record in it, everywhere, and cancels your subscription if you have one. Data kept only in this browser is separate and is not touched.',
   'settings.deleteAccountButton': 'Delete my account',
   'settings.deleteAccountWarn':
     'Your meals, workouts, sleep, measurements and goals are erased permanently, on every device. This cannot be undone, and we cannot recover it afterwards.',
@@ -1006,6 +1036,28 @@ const he: Dictionary = {
     'משנה את האפליקציה מיד, ומבקש מהמודל לענות באותה שפה. נשמר במכשיר הזה.',
   'settings.apiKey': 'מפתח API של OpenAI',
   'settings.accuracyOrSpeed': 'דיוק או מהירות',
+  'settings.plan': 'מנוי',
+  'settings.planPitch':
+    '{name}: {photos} ניתוחי תמונה ו־{texts} ניתוחי טקסט בחודש, על המודל המדויק ביותר או על המהיר — לבחירתכם. {price} לחודש; אפשר לבטל בכל רגע.',
+  'settings.subscribe': 'הרשמה למנוי — {price} לחודש',
+  'settings.subscribeNote':
+    'התשלום מטופל על ידי Lemon Squeezy, המוכר הרשמי שלנו. פרטי הכרטיס שלכם לא מגיעים לאפליקציה.',
+  'settings.planSignIn': 'מנוי שייך לחשבון — היכנסו תחת חשבון ונתונים כדי להירשם.',
+  'settings.planActive': '{name} · מתחדש ב־{date}',
+  'settings.planCancelled': '{name} · בוטל — פעיל עד {date}',
+  'settings.planPastDue':
+    'התשלום האחרון לא עבר. Lemon Squeezy ינסה שוב; עדכנו את הכרטיס בניהול המנוי כדי לשמור על המנוי.',
+  'settings.planPhotos': 'ניתוחי תמונה: {used} מתוך {allowance} נוצלו החודש',
+  'settings.planTexts': 'ניתוחי טקסט: {used} מתוך {allowance} נוצלו החודש',
+  'settings.planResets': 'שניהם מתחדשים ב־{date}.',
+  'settings.manage': 'ניהול המנוי',
+  'settings.manageNote': 'החלפת כרטיס, ביטול או הורדת חשבוניות — ב־Lemon Squeezy.',
+  'settings.billingWait': 'פותחים את Lemon Squeezy…',
+  'settings.billingUnavailable': 'תשלומים לא זמינים כרגע. נסו שוב בעוד כמה דקות.',
+  'settings.alreadySubscribed': 'כבר יש לכם מנוי.',
+  'settings.billingSuccess': 'תודה! המנוי שלכם יופיע כאן בעוד רגע.',
+  'settings.billingPending':
+    'עדיין מחכים לאישור מ־Lemon Squeezy. זה לוקח בדרך כלל שניות — טענו מחדש בעוד דקה אם זה נשאר כך.',
   'settings.analysis': 'ניתוח',
   'settings.photos': 'תמונות',
   'settings.storage': 'איפה הנתונים שלכם נשמרים',
@@ -1157,12 +1209,19 @@ const he: Dictionary = {
   'log.notice.seeOptions': 'לראות את האפשרויות',
   'log.exhausted.title': 'זו הייתה האחרונה על חשבוננו',
   'log.exhausted.body':
-    '{count} הניתוחים הראשונים רצו על החשבון שלנו, כדי שתוכלו לנסות את האפליקציה בלי להגדיר שום דבר. כדי להמשיך, חברו מפתח OpenAI משלכם — זה לוקח כמה דקות, וניתוח ארוחה עולה שבריר סנט.',
+    '{count} הניתוחים הראשונים רצו על החשבון שלנו, כדי שתוכלו לנסות את האפליקציה בלי להגדיר שום דבר. כדי להמשיך, הירשמו למנוי — או חברו מפתח OpenAI משלכם, שלוקח כמה דקות ועולה שבריר סנט לארוחה.',
   'log.exhausted.connectKey': 'לחבר את המפתח שלי',
   'log.exhausted.byHand': 'לרשום ידנית במקום',
   'log.exhausted.stillText': 'מה שכתבתם עדיין כאן — חברו מפתח ולחצו על ניסיון נוסף.',
   'log.exhausted.stillPhoto':
     'התמונה שלכם עדיין כאן — חברו מפתח ולחצו על ניתוח כדי להמשיך מאיפה שהפסקתם.',
+  'log.exhausted.subscribe': 'הרשמה למנוי — {price} לחודש',
+  'log.planOut.titlePhoto': 'ניתוחי התמונה של החודש נוצלו',
+  'log.planOut.titleText': 'ניתוחי הטקסט של החודש נוצלו',
+  'log.planOut.resets': 'המנוי כולל {allowance} בחודש, והם מתחדשים ב־{date}.',
+  'log.planOut.ends': 'המנוי כולל {allowance} בחודש, והמנוי שלכם מסתיים ב־{date}.',
+  'log.planOut.writeInstead': 'ניתוחי טקסט נספרים בנפרד — עדיין אפשר לתאר את הארוחה הזו במילים.',
+  'log.planOut.still': 'מה שהזנתם עדיין כאן.',
   'log.setup.label': 'הגדרה חד־פעמית',
   'log.setup.body':
     'הערכות מתמונה ומטקסט רצות על מפתח OpenAI משלכם, אז הוסיפו אחד כדי להפעיל אותן. ניתוח ארוחה עולה שבריר סנט.',
@@ -1243,7 +1302,7 @@ const he: Dictionary = {
 
   'settings.deleteAccount': 'מחיקת החשבון שלי',
   'settings.deleteAccountBody':
-    'מוחק את החשבון שלכם ואת כל הרשומות בו, בכל מקום. נתונים ששמורים רק בדפדפן הזה הם נפרדים ולא נוגעים בהם.',
+    'מוחק את החשבון שלכם ואת כל הרשומות בו, בכל מקום, ומבטל את המנוי אם יש לכם. נתונים ששמורים רק בדפדפן הזה הם נפרדים ולא נוגעים בהם.',
   'settings.deleteAccountButton': 'מחיקת החשבון שלי',
   'settings.deleteAccountWarn':
     'הארוחות, האימונים, השינה, המדידות והיעדים שלכם יימחקו לצמיתות, בכל המכשירים. אי אפשר לבטל את זה, ואי אפשר לשחזר אחר כך.',

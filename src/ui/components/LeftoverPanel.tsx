@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { getEstimator } from '@/data'
-import { describePhoto, downscale } from '@/ai/photo'
+import { describePhoto, downscale, UnreadablePhotoError } from '@/ai/photo'
 import { plateOf, previewLeftover, type LeftoverPreview } from '@/data/leftoverMeal'
 import type { LeftoverEstimate, Meal } from '@/domain'
 import { useLang } from '../i18n'
@@ -64,7 +64,10 @@ export function LeftoverPanel({
       setResult({ estimate: estimated, preview: previewLeftover(meal, estimated), source })
       setState({ kind: 'input' })
     } catch (cause) {
-      setState({ kind: 'failed', message: cause instanceof Error ? cause.message : String(cause) })
+      const message = cause instanceof UnreadablePhotoError
+        ? t(cause.heic ? 'photo.heic' : 'photo.unreadable')
+        : cause instanceof Error ? cause.message : String(cause)
+      setState({ kind: 'failed', message })
     }
   }
 

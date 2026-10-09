@@ -643,7 +643,7 @@ export function Log() {
 
       {analysis && !analysis.result && !analysis.error?.exhausted && !runningPhoto && (
         <div className="flex flex-wrap gap-3 pt-4">
-          {!running && (
+          {!running && !analysis.error?.unreadable && (
             <button
               type="button"
               onClick={retry}

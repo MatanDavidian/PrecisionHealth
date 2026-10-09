@@ -461,6 +461,9 @@ const en = {
   'log.planOut.writeInstead':
     'Written analyses are counted separately — you can still describe this meal in words.',
   'log.planOut.still': 'What you entered is still here.',
+  'photo.heic':
+    'This is an iPhone photo in HEIC format, which this browser cannot open. Send it as a JPEG instead — on the iPhone, Settings → Camera → Formats → Most Compatible makes every new photo one — or describe the meal in words.',
+  'photo.unreadable': 'This file could not be opened as a picture. Try another photo, or describe the meal in words.',
   'log.setup.label': 'One-time setup',
   'log.setup.body':
     'Photo and text estimates run on your own OpenAI key, so add one to switch them on. A meal costs a fraction of a cent to analyze.',
@@ -1222,6 +1225,9 @@ const he: Dictionary = {
   'log.planOut.ends': 'המנוי כולל {allowance} בחודש, והמנוי שלכם מסתיים ב־{date}.',
   'log.planOut.writeInstead': 'ניתוחי טקסט נספרים בנפרד — עדיין אפשר לתאר את הארוחה הזו במילים.',
   'log.planOut.still': 'מה שהזנתם עדיין כאן.',
+  'photo.heic':
+    'זו תמונת אייפון בפורמט HEIC, והדפדפן הזה לא יכול לפתוח אותו. שלחו אותה כ־JPEG — באייפון, הגדרות ← מצלמה ← פורמטים ← התאמה מרבית הופך כל תמונה חדשה לכזו — או תארו את הארוחה במילים.',
+  'photo.unreadable': 'לא הצלחנו לפתוח את הקובץ הזה כתמונה. נסו תמונה אחרת, או תארו את הארוחה במילים.',
   'log.setup.label': 'הגדרה חד־פעמית',
   'log.setup.body':
     'הערכות מתמונה ומטקסט רצות על מפתח OpenAI משלכם, אז הוסיפו אחד כדי להפעיל אותן. ניתוח ארוחה עולה שבריר סנט.',

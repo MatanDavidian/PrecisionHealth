@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { getEstimator, setConversationId } from '@/data'
-import { describePhoto, downscale } from '@/ai/photo'
+import { describePhoto, downscale, UnreadablePhotoError } from '@/ai/photo'
 import {
   EstimateError,
   type EstimateHints,
@@ -64,6 +64,8 @@ export interface Analysis {
     message: string
     retryable: boolean
     exhausted: boolean
+    /** The photo itself could not be opened; trying again cannot help. */
+    unreadable?: boolean
     /** Set when it is a subscriber's month that ran out, not the trial. */
     plan?: { kind: 'PHOTO' | 'TEXT'; allowance: number; resetsAt: string; renews: boolean }
   }
@@ -260,8 +262,36 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         id,
       )
 
-      const blob = await downscale(file)
-      const meta = await describePhoto(blob)
+      let blob: Blob
+      let meta: PhotoMeta
+      try {
+        blob = await downscale(file)
+        meta = await describePhoto(blob)
+      } catch (cause) {
+        if (runId.current !== id) return
+        /*
+          The file never became a picture, so nothing was sent and nothing is
+          spent. Not retryable: the same file fails the same way. An iPhone
+          HEIC photo gets its own message, because the fix is on the phone.
+        */
+        const heic = cause instanceof UnreadablePhotoError && cause.heic
+        setAnalysis((current) =>
+          current && current.id === String(id)
+            ? {
+                ...current,
+                status: 'failed',
+                finishedAt: Date.now(),
+                error: {
+                  message: t(heic ? 'photo.heic' : 'photo.unreadable'),
+                  retryable: false,
+                  exhausted: false,
+                  unreadable: true,
+                },
+              }
+            : current,
+        )
+        return
+      }
       if (runId.current !== id) return
       // Swapping `input.url` here retires `capturedUrl`; the effect above
       // revokes whichever url was current whenever it changes.
@@ -269,7 +299,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setAnalysis((current) => (current && current.id === String(id) ? { ...current, input } : current))
       await finish(input, hints, id)
     },
-    [beginRun, finish],
+    [beginRun, finish, t],
   )
 
   const startText = useCallback(

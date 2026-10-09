@@ -245,7 +245,7 @@ handled; the gaps are marked.
 | **Refund or chargeback** | **refund done 2026-10-09**: a full refund ends access and cancels billing. Chargebacks have no event of their own in Lemon Squeezy's docs | see what the first dispute sends | P1 (payments) |
 | **A subscriber hits the daily spend ceiling** | **done 2026-10-09**: their own ceiling and their own message | — | P1 (payments) |
 | **Safari clears a signed-out browser's data** | Safari can delete site storage after 7 days without a visit | `navigator.storage.persist()`, and tell signed-out users plainly where their data lives | P1 |
-| **iPhone photo picked on Android or desktop (HEIC)** | Chrome cannot decode HEIC; untested | test with a HEIC file; say "convert to JPEG" rather than fail silently | P1 |
+| **iPhone photo picked on Android or desktop (HEIC)** | **done 2026-10-09**: recognised by its bytes and named, with how to send a JPEG (it used to spin for ever) | decoding it in the browser needs a 3 MB LGPL decoder and `worker-src blob:` in the CSP — owner's call | P1 |
 | **Israel's clocks go back, 25 Oct** | ✅ tested on both real dates; the browser suite passes in those weeks (`E2E_TODAY`) | — | done 2026-10-09 |
 | Offline while signed in | the save fails with a banner (D16, online-first) | accept for Phase 1; revisit with real usage | P2 |
 | Session expires mid-analysis | "sign in again" | check the photo survives | P2 |

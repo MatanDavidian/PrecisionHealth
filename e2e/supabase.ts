@@ -93,8 +93,6 @@ function sessionBody() {
 export interface StubOptions {
   /** How many trial analyses the ledger reports as spent. */
   trialUsed?: number
-  /** How many of those were on the expensive model. */
-  solUsed?: number
   /** Refuse to send a sign-in code, the way a real failure would. */
   sendFails?: string
   /** Reject whatever code is typed. */
@@ -179,7 +177,7 @@ const json = (route: Route, body: unknown, status = 200, headers: Record<string,
  * catch-all goes on first and the specific paths override it.
  */
 export async function stubSupabase(page: Page, options: StubOptions = {}): Promise<StubTables> {
-  const { trialUsed = 0, solUsed = 0 } = options
+  const { trialUsed = 0 } = options
   const tables: StubTables = { meals: [], observations: [] }
 
   /*
@@ -198,8 +196,7 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
       `content-range`, which is exactly the parsing this is here to exercise.
     */
     if (url.pathname.endsWith('/usage')) {
-      const onlySol = url.searchParams.get('model') !== null
-      const count = onlySol ? solUsed : trialUsed
+      const count = trialUsed
       return route.fulfill({
         status: 200,
         contentType: 'application/json',

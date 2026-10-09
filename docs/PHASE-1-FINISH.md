@@ -180,6 +180,21 @@ come later.
 
 ## P1 — The model upgrade (week 2)
 
+> **Status 2026-10-09: switched, not yet evaluated.** On the owner's decision,
+> the server offers only **GPT-6.1 Sol** (the default) and **GPT-6 Luna**.
+> Done:
+> - the gpt-5.6 models are gone
+> - the sol sub-allowance and the "switched to balanced" notice are gone
+> - every model the server runs has a price, with a test
+>
+> Still to do:
+> - the evaluation on real meal photos, with GPT-6.1 Sol as the baseline
+>   (`docs/ops/model-evaluation.md`)
+> - re-measuring the cost per analysis
+> - updating pricing
+>
+> The text below is the plan as it was written.
+
 The app runs on the **gpt-5.6** family: terra by default, sol metered as the
 "most accurate" tier, luna offered as "Fastest" in the trial's model picker. On 22 September OpenAI released **GPT-6 Sol**
 at $2 / $10 per million tokens (input/output) and **GPT-6 Luna** at

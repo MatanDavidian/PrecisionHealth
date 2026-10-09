@@ -30,7 +30,7 @@ import { RevisedCard } from '../components/log/RevisedCard'
 import { readUsuals, type Usuals } from '@/data/usuals'
 import { currentUserId } from '@/data/session'
 import type { Meal, UsualFood, UsualMeal } from '@/domain'
-import { MAX_FOLLOW_UPS, MODEL_LABELS, MODEL_TERRA } from '../../../supabase/functions/_shared/prompt'
+import { MAX_FOLLOW_UPS } from '../../../supabase/functions/_shared/prompt'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
@@ -290,19 +290,6 @@ export function Log() {
           actionTo="/settings"
         >
           {t('log.notice.accuracyBody')}
-        </OneTimeNotice>
-      )}
-
-      {trial && !trial.exhausted && trial.pastNudge && trial.solRemaining > 0 && (
-        <OneTimeNotice
-          id="switched-to-terra"
-          title={t('log.notice.switchedTitle', {
-            model: MODEL_LABELS[MODEL_TERRA].name.toLowerCase(),
-          })}
-          actionLabel={t('log.notice.changeIt')}
-          actionTo="/settings"
-        >
-          {t('log.notice.switchedBody', { count: trial.solRemaining })}
         </OneTimeNotice>
       )}
 
@@ -699,7 +686,6 @@ export function Log() {
       {analysis?.result && !adjusting && !questionOpen && !revised && (
         <EstimateCard
           result={analysis.result}
-          downgraded={analysis.downgraded}
           fromText={fromText}
           saving={saving}
           rows={rows}

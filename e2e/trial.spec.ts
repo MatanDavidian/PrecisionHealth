@@ -6,8 +6,8 @@ import { openSignedIn, signIn } from './supabase'
  * answer.
  *
  * S2.10, and the half of the app that only exists for people who have just
- * arrived: the notices that explain the accuracy trade-off, the budget on the
- * expensive model, and the two states — spent, and unreachable — where an
+ * arrived: the notice that explains the accuracy trade-off, the model picker, and
+ * the two states — spent, and unreachable — where an
  * analysis cannot happen. All of it was unreachable from a test until there
  * was an account to sign into.
  *
@@ -25,38 +25,23 @@ test('a new account is told the trade-off exists, before it matters', async ({ p
   await expect(page.getByRole('link', { name: 'See the options' })).toBeVisible()
 })
 
-test('the switch to a faster model is announced, not done quietly', async ({ page }) => {
-  // Two analyses on the best model is the nudge point; two of four are left.
-  await signIn(page, { trialUsed: 2, solUsed: 2 })
-  await openSignedIn(page, '/log')
-
-  await expect(page.getByText(/Switched to balanced/i)).toBeVisible()
-  await expect(page.getByText(/2 analyses left on the most accurate one/)).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Change it' })).toBeVisible()
-})
-
-test('the picker says how much of the best model is left', async ({ page }) => {
-  await signIn(page, { trialUsed: 3, solUsed: 3 })
+test('the picker offers exactly the two GPT-6 models, the best one first', async ({ page }) => {
+  // Late in the trial, on purpose: there is no separate budget on the best model to lock it.
+  await signIn(page, { trialUsed: 9 })
   await openSignedIn(page, '/settings')
   await page.getByRole('button', { name: 'Photo analysis' }).click()
 
-  await expect(page.getByText('Accuracy or speed')).toBeVisible()
-  // In the dropdown, on the most accurate model's own option.
-  await expect(page.locator('select[name="trialModel"] option', { hasText: '1 left' })).toHaveCount(1)
-})
+  const picker = page.locator('select[name="trialModel"]')
+  await expect(picker).toHaveValue('gpt-6.1-sol')
+  await expect(picker.locator('option')).toHaveText([
+    'Most accurate · gpt-6.1-sol',
+    'Fastest · gpt-6-luna',
+  ])
+  await expect(picker.locator('option:disabled')).toHaveCount(0)
 
-test('and locks it once the budget is spent, without locking the app', async ({ page }) => {
-  await signIn(page, { trialUsed: 4, solUsed: 4 })
-  await openSignedIn(page, '/settings')
-  await page.getByRole('button', { name: 'Photo analysis' }).click()
-
-  await expect(page.locator('select[name="trialModel"] option', { hasText: 'used up' })).toHaveCount(1)
-  await expect(page.getByText(/Available again with your own key/)).toBeVisible()
-
-  // The expensive model is gone; the faster one is still selectable, so the
-  // trial keeps working rather than ending early.
-  await expect(page.locator('select[name="trialModel"] option:disabled')).toHaveCount(1)
-  await expect(page.locator('select[name="trialModel"] option:not(:disabled)')).not.toHaveCount(0)
+  await picker.selectOption('gpt-6-luna')
+  await expect(picker).toHaveValue('gpt-6-luna')
+  await expect(page.getByText(/Quick and rough/)).toBeVisible()
 })
 
 test('running out mid-analysis is a full stop with two ways forward', async ({ page }) => {

@@ -272,16 +272,12 @@ export function followUpText(answers: readonly FollowUp[]): string {
  * storing it rather than recomputing.
  */
 export const MODEL_RATES: Record<string, { input: number; output: number }> = {
-  'gpt-5.6-sol': { input: 5, output: 30 },
-  'gpt-5.6-terra': { input: 2, output: 12 },
-  'gpt-5.6-luna': { input: 0.2, output: 1.2 },
   /*
     GPT-6, released 22 Sep 2026 (6.1 Sol later). These rates come from
     pricing trackers that cite OpenAI's page — OpenAI's own page could not be
     loaded from here. Confirm in the OpenAI dashboard; a wrong rate only skews
     the ledger's cost and the daily ceiling, never what a user is charged.
   */
-  'gpt-6-sol': { input: 2, output: 10 },
   'gpt-6.1-sol': { input: 2, output: 10 },
   'gpt-6-luna': { input: 0.1, output: 0.5 },
   'gpt-4o-mini': { input: 0.15, output: 0.6 },
@@ -346,54 +342,26 @@ export const dailyBudgetMicros = (fromEnv?: string): number => {
 export const TRIAL_ANALYSES = 10
 
 /**
- * How many of those ten may run on the best model.
+ * The two models a trial may run (2026-10-09), both GPT-6.
  *
- * The trial opens on sol so the first impression is the app at its best, but
- * sol costs ~$0.11 and takes the better part of a minute — spending the whole
- * trial there is expensive and slow. Four is enough to prove what the app can
- * do; the rest run on terra, which is fast, cheap and still good.
+ * GPT-5.6 is retired from the app: GPT-6.1 Sol costs a third of what
+ * gpt-5.6-sol did per output token, which is also why the trial no longer
+ * keeps a small separate allowance for its best model — all ten analyses may
+ * run on either.
+ *
+ * Confirmed against the account's own /v1/models, each with a real photo
+ * through this function's exact request shape. GPT-6 Astra exists and is
+ * deliberately not offered: an agentic frontier model, priced for operating a
+ * computer. gpt-6-sol is superseded by 6.1.
+ *
+ * Accuracy is not yet measured on real meals; GPT-6.1 Sol is the quality
+ * baseline for that evaluation (docs/ops/model-evaluation.md).
  */
-export const TRIAL_SOL_ANALYSES = 4
-
-/**
- * After this many, the app moves itself to terra and says so.
- *
- * Not at four: switching only when the budget is gone would make the change
- * feel like a wall. Switching at two, with two still in reserve, makes it an
- * offer — the user has seen the best, is told what changed, and can go back
- * for the meals where accuracy actually matters.
- */
-export const TRIAL_SOL_NUDGE_AT = 2
-
-export const MODEL_SOL = 'gpt-5.6-sol'
-export const MODEL_TERRA = 'gpt-5.6-terra'
-export const MODEL_LUNA = 'gpt-5.6-luna'
-
-/**
- * The GPT-6 generation, offered for evaluation (2026-10-09).
- *
- * Confirmed against the account's own /v1/models and with one image call
- * each. There is no GPT-6 terra. GPT-6 Astra exists and is deliberately not
- * offered: an agentic frontier model, priced for operating a computer.
- *
- * The quality baseline for the evaluation is GPT-6.1 Sol
- * (docs/ops/model-evaluation.md). None of these is the default until it has
- * been measured — and none needs the small allowance gpt-5.6-sol has, since
- * the GPT-6 sols cost what terra does.
- */
-export const MODEL_SOL_6_1 = 'gpt-6.1-sol'
-export const MODEL_SOL_6 = 'gpt-6-sol'
-export const MODEL_LUNA_6 = 'gpt-6-luna'
+export const MODEL_SOL = 'gpt-6.1-sol'
+export const MODEL_LUNA = 'gpt-6-luna'
 
 /** The only models a trial may run. Anything else is refused server-side. */
-export const TRIAL_MODELS = [
-  MODEL_SOL,
-  MODEL_TERRA,
-  MODEL_LUNA,
-  MODEL_SOL_6_1,
-  MODEL_SOL_6,
-  MODEL_LUNA_6,
-] as const
+export const TRIAL_MODELS = [MODEL_SOL, MODEL_LUNA] as const
 export type TrialModel = (typeof TRIAL_MODELS)[number]
 
 /** Where a trial starts: the best one. */
@@ -401,21 +369,8 @@ export const TRIAL_MODEL = MODEL_SOL
 
 /** What each model is FOR, in the user's terms rather than the vendor's. */
 export const MODEL_LABELS: Record<string, { name: string; detail: string }> = {
-  [MODEL_SOL]: { name: 'Most accurate', detail: 'Reads a crowded plate carefully. Up to a minute.' },
-  [MODEL_TERRA]: { name: 'Balanced', detail: 'Good estimates in about fifteen seconds.' },
+  [MODEL_SOL]: { name: 'Most accurate', detail: 'Reads a crowded plate carefully.' },
   [MODEL_LUNA]: { name: 'Fastest', detail: 'Quick and rough. Best for simple, obvious meals.' },
-  [MODEL_SOL_6_1]: {
-    name: 'GPT-6.1 Sol (newest)',
-    detail: 'The newest model, being evaluated. Accuracy here not yet measured.',
-  },
-  [MODEL_SOL_6]: {
-    name: 'GPT-6 Sol',
-    detail: 'New generation, priced like Balanced. Being evaluated.',
-  },
-  [MODEL_LUNA_6]: {
-    name: 'GPT-6 Luna',
-    detail: 'New generation, fast and very cheap. Being evaluated.',
-  },
 }
 
 

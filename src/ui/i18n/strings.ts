@@ -137,7 +137,6 @@ const en = {
   'estimate.lowConfidence': 'Low confidence — worth checking the numbers before you trust them.',
   'estimate.fromTextNote':
     "Confidence is lower than a photo's — nothing was seen, so portions were assumed.",
-  'estimate.downgraded': 'Read by the quicker model — your most-accurate analyses are used up.',
   'estimate.save': 'Save meal',
   'estimate.saving': 'Saving…',
   'estimate.discard': 'Discard',
@@ -366,9 +365,6 @@ const en = {
   'adopt.failed': '{message} — nothing was lost, try again.',
 
   // ------------------------------------------------------- model picker ----
-  'trial.left': '{count} left',
-  'trial.usedUp': 'used up',
-  'trial.availableAgain': 'Available again with your own key, or on a plan later.',
 
   // ---------------------------------------------------------- manual form --
   'form.foodPlaceholder': 'Grilled chicken breast',
@@ -425,12 +421,8 @@ const en = {
   // ------------------------------------------------------- log, remainder --
   'log.notice.accuracyTitle': 'Accuracy or speed — your choice',
   'log.notice.accuracyBody':
-    'Photos are read by the most accurate model to start with, which takes up to a minute. You can trade some accuracy for a much faster answer in Settings, any time.',
+    'Photos are read by the most accurate model. You can trade some accuracy for a faster answer in Settings, any time.',
   'log.notice.seeOptions': 'See the options',
-  'log.notice.switchedTitle': 'Switched to {model}',
-  'log.notice.switchedBody':
-    'Your next photos are read by a quicker model — about fifteen seconds instead of a minute, and still good. You have {count} analyses left on the most accurate one; save them for a crowded plate.',
-  'log.notice.changeIt': 'Change it',
   'log.exhausted.title': 'That was the last one on us',
   'log.exhausted.body':
     'The first {count} analyses were run on our account, so you could try the app without setting anything up. To keep going, connect your own OpenAI key — it takes a couple of minutes, and analysing a meal costs a fraction of a cent.',
@@ -878,7 +870,6 @@ const he: Dictionary = {
     'התיקונים שלכם נשמרים כפי שהוזנו; מה שלא נגעתם בו נשאר הערכה שאפשר לאשר במסך התזונה.',
   'estimate.lowConfidence': 'ביטחון נמוך — כדאי לבדוק את המספרים לפני שסומכים עליהם.',
   'estimate.fromTextNote': 'הביטחון נמוך מזה של תמונה — שום דבר לא נראה, ולכן המנות הן הנחה.',
-  'estimate.downgraded': 'נקרא על ידי המודל המהיר — הניתוחים המדויקים ביותר שלכם נוצלו.',
   'estimate.save': 'שמירת הארוחה',
   'estimate.saving': 'שומרים…',
   'estimate.discard': 'ביטול',
@@ -1106,9 +1097,6 @@ const he: Dictionary = {
   'adopt.failed': '{message} — שום דבר לא אבד, אפשר לנסות שוב.',
 
   // ------------------------------------------------------- model picker ----
-  'trial.left': 'נותרו {count}',
-  'trial.usedUp': 'נוצל',
-  'trial.availableAgain': 'יהיה זמין שוב עם מפתח משלכם, או במסלול בהמשך.',
 
   // ---------------------------------------------------------- manual form --
   'form.foodPlaceholder': 'חזה עוף בגריל',
@@ -1165,12 +1153,8 @@ const he: Dictionary = {
   // ------------------------------------------------------- log, remainder --
   'log.notice.accuracyTitle': 'דיוק או מהירות — אתם בוחרים',
   'log.notice.accuracyBody':
-    'תמונות נקראות בהתחלה על ידי המודל המדויק ביותר, וזה לוקח עד דקה. אפשר להחליף קצת דיוק בתשובה הרבה יותר מהירה בהגדרות, בכל רגע.',
+    'תמונות נקראות על ידי המודל המדויק ביותר. אפשר להחליף קצת דיוק בתשובה מהירה יותר בהגדרות, בכל רגע.',
   'log.notice.seeOptions': 'לראות את האפשרויות',
-  'log.notice.switchedTitle': 'עברנו ל{model}',
-  'log.notice.switchedBody':
-    'התמונות הבאות שלכם ייקראו על ידי מודל מהיר יותר — בערך חמש עשרה שניות במקום דקה, ועדיין טוב. נותרו לכם {count} ניתוחים במודל המדויק ביותר; שמרו אותם לצלחת עמוסה.',
-  'log.notice.changeIt': 'לשנות',
   'log.exhausted.title': 'זו הייתה האחרונה על חשבוננו',
   'log.exhausted.body':
     '{count} הניתוחים הראשונים רצו על החשבון שלנו, כדי שתוכלו לנסות את האפליקציה בלי להגדיר שום דבר. כדי להמשיך, חברו מפתח OpenAI משלכם — זה לוקח כמה דקות, וניתוח ארוחה עולה שבריר סנט.',

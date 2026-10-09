@@ -29,8 +29,6 @@ import type { LeftoverEstimate, WeekReport } from '@/domain'
 export interface TrialState {
   used: number
   allowance: number
-  solUsed?: number
-  solAllowance?: number
 }
 
 export interface ProxyEstimatorOptions {
@@ -64,11 +62,6 @@ export class ProxyEstimator implements FoodEstimator {
   model = 'server'
   /** Latest trial state the server reported, for the UI to show. */
   trial?: TrialState
-  /**
-   * True when the server ran a different model than was asked for, because the
-   * best one's budget is spent. Surfaced rather than swallowed.
-   */
-  downgraded = false
 
   constructor(private readonly options: ProxyEstimatorOptions) {}
 
@@ -174,7 +167,6 @@ export class ProxyEstimator implements FoodEstimator {
           content?: string
           model?: string
           trial?: TrialState
-          downgraded?: boolean
           error?: string
           used?: number
           allowance?: number
@@ -206,7 +198,6 @@ export class ProxyEstimator implements FoodEstimator {
 
     if (body.model) this.model = body.model
     if (body.trial) this.trial = body.trial
-    this.downgraded = Boolean(body.downgraded)
 
     let parsed: unknown
     try {

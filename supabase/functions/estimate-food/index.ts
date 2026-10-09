@@ -24,8 +24,6 @@ import {
   plateLines,
   MAX_DESCRIPTION_CHARS,
   MAX_FOLLOW_UPS,
-  MODEL_SOL,
-  MODEL_TERRA,
   SYSTEM_PROMPT,
   TEXT_SYSTEM_PROMPT,
   ASSUMED_ANALYSIS_MICROS,
@@ -33,7 +31,6 @@ import {
   TRIAL_ANALYSES,
   TRIAL_MODEL,
   TRIAL_MODELS,
-  TRIAL_SOL_ANALYSES,
   costMicros,
   describedFoodText,
   followUpText,
@@ -322,15 +319,6 @@ Deno.serve(async (request) => {
   // Step 1 has one entitlement: the lifetime trial. Plans land in step 3 and
   // slot in here, which is why the ledger already records key_source.
   let used = 0
-  let solUsed = 0
-  /**
-   * What the user asked for, clamped to what they may actually have.
-   *
-   * The client shows a picker, but the picker is a convenience — the budget
-   * lives here, because a limit the browser enforces is a suggestion.
-   */
-  let effectiveModel: string = TRIAL_MODEL
-  let downgraded = false
   /**
    * The claim this request is spending, if it took one.
    *
@@ -390,40 +378,18 @@ Deno.serve(async (request) => {
       }
       reservationId = reserved as string
     }
-
-    const { count: solCount } = await admin
-      .from('usage')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('key_source', 'MASTER_TRIAL')
-      .eq('outcome', 'OK')
-      .eq('model', MODEL_SOL)
-    solUsed = solCount ?? 0
-
-    const requested = body.model && TRIAL_MODELS.includes(body.model as never)
-      ? body.model
-      : TRIAL_MODEL
-
-    if (requested === MODEL_SOL && solUsed >= TRIAL_SOL_ANALYSES) {
-      /**
-       * The sol budget is spent. Analyse on terra rather than refusing — the
-       * user has a photo in front of them and wants an answer — but say so in
-       * the reply, because quietly substituting a weaker model for the one
-       * they picked is exactly the sort of thing this app does not do.
-       */
-      effectiveModel = MODEL_TERRA
-      downgraded = true
-    } else {
-      effectiveModel = requested
-    }
-  } else {
-    // Admins get whatever they ask for, since they are paying for it.
-    effectiveModel =
-      body.model && TRIAL_MODELS.includes(body.model as never) ? body.model : TRIAL_MODEL
   }
 
   // --- the call --------------------------------------------------------------
-  const model = effectiveModel
+  /**
+   * What the user asked for, if it is offered; otherwise the default.
+   *
+   * The client shows a picker, but the picker is a convenience — the list
+   * lives here, because a limit the browser enforces is a suggestion. Every
+   * offered model may run every analysis, the trial's included.
+   */
+  const model: string =
+    body.model && TRIAL_MODELS.includes(body.model as never) ? body.model : TRIAL_MODEL
   let response: Response
   try {
     response = await fetch(OPENAI_ENDPOINT, {
@@ -533,7 +499,6 @@ Deno.serve(async (request) => {
   return json({
     content,
     model,
-    downgraded,
     followUp: isFollowUp,
     // Admins have no allowance to report.
     trial: isAdmin
@@ -541,8 +506,6 @@ Deno.serve(async (request) => {
       : {
           used: used + spent,
           allowance: TRIAL_ANALYSES,
-          solUsed: model === MODEL_SOL ? solUsed + spent : solUsed,
-          solAllowance: TRIAL_SOL_ANALYSES,
         },
   })
 })

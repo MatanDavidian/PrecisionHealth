@@ -1,8 +1,4 @@
-import {
-  MODEL_LABELS,
-  MODEL_SOL,
-  TRIAL_MODELS,
-} from '../../../supabase/functions/_shared/prompt'
+import { MODEL_LABELS, TRIAL_MODELS } from '../../../supabase/functions/_shared/prompt'
 import type { TrialStatus } from '@/data/trial'
 import { useT } from '../i18n'
 
@@ -16,9 +12,6 @@ import { useT } from '../i18n'
  * Each option shows its plain-language label and the real model id, because
  * the owner compares models by id while evaluating them, and a user deserves
  * to know which model read their plate.
- *
- * The most expensive model has a small budget of its own; once spent, its
- * option is disabled rather than hidden, with the reason underneath.
  */
 export function TrialModelPicker({
   trial,
@@ -31,13 +24,9 @@ export function TrialModelPicker({
   onSelect: (model: string) => void
 }) {
   const t = useT()
-  const solLocked = trial.solRemaining === 0
   const requested = selected ?? trial.suggestedModel
-  // A choice that is no longer allowed falls back to the suggestion.
-  const effective =
-    TRIAL_MODELS.includes(requested as never) && !(requested === MODEL_SOL && solLocked)
-      ? requested
-      : trial.suggestedModel
+  // A choice that is no longer offered (a retired model) falls back to the suggestion.
+  const effective = TRIAL_MODELS.includes(requested as never) ? requested : trial.suggestedModel
   const detail = MODEL_LABELS[effective]?.detail
 
   return (
@@ -52,23 +41,15 @@ export function TrialModelPicker({
       >
         {TRIAL_MODELS.map((model) => {
           const label = MODEL_LABELS[model]?.name
-          const locked = model === MODEL_SOL && solLocked
-          const suffix =
-            model === MODEL_SOL
-              ? locked
-                ? ` — ${t('trial.usedUp')}`
-                : ` — ${t('trial.left', { count: trial.solRemaining })}`
-              : ''
           return (
-            <option key={model} value={model} disabled={locked}>
+            <option key={model} value={model}>
               {label ? `${label} · ${model}` : model}
-              {suffix}
             </option>
           )
         })}
       </select>
       <p className="pt-2 text-xs text-ink-muted">
-        {solLocked ? t('trial.availableAgain') : detail}
+        {detail}
       </p>
     </div>
   )

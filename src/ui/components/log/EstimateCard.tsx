@@ -18,7 +18,6 @@ import { useT } from '../../i18n'
  */
 export function EstimateCard({
   result,
-  downgraded,
   fromText,
   saving,
   onSave,
@@ -28,7 +27,6 @@ export function EstimateCard({
   saveLabel,
 }: {
   result: EstimateResult
-  downgraded?: boolean
   /** Set for an estimate from words, which is honestly the weaker of the two. */
   fromText?: boolean
   saving?: boolean
@@ -159,12 +157,6 @@ export function EstimateCard({
         {lowConfidence && (
           <p className="pt-3 text-xs text-accent">
             {t('estimate.lowConfidence')}
-          </p>
-        )}
-
-        {downgraded && (
-          <p className="pt-3 text-xs text-accent">
-            {t('estimate.downgraded')}
           </p>
         )}
 

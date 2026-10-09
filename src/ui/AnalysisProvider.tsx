@@ -60,7 +60,6 @@ export interface Analysis {
   input: AnalysisInput
   hints: EstimateHints
   result?: EstimateResult
-  downgraded?: boolean
   error?: { message: string; retryable: boolean; exhausted: boolean }
   model: string
   /**
@@ -205,7 +204,6 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
               finishedAt: Date.now(),
               result,
               model: estimator.model,
-              downgraded: 'downgraded' in estimator ? Boolean(estimator.downgraded) : false,
             }
           : current,
       )

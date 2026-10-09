@@ -1,22 +1,29 @@
-# Model evaluation — GPT-6 against GPT-5.6
+# Model evaluation — GPT-6.1 Sol and GPT-6 Luna
 
-Status (2026-10-09): **GPT-6 offered, not yet measured.** The dropdown in
-Settings → Photo analysis offers six models. The default is still
-`gpt-5.6-sol` (`TRIAL_MODEL`) until the evaluation below says otherwise.
+Status (2026-10-09): **switched, not yet measured.** The owner chose to offer
+only these two models. The dropdown in Settings → Photo analysis lists them;
+the server runs nothing else (`TRIAL_MODELS` in
+`supabase/functions/_shared/prompt.ts`).
 
 ## The models
 
-| Model | Input $/M | Output $/M | Offered | Notes |
-| --- | --- | --- | --- | --- |
-| `gpt-6.1-sol` | 2 | 10 | yes | **Quality baseline** for the evaluation |
-| `gpt-6-sol` | 2 | 10 | yes | |
-| `gpt-6-luna` | 0.10 | 0.50 | yes | |
-| `gpt-5.6-sol` | 5 | 30 | yes | Current default; limited to 4 trial analyses |
-| `gpt-5.6-terra` | 2 | 12 | yes | |
-| `gpt-5.6-luna` | 0.20 | 1.20 | yes | The daily health check uses this one |
-| `gpt-6-astra` | — | — | **no** | Agentic frontier model; never offered |
+| Model | Input $/M | Output $/M | Role |
+| --- | --- | --- | --- |
+| `gpt-6.1-sol` | 2 | 10 | "Most accurate". The default, and the **quality baseline** |
+| `gpt-6-luna` | 0.10 | 0.50 | "Fastest". The daily health check runs on it |
+
+Not offered:
+- `gpt-6-sol`, superseded by 6.1
+- `gpt-6-astra`, an agentic frontier model. It is also filtered out of the
+  own-key list (`/astra/i`).
+- the gpt-5.6 family, retired from the app. A request that names any of these
+  runs on the default instead.
 
 There is no `gpt-6-terra`.
+
+All ten trial analyses may run on either model. The separate 4-analysis
+allowance for the best model existed only because gpt-5.6-sol cost $5 / $30
+per million tokens, so it is gone.
 
 The GPT-6 prices come from pricing trackers
 (anotherwrapper.com/tools/llm-pricing/gpt-6.1-sol, aireiter.com/chat/gpt-6-1-sol),
@@ -28,27 +35,21 @@ and the daily spend ceiling. It never changes what a user pays.
 
 All of this was run on 2026-10-09, with the account's own key:
 
-- `/v1/models` lists all four GPT-6 models (astra included, which is why the
-  bring-your-own-key list filters `/astra/i`).
-- Each GPT-6 model took one CC0 photo of a plate, using the server's exact
-  request shape: an `image_url` part, `response_format: json_object` and
+- `/v1/models` lists both models.
+- Each model took one CC0 photo of a plate, using the server's exact request
+  shape: an `image_url` part, `response_format: json_object` and
   `max_completion_tokens`. Each returned valid JSON.
 - Reasoning tokens are billed as output. On that photo the reasoning tokens
-  were:
-  - 6-sol: about 350
-  - 6.1-sol: about 150
-  - 6-luna: about 370
-
-  Even so, 6-luna costs well under a tenth of a cent per analysis.
-- 6.1-sol was the only one to name every item correctly. That is one photo,
-  not an evaluation.
+  were about 150 for 6.1-sol and about 370 for 6-luna. Even so, Luna costs
+  well under a tenth of a cent per analysis.
+- 6.1-sol named every item correctly. That is one photo, not an evaluation.
 
 ## The evaluation still to do (owner)
 
 With real meal photos, ideally 20 or more with known portions:
 
-1. Analyse each photo with every offered model.
-2. Score each model against `gpt-6.1-sol`, and against the truth where it is
+1. Analyse each photo with both models.
+2. Score Luna against `gpt-6.1-sol`, and both against the truth where it is
    known:
    - items named
    - calories within ±20%
@@ -56,15 +57,8 @@ With real meal photos, ideally 20 or more with known portions:
 3. For each model, record:
    - latency
    - follow-up questions asked
-   - cost per analysis (Settings shows it, and so does the `usage` table)
-
-## Deciding
-
-- **If the GPT-6 models match or beat GPT-5.6:**
-  - drop GPT-5.6 from `TRIAL_MODELS` in `supabase/functions/_shared/prompt.ts`
-  - point `TRIAL_MODEL` at the winner
-  - remove the sol sub-allowance (`TRIAL_SOL_ANALYSES`), which exists only
-    because gpt-5.6-sol costs 2.5× terra
-  - move the health check to `gpt-6-luna`
-- **Then** decide which models subscribers get. That decision was deferred
-  until this evaluation.
+   - cost per analysis (from the `usage` table)
+4. Then:
+   - re-measure the cost per analysis
+   - update `docs/ops/pricing.md`
+   - decide which models subscribers get

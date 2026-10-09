@@ -20,10 +20,8 @@ import {
   MAX_FOLLOW_UPS,
   MODEL_LUNA,
   MODEL_SOL,
-  MODEL_TERRA,
   TRIAL_ANALYSES,
   TRIAL_MODEL,
-  TRIAL_SOL_ANALYSES,
   costMicros,
 } from '../functions/_shared/prompt.ts'
 
@@ -65,7 +63,7 @@ const row = (fields: Partial<Row>): Row => ({
   user_id: USER,
   day: DAY,
   conversation_id: null,
-  model: MODEL_TERRA,
+  model: MODEL_SOL,
   key_source: 'MASTER_TRIAL',
   outcome: 'OK',
   input_tokens: null,
@@ -340,22 +338,28 @@ console.log('\nFollow-up questions')
     r.status === 200 && r.body.followUp === false && rpcCalls.includes('reserve'), outcomes())
 }
 
-console.log('\nThe model budget')
+console.log('\nThe model choice')
 {
   reset()
-  for (let i = 0; i < TRIAL_SOL_ANALYSES; i++) usage.push(row({ outcome: 'OK', model: MODEL_SOL }))
+  // Nine on the best model already: the tenth may still be on it — no separate budget.
+  for (let i = 0; i < TRIAL_ANALYSES - 1; i++) usage.push(row({ outcome: 'OK', model: MODEL_SOL }))
   const r = await call(meal({ model: MODEL_SOL }))
-  check('sol past its allowance is analysed on terra, not refused', r.status === 200 &&
-    providerCalls[0]?.model === MODEL_TERRA, providerCalls[0]?.model)
-  check('and the reply says so', r.body.downgraded === true && r.body.model === MODEL_TERRA)
-  check('booked at terra prices', usage.some((x) => x.outcome === 'OK' && x.model === MODEL_TERRA &&
-    x.cost_micros === costMicros(MODEL_TERRA, IN_TOKENS, OUT_TOKENS)), outcomes())
+  check('the best model runs every analysis of the trial', r.status === 200 &&
+    providerCalls[0]?.model === MODEL_SOL && r.body.model === MODEL_SOL, providerCalls[0]?.model)
 }
 {
   reset()
-  const r = await call(meal({ model: 'gpt-made-up-and-expensive' }))
-  check('a model the trial does not offer is ignored', r.status === 200 && providerCalls[0]?.model === TRIAL_MODEL,
+  const r = await call(meal({ model: MODEL_LUNA }))
+  check('the faster model runs when asked for', r.status === 200 && providerCalls[0]?.model === MODEL_LUNA,
     providerCalls[0]?.model)
+  check('booked at its own prices', usage.some((x) => x.outcome === 'OK' && x.model === MODEL_LUNA &&
+    x.cost_micros === costMicros(MODEL_LUNA, IN_TOKENS, OUT_TOKENS)), outcomes())
+}
+for (const retired of ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-6-astra', 'gpt-made-up-and-expensive']) {
+  reset()
+  const r = await call(meal({ model: retired }))
+  check(`${retired}, not offered, runs on the default instead`, r.status === 200 &&
+    providerCalls[0]?.model === TRIAL_MODEL, providerCalls[0]?.model)
 }
 
 console.log('\nWhen the provider fails')

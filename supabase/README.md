@@ -172,8 +172,9 @@ once — the foreign keys cascade.
 
 New users get **10 free analyses** on the owner's OpenAI key, so someone can
 sign in and photograph a meal before they have ever heard of an API key. It
-runs on `gpt-5.6-sol` — the trial is the pitch, so it should show the app at
-its best, at roughly 70 cents per person who tries it.
+runs on `gpt-6.1-sol` by default — the trial is the pitch, so it should show
+the app at its best — and the user may switch to `gpt-6-luna` in Settings.
+Those two are the only models the server runs (`TRIAL_MODELS`).
 
 None of it can live in the browser: a master key in the bundle is extracted in
 minutes, and a quota the client counts is a suggestion. So the key is a

@@ -120,22 +120,19 @@ describe('when the owner runs out of budget', () => {
   })
 })
 
-describe('when the best model\'s budget is spent', () => {
-  it('reports that a different model actually ran, rather than hiding it', async () => {
+describe('what the server reports back', () => {
+  it('records the model that actually ran, and the trial count', async () => {
     const fetchImpl = (async () =>
       reply({
         content: JSON.stringify(SAMPLE_REPLY),
-        model: 'gpt-5.6-terra',
-        downgraded: true,
-        trial: { used: 5, allowance: 10, solUsed: 4, solAllowance: 4 },
+        model: 'gpt-6-luna',
+        trial: { used: 5, allowance: 10 },
       })) as unknown as typeof fetch
 
     const estimator = new ProxyEstimator(options(fetchImpl))
     const result = await estimator.estimate(photo, {})
 
-    // Asked for sol, got terra — and the app knows, so it can say so.
-    expect(result.model).toBe('gpt-5.6-terra')
-    expect(estimator.downgraded).toBe(true)
-    expect(estimator.trial?.solUsed).toBe(4)
+    expect(result.model).toBe('gpt-6-luna')
+    expect(estimator.trial).toEqual({ used: 5, allowance: 10 })
   })
 })

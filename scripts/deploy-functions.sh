@@ -14,8 +14,9 @@ cd "$(dirname "$0")/.."
 
 FUNCTIONS_WITH_USER_JWT=(estimate-food delete-account issue-device-token billing)
 # No user JWT: the watch carries a device token, the health check a health
-# token, and Lemon Squeezy a signature.
-FUNCTIONS_WITHOUT_JWT=(device-sync health lemonsqueezy-webhook)
+# token, Lemon Squeezy a signature — and error reports come from signed-out
+# visitors too.
+FUNCTIONS_WITHOUT_JWT=(device-sync health lemonsqueezy-webhook report-error)
 
 # 1. Only committed code, so the version stamp means something.
 if ! git diff --quiet HEAD -- supabase/; then

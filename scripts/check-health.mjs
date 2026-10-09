@@ -31,9 +31,12 @@ const FUNCTIONS = [
   'health',
   'billing',
   'lemonsqueezy-webhook',
+  'report-error',
 ]
 /** Alert before the ceiling refuses people, not after. */
 const SPEND_WARNING = 0.8
+/** Browser errors since yesterday at which the daily check turns red and emails. */
+const ERROR_WARNING = 25
 
 const fromFile = existsSync('.env.local')
   ? Object.fromEntries(
@@ -114,15 +117,32 @@ else {
       const day = body.last24h ?? {}
       if (day.error) fail(day.error)
       else {
-        const share = day.ceilingMicros ? day.spentTodayMicros / day.ceilingMicros : 0
         const dollars = (micros) => `$${(micros / 1_000_000).toFixed(2)}`
-        const line = `spent today ${dollars(day.spentTodayMicros)} of ${dollars(day.ceilingMicros)}`
-        if (share >= SPEND_WARNING) fail(`${line} — over ${SPEND_WARNING * 100}% of the daily ceiling`)
-        else pass(line)
+        const ceilings = [['trials', day.spentTodayMicros, day.ceilingMicros]]
+        if (day.planCeilingMicros) ceilings.push(['subscribers', day.planSpentTodayMicros ?? 0, day.planCeilingMicros])
+        for (const [who, spentMicros, ceiling] of ceilings) {
+          const share = ceiling ? spentMicros / ceiling : 0
+          const line = `${who}: spent today ${dollars(spentMicros)} of ${dollars(ceiling)}`
+          if (share >= SPEND_WARNING) fail(`${line} — over ${SPEND_WARNING * 100}% of the daily ceiling`)
+          else pass(line)
+        }
         const outcomes = Object.entries(day.outcomes ?? {})
           .map(([outcome, count]) => `${outcome} ${count}`)
           .join(', ')
         console.log(`    last 24h: ${outcomes || 'no analyses'}`)
+      }
+
+      // What broke in people's browsers since yesterday (report-error).
+      const errors = body.clientErrors
+      if (!errors) console.log('    browser errors: not reported by this deploy')
+      else if (errors.error) fail(errors.error)
+      else {
+        const line = `browser errors since yesterday: ${errors.total} (${errors.distinct} distinct)`
+        if (errors.total >= ERROR_WARNING) fail(`${line} — at or over ${ERROR_WARNING}`)
+        else pass(line)
+        for (const top of errors.top ?? []) {
+          console.log(`    ${top.count}× ${top.kind} on ${top.route ?? '?'} (${top.version ?? '?'}): ${top.message}`)
+        }
       }
     }
   } catch {

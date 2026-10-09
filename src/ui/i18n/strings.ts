@@ -321,6 +321,9 @@ const en = {
   'common.slotLabel.SNACK': 'snack',
 
   // ---------------------------------------------------------------- app ----
+  'app.brokeTitle': 'This screen broke',
+  'app.brokeBody': 'Everything you saved is safe — it is written as you save it, so reloading loses nothing. We have been told about the error.',
+  'app.reload': 'Reload',
   'app.storageUnavailable': 'Storage unavailable',
   'app.storageUnavailableBody':
     'This app stores your data in the browser, and the browser refused. {error}',
@@ -1092,6 +1095,9 @@ const he: Dictionary = {
   'common.slotLabel.SNACK': 'חטיף',
 
   // ---------------------------------------------------------------- app ----
+  'app.brokeTitle': 'המסך הזה נשבר',
+  'app.brokeBody': 'כל מה ששמרתם בטוח — הוא נכתב ברגע השמירה, כך שטעינה מחדש לא מאבדת כלום. קיבלנו דיווח על השגיאה.',
+  'app.reload': 'טעינה מחדש',
   'app.storageUnavailable': 'האחסון אינו זמין',
   'app.storageUnavailableBody':
     'האפליקציה שומרת את הנתונים שלכם בדפדפן, והדפדפן סירב. {error}',

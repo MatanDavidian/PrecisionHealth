@@ -18,10 +18,12 @@ export const EXPECTED_SCHEMA = {
     'release_analysis',
     'reservation_grace',
     'health_missing',
+    'record_client_error',
   ],
   tables: [
     'app_admins',
     'billing_events',
+    'client_errors',
     'consents',
     'device_tokens',
     'goals',

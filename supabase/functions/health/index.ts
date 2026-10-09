@@ -22,7 +22,7 @@
 import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { EXPECTED_SCHEMA } from '../_shared/schema.ts'
-import { dailyBudgetMicros } from '../_shared/prompt.ts'
+import { DEFAULT_PLAN_DAILY_BUDGET_MICROS, dailyBudgetMicros } from '../_shared/prompt.ts'
 
 const CORS = {
   'x-vimetry-version': VERSION,
@@ -92,24 +92,48 @@ Deno.serve(async (request) => {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const midnight = new Date()
   midnight.setUTCHours(0, 0, 0, 0)
-  const [{ data: today, error: spendError }, { data: recent, error: recentError }] = await Promise.all([
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const [
+    { data: today, error: spendError },
+    { data: recent, error: recentError },
+    { data: errorRows, error: errorsError },
+  ] = await Promise.all([
     admin
       .from('usage')
-      .select('cost_micros')
+      .select('cost_micros, key_source')
       .in('key_source', ['MASTER_TRIAL', 'MASTER_PLAN', 'MASTER_ADMIN'])
       .gte('created_at', midnight.toISOString()),
     admin.from('usage').select('outcome').gte('created_at', since),
+    // Today's and yesterday's rows: what broke in browsers, counted (migration 0015).
+    admin.from('client_errors').select('count, message, route, version, kind').gte('day', yesterday),
   ])
 
   const outcomes: Record<string, number> = {}
   for (const row of (recent as { outcome: string }[] | null) ?? []) {
     outcomes[row.outcome] = (outcomes[row.outcome] ?? 0) + 1
   }
-  const spentMicros = ((today as { cost_micros: number | null }[] | null) ?? []).reduce(
-    (total, row) => total + (Number(row.cost_micros) || 0),
-    0,
-  )
+  // Two ceilings, summed the way estimate-food sums each: trials (and admins), and the plan.
+  const spent = (plan: boolean) =>
+    ((today as { cost_micros: number | null; key_source: string }[] | null) ?? [])
+      .filter((row) => (row.key_source === 'MASTER_PLAN') === plan)
+      .reduce((total, row) => total + (Number(row.cost_micros) || 0), 0)
+  const spentMicros = spent(false)
   const ceilingMicros = dailyBudgetMicros(Deno.env.get('DAILY_BUDGET_MICROS'))
+  const planSpentMicros = spent(true)
+  const planCeilingMicros = dailyBudgetMicros(
+    Deno.env.get('PLAN_DAILY_BUDGET_MICROS'),
+    DEFAULT_PLAN_DAILY_BUDGET_MICROS,
+  )
+
+  const errors = ((errorRows as { count: number; message: string; route: string | null; version: string | null; kind: string }[] | null) ?? [])
+  const clientErrors = errorsError
+    ? { error: 'client_errors unreadable' }
+    : {
+        total: errors.reduce((sum, row) => sum + row.count, 0),
+        distinct: errors.length,
+        top: [...errors].sort((a, b) => b.count - a.count).slice(0, 3)
+          .map(({ count, message, route, version, kind }) => ({ count, kind, message, route, version: version?.slice(0, 7) })),
+      }
 
   const ok =
     schemaMissing.length === 0 && secretsMissing.length === 0 && !spendError && !recentError
@@ -123,7 +147,8 @@ Deno.serve(async (request) => {
       last24h:
         spendError || recentError
           ? { error: 'usage ledger unreadable' }
-          : { spentTodayMicros: spentMicros, ceilingMicros, outcomes },
+          : { spentTodayMicros: spentMicros, ceilingMicros, planSpentTodayMicros: planSpentMicros, planCeilingMicros, outcomes },
+      clientErrors,
     },
     ok ? 200 : 503,
   )

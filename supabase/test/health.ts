@@ -14,15 +14,28 @@ Deno.env.set('SUPABASE_ANON_KEY', 'stub-anon-key')
 Deno.env.set('OPENAI_TRIAL_KEY', 'sk-stub-never-echoed')
 
 let schemaMissing: string[] = []
+let errorsDown = false
 
 const stub = Deno.serve({ port: 8998, onListen: () => {} }, (req) => {
   const url = new URL(req.url)
   if (url.pathname === '/rest/v1/rpc/health_missing') return Response.json(schemaMissing)
   if (url.pathname === '/rest/v1/usage') {
     // Two reads: the day's spend (cost_micros) and the last 24h (outcome).
-    return url.searchParams.get('select') === 'cost_micros'
-      ? Response.json([{ cost_micros: 1200 }, { cost_micros: 800 }, { cost_micros: null }])
+    return url.searchParams.get('select')?.startsWith('cost_micros')
+      ? Response.json([
+        { cost_micros: 1200, key_source: 'MASTER_TRIAL' },
+        { cost_micros: 800, key_source: 'MASTER_ADMIN' },
+        { cost_micros: null, key_source: 'MASTER_TRIAL' },
+        { cost_micros: 5000, key_source: 'MASTER_PLAN' },
+      ])
       : Response.json([{ outcome: 'OK' }, { outcome: 'OK' }, { outcome: 'PROVIDER_ERROR' }])
+  }
+  if (url.pathname === '/rest/v1/client_errors') {
+    if (errorsDown) return Response.json({ message: 'down' }, { status: 500 })
+    return Response.json([
+      { count: 3, kind: 'error', message: 'x is undefined', route: '/log', version: 'abcdef0123456' },
+      { count: 9, kind: 'render', message: 'Cannot read properties of null', route: '/today', version: 'abcdef0123456' },
+    ])
   }
   return Response.json({ message: 'not stubbed' }, { status: 404 })
 })
@@ -62,7 +75,12 @@ const call = (token?: string) =>
   const body = JSON.parse(text)
   check('healthy is 200 and ok', res.status === 200 && body.ok === true, text.slice(0, 120))
   check('it says which version answered', res.headers.get('x-vimetry-version') === body.version, body.version)
-  check('the day is summed', body.last24h.spentTodayMicros === 2000, String(body.last24h.spentTodayMicros))
+  check('the day is summed against the trials’ ceiling', body.last24h.spentTodayMicros === 2000,
+    String(body.last24h.spentTodayMicros))
+  check('and subscribers against their own', body.last24h.planSpentTodayMicros === 5000 &&
+    body.last24h.planCeilingMicros === 50_000_000, JSON.stringify(body.last24h))
+  check('browser errors are counted, worst first', body.clientErrors.total === 12 && body.clientErrors.distinct === 2 &&
+    body.clientErrors.top[0].count === 9 && body.clientErrors.top[0].version === 'abcdef0', JSON.stringify(body.clientErrors))
   check('outcomes are counted', body.last24h.outcomes.OK === 2 && body.last24h.outcomes.PROVIDER_ERROR === 1,
     JSON.stringify(body.last24h.outcomes))
   check('no secret is echoed', !text.includes('sk-stub') && !text.includes('stub-service-key') && !text.includes(TOKEN))
@@ -86,6 +104,15 @@ const call = (token?: string) =>
   const fallback = await call(TOKEN)
   check('the older OPENAI_MASTER_KEY still counts', fallback.status === 200, String(fallback.status))
   await fallback.body?.cancel()
+}
+
+{
+  errorsDown = true
+  const res = await call(TOKEN)
+  const body = await res.json()
+  check('an unreadable error table is said, without failing the rest', res.status === 200 &&
+    body.clientErrors.error === 'client_errors unreadable', JSON.stringify(body.clientErrors))
+  errorsDown = false
 }
 
 await stub.shutdown()

@@ -277,6 +277,18 @@ link, and the balance and reset date in the app. **Tests are designed in, not
 added after** (see below). No public checkout link before this is live.
 
 ### Error monitoring · M · C
+> **Built 2026-10-09, the minimal option:**
+> - What is reported: uncaught errors, unhandled rejections, and screens that
+>   fail to render (a fallback replaces the blank page).
+> - Where it goes: the `report-error` function, into `client_errors`
+>   (migration 0015). One counted row per error per day, at most 500 a day,
+>   kept 90 days.
+> - What is removed: emails, keys, tokens, photos and query strings, on both
+>   sides.
+> - Alerting: the daily check prints the top three and turns red at 25 a day.
+> - The Privacy Policy (2026-10-09) says so.
+> - Not done: CSP violation reports.
+
 Nothing reports an exception today. Two options:
 
 - **Our own, minimal (recommended first):** a `report-error` function writing

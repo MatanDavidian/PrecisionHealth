@@ -5,7 +5,11 @@ import { App } from './App'
 import { DataProvider } from './ui/DataProvider'
 import { AnalysisProvider } from './ui/AnalysisProvider'
 import { LanguageProvider } from './ui/i18n'
+import { ErrorBoundary } from './ui/components/ErrorBoundary'
+import { installErrorReporting } from './data/errorReporting'
 import './styles.css'
+
+installErrorReporting()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,11 +21,13 @@ createRoot(document.getElementById('root')!).render(
         screens are text a person has to read too.
       */}
       <LanguageProvider>
-        <DataProvider>
-          <AnalysisProvider>
-            <App />
-          </AnalysisProvider>
-        </DataProvider>
+        <ErrorBoundary>
+          <DataProvider>
+            <AnalysisProvider>
+              <App />
+            </AnalysisProvider>
+          </DataProvider>
+        </ErrorBoundary>
       </LanguageProvider>
     </BrowserRouter>
   </StrictMode>,

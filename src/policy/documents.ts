@@ -76,7 +76,7 @@ const OPERATOR = 'Matan Davidian, an individual based in Israel'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-10-03.2',
+  version: '2026-10-09',
   sections: [
     {
       heading: 'Who we are',
@@ -102,6 +102,12 @@ export const PRIVACY_POLICY: PolicyDocument = {
       ],
     },
     {
+      heading: 'When the app breaks',
+      body: [
+        'If something in the app fails in your browser, it sends us a short error report so we can fix it: the error message, where in the code it happened, which page of the app you were on (without anything after the address), the app’s version, and your browser’s name and version. It is not linked to your account, and it carries no health data — before anything is kept, email addresses, keys and anything else that could identify you are removed from it. Reports are kept for 90 days.',
+      ],
+    },
+    {
       heading: 'Meal photographs are not stored',
       body: [
         'This is the part people ask about, so it is stated plainly. We do not store your meal photographs. A photograph is sent for analysis once and then discarded: it is not written to this device, not written to our database, and not kept by us in any form.',
@@ -117,6 +123,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'To keep your account working — signing in, and keeping devices in step.',
         'To meter AI analyses — the free trial and a subscription’s monthly allowance.',
         'To know whether you have a subscription, so it can be honoured.',
+        'To find and fix what breaks, from error reports that are not linked to you.',
       ],
       body: [
         'In the EU and UK, our basis for processing health data is your explicit consent (GDPR Art. 9(2)(a)). You give it when you create an account, we record which version of this policy you agreed to and when, and you can withdraw it at any time by deleting your account.',

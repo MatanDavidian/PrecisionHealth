@@ -671,3 +671,55 @@ end
 $$;
 
 reset role;
+
+\echo '== 0015: browser errors are counted, bounded, and private =='
+set role postgres;
+select public.record_client_error('fp-a', 'error', 'x is undefined', null, '/log', 'abc', 'UA');
+select public.record_client_error('fp-a', 'error', 'x is undefined', null, '/log', 'abc', 'UA');
+select case when (select count from public.client_errors where fingerprint = 'fp-a') = 2
+             and (select count(*) from public.client_errors where fingerprint = 'fp-a') = 1
+  then 'PASS: the same error twice is one row counting 2'
+  else 'FAIL: repeats were not counted onto one row' end;
+
+insert into public.client_errors (day, fingerprint, kind, message)
+select (now() at time zone 'utc')::date, 'flood-' || n, 'error', 'flood'
+from generate_series(1, 499) as n;
+select case when public.record_client_error('one-too-many', 'error', 'm', null, null, null, null) = false
+             and public.record_client_error('fp-a', 'error', 'x is undefined', null, '/log', 'abc', 'UA') = true
+  then 'PASS: a full day refuses new errors but still counts known ones'
+  else 'FAIL: the daily bound did not hold' end;
+
+insert into public.client_errors (day, fingerprint, kind, message)
+values ((now() at time zone 'utc')::date - 91, 'ancient', 'error', 'old');
+select public.record_client_error('fp-a', 'error', 'x is undefined', null, '/log', 'abc', 'UA');
+select case when not exists (select 1 from public.client_errors where fingerprint = 'ancient')
+  then 'PASS: errors older than ninety days are dropped'
+  else 'FAIL: an old error was kept' end;
+
+do $$
+begin
+  insert into public.client_errors (day, fingerprint, kind, message) values (current_date, 'k', 'virus', 'm');
+  raise exception 'FAIL: an unknown kind was accepted';
+exception
+  when check_violation then raise notice 'PASS: kind is error, rejection or render';
+end
+$$;
+
+set role authenticated;
+do $$
+begin
+  perform count(*) from public.client_errors;
+  raise exception 'FAIL: a user could read browser errors';
+exception
+  when insufficient_privilege then raise notice 'PASS: browser errors are service-role only';
+end
+$$;
+do $$
+begin
+  perform public.record_client_error('x', 'error', 'm', null, null, null, null);
+  raise exception 'FAIL: a user could write browser errors directly';
+exception
+  when insufficient_privilege then raise notice 'PASS: recording goes through the function only';
+end
+$$;
+reset role;

@@ -28,6 +28,12 @@ export default defineConfig({
     // Kept only for failures: a trace for every passing test is a slow way to
     // fill a disk.
     trace: 'retain-on-failure',
+    /*
+      The production build registers a service worker (public/sw.js). Off by
+      default here so every spec's network stubs stay deterministic; the
+      installable spec turns it on and proves the stubs still work through it.
+    */
+    serviceWorkers: 'block',
   },
 
   /*

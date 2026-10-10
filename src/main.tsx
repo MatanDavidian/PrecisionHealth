@@ -11,6 +11,19 @@ import './styles.css'
 
 installErrorReporting()
 
+/*
+  The service worker: lets the installed app open without a connection
+  (public/sw.js). Production builds only — in development it would cache files
+  Vite is still changing.
+*/
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Private windows and some browsers refuse; the app works without it.
+    })
+  })
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

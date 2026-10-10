@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
@@ -86,6 +86,28 @@ export default defineConfig(({ mode }) => ({
           '<meta charset="UTF-8" />',
           `<meta charset="UTF-8" />\n    <meta name="build-commit" content="${buildCommit()}" />`,
         ),
+    },
+    {
+      /*
+        The service worker's version is this build's commit, so every deploy
+        is a new worker and retires the previous one's cached page. It lives
+        in public/ (copied verbatim), so the commit is written in afterwards.
+      */
+      name: 'service-worker-version',
+      apply: 'build',
+      writeBundle(options, bundle) {
+        const path = `${options.dir ?? 'dist'}/sw.js`
+        // Scripts and styles only: images and fonts are fetched when needed.
+        const assets = Object.keys(bundle)
+          .filter((file) => file.startsWith('assets/') && /\.(js|css)$/.test(file))
+          .map((file) => `/${file}`)
+        writeFileSync(
+          path,
+          readFileSync(path, 'utf8')
+            .replace("'__BUILD__'", JSON.stringify(buildCommit()))
+            .replace("'__ASSETS__'", JSON.stringify(assets)),
+        )
+      },
     },
   ],
   resolve: {

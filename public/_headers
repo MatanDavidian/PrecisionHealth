@@ -11,6 +11,15 @@
 /
   Cache-Control: public, max-age=0, must-revalidate
 
+# The service worker is checked for updates on every visit; a cached copy
+# would keep people on an old build.
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: public, max-age=3600
+
 # Security, on every response.
 #
 # The CSP is ENFORCED (since 2026-10-09), after six days in report-only mode

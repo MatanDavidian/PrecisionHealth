@@ -25,7 +25,8 @@ function buildVersion(): string | undefined {
 }
 
 export function reportError(kind: ErrorKind, cause: unknown): void {
-  if (!isSupabaseConfigured) return
+  // Offline, failures are the network's, not bugs — and the report could not leave anyway.
+  if (!isSupabaseConfigured || navigator.onLine === false) return
   const error = cause instanceof Error ? cause : undefined
   const message = error?.message ?? (typeof cause === 'string' ? cause : String(cause ?? ''))
   const stack = error?.stack

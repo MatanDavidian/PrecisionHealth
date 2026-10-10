@@ -215,8 +215,31 @@ repository or a chat.
    (`e2e/delete-account-info.spec.ts`). Owner: it promises deletion
    **within 30 days** of an emailed request — the GDPR limit is one month.
    Change the wording if that is not a promise you want to make.
-3. **Privacy Policy and Terms: Google Play as a seller** — C to draft, owner
-   to approve.
+3. **Privacy Policy and Terms: Google Play as a seller.** Drafted below for
+   the owner to approve. Once approved, C applies it in
+   `src/policy/documents.ts` with a version bump, so signed-in users
+   re-consent once.
+
+   **Privacy Policy, "What this app holds"** — the subscription bullet
+   becomes:
+   > Whether you subscribe — your plan and when it renews. Card and billing
+   > details are held by Lemon Squeezy, or by Google Play if you subscribed
+   > in the Android app — not by us.
+
+   **Privacy Policy, "Who else sees it"** — one more bullet:
+   > Google — if you subscribe inside the Android app, Google Play sells the
+   > subscription: it takes the payment, holds your payment details, and
+   > tells us whether you subscribed and when it renews. It receives no
+   > health data.
+
+   **Terms, "Subscription"** — after the Lemon Squeezy paragraph:
+   > In the Android app, the subscription is sold by Google Play instead, at
+   > Google Play's price for your country, and Google Play's terms apply to
+   > the payment. You manage and cancel it in Google Play, and refunds of
+   > those payments are requested from Google; a refunded subscription ends
+   > when the refund is made. One subscription covers the app and the
+   > website, whichever you bought it from, and an account cannot hold two
+   > at once.
 4. **A sample week in the review account** — C, a script that signs in as
    `review@vimetry.app`. It needs the password in `.env.local` as
    `REVIEW_EMAIL` / `REVIEW_PASSWORD`, put there by the owner.

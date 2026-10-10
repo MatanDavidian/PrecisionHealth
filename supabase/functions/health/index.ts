@@ -165,6 +165,7 @@ Deno.serve(async (request) => {
     { data: today, error: spendError },
     { data: recent, error: recentError },
     { data: errorRows, error: errorsError },
+    { data: disputeRows, error: disputesError },
   ] = await Promise.all([
     admin
       .from('usage')
@@ -174,6 +175,16 @@ Deno.serve(async (request) => {
     admin.from('usage').select('outcome').gte('created_at', since),
     // Today's and yesterday's rows: what broke in browsers, counted (migration 0015).
     admin.from('client_errors').select('count, message, route, version, kind').gte('day', yesterday),
+    /*
+      Chargebacks. Lemon Squeezy's docs do not describe its dispute events, so
+      the webhook logs them unhandled (billing_events) and this surfaces them
+      for the owner to act on by hand, until a real one shows what they carry.
+    */
+    admin
+      .from('billing_events')
+      .select('event_name, object_id, received_at')
+      .like('event_name', 'dispute_%')
+      .gte('received_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
   ])
 
   const outcomes: Record<string, number> = {}
@@ -231,6 +242,9 @@ Deno.serve(async (request) => {
           : { spentTodayMicros: spentMicros, ceilingMicros, planSpentTodayMicros: planSpentMicros, planCeilingMicros, outcomes },
       clientErrors,
       openai: probes,
+      disputes: disputesError
+        ? { error: 'billing_events unreadable' }
+        : { last30days: (disputeRows as { event_name: string; object_id: string; received_at: string }[] | null) ?? [] },
       billing: {
         configured: ['LEMONSQUEEZY_API_KEY', 'LEMONSQUEEZY_WEBHOOK_SECRET', 'LEMONSQUEEZY_STORE_ID', 'LEMONSQUEEZY_VARIANT_ID']
           .every((name) => Deno.env.get(name)),

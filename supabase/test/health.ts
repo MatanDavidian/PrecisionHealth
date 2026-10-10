@@ -15,6 +15,7 @@ Deno.env.set('OPENAI_TRIAL_KEY', 'sk-stub-never-echoed')
 
 let schemaMissing: string[] = []
 let errorsDown = false
+let disputes: Record<string, string>[] = []
 
 const stub = Deno.serve({ port: 8998, onListen: () => {} }, (req) => {
   const url = new URL(req.url)
@@ -29,6 +30,9 @@ const stub = Deno.serve({ port: 8998, onListen: () => {} }, (req) => {
         { cost_micros: 5000, key_source: 'MASTER_PLAN' },
       ])
       : Response.json([{ outcome: 'OK' }, { outcome: 'OK' }, { outcome: 'PROVIDER_ERROR' }])
+  }
+  if (url.pathname === '/rest/v1/billing_events') {
+    return Response.json(disputes)
   }
   if (url.pathname === '/rest/v1/client_errors') {
     if (errorsDown) return Response.json({ message: 'down' }, { status: 500 })
@@ -127,6 +131,15 @@ const call = (token?: string) =>
   await fallback.body?.cancel()
 }
 
+{
+  disputes = [{ event_name: 'dispute_created', object_id: '4723042', received_at: '2026-10-10T18:00:00Z' }]
+  const res = await call(TOKEN)
+  const body = await res.json()
+  check('a payment dispute is reported, without failing the service', res.status === 200 &&
+    body.disputes.last30days.length === 1 && body.disputes.last30days[0].object_id === '4723042',
+    JSON.stringify(body.disputes))
+  disputes = []
+}
 {
   errorsDown = true
   const res = await call(TOKEN)

@@ -39,7 +39,7 @@ handler tests for every function.
 | --- | --- | --- | --- |
 | 1 | **Android app on the Play Store**, selling through Google Play Billing | M + C | Next. Plan: `docs/ANDROID-APP.md` — about two weeks of code, four to six weeks of calendar (Google's verification and a 14-day closed test). Owner starts the Play Console account now |
 | 2 | **Publish the Garmin app** | M + C | Next, alongside 1 — Garmin's review also takes weeks, so its owner steps start in the same week (section below) |
-| 3 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | C | Small; before going live with payments. Lemon Squeezy has both events; tick them on the webhook once handled |
+| 3 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | M + C | **Visible since 2026-10-10:** the webhook logs them and the daily check turns red on any in 30 days. Lemon Squeezy's docs do not describe their contents, so automatic handling waits for a real one. Owner: tick both events on the webhook. Then decide the rule — end access while disputed, as a refund does? |
 | 4 | **Logo and home-screen icon** | M + C | Moved up: the Android app and the installable website need icons. A temporary mark will do for the closed test; motion and the accessibility scan stay P3 |
 | 5 | **Onboarding for a first-time visitor** | M + C | Designed first in Claude Design, then built (section below) |
 | 6 | **Contract tests on a local Supabase** | C | Needs the local stack (~2 GB download) — run with the owner around |

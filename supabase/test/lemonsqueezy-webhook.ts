@@ -283,6 +283,22 @@ console.log('\nAn account that no longer exists')
     String(r.status))
 }
 
+console.log('\nChargebacks')
+{
+  // Not described in Lemon Squeezy's docs: logged for the daily check to
+  // surface, and acted on by hand, until a real one shows its shape.
+  reset()
+  await send(subscription('subscription_created'))
+  const r = await send({
+    meta: { event_name: 'dispute_created', test_mode: true },
+    data: { type: 'disputes', id: 'dp_1', attributes: { order_id: 5001, status: 'needs_response' } },
+  })
+  check('a dispute is acknowledged and logged by name', r.status === 200 &&
+    table('billing_events').some((e) => e.event_name === 'dispute_created' && e.object_id === 'dp_1'),
+    JSON.stringify(r.body))
+  check('and changes nothing on its own', access() !== undefined && deletes().length === 0)
+}
+
 console.log('\nEverything else')
 {
   reset()

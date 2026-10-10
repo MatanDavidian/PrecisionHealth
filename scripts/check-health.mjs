@@ -141,6 +141,18 @@ else {
         else fail(`${line}: no — ${[p.status, p.code].filter(Boolean).join(' ') || 'failed'}`)
       }
 
+      // Chargebacks in the last 30 days: handled by hand until we know their shape.
+      const disputes = body.disputes
+      if (disputes?.error) fail(disputes.error)
+      else if (disputes) {
+        const list = disputes.last30days ?? []
+        if (list.length === 0) pass('no payment disputes in 30 days')
+        else {
+          fail(`${list.length} payment dispute event(s) in 30 days — look at them in Lemon Squeezy (Store → Orders)`)
+          for (const d of list) console.log(`    ${d.received_at.slice(0, 16)} ${d.event_name} ${d.object_id}`)
+        }
+      }
+
       // Lemon Squeezy: set up, which mode, and when its API key expires.
       const billing = body.billing
       if (billing && !billing.configured) console.log('    payments: not connected yet')

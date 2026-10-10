@@ -14,16 +14,58 @@ Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
 
 ---
 
-## Where it stands
+## Where it stands (2026-10-10)
 
 | | |
 | --- | --- |
-| Product | nutrition (photo, words, manual, repeat, adjust, fill a missed day), week view, insights, Garmin sync, Hebrew |
-| Accounts | sign-in, consent, export, deletion, data moved in on first sign-in |
-| Legal | Terms and Privacy Policy final and live; OpenAI DPA signed; privacy@ and support@ forward |
-| Payments | Lemon Squeezy approved. Built and tested 2026-10-09 (`docs/ops/payments.md`); **not connected yet** — owner sets it up in test mode first |
-| Tests | 441 unit (82% of lines, 90% of branches on the logic layers), 228 browser, DB invariants, a race test, a device-sync harness, a live-site check |
-| **Operations** | **no CI, migrations applied by hand, no monitoring, no alerting, server versions unknown** |
+| Product | nutrition (photo, words, manual, repeat, adjust, fill a missed day), week view, insights, Garmin sync, Hebrew; GPT-6.1 Sol and GPT-6 Luna only |
+| Accounts | sign-in, consent, export, deletion (cancels billing first), data moved in on first sign-in; signed out, the browser is asked to keep the data |
+| Legal | Terms and Privacy Policy live (both 2026-10-09: subscription terms, error reports); OpenAI DPA signed; privacy@ and support@ forward |
+| Payments | Lemon Squeezy connected in **test mode**, every flow passed end to end on 2026-10-10 (purchase, both allowances, cancel, refund, account deletion). **Live mode deliberately not yet** — owner's decision |
+| Tests | 503 unit, 278 browser, 9 server handler suites, DB invariants on Postgres, a race test, a live-site check |
+| Operations | CI deploys; migrations tracked (0001–0015); one deploy script; daily health check with email — schema, versions, both spend ceilings, every OpenAI key against every model, browser errors, payments key expiry |
+
+---
+
+## What is left to finish Phase 1 (2026-10-10)
+
+Done since 2026-10-02: all of P0; the GPT-6 switch; payments (in test mode);
+HEIC photos named instead of a spinner; Safari storage; error monitoring;
+handler tests for every function.
+
+### Open, in order
+
+| # | What | Who | Note |
+| --- | --- | --- | --- |
+| 1 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | C | The last payment gap, and small. Lemon Squeezy has both events; tick them on the webhook once handled. Before going live |
+| 2 | **Publish the Garmin app** | M + C | Start early: Garmin's review takes weeks (section below) |
+| 3 | **Onboarding for a first-time visitor** | M + C | Designed first in Claude Design, then built (section below) |
+| 4 | **Contract tests on a local Supabase** | C | Needs the local stack (~2 GB download) — run with the owner around |
+| 5 | **Model quality check** on real meal photos | M (+ C script) | GPT-6.1 Sol is the baseline (`docs/ops/model-evaluation.md`). When there are photos, C writes a script that runs them through both models and scores them |
+| 6 | **Re-measure the cost per analysis**, update `docs/ops/pricing.md` | C | After a few weeks of real usage, from the ledger |
+| 7 | **Logo, home-screen icon, motion, accessibility scan** | M + C | Lowest priority (P3 below) |
+| — | **Go live with payments** | M | When the owner decides: `docs/ops/payments.md` step 4 — copy the product to live, longest key expiry, `set-billing-secrets.sh live` |
+
+### Small things waiting on the owner
+
+- **Support email on receipts:** send a test to support@vimetry.app from an
+  address other than the Gmail it forwards to. If it arrives, set it as the
+  Lemon Squeezy store's contact email (today it shows the personal Gmail).
+- **OpenAI prices:** confirm the GPT-6 prices in the OpenAI dashboard. Ours
+  came from third-party trackers (`docs/ops/model-evaluation.md`).
+- **HEIC decoding:** decide whether to decode iPhone photos in the browser.
+  That needs a 3 MB LGPL decoder and `worker-src blob:` in the CSP; today the
+  app names the format and says how to send a JPEG.
+- **Older owner tasks:**
+  - the Supabase DPA
+  - a restore drill
+  - the `www` → apex redirect
+  - the trademark search
+- **Tidy-up (optional):** the test account `davidianmatan+phtest` still holds
+  an active test-mode subscription from testing. Refund it, or keep it for
+  testing as a subscriber.
+
+**Next:** chargebacks, then start the Garmin submission.
 
 ---
 
@@ -242,7 +284,7 @@ handled; the gaps are marked.
 | Watch unsynced for a week | fixed, **deploy owed** | P0.4 | P0 |
 | A real meal logged on a filled day | replaces the estimate | — | ✓ |
 | **Account deleted with an active subscription** | ~~billing would continue~~ **done 2026-10-09**: cancelled first, deletion refused if that fails | — | P1 (payments) |
-| **Refund or chargeback** | **refund done 2026-10-09**: a full refund ends access and cancels billing. Chargebacks have no event of their own in Lemon Squeezy's docs | see what the first dispute sends | P1 (payments) |
+| **Refund or chargeback** | **refund done 2026-10-09**, tested live in test mode 2026-10-10: a full refund ends access and cancels billing. Chargebacks: Lemon Squeezy sends `dispute_created` / `dispute_resolved`, not handled yet | open item 1 above | P1 (payments) |
 | **A subscriber hits the daily spend ceiling** | **done 2026-10-09**: their own ceiling and their own message | — | P1 (payments) |
 | **Safari clears a signed-out browser's data** | **done 2026-10-09**: the first local save asks the browser to keep it (once), and Settings says whether it agreed, with the sure ways — sign in, Home Screen, export | — | P1 |
 | **iPhone photo picked on Android or desktop (HEIC)** | **done 2026-10-09**: recognised by its bytes and named, with how to send a JPEG (it used to spin for ever) | decoding it in the browser needs a 3 MB LGPL decoder and `worker-src blob:` in the CSP — owner's call | P1 |

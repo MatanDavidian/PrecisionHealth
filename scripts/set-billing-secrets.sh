@@ -17,7 +17,8 @@ if [ "$MODE" != "test" ] && [ "$MODE" != "live" ]; then
   exit 1
 fi
 
-SECRET=$(openssl rand -hex 32)
+# 40 hex characters (160 bits): Lemon Squeezy refuses a signing secret over 40.
+SECRET=$(openssl rand -hex 20)
 # Copied, and checked: anything else that writes the clipboard (a browser
 # helper, a clipboard manager) can replace it before it is pasted.
 copy_secret() {
@@ -29,7 +30,7 @@ copy_secret() {
 }
 copy_secret
 REF=$(cat supabase/.temp/project-ref 2>/dev/null || echo '<project-ref>')
-echo "1. The webhook's signing secret is on the clipboard (64 characters)."
+echo "1. The webhook's signing secret is on the clipboard (40 characters)."
 echo "   Paste it straight away — copying anything else replaces it. Type c below to copy it again."
 echo "   Lemon Squeezy ($MODE mode) → Settings → Webhooks → + :"
 echo "     Callback URL:   https://$REF.supabase.co/functions/v1/lemonsqueezy-webhook"

@@ -235,3 +235,59 @@ measured in weeks, so start its owner steps in week 1 too.
   every scenario against both providers.
 - **Refund paths differ.** Google refunds without asking us. We learn it
   from the voided-purchase notification, and must end access then.
+
+---
+
+## iPhone, later
+
+Recorded 2026-10-10 as a possible next step after Android, **not** part of
+Phase 1. Nothing in the Android plan blocks it.
+
+**How it would be built.** iOS has no equivalent of a TWA, so the app would
+be a **Capacitor** shell: a native iOS app showing the web app in a
+WKWebView.
+- Apple's review rejects apps that are only a website in a frame (App Store
+  guideline 4.2, minimum functionality), so the app needs real native
+  features.
+- Vimetry has an obvious one: **Apple Health (HealthKit)**, reading steps,
+  sleep, weight and workouts from the phone. That is useful for anyone
+  without a Garmin.
+- Native camera and notifications add to it.
+
+**Payments: a third seller.** Digital subscriptions bought inside an iPhone
+app go through Apple's In-App Purchase (StoreKit). That is 15% under the
+Small Business Program.
+
+On the server it is a third provider in `subscriptions`, beside Lemon
+Squeezy and Google Play:
+- the App Store Server API, to verify a purchase
+- App Store Server Notifications V2, for renewals, cancels and refunds
+
+The rules and the one-subscription-per-account design stay the same. This
+is why the Android work keeps `provider` generic and keeps one entitlement
+function: Apple should slot in, not need its own rule set.
+
+**Check at the time:**
+- **US link-outs.** Apple currently must allow US apps to link to paying on
+  the website. That is the result of litigation still in motion.
+- **The App Review Guidelines** on HealthKit use and on subscriptions.
+
+**What it takes:**
+- **Owner:** the Apple Developer Program ($99 a year, the same legal
+  identity as the other stores) and a Mac with Xcode.
+- **Testing:** TestFlight, with no 12-tester rule. Review usually takes a few
+  days, so the calendar is shorter than Google's.
+- **Code (C):** about **2–3 weeks**:
+  - the iOS shell
+  - StoreKit in the app, with its server and webhook
+  - HealthKit
+  - the store forms and screenshots
+  - Terms and Privacy Policy, naming Apple as a seller, and HealthKit data
+    if added
+
+**The decision this affects now, and how it was made.** Building Android on
+Capacitor too would give one native shell for both stores. It would cost
+about a week more up front, and Play Billing would then need a native plugin
+instead of the web APIs. **Decided: keep the TWA for Android** — it is the
+fastest way into the Play Store, and it does not block iPhone later. If iPhone
+becomes certain before the Android app ships, revisit this choice.

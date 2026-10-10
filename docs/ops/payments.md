@@ -27,6 +27,26 @@ Why the numbers: measured on the app's real prompts on 2026-10-09:
 So a subscriber who uses everything on Sol costs about $1.60–$4 for photos
 plus up to $1.30 for text, against $7.99 net of Lemon Squeezy's fees.
 
+## Two sellers, one plan (2026-10-11)
+
+On the website the plan is sold by **Lemon Squeezy**. Inside the Android app
+it is sold by **Google Play**, because Play's payments policy requires Play
+Billing there (`docs/ANDROID-APP.md`).
+
+- **Same plan everywhere:** the allowances and the rules (cancel, refund,
+  account deletion) are identical, read from one `subscriptions` table with
+  a `provider` column, by one entitlement function (`_shared/plan.ts`).
+- **One subscription per account, from either store.** A second purchase
+  is refused:
+  - on the website, by `billing`
+  - on Play, by `play-billing`, which leaves it unacknowledged so Google
+    refunds it within three days
+- **Managing:** a Play subscription is managed on Google Play, from either
+  side. Inside the Android app, a website subscription is described as
+  managed on the website, not linked to.
+- **Code status:** built and tested against a fake Google. It waits on the
+  owner's Play Console setup (product, service account, Pub/Sub).
+
 ## How it works
 
 - **`billing`** (user JWT) makes the checkout. The account's id goes into the

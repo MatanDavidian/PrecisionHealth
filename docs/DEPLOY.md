@@ -1,7 +1,17 @@
 # Deploying
 
-**Live at [vimetry.app](https://vimetry.app)**,
-deploying from `main` on every push.
+**Live at [vimetry.app](https://vimetry.app)**, deployed by CI from `main`.
+
+> **Since 2026-10-03, deploys go through CI only.**
+> - A push to `main` runs every test. Only if they pass does the `deploy` job
+>   publish with `wrangler pages deploy` and then check the live site.
+> - Cloudflare's own automatic deploys are switched off, so a red build
+>   cannot reach production.
+> - Supabase functions and migrations are deployed separately, with
+>   `./scripts/deploy-functions.sh`.
+>
+> The one-time Cloudflare setup below is how the project was first
+> connected; it is kept for reference.
 
 The app is a static bundle plus Supabase, so hosting only has to serve files
 over HTTPS — and, later, run a function or two for the WhatsApp webhook and

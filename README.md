@@ -1,4 +1,4 @@
-# Timeline — AI-Driven Personal Health Platform
+# Vimetry — a personal health log
 
 A longitudinal personal health platform: nutrition, training, recovery, body
 measurements, wearable data and clinical information in one timeline — with AI
@@ -15,7 +15,9 @@ actually looks like today is
 ```bash
 npm install
 npm run dev              # http://localhost:5173
-npm test                 # domain rules, plus the repository contract
+npm test                 # unit tests: domain rules, data, plan rules
+npm run test:e2e         # the browser suite (Playwright, phone and desktop)
+npm run test:functions   # every Supabase function, against fakes
 npm run build            # typecheck + production build
 npm run supabase:check   # confirm .env.local reaches your project
 npm run db:verify        # prove the schema enforces its invariants
@@ -73,44 +75,36 @@ data sources → normalized health model → analytics/goal engine → AI tools 
 | `src/domain/mealEdits.ts` | Correcting a logged meal: re-portion by ratio, supersede, remove. |
 | `src/ui/` | Screens and components; reaches data only through repositories. |
 
-## Status
+## Status (2026-10-11)
 
-**Slice 1 complete.** You can log a meal and watch today's protein move, and it
-survives a reload — data lives in IndexedDB, no account, no server. Confirming
-an AI estimate or settling a two-source disagreement writes a real superseding
-record, leaving the original readable for audit.
+**Live at [vimetry.app](https://vimetry.app).** Phase 1 is nearly done; what
+is left, and in what order, is in
+[`docs/PHASE-1-FINISH.md`](docs/PHASE-1-FINISH.md).
 
-Assumptions and open questions taken along the way:
-[`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md).
+- **Logging:** photo, words, manual entry, "Again" (repeat a past meal), adjust
+  an estimate, fill a missed day from your average. Estimates come from
+  GPT-6.1 Sol or GPT-6 Luna, with per-item confidence; nothing is ever
+  overwritten (D4, D15). Meal photos are never stored.
+- **Views:** Today, Nutrition, and the week (eaten against burned).
+- **Accounts:** optional. Signed out, everything stays in the browser.
+  Signed in, it syncs (Supabase, EU). Consent, export and account deletion
+  are all in the app.
+- **Garmin:** a Connect IQ watch app sends daily activity. It is ready for
+  the Store (`docs/garmin/store-listing.md`).
+- **Paying for analysis:**
+  - 10 free analyses on our key
+  - a subscription (Lemon Squeezy, test mode until the owner goes live:
+    `docs/ops/payments.md`)
+  - or your own OpenAI key
+- **Installable:** add it to the Home Screen. It opens offline.
+- **Android:** a Play Store app with Google Play Billing is built and
+  waiting on Google's account checks (`docs/ANDROID-APP.md`).
+- **In English and Hebrew.**
+- **Operations:**
+  - deploys go only through CI
+  - one script deploys the functions (`scripts/deploy-functions.sh`)
+  - a daily health check emails on failure
+  - browser errors are reported (`docs/ops/`)
 
-**Slice 2 built** — photo meal logging
-([spec](docs/features/photo-meal-logging.md)). The app opens on a camera:
-photograph food, and kcal/protein/carbs/fat come back estimated with per-item
-confidence, saved as unconfirmed estimates the Confirm flow settles. Optional
-hints (food name, total grams) are treated as ground truth. Runs on your own
-OpenAI key, stored on this device only (D14). **Meal photos are never stored** —
-sent once, then discarded.
-
-Two steps outstanding: a first run against a live API key (the adapter has
-never called the real API), and an HTTPS deploy so it works from a phone.
-
-**Slice 3 done** — accounts and sync, live at
-[precisionhealth-9bn.pages.dev](https://precisionhealth-9bn.pages.dev). Sign in
-and your data follows you between devices; signed out it stays in the browser
-exactly as before. Planned in
-[`docs/features/supabase-sync.md`](docs/features/supabase-sync.md); hosting in
-[`docs/DEPLOY.md`](docs/DEPLOY.md).
-
-**Slice 3.7 built** — three ways to log, and a meal you can fix
-([spec](docs/features/log-modes-and-meal-edits.md)). Log is three modes now:
-**Photo** (with an optional note that goes to the model — "no oil", "half
-portion"), **Write** (describe a meal in words and get the same estimate,
-honestly less certain because nothing was seen), and **Again** (search and
-repeat what you have logged before). Every logged meal gained **Edit** and
-**Delete**: change the grams and the macros follow by ratio, remove a food,
-move it to another slot — or delete it, with Undo. Neither overwrites anything;
-an edit is a new meal version, a delete is a version saying it did not happen
-(D4, D15).
-
-Next: **slice 4** — importing from Garmin, the first time two sources describe
-the same day. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+How it got here, slice by slice: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Assumptions and open questions: [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md).

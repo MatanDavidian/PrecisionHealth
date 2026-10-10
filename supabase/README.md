@@ -8,6 +8,33 @@ migrations/   the schema — apply these to your project, in order
 test/         proves the schema enforces what the architecture claims
 ```
 
+## The functions, at a glance (2026-10-11)
+
+All are deployed together by `./scripts/deploy-functions.sh` (migrations
+first, then every function with the right flags, then a health check). Each
+answers with an `x-vimetry-version` header naming its commit.
+
+| Function | Caller | Secrets it reads | Doc |
+| --- | --- | --- | --- |
+| `estimate-food` | signed-in app | `OPENAI_TRIAL_KEY`, `OPENAI_PLANS_KEY`, `OPENAI_ADMIN_KEY`, `DAILY_BUDGET_MICROS`, `PLAN_DAILY_BUDGET_MICROS` | below; `docs/ops/payments.md` |
+| `billing` | signed-in app | `LEMONSQUEEZY_API_KEY`, `_STORE_ID`, `_VARIANT_ID`, `_TEST_MODE`, `APP_URL` | `docs/ops/payments.md` |
+| `lemonsqueezy-webhook` | Lemon Squeezy (`--no-verify-jwt`, signed) | `LEMONSQUEEZY_WEBHOOK_SECRET`, `LEMONSQUEEZY_TEST_MODE`, `LEMONSQUEEZY_API_KEY` | `docs/ops/payments.md` |
+| `play-billing` | signed-in Android app | `GOOGLE_PLAY_SERVICE_ACCOUNT`, `GOOGLE_PLAY_PACKAGE`, `GOOGLE_PLAY_PRODUCT` | `docs/ANDROID-APP.md` step 4 |
+| `play-rtdn` | Google Pub/Sub (`--no-verify-jwt`, `?token=`) | `GOOGLE_PLAY_RTDN_TOKEN`, plus the three above | `docs/ANDROID-APP.md` step 4 |
+| `delete-account` | signed-in app | both stores' keys, to cancel billing first | `docs/ops/payments.md` |
+| `issue-device-token` | signed-in app | — | "Adding a watch" below |
+| `device-sync` | the watch (`--no-verify-jwt`, device token) | — | "After a long gap in syncing" below |
+| `report-error` | any visitor (`--no-verify-jwt`) | — | `docs/PHASE-1-FINISH.md`, error monitoring |
+| `health` | the daily check (`--no-verify-jwt`, `x-health-token`) | `HEALTH_TOKEN` | `docs/ops/operations-setup.md` |
+
+Secrets are set with `npx supabase secrets set NAME=value`, or for payments
+with `scripts/set-billing-secrets.sh`. Never put them in the repository. The
+health check names any that are missing, never their values.
+
+The step-by-step migration instructions further down (pasting SQL into the
+editor) predate the deploy script and are kept as history; migrations are
+now applied by `npx supabase db push` inside it.
+
 ## What the database enforces
 
 Three architectural decisions live here as database rules rather than client

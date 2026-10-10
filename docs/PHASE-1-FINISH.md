@@ -14,16 +14,18 @@ Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
 
 ---
 
-## Where it stands (2026-10-10)
+## Where it stands (2026-10-11)
 
 | | |
 | --- | --- |
-| Product | nutrition (photo, words, manual, repeat, adjust, fill a missed day), week view, insights, Garmin sync, Hebrew; GPT-6.1 Sol and GPT-6 Luna only |
+| Product | nutrition (photo, words, manual, repeat, adjust, fill a missed day), week view, insights, Garmin sync, Hebrew; GPT-6.1 Sol and GPT-6 Luna only; installable, opens offline; the sample day is labelled |
 | Accounts | sign-in, consent, export, deletion (cancels billing first), data moved in on first sign-in; signed out, the browser is asked to keep the data |
 | Legal | Terms and Privacy Policy live (both 2026-10-09: subscription terms, error reports); OpenAI DPA signed; privacy@ and support@ forward |
 | Payments | Lemon Squeezy connected in **test mode**, every flow passed end to end on 2026-10-10 (purchase, both allowances, cancel, refund, account deletion). **Live mode deliberately not yet** — owner's decision |
-| Tests | 503 unit, 278 browser, 9 server handler suites, DB invariants on Postgres, a race test, a live-site check |
-| Operations | CI deploys; migrations tracked (0001–0015); one deploy script; daily health check with email — schema, versions, both spend ceilings, every OpenAI key against every model, browser errors, payments key expiry |
+| Tests | 525 unit, 318 browser, 11 server handler suites (every function), DB invariants on Postgres, a race test, a live-site check |
+| Operations | CI deploys; migrations tracked (0001–0016); one deploy script; daily health check with email — schema, versions, both spend ceilings, every OpenAI key against every model, browser errors, payment disputes, payments key expiry |
+| Android | Play Billing (server and app), the TWA configuration, listing drafts, screenshots, a reviewer sign-in and sample data — built; waiting on Google's account verification (`docs/ANDROID-APP.md`) |
+| Garmin | renamed Vimetry; a Store build with no token; listing and checklist (`docs/garmin/store-listing.md`) — waiting on the owner's developer account |
 
 ---
 
@@ -37,11 +39,11 @@ handler tests for every function.
 
 | # | What | Who | Note |
 | --- | --- | --- | --- |
-| 1 | **Android app on the Play Store**, selling through Google Play Billing | M + C | Next. Plan: `docs/ANDROID-APP.md` — about two weeks of code, four to six weeks of calendar (Google's verification and a 14-day closed test). Owner starts the Play Console account now |
-| 2 | **Publish the Garmin app** | M + C | Next, alongside 1 — Garmin's review also takes weeks, so its owner steps start in the same week (section below) |
+| 1 | **Android app on the Play Store**, selling through Google Play Billing | M + C | **Code done 2026-10-10** (steps 1–4 and 5's drafts of `docs/ANDROID-APP.md`). Waiting on the owner: Google's verification, then the console setup, the package build, the 14-day closed test |
+| 2 | **Publish the Garmin app** | M + C | **Ready to submit 2026-10-10.** Owner: developer account, upload, simulator screenshots, submit (`docs/garmin/store-listing.md`) |
 | 3 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | M + C | **Visible since 2026-10-10:** the webhook logs them and the daily check turns red on any in 30 days. Lemon Squeezy's docs do not describe their contents, so automatic handling waits for a real one. Owner: tick both events on the webhook. Then decide the rule — end access while disputed, as a refund does? |
 | 4 | **Logo and home-screen icon** | M + C | Moved up: the Android app and the installable website need icons. A temporary mark will do for the closed test; motion and the accessibility scan stay P3 |
-| 5 | **Onboarding for a first-time visitor** | M + C | Designed first in Claude Design, then built (section below) |
+| 5 | **Onboarding for a first-time visitor** | M + C | The sample-day label is done (2026-10-11). The first-visit cards and the signed-in empty state are designed first in Claude Design, then built (section below) |
 | 6 | **Contract tests on a local Supabase** | C | Needs the local stack (~2 GB download) — run with the owner around |
 | 7 | **Model quality check** on real meal photos | M (+ C script) | GPT-6.1 Sol is the baseline (`docs/ops/model-evaluation.md`). When there are photos, C writes a script that runs them through both models and scores them |
 | 8 | **Re-measure the cost per analysis**, update `docs/ops/pricing.md` | C | After a few weeks of real usage, from the ledger — and with Play's 15% in it |
@@ -349,7 +351,8 @@ Today a stranger lands on a sample day with no explanation.
 
 - Three short first-visit cards: what Vimetry is; where your data lives; "look
   around with sample data" or "sign in for 10 free analyses".
-- A visible **Sample data** label wherever the sample day is shown (Q5).
+- ~~A visible **Sample data** label wherever the sample day is shown (Q5).~~
+  Done 2026-10-11: `SampleDayLabel` on Today and Nutrition.
 - After first sign-in, an empty state that says what to do: photograph your
   next meal; connect a Garmin.
 
@@ -384,8 +387,8 @@ change. Remaining:
   from the dashboard, as with OpenAI's.
 - **A restore drill** — confirm what your Supabase plan backs up, and restore
   once into a scratch project.
-- **Delete one throwaway account** with the in-app button, so deletion has run
-  for real at least once.
+- ~~**Delete one throwaway account**~~ — done 2026-10-10 (`davidianmatan+phdelete`,
+  with a test subscription, which was cancelled first).
 - The `www` → apex redirect.
 
 ---
@@ -395,7 +398,7 @@ change. Remaining:
 | Item | Recommendation |
 | --- | --- |
 | **Logo** | Needed in five places now: Lemon Squeezy store, Garmin listing and launcher icon, favicon, home-screen icon, emails. Today it is an orange dot. Explore directions in the existing Claude Design canvas, then either finish one there or hand the chosen direction to a designer for a clean vector. It must read at 16 px and on a round watch face, and be checked alongside the trademark search for the name. |
-| **Home-screen app (PWA)** | A web manifest and icons, so "Add to Home Screen" gives a proper icon and a full-screen app. Cheap and high value on phones. Offline caching is a separate, larger decision — not now. |
+| **Home-screen app (PWA)** | ✅ **Done 2026-10-10:** manifest, icons, and a service worker that opens the app offline (app files only, never data). |
 | **Design pass** | First visit, empty states and the Log screen, in Claude Design: the screens a stranger sees in their first minute. |
 | **Motion** | Purposeful and short (150–250 ms): totals counting to their new value after a save, estimate rows arriving in turn, week bars growing, the striped estimate filling in. Everything off under `prefers-reduced-motion`. Nothing decorative. |
 | **Sound** | **No.** People log meals in restaurants, at work and in bed, and a health app that makes noise announces itself. A short vibration on save on Android (iOS does not support it from the web) gives the same confirmation silently. |
@@ -408,43 +411,47 @@ change. Remaining:
 | Priority | Test | Why |
 | --- | --- | --- |
 | High | ✅ **Handler test for `estimate-food`** (`supabase/test/estimate-food.ts`, 45 checks, 2026-10-09) with a fake PostgREST and a fake OpenAI, like the device-sync harness | 600 lines of money-critical logic — reservation, ceiling, free follow-ups, model downgrade — with no direct test |
-| High | **Deep health check** — P0.6 | Would have caught the outage the next morning |
-| High | **Payment flow** as it is built: webhook signature, duplicate and out-of-order events, refund revoking access, deletion cancelling billing, an e2e with a faked webhook | The first code where a bug costs a customer money |
-| High | **Every callable model has a price** — P1 model upgrade | An unpriced model is invisible to the spend ceiling |
+| High | ✅ **Deep health check** — P0.6, and since 2026-10-10 every OpenAI key against every model | Would have caught the outage the next morning |
+| High | ✅ **Payment flow**, both sellers: signatures, redeliveries, out-of-order events, refunds, deletion cancelling billing, e2e with faked stores (`lemonsqueezy-webhook.ts`, `billing.ts`, `play-billing.ts`, `play-rtdn.ts`, `subscription.spec.ts`, `android-billing.spec.ts`) | The first code where a bug costs a customer money |
+| High | ✅ **Every callable model has a price** (`modelRates.test.ts`) | An unpriced model is invisible to the spend ceiling |
 | Medium | ✅ **DST and travel** (`clockChanges.test.ts`, 2026-10-09; found and fixed an ambiguous-hour bug): day keys and the week across 25 Oct and the spring change | The clocks change in three weeks |
-| Medium | Handler tests for `delete-account` and `issue-device-token` | Deletion is irreversible and has never run on a real account |
+| Medium | ✅ Handler tests for `delete-account` and `issue-device-token` (2026-10-09/10) | Deletion is irreversible |
 | Medium | Contract tests against a local Supabase instead of production | Stops growing the test account (2,066 meals so far), and lets CI run them without production credentials |
-| Medium | A HEIC photo, a non-food photo, a double-tapped Save | Edge scenarios above |
+| Medium | ✅ A HEIC photo (`heic-photo.spec.ts`); a non-food photo, a double-tapped Save | Edge scenarios above |
 | Low | Accessibility scan (axe); watch sync logic beyond the existing simulator probe | Useful, not urgent |
 
 ---
 
 ## Sequencing
 
+The plan as written on 2026-10-02 ran week by week. By 2026-10-11, P0, the
+model upgrade, payments (test mode), error monitoring, storage persistence,
+HEIC, the PWA, and the Android and Garmin code are done. What remains is
+mostly other people's clocks:
+
 ```
-Week 1   P0.1 key · P0.2 SMTP · P0.3 fake gate · P0.4 versions + deploy script
-         P0.5 migration tracking → run the deploy (device-sync goes live)
-         P0.6 daily health check · P0.7 CI · P0.8 headers (report-only)
+Now, in parallel (calendar time)
+         Google: identity verification → console setup → package → 14-day closed test → review
+         Garmin: developer account → upload → review
 
-Week 2   GPT-6: price table → eval → switch · DST tests · storage persistence
-         estimate-food handler test · CSP from report-only to enforced
+Owner decisions that unblock code
+         Google Play policy wording → C applies it (version bump)
+         chargeback rule → C automates disputes once a real one is seen
+         going live with payments → step 4 of docs/ops/payments.md
 
-Weeks 3–4  payments, with its tests (when Lemon Squeezy approves)
-         error monitoring · onboarding
+When designed in Claude Design
+         onboarding cards and the signed-in empty state · the logo → icons everywhere
 
-In parallel, from week 1 (calendar time)
-         Garmin Store submission · logo exploration · Supabase DPA
-
-Then     PWA manifest and icons · motion · accessibility pass
+Later
+         model evaluation on real photos (script ready) · cost re-measure → pricing
+         contract tests on a local Supabase · motion · accessibility pass
 ```
 
 ## Decisions needed
 
-1. **Error monitoring** — our own table (recommended) or Sentry.
-2. **Deploys through CI** — turn off Cloudflare's automatic deploy so a red
-   build cannot reach production (recommended), or keep it and let CI only
-   report.
-3. **The default model** — after the evaluation, not before.
+1. ~~**Error monitoring**~~ — decided: our own table (built 2026-10-09).
+2. ~~**Deploys through CI**~~ — decided: CI only, Cloudflare's own deploys off (2026-10-03).
+3. **The default model** — GPT-6.1 Sol for now (2026-10-09); confirm after the evaluation on real photos.
 4. **Logo** — finish it in Claude Design, or hand a chosen direction to a
    designer.
 5. **Offline logging** — accept online-first (D16) for Phase 1, or build a

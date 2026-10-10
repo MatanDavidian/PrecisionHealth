@@ -455,25 +455,16 @@ Then     PWA manifest and icons · motion · accessibility pass
 ## Handover — next steps (2026-10-10, evening)
 
 **State:**
-- Everything after `6bf17e2` is committed on `main` but not pushed (`git log origin/main..HEAD`). They cover:
-  - Play Billing, server and app
-  - the Android TWA configuration
-  - the Play listing drafts and screenshots
-  - `/delete-account`
-  - the Garmin Store build and listing
-  - the policy wording draft
-- The "Sample day" label is done (2026-10-11). A signed-out visitor
-  looking at the made-up first-run day sees it labelled on Today and
-  Nutrition; accounts are never seeded or labelled.
+- Everything is pushed and deployed (2026-10-11): migration 0016 applied,
+  `play-billing` and `play-rtdn` live and healthy. They answer "not
+  configured" until the Google Play secrets exist (owner step 4 below).
 
 **Next for Claude:**
-1. Owner says "push" → run `./scripts/deploy-functions.sh`. That applies
-   0016 and deploys `play-billing` and `play-rtdn`.
-2. When the owner approves the wording in `docs/android/store-listing.md`
+1. When the owner approves the wording in `docs/android/store-listing.md`
    (open work 3), apply it to `src/policy/documents.ts` with a version bump.
-3. A script to fill the review account with a sample week. It needs
+2. A script to fill the review account with a sample week. It needs
    `REVIEW_EMAIL` / `REVIEW_PASSWORD` in `.env.local`.
-4. Once the Play upload exists: `public/.well-known/assetlinks.json`
+3. Once the Play upload exists: `public/.well-known/assetlinks.json`
    (`android/README.md`).
 
 **Next for the owner:**

@@ -40,7 +40,7 @@ plus up to $1.30 for text, against $7.99 net of Lemon Squeezy's fees.
 - **`estimate-food`** checks for a subscription before the trial:
   - **Allowance.** It counts this billing month's photos or written analyses,
     by `usage.kind`.
-  - **Key.** It uses `OPENAI_PLAN_KEY` if set, falling back to the trial key.
+  - **Key.** It uses `OPENAI_PLANS_KEY` if set, falling back to the trial key.
   - **Daily ceiling.** Subscribers have their own (default $50, set with
     `PLAN_DAILY_BUDGET_MICROS`), so a rush of trial users can't block someone
     who pays.
@@ -127,7 +127,7 @@ real access.
 
 - **A separate OpenAI project for subscribers.** It gets its own monthly
   limit, so a trial rush and paying users never share a budget. Create it,
-  then run `npx supabase secrets set OPENAI_PLAN_KEY=…`.
+  then run `npx supabase secrets set OPENAI_PLANS_KEY=…`.
 - **Purchases made outside the app.** Don't share the store's public product
   link. A purchase made there carries no account id, and the webhook records
   it as `UNLINKED`. If one appears, refund it or contact the buyer.

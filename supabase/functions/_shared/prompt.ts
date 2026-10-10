@@ -428,3 +428,20 @@ Rules:
 /** What was served, as the model sees it. */
 export const plateLines = (plate: readonly { name: string; amountG: number }[]): string =>
   plate.map((food, index) => `${index}. ${food.name} — ${Math.round(food.amountG)} g`).join('\n')
+
+/**
+ * OpenAI's error code or type, if it is a plain identifier — never free text.
+ *
+ * The provider's message can name the owner's account, so it is never
+ * relayed; its code is a fixed vocabulary (model_not_found, invalid_api_key,
+ * insufficient_quota) and is what says why a call failed.
+ */
+export function providerCode(detail: string): string | undefined {
+  try {
+    const error = JSON.parse(detail)?.error
+    const code = error?.code ?? error?.type
+    return typeof code === 'string' && /^[a-z0-9_]{1,64}$/.test(code) ? code : undefined
+  } catch {
+    return undefined
+  }
+}

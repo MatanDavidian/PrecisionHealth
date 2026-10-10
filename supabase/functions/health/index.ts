@@ -22,7 +22,56 @@
 import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { EXPECTED_SCHEMA } from '../_shared/schema.ts'
-import { DEFAULT_PLAN_DAILY_BUDGET_MICROS, dailyBudgetMicros } from '../_shared/prompt.ts'
+import {
+  DEFAULT_PLAN_DAILY_BUDGET_MICROS,
+  TRIAL_MODELS,
+  dailyBudgetMicros,
+  providerCode,
+} from '../_shared/prompt.ts'
+
+/**
+ * Every OpenAI key the functions use, by the names they read it under.
+ *
+ * Each is tried against every model the app offers, because a key can be
+ * valid and still unable to run a model: on 10 Oct 2026 the trial project
+ * could not use GPT-6, every trial and subscriber analysis failed, and this
+ * check — which only ever analysed on the admin key — stayed green.
+ */
+const OPENAI_KEYS: [string, string[]][] = [
+  ['trial', ['OPENAI_TRIAL_KEY', 'OPENAI_MASTER_KEY']],
+  ['plans', ['OPENAI_PLANS_KEY', 'OPENAI_PLAN_KEY']],
+  ['admin', ['OPENAI_ADMIN_KEY']],
+]
+
+interface Probe {
+  key: string
+  model: string
+  ok: boolean
+  status?: number
+  code?: string
+}
+
+/** A one-word reply: costs a fraction of a cent, and proves the key can run the model. */
+async function probe(key: string, apiKey: string, model: string): Promise<Probe> {
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: 'Reply with the word ok.' }],
+        max_completion_tokens: 64,
+      }),
+    })
+    if (response.ok) {
+      await response.body?.cancel()
+      return { key, model, ok: true }
+    }
+    return { key, model, ok: false, status: response.status, code: providerCode(await response.text()) }
+  } catch {
+    return { key, model, ok: false, code: 'unreachable' }
+  }
+}
 
 const CORS = {
   'x-vimetry-version': VERSION,
@@ -154,8 +203,21 @@ Deno.serve(async (request) => {
           .map(({ count, message, route, version, kind }) => ({ count, kind, message, route, version: version?.slice(0, 7) })),
       }
 
+  // Only keys that are set, and each distinct key once under its first name.
+  const seen = new Set<string>()
+  const keys = OPENAI_KEYS.flatMap(([key, names]) => {
+    const value = names.map((name) => Deno.env.get(name)).find(Boolean)
+    if (!value || seen.has(value)) return []
+    seen.add(value)
+    return [[key, value] as const]
+  })
+  const probes = await Promise.all(
+    keys.flatMap(([key, value]) => TRIAL_MODELS.map((model) => probe(key, value, model))),
+  )
+
   const ok =
-    schemaMissing.length === 0 && secretsMissing.length === 0 && !spendError && !recentError
+    schemaMissing.length === 0 && secretsMissing.length === 0 && !spendError && !recentError &&
+    probes.every((p) => p.ok)
 
   return json(
     {
@@ -168,6 +230,7 @@ Deno.serve(async (request) => {
           ? { error: 'usage ledger unreadable' }
           : { spentTodayMicros: spentMicros, ceilingMicros, planSpentTodayMicros: planSpentMicros, planCeilingMicros, outcomes },
       clientErrors,
+      openai: probes,
       billing: {
         configured: ['LEMONSQUEEZY_API_KEY', 'LEMONSQUEEZY_WEBHOOK_SECRET', 'LEMONSQUEEZY_STORE_ID', 'LEMONSQUEEZY_VARIANT_ID']
           .every((name) => Deno.env.get(name)),

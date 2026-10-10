@@ -40,6 +40,26 @@ const stub = Deno.serve({ port: 8998, onListen: () => {} }, (req) => {
   return Response.json({ message: 'not stubbed' }, { status: 404 })
 })
 
+// OpenAI, faked at fetch: a key in `cannotRun` is refused that model, as a
+// project without access to it is.
+const cannotRun = new Map<string, string>()
+const probed: { key: string; model: string }[] = []
+const realFetch = globalThis.fetch
+globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
+  const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+  if (!href.startsWith('https://api.openai.com/')) return realFetch(input, init)
+  const key = new Headers(init?.headers).get('authorization')?.replace('Bearer ', '') ?? ''
+  const model = JSON.parse(String(init?.body)).model
+  probed.push({ key, model })
+  if (cannotRun.get(key) === model) {
+    return new Response(JSON.stringify({ error: {
+      message: `The model ${model} does not exist or you do not have access to it. ${key}`,
+      code: 'model_not_found',
+    } }), { status: 404 })
+  }
+  return Response.json({ choices: [{ message: { content: 'ok' } }] })
+}
+
 await import('../functions/health/index.ts')
 
 let failed = 0
@@ -130,6 +150,32 @@ const call = (token?: string) =>
   check('reports when the payments API key expires', body.billing.configured === true && body.billing.testMode === true &&
     body.billing.apiKeyExpiresAt === '2027-04-10T00:00:00.000Z', JSON.stringify(body.billing))
   check('and never the key itself', !text.includes('signature-part') && !text.includes('whsec'))
+}
+
+{
+  probed.length = 0
+  Deno.env.set('OPENAI_PLANS_KEY', 'sk-plans-stub')
+  Deno.env.set('OPENAI_ADMIN_KEY', 'sk-admin-stub')
+  cannotRun.set('sk-plans-stub', 'gpt-6.1-sol')
+  const res = await call(TOKEN)
+  const text = await res.text()
+  const body = JSON.parse(text)
+  check('every key is tried against every offered model', probed.length === 6, JSON.stringify(probed))
+  const failing = body.openai.filter((p: { ok: boolean }) => !p.ok)
+  check('a key that cannot run a model fails the check, naming key, model and code', res.status === 503 &&
+    failing.length === 1 && failing[0].key === 'plans' && failing[0].model === 'gpt-6.1-sol' &&
+    failing[0].code === 'model_not_found' && failing[0].status === 404, JSON.stringify(failing))
+  check('without echoing a key or the provider’s message', !text.includes('sk-plans-stub') &&
+    !text.includes('does not exist'))
+  cannotRun.clear()
+  Deno.env.set('OPENAI_ADMIN_KEY', 'sk-plans-stub')
+  probed.length = 0
+  const again = await call(TOKEN)
+  await again.body?.cancel()
+  check('the same key under two names is tried once', probed.length === 4 && again.status === 200,
+    `${probed.length} ${again.status}`)
+  Deno.env.delete('OPENAI_PLANS_KEY')
+  Deno.env.delete('OPENAI_ADMIN_KEY')
 }
 
 await stub.shutdown()

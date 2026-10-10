@@ -134,6 +134,13 @@ else {
         console.log(`    last 24h: ${outcomes || 'no analyses'}`)
       }
 
+      // Every OpenAI key against every offered model.
+      for (const p of body.openai ?? []) {
+        const line = `OpenAI ${p.key} key runs ${p.model}`
+        if (p.ok) pass(line)
+        else fail(`${line}: no — ${[p.status, p.code].filter(Boolean).join(' ') || 'failed'}`)
+      }
+
       // Lemon Squeezy: set up, which mode, and when its API key expires.
       const billing = body.billing
       if (billing && !billing.configured) console.log('    payments: not connected yet')

@@ -34,6 +34,7 @@ import {
   TRIAL_MODELS,
   costMicros,
   describedFoodText,
+  providerCode,
   followUpText,
   hintText,
   insightsLanguageRule,
@@ -116,8 +117,9 @@ Deno.serve(async (request) => {
    */
   const trialKey = Deno.env.get('OPENAI_TRIAL_KEY') ?? Deno.env.get('OPENAI_MASTER_KEY')
   const adminKey = Deno.env.get('OPENAI_ADMIN_KEY') ?? trialKey
-  // Subscribers' own project and spend limit, once the owner creates one.
-  const planKey = Deno.env.get('OPENAI_PLAN_KEY') ?? trialKey
+  // Subscribers' own OpenAI project and spend limit. OPENAI_PLANS_KEY is the
+  // name the owner gave it (2026-08-22); the singular is accepted too.
+  const planKey = Deno.env.get('OPENAI_PLANS_KEY') ?? Deno.env.get('OPENAI_PLAN_KEY') ?? trialKey
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
@@ -498,8 +500,14 @@ Deno.serve(async (request) => {
       return json({ error: plan ? 'plan_analysis_unavailable' : 'free_analysis_unavailable' }, 503)
     }
 
-    // The provider's own message could name the owner's account; never relay it.
-    return json({ error: 'provider_error', status: response.status }, 502)
+    /*
+      The provider's own message could name the owner's account; never relay
+      it. Its error CODE is a fixed vocabulary — model_not_found,
+      invalid_api_key — and is what says why: on 10 Oct a key whose project
+      could not use GPT-6 failed every analysis, and the reply said nothing.
+    */
+    const code = providerCode(detail)
+    return json({ error: 'provider_error', status: response.status, ...(code ? { code } : {}) }, 502)
   }
 
   const payload = await response.json()

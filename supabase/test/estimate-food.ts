@@ -177,7 +177,7 @@ const stub = Deno.serve({ port: 8997, onListen: () => {} }, async (req) => {
 
 // --------------------------------------------------------------- OpenAI ---
 
-type ProviderMode = 'ok' | 'error500' | 'quota429' | 'throw' | 'empty'
+type ProviderMode = 'ok' | 'error500' | 'quota429' | 'throw' | 'empty' | 'noModel'
 let provider: ProviderMode = 'ok'
 let providerCalls: { model: string; key: string; messages: { role: string; content: unknown }[] }[] = []
 
@@ -195,6 +195,13 @@ globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => 
   if (provider === 'throw') throw new TypeError('network down')
   if (provider === 'error500') {
     return new Response('{"error":{"message":"internal error on account org-OWNER"}}', { status: 500 })
+  }
+  if (provider === 'noModel') {
+    return new Response(JSON.stringify({ error: {
+      message: `The model ${body.model} does not exist or you do not have access to it (project of org-OWNER).`,
+      type: 'invalid_request_error',
+      code: 'model_not_found',
+    } }), { status: 404 })
   }
   if (provider === 'quota429') {
     return new Response('{"error":{"code":"insufficient_quota"}}', { status: 429 })
@@ -227,7 +234,8 @@ function reset(env: Record<string, string | undefined> = {}) {
     OPENAI_TRIAL_KEY: TRIAL_KEY,
     OPENAI_ADMIN_KEY: ADMIN_KEY,
     OPENAI_MASTER_KEY: undefined,
-    OPENAI_PLAN_KEY: PLAN_KEY,
+    OPENAI_PLANS_KEY: PLAN_KEY,
+    OPENAI_PLAN_KEY: undefined,
     DAILY_BUDGET_MICROS: undefined,
     PLAN_DAILY_BUDGET_MICROS: undefined,
   }
@@ -388,6 +396,16 @@ console.log('\nWhen the provider fails')
   check('gives the slot back — the row is PROVIDER_ERROR, not OK', outcomes() === 'PROVIDER_ERROR', outcomes())
   check('but keeps the cost, at the assumed amount', usage[0]?.cost_micros === ASSUMED_ANALYSIS_MICROS,
     String(usage[0]?.cost_micros))
+}
+{
+  // 10 Oct 2026: the trial key's project could not use GPT-6, and every
+  // analysis failed with nothing to say why.
+  reset()
+  provider = 'noModel'
+  const r = await call(meal())
+  check('a key that cannot use the model says so by code', r.status === 502 && r.body.code === 'model_not_found' &&
+    r.body.status === 404, r.text)
+  check('still without the provider’s message', !r.text.includes('org-OWNER') && !r.text.includes('does not exist'), r.text)
 }
 {
   reset()
@@ -577,7 +595,13 @@ for (const status of ['expired', 'unpaid', 'paused']) {
     String(r.status))
 }
 {
-  reset({ OPENAI_PLAN_KEY: undefined })
+  reset({ OPENAI_PLANS_KEY: undefined, OPENAI_PLAN_KEY: PLAN_KEY })
+  subscriptions = [subscribed()]
+  const singular = await call(photo())
+  check('the singular OPENAI_PLAN_KEY name works too', singular.status === 200 && providerCalls[0]?.key === PLAN_KEY)
+}
+{
+  reset({ OPENAI_PLANS_KEY: undefined })
   subscriptions = [subscribed()]
   const r = await call(photo())
   check('with no plan key yet, subscribers use the trial key', r.status === 200 && providerCalls[0]?.key === TRIAL_KEY,

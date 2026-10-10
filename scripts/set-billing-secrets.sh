@@ -32,7 +32,7 @@ copy_secret
 REF=$(cat supabase/.temp/project-ref 2>/dev/null || echo '<project-ref>')
 echo "1. The webhook's signing secret is on the clipboard (40 characters)."
 echo "   Paste it straight away — copying anything else replaces it. Type c below to copy it again."
-echo "   Lemon Squeezy ($MODE mode) → Settings → Webhooks → + :"
+echo "   Lemon Squeezy ($MODE mode) → Settings → Webhooks → + (or, if it already exists: ⋯ → Edit):"
 echo "     Callback URL:   https://$REF.supabase.co/functions/v1/lemonsqueezy-webhook"
 echo "     Signing secret: paste"
 echo "     Events:         subscription_created, subscription_updated, subscription_cancelled,"
@@ -49,10 +49,16 @@ while true; do
 done
 
 echo
-echo "2. Lemon Squeezy ($MODE mode) → Settings → API → + : create a key and copy it."
-read -r -s -p "   Paste the API key (hidden): " API_KEY
-echo
-[ -n "$API_KEY" ] || { echo "✗ no key"; exit 1; }
+# Read from the clipboard, not typed: the key is longer than the 1,024
+# characters macOS lets a terminal line hold, so a paste into `read` hangs.
+echo "2. Lemon Squeezy ($MODE mode) → Settings → API → + : create a key and click Copy."
+read -r -p "   Copied it? Press Enter (do not paste it here). " _
+API_KEY=$(pbpaste)
+if [ "$API_KEY" = "$SECRET" ] || [ ${#API_KEY} -lt 100 ] || [[ "$API_KEY" =~ [[:space:]] ]]; then
+  echo "✗ the clipboard does not hold an API key (${#API_KEY} characters). Copy the key and run this again."
+  exit 1
+fi
+echo "   ✓ read an API key of ${#API_KEY} characters"
 read -r -p "3. Store id (Settings → Stores, the number by the store's name): " STORE_ID
 read -r -p "4. Variant id of Vimetry Monthly (Products → the product → ⋯ → Copy variant ID): " VARIANT_ID
 [[ "$STORE_ID" =~ ^[0-9]+$ && "$VARIANT_ID" =~ ^[0-9]+$ ]] || { echo "✗ both ids are numbers"; exit 1; }

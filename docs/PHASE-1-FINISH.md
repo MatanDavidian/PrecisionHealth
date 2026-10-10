@@ -455,7 +455,7 @@ Then     PWA manifest and icons · motion · accessibility pass
 ## Handover — next steps (2026-10-10, evening)
 
 **State:**
-- 16 commits are on `main`, not pushed. They cover:
+- Everything after `6bf17e2` is committed on `main` but not pushed (`git log origin/main..HEAD`). They cover:
   - Play Billing, server and app
   - the Android TWA configuration
   - the Play listing drafts and screenshots

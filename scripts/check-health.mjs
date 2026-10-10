@@ -32,6 +32,8 @@ const FUNCTIONS = [
   'billing',
   'lemonsqueezy-webhook',
   'report-error',
+  'play-billing',
+  'play-rtdn',
 ]
 /** Alert before the ceiling refuses people, not after. */
 const SPEND_WARNING = 0.8

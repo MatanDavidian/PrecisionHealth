@@ -20,13 +20,14 @@
  * answer is observed rather than assumed.
  *
  * And before any of it, billing stops. A subscription still charging is
- * cancelled at Lemon Squeezy first; if that cannot be confirmed, nothing is
+ * cancelled first — at Lemon Squeezy or Google Play, whichever sold it; if that cannot be confirmed, nothing is
  * deleted and the person is told — an account that is gone but still being
  * charged is the one outcome worse than either.
  */
 import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { cancelSubscription } from '../_shared/lemonsqueezy.ts'
+import { cancel as cancelPlay } from '../_shared/googlePlay.ts'
 import { STILL_CHARGING } from '../_shared/plan.ts'
 
 const CORS = {
@@ -93,12 +94,13 @@ Deno.serve(async (request) => {
 
   const { data: subs, error: subsError } = await admin
     .from('subscriptions')
-    .select('id, status')
+    .select('id, status, provider')
     .eq('user_id', user.id)
   if (subsError && subsError.code !== UNDEFINED_TABLE) return json({ error: 'billing_unknown' }, 503)
   for (const sub of subs ?? []) {
     if (!STILL_CHARGING.has(sub.status)) continue
-    if (!(await cancelSubscription(sub.id))) return json({ error: 'billing_cancel_failed' }, 502)
+    const cancelled = sub.provider === 'google_play' ? await cancelPlay(sub.id) : await cancelSubscription(sub.id)
+    if (!cancelled) return json({ error: 'billing_cancel_failed' }, 502)
   }
 
   const { error: authError } = await admin.auth.admin.deleteUser(user.id)

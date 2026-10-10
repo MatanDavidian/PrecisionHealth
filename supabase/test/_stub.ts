@@ -215,3 +215,115 @@ export async function call(body: unknown, init: { token?: string; headers?: Reco
   } catch { /* keep {} */ }
   return { status: response.status, body: parsed }
 }
+
+// --------------------------------------------------------------- Google Play --
+
+/**
+ * A fake Google: the OAuth token endpoint and the Play Developer API.
+ *
+ * The token endpoint checks the service account's signed JWT with the real
+ * public key, so the sign-in code is exercised, not skipped. Purchases are
+ * held in `google.purchases`, keyed by token, in Play's own v2 shape.
+ */
+export const google = {
+  mode: 'ok' as 'ok' | 'down' | 'ackFails' | 'cancelFails',
+  purchases: {} as Record<string, Record<string, unknown>>,
+  voided: [] as string[],
+  calls: [] as { method: string; path: string }[],
+  publicKey: undefined as CryptoKey | undefined,
+  issued: 'ya29.fake-access-token',
+}
+
+export function resetGoogle() {
+  google.mode = 'ok'
+  google.purchases = {}
+  google.voided = []
+  google.calls = []
+}
+
+/** A real RSA key pair, as a service account JSON key, for the fake to verify. */
+export async function serviceAccount(): Promise<string> {
+  const pair = await crypto.subtle.generateKey(
+    { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+    true,
+    ['sign', 'verify'],
+  )
+  google.publicKey = pair.publicKey
+  const der = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey))
+  const pem = `-----BEGIN PRIVATE KEY-----\n${btoa(String.fromCharCode(...der)).match(/.{1,64}/g)!.join('\n')}\n-----END PRIVATE KEY-----\n`
+  return JSON.stringify({
+    type: 'service_account',
+    client_email: 'vimetry-billing@vimetry-play.iam.gserviceaccount.com',
+    private_key: pem,
+    token_uri: 'https://oauth2.googleapis.com/token',
+  })
+}
+
+/** A purchase in Play's v2 shape, ACTIVE and unacknowledged unless told otherwise. */
+export function playPurchase(fields: Record<string, unknown> = {}, expiryDays = 30): Record<string, unknown> {
+  return {
+    kind: 'androidpublisher#subscriptionPurchaseV2',
+    subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE',
+    acknowledgementState: 'ACKNOWLEDGEMENT_STATE_PENDING',
+    startTime: new Date(Date.now() - 86_400_000).toISOString(),
+    lineItems: [{
+      productId: 'vimetry_monthly',
+      expiryTime: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
+      autoRenewingPlan: { autoRenewEnabled: true },
+    }],
+    ...fields,
+  }
+}
+
+const fromB64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))
+
+const fetchBeforeGoogle = globalThis.fetch
+globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
+  const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+  if (href === 'https://oauth2.googleapis.com/token') {
+    const form = new URLSearchParams(String(init?.body))
+    const [header, claims, signature] = (form.get('assertion') ?? '').split('.')
+    const valid = google.publicKey && form.get('grant_type') === 'urn:ietf:params:oauth:grant-type:jwt-bearer' &&
+      await crypto.subtle.verify('RSASSA-PKCS1-v1_5', google.publicKey, fromB64url(signature ?? ''),
+        new TextEncoder().encode(`${header}.${claims}`))
+    const scope = valid ? JSON.parse(new TextDecoder().decode(fromB64url(claims))).scope : ''
+    if (!valid || scope !== 'https://www.googleapis.com/auth/androidpublisher') {
+      return Response.json({ error: 'invalid_grant' }, { status: 400 })
+    }
+    return Response.json({ access_token: google.issued, expires_in: 3600, token_type: 'Bearer' })
+  }
+  if (!href.startsWith('https://androidpublisher.googleapis.com/')) return fetchBeforeGoogle(input, init)
+
+  const url = new URL(href)
+  const method = init?.method ?? 'GET'
+  google.calls.push({ method, path: decodeURIComponent(url.pathname) })
+  if (new Headers(init?.headers).get('authorization') !== `Bearer ${google.issued}`) {
+    return Response.json({ error: { code: 401 } }, { status: 401 })
+  }
+  if (google.mode === 'down') return Response.json({ error: { code: 503 } }, { status: 503 })
+
+  const path = decodeURIComponent(url.pathname)
+  const v2 = path.match(/\/purchases\/subscriptionsv2\/tokens\/([^/]+)$/)
+  if (v2 && method === 'GET') {
+    const purchase = google.purchases[v2[1]]
+    return purchase ? Response.json(purchase) : Response.json({ error: { code: 404 } }, { status: 404 })
+  }
+  const action = path.match(/\/purchases\/subscriptions\/[^/]+\/tokens\/([^/:]+):(acknowledge|cancel)$/)
+  if (action && method === 'POST') {
+    const [, token, verb] = action
+    const purchase = google.purchases[token]
+    if (!purchase) return Response.json({ error: { code: 404 } }, { status: 404 })
+    if (verb === 'acknowledge') {
+      if (google.mode === 'ackFails') return Response.json({ error: { code: 500 } }, { status: 500 })
+      purchase.acknowledgementState = 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED'
+    } else {
+      if (google.mode === 'cancelFails') return Response.json({ error: { code: 500 } }, { status: 500 })
+      purchase.subscriptionState = 'SUBSCRIPTION_STATE_CANCELED'
+    }
+    return new Response('{}', { status: 200 })
+  }
+  if (path.endsWith('/purchases/voidedpurchases')) {
+    return Response.json({ voidedPurchases: google.voided.map((purchaseToken) => ({ purchaseToken })) })
+  }
+  return Response.json({ error: { code: 404 } }, { status: 404 })
+}

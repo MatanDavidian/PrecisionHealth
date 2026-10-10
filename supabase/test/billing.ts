@@ -133,5 +133,20 @@ console.log('\nManaging')
   check('never someone else’s', r.status === 404 && lemon.calls.length === 0)
 }
 
+{
+  reset()
+  table('subscriptions').push(subscription({ id: 'play-token-1', provider: 'google_play' }))
+  const r = await call({ action: 'portal' }, { token: 'user-token' })
+  check('bought on Google Play: managed on Google Play', r.status === 200 &&
+    r.body.url === 'https://play.google.com/store/account/subscriptions?sku=vimetry_monthly&package=app.vimetry' &&
+    lemon.calls.length === 0, JSON.stringify(r.body))
+}
+{
+  reset()
+  table('subscriptions').push(subscription({ id: 'play-token-1', provider: 'google_play' }))
+  const r = await call({ action: 'checkout' }, { token: 'user-token' })
+  check('and a website checkout is refused while it lasts — one plan per account', r.status === 409)
+}
+
 await stub.shutdown()
 finish('billing')

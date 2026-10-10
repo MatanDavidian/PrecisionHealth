@@ -8,7 +8,9 @@
  *
  *   deno run --config supabase/deno-check.json -A supabase/test/delete-account.ts
  */
-import { call, check, db, finish, lemon, resetDb, resetLemon, startDb, table } from './_stub.ts'
+import {
+  call, check, db, finish, google, lemon, playPurchase, resetDb, resetGoogle, resetLemon, serviceAccount, startDb, table,
+} from './_stub.ts'
 
 const USER = '11111111-1111-4111-8111-111111111111'
 const OTHER = '33333333-3333-4333-8333-333333333333'
@@ -17,6 +19,7 @@ Deno.env.set('SUPABASE_URL', 'http://localhost:8997')
 Deno.env.set('SUPABASE_ANON_KEY', 'stub-anon-key')
 Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'stub-service-role')
 Deno.env.set('LEMONSQUEEZY_API_KEY', 'ls-key-for-tests')
+Deno.env.set('GOOGLE_PLAY_SERVICE_ACCOUNT', await serviceAccount())
 
 const stub = startDb()
 await import('../functions/delete-account/index.ts')
@@ -24,6 +27,7 @@ await import('../functions/delete-account/index.ts')
 function reset() {
   resetDb()
   resetLemon()
+  resetGoogle()
   db.users.add(USER)
   db.users.add(OTHER)
   db.tokens.set('user-token', { id: USER })
@@ -113,6 +117,22 @@ console.log('\nBilling stops first')
   const r = await call({ confirm: 'DELETE' }, { token: 'user-token' })
   Deno.env.set('LEMONSQUEEZY_API_KEY', 'ls-key-for-tests')
   check('nor is billing left running when no API key is configured', r.status === 502 && !deleted())
+}
+{
+  reset()
+  table('subscriptions').push({ id: 'play-token-1', user_id: USER, status: 'active', provider: 'google_play' })
+  google.purchases['play-token-1'] = playPurchase()
+  const r = await call({ confirm: 'DELETE' }, { token: 'user-token' })
+  check('a Google Play subscription is cancelled at Google, not Lemon Squeezy', r.status === 200 && deleted() &&
+    google.calls.some((c) => c.path.endsWith('play-token-1:cancel')) && lemon.calls.length === 0)
+}
+{
+  reset()
+  table('subscriptions').push({ id: 'play-token-1', user_id: USER, status: 'active', provider: 'google_play' })
+  google.purchases['play-token-1'] = playPurchase()
+  google.mode = 'cancelFails'
+  const r = await call({ confirm: 'DELETE' }, { token: 'user-token' })
+  check('and if Google will not cancel it, the account is not deleted', r.status === 502 && !deleted())
 }
 {
   reset()

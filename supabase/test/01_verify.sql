@@ -723,3 +723,22 @@ exception
 end
 $$;
 reset role;
+
+\echo '== 0016: Google Play as a second seller =='
+set role postgres;
+insert into auth.users (id) values ('55555555-5555-5555-5555-555555555555') on conflict do nothing;
+insert into public.subscriptions (id, user_id, status, provider)
+values ('play-token-x', '55555555-5555-5555-5555-555555555555', 'active', 'google_play');
+select case when (select provider from public.subscriptions where id = 'sub-alice') = 'lemonsqueezy'
+  then 'PASS: rows from before Google Play are Lemon Squeezy'
+  else 'FAIL: an existing row lost its provider' end;
+do $$
+begin
+  insert into public.subscriptions (id, user_id, status, provider)
+  values ('x', '55555555-5555-5555-5555-555555555555', 'active', 'app_store');
+  raise exception 'FAIL: an unknown provider was accepted';
+exception
+  when check_violation then raise notice 'PASS: provider is lemonsqueezy or google_play';
+end
+$$;
+reset role;

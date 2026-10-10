@@ -17,6 +17,7 @@ import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { createCheckout, customerPortal } from '../_shared/lemonsqueezy.ts'
 import { activePlan, type SubscriptionRow } from '../_shared/plan.ts'
+import { playManageUrl } from '../_shared/playState.ts'
 
 const CORS = {
   'x-vimetry-version': VERSION,
@@ -77,6 +78,15 @@ Deno.serve(async (request) => {
       (a, b) => Date.parse(b.source_created_at ?? '') - Date.parse(a.source_created_at ?? ''),
     )[0]
     if (!newest) return json({ error: 'no_subscription' }, 404)
+    // Bought on Google Play: Play manages it — cancelling, the card, refunds.
+    if (newest.provider === 'google_play') {
+      return json({
+        url: playManageUrl(
+          Deno.env.get('GOOGLE_PLAY_PACKAGE') ?? 'app.vimetry',
+          Deno.env.get('GOOGLE_PLAY_PRODUCT') ?? 'vimetry_monthly',
+        ),
+      })
+    }
     const url = await customerPortal(newest.id)
     return url ? json({ url }) : json({ error: 'billing_unavailable' }, 502)
   }

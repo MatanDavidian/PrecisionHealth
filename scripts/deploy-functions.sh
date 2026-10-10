@@ -12,11 +12,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-FUNCTIONS_WITH_USER_JWT=(estimate-food delete-account issue-device-token billing)
+FUNCTIONS_WITH_USER_JWT=(estimate-food delete-account issue-device-token billing play-billing)
 # No user JWT: the watch carries a device token, the health check a health
-# token, Lemon Squeezy a signature — and error reports come from signed-out
-# visitors too.
-FUNCTIONS_WITHOUT_JWT=(device-sync health lemonsqueezy-webhook report-error)
+# token, Lemon Squeezy a signature, Google's Pub/Sub a secret on its URL — and
+# error reports come from signed-out visitors too.
+FUNCTIONS_WITHOUT_JWT=(device-sync health lemonsqueezy-webhook report-error play-rtdn)
 
 # 1. Only committed code, so the version stamp means something.
 if ! git diff --quiet HEAD -- supabase/; then

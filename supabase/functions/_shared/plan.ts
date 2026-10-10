@@ -44,6 +44,8 @@ export const PLAN_NAME = 'Vimetry Monthly'
 export interface SubscriptionRow {
   id: string
   user_id: string
+  /** Who sold it. Absent on rows from before Google Play (all Lemon Squeezy). */
+  provider?: 'lemonsqueezy' | 'google_play'
   /** Lemon Squeezy's own: on_trial, active, paused, past_due, unpaid, cancelled, expired. */
   status: string
   /** Day of the month Lemon Squeezy charges on. */
@@ -63,13 +65,14 @@ export interface SubscriptionRow {
  * Statuses in which Lemon Squeezy will still charge the card. What has to be
  * cancelled when an account is deleted, or a payment refunded.
  */
-export const STILL_CHARGING = new Set(['active', 'on_trial', 'past_due', 'paused', 'unpaid'])
+export const STILL_CHARGING = new Set(['active', 'on_trial', 'past_due', 'paused', 'unpaid', 'pending'])
 
 /** Paying, or being retried after a failed payment (four tries over two weeks). */
 const RENEWING = new Set(['active', 'on_trial', 'past_due'])
 
 export interface PlanPeriod {
   subscriptionId: string
+  provider: 'lemonsqueezy' | 'google_play'
   status: string
   /** Where this month's allowance is counted from. */
   start: string
@@ -106,6 +109,7 @@ export function currentPeriod(sub: SubscriptionRow, now: Date): PlanPeriod | und
   const endsAt = cancelled ? new Date(Math.min(end.getTime(), Date.parse(sub.ends_at!))) : end
   return {
     subscriptionId: sub.id,
+    provider: sub.provider ?? 'lemonsqueezy',
     status: sub.status,
     start: start.toISOString(),
     end: endsAt.toISOString(),

@@ -1,7 +1,7 @@
 # Payments — Lemon Squeezy
 
-Status (2026-10-09): **built and tested, not yet connected.** Nothing charges
-anyone until the steps below are done, starting in test mode.
+Status (2026-10-10): **connected in test mode.** The webhook, API key, store
+and variant are set. Next: a test purchase (step 3). Live mode is untouched.
 
 ## What was decided
 
@@ -112,7 +112,13 @@ Lemon Squeezy keeps test and live data apart:
 2. Make sure Vimetry Monthly exists there. The product page has a copy to
    live mode option.
 3. Run `./scripts/set-billing-secrets.sh live`. This creates a new webhook
-   and a new key, and clears `LEMONSQUEEZY_TEST_MODE`.
+   and a new key, and clears `LEMONSQUEEZY_TEST_MODE`. When you create the
+   key, choose the longest expiry offered.
+
+When a key expires, checkout, the portal, and cancelling on account deletion
+all stop working. The daily health check reads the key's expiry date and
+turns red 14 days before it. To replace it, make a new key and run the
+script again.
 
 From then on, test events are ignored, so a test purchase can never grant
 real access.

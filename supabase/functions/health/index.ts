@@ -61,6 +61,25 @@ const REQUIRED_SECRETS: string[][] = [
   ['SUPABASE_ANON_KEY'],
 ]
 
+/**
+ * When the Lemon Squeezy API key stops working, read from the key itself.
+ *
+ * The key is a JWT with an `exp` claim. Reading it needs no verification —
+ * nothing is trusted from it but a date — and lets the daily check warn
+ * before checkout, the portal and cancelling-on-delete quietly start
+ * failing. Only the date is returned, never the key.
+ */
+export function keyExpiry(key: string | undefined): string | null {
+  const payload = key?.split('.')[1]
+  if (!payload) return null
+  try {
+    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof claims.exp === 'number' ? new Date(claims.exp * 1000).toISOString() : null
+  } catch {
+    return null
+  }
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -149,6 +168,12 @@ Deno.serve(async (request) => {
           ? { error: 'usage ledger unreadable' }
           : { spentTodayMicros: spentMicros, ceilingMicros, planSpentTodayMicros: planSpentMicros, planCeilingMicros, outcomes },
       clientErrors,
+      billing: {
+        configured: ['LEMONSQUEEZY_API_KEY', 'LEMONSQUEEZY_WEBHOOK_SECRET', 'LEMONSQUEEZY_STORE_ID', 'LEMONSQUEEZY_VARIANT_ID']
+          .every((name) => Deno.env.get(name)),
+        testMode: Deno.env.get('LEMONSQUEEZY_TEST_MODE') === '1',
+        apiKeyExpiresAt: keyExpiry(Deno.env.get('LEMONSQUEEZY_API_KEY')),
+      },
     },
     ok ? 200 : 503,
   )

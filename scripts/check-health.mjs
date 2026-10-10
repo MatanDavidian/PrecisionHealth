@@ -37,6 +37,8 @@ const FUNCTIONS = [
 const SPEND_WARNING = 0.8
 /** Browser errors since yesterday at which the daily check turns red and emails. */
 const ERROR_WARNING = 25
+/** Days before the Lemon Squeezy API key expires at which the check turns red. */
+const KEY_WARNING_DAYS = 14
 
 const fromFile = existsSync('.env.local')
   ? Object.fromEntries(
@@ -130,6 +132,21 @@ else {
           .map(([outcome, count]) => `${outcome} ${count}`)
           .join(', ')
         console.log(`    last 24h: ${outcomes || 'no analyses'}`)
+      }
+
+      // Lemon Squeezy: set up, which mode, and when its API key expires.
+      const billing = body.billing
+      if (billing && !billing.configured) console.log('    payments: not connected yet')
+      else if (billing) {
+        const mode = billing.testMode ? 'test mode' : 'live'
+        if (!billing.apiKeyExpiresAt) pass(`payments: connected (${mode}), API key does not expire`)
+        else {
+          const days = Math.floor((Date.parse(billing.apiKeyExpiresAt) - Date.now()) / 86_400_000)
+          const line = `payments: connected (${mode}), API key expires ${billing.apiKeyExpiresAt.slice(0, 10)} (${days} days)`
+          if (days < KEY_WARNING_DAYS) {
+            fail(`${line} — make a new key and run scripts/set-billing-secrets.sh ${billing.testMode ? 'test' : 'live'}`)
+          } else pass(line)
+        }
       }
 
       // What broke in people's browsers since yesterday (report-error).

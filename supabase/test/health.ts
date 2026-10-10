@@ -84,6 +84,7 @@ const call = (token?: string) =>
   check('outcomes are counted', body.last24h.outcomes.OK === 2 && body.last24h.outcomes.PROVIDER_ERROR === 1,
     JSON.stringify(body.last24h.outcomes))
   check('no secret is echoed', !text.includes('sk-stub') && !text.includes('stub-service-key') && !text.includes(TOKEN))
+  check('payments not connected is said, not failed', body.billing.configured === false && res.status === 200)
 }
 {
   schemaMissing = ['function reserve_analysis', 'outcome SETTLED_LATE']
@@ -113,6 +114,22 @@ const call = (token?: string) =>
   check('an unreadable error table is said, without failing the rest', res.status === 200 &&
     body.clientErrors.error === 'client_errors unreadable', JSON.stringify(body.clientErrors))
   errorsDown = false
+}
+
+{
+  // A Lemon Squeezy key is a JWT; only its expiry may come back.
+  const exp = Math.floor(Date.parse('2027-04-10T00:00:00Z') / 1000)
+  const key = `eyJhbGciOiJSUzI1NiJ9.${btoa(JSON.stringify({ sub: '1', exp })).replace(/=+$/, '')}.signature-part`
+  for (const [name, value] of Object.entries({
+    LEMONSQUEEZY_API_KEY: key, LEMONSQUEEZY_WEBHOOK_SECRET: 'whsec', LEMONSQUEEZY_STORE_ID: '1',
+    LEMONSQUEEZY_VARIANT_ID: '2', LEMONSQUEEZY_TEST_MODE: '1',
+  })) Deno.env.set(name, value)
+  const res = await call(TOKEN)
+  const text = await res.text()
+  const body = JSON.parse(text)
+  check('reports when the payments API key expires', body.billing.configured === true && body.billing.testMode === true &&
+    body.billing.apiKeyExpiresAt === '2027-04-10T00:00:00.000Z', JSON.stringify(body.billing))
+  check('and never the key itself', !text.includes('signature-part') && !text.includes('whsec'))
 }
 
 await stub.shutdown()

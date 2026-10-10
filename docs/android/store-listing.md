@@ -129,11 +129,11 @@ Google's wording, our answers.
   everywhere; HSTS).
 - **Do you provide a way for users to request that their data is deleted?**
   Yes. In the app: Settings → Account & data → Delete my account.
-  - **The web link Google requires is not built yet.** Google also requires
-    a page reachable outside the app where users can request deletion. Today
-    that would be https://vimetry.app/settings?tab=account, which requires
-    signing in. A short public page (`/delete-account`) explaining both ways
-    is open work — see the end of this file.
+  - **The web link Google requires:** https://vimetry.app/delete-account.
+    It is public (no sign-in, before any consent) and explains:
+    - deleting in the app
+    - that a subscription is cancelled first
+    - an email route for anyone who cannot sign in
 
 **Shared (sent to a third party for its own use):** **none.** Supabase,
 OpenAI, Cloudflare, Brevo and Lemon Squeezy act on our behalf as service
@@ -211,10 +211,10 @@ repository or a chat.
 ## Open work before submitting
 
 1. **The real photo-and-estimate screenshot** — owner, on a phone.
-2. **A public account-deletion page** — C. A short `/delete-account` page:
-   - how to delete in the app
-   - that deleting cancels any subscription, at Lemon Squeezy or Google Play
-   - an email route for anyone who cannot sign in: support@vimetry.app
+2. ~~A public account-deletion page~~ — **built 2026-10-10:** `/delete-account`
+   (`e2e/delete-account-info.spec.ts`). Owner: it promises deletion
+   **within 30 days** of an emailed request — the GDPR limit is one month.
+   Change the wording if that is not a promise you want to make.
 3. **Privacy Policy and Terms: Google Play as a seller** — C to draft, owner
    to approve.
 4. **A sample week in the review account** — C, a script that signs in as

@@ -407,6 +407,24 @@ const en = {
   'form.kcal': 'kcal',
 
   // ------------------------------------------------------------- sign in ---
+  'deleteInfo.title': 'Delete your account',
+  'deleteInfo.subtitle': 'How to remove your Vimetry account and everything in it.',
+  'deleteInfo.inAppLabel': 'In the app',
+  'deleteInfo.inApp':
+    'Sign in, then go to Settings → Account & data → Delete my account, and type DELETE to confirm.',
+  'deleteInfo.what':
+    'Everything in your account is deleted at once: meals, measurements, goals, data synced from your Garmin, and the account itself. It cannot be undone, so export your data first if you want a copy (same page).',
+  'deleteInfo.go': 'Go to Account & data',
+  'deleteInfo.subscriptionLabel': 'If you subscribe',
+  'deleteInfo.subscription':
+    'Your subscription is cancelled first — at Lemon Squeezy or Google Play, whichever you bought it from — so you are not charged again. Deleting does not refund the current month; ask if you would like that.',
+  'deleteInfo.cannotSignInLabel': 'If you cannot sign in',
+  'deleteInfo.cannotSignIn':
+    'Email us from the address on your account and we will delete it for you within 30 days:',
+  'deleteInfo.localLabel': 'Without an account',
+  'deleteInfo.local':
+    'Data you kept without an account is only in that browser or phone, never on our servers. Clear the site’s data in the browser, or use Settings → Account & data → Erase this browser, to remove it.',
+  'deleteInfo.privacy': 'What we hold, and for how long: the Privacy Policy',
   'signin.title': 'Sign in',
   'signin.subtitle': 'So your data follows you between devices instead of living in one browser.',
   'signin.email': 'Email',
@@ -1199,6 +1217,22 @@ const he: Dictionary = {
   'form.kcal': 'קלוריות',
 
   // ------------------------------------------------------------- sign in ---
+  'deleteInfo.title': 'מחיקת החשבון',
+  'deleteInfo.subtitle': 'איך מוחקים את החשבון ב־Vimetry ואת כל מה שבו.',
+  'deleteInfo.inAppLabel': 'מתוך האפליקציה',
+  'deleteInfo.inApp': 'היכנסו לחשבון, ואז הגדרות ← חשבון ונתונים ← מחיקת החשבון שלי, והקלידו DELETE לאישור.',
+  'deleteInfo.what':
+    'כל מה שבחשבון נמחק מיד: ארוחות, מדידות, יעדים, נתונים שסונכרנו מה־Garmin, והחשבון עצמו. אי אפשר לבטל את זה, אז ייצאו את הנתונים קודם אם תרצו עותק (באותו עמוד).',
+  'deleteInfo.go': 'לחשבון ונתונים',
+  'deleteInfo.subscriptionLabel': 'אם יש לכם מנוי',
+  'deleteInfo.subscription':
+    'המנוי מבוטל קודם — ב־Lemon Squeezy או ב־Google Play, לפי המקום שבו נקנה — כך שלא תחויבו שוב. המחיקה לא מחזירה את התשלום על החודש הנוכחי; כתבו לנו אם תרצו.',
+  'deleteInfo.cannotSignInLabel': 'אם אי אפשר להיכנס',
+  'deleteInfo.cannotSignIn': 'כתבו לנו מהכתובת שרשומה בחשבון, ונמחק אותו בשבילכם תוך 30 יום:',
+  'deleteInfo.localLabel': 'בלי חשבון',
+  'deleteInfo.local':
+    'נתונים ששמרתם בלי חשבון נמצאים רק בדפדפן או בטלפון הזה, אף פעם לא אצלנו. נקו את נתוני האתר בדפדפן, או השתמשו בהגדרות ← חשבון ונתונים ← מחיקת הדפדפן הזה, כדי להסיר אותם.',
+  'deleteInfo.privacy': 'מה אנחנו שומרים, ולכמה זמן: מדיניות הפרטיות',
   'signin.title': 'כניסה',
   'signin.subtitle': 'כדי שהנתונים שלכם ילוו אתכם בין מכשירים ולא יישארו בדפדפן אחד.',
   'signin.email': 'אימייל',

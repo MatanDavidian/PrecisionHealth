@@ -90,7 +90,9 @@ function useOutstandingConsents() {
     the "read this" links lead to a page you cannot see — a consent screen that
     makes informed consent impossible.
   */
-  return { needed: POLICY_AT[pathname] ? [] : needed, agree, saving, problem }
+  // The policies, and how to delete an account, are readable before agreeing to anything.
+  const publicPage = Boolean(POLICY_AT[pathname]) || pathname === '/delete-account'
+  return { needed: publicPage ? [] : needed, agree, saving, problem }
 }
 
 function ConsentGate({

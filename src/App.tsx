@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { DeleteAccountInfo } from './ui/screens/DeleteAccountInfo'
 import { AppShell } from './ui/AppShell'
 import { Today } from './ui/screens/Today'
 import { Nutrition } from './ui/screens/Nutrition'
@@ -27,6 +28,7 @@ export function App() {
             their health data has to be able to read what happens to it first. */}
         <Route path="/privacy" element={<Policy />} />
         <Route path="/terms" element={<Policy />} />
+        <Route path="/delete-account" element={<DeleteAccountInfo />} />
         <Route path="*" element={<Navigate to="/log" replace />} />
       </Routes>
     </AppShell>

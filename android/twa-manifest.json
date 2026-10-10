@@ -1,0 +1,41 @@
+{
+  "packageId": "app.vimetry",
+  "host": "vimetry.app",
+  "name": "Vimetry",
+  "launcherName": "Vimetry",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#F1ECE1",
+  "themeColorDark": "#2B2721",
+  "navigationColor": "#F1ECE1",
+  "navigationColorDark": "#2B2721",
+  "navigationDividerColor": "#E8E1D1",
+  "navigationDividerColorDark": "#2B2721",
+  "backgroundColor": "#F1ECE1",
+  "enableNotifications": false,
+  "startUrl": "/?source=twa",
+  "iconUrl": "https://vimetry.app/icons/icon-512.png",
+  "maskableIconUrl": "https://vimetry.app/icons/maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "../../vimetry-android-upload.keystore",
+    "alias": "upload"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://vimetry.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": true
+  },
+  "enableSiteSettingsShortcut": false,
+  "isChromeOSOnly": false,
+  "fingerprints": []
+}

@@ -37,3 +37,12 @@ garmin/source/BuildConfig.mc
 # Signed agreements and other personal documents. This repository is public;
 # a signed contract carries a home address and must never be committed.
 *.pdf
+
+# Android (Bubblewrap): signing keys and the generated project never belong here.
+*.keystore
+*.jks
+android/app/
+android/build/
+android/.gradle/
+android/*.aab
+android/*.apk

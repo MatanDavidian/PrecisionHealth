@@ -282,6 +282,16 @@ export function Settings() {
 
           {tab === 'ai' && (
             <>
+              {/* First: for most people the subscription is how analysis is paid for. */}
+              {authAvailable && (
+                <PlanCard
+                  signedIn={session.authenticated}
+                  plan={plan}
+                  justSubscribed={justSubscribed}
+                  refresh={refreshTrial}
+                  onConfirmed={dropReturnMarker}
+                />
+              )}
               <Card label={t('settings.apiKey')}>
                 <div className="pb-3">
                   <label className={label} htmlFor="apiKey">
@@ -337,7 +347,8 @@ export function Settings() {
               the ChatGPT-Plus point is the misunderstanding almost everyone
               arrives with.
               */}
-                {!settings.apiKey && (
+                {/* A subscriber has no need of a key, so no need of the steps to get one. */}
+                {!settings.apiKey && !plan && (
                   <div className="mt-4 rounded-xl border border-hairline p-3">
                     <p className="text-sm font-medium">{t('settings.noKeyTitle')}</p>
                     <ol className="list-decimal space-y-1 ps-4 pt-2 text-xs leading-relaxed text-ink-muted">
@@ -401,15 +412,6 @@ export function Settings() {
                   </p>
                 </div>
               </Card>
-              {authAvailable && (
-                <PlanCard
-                  signedIn={session.authenticated}
-                  plan={plan}
-                  justSubscribed={justSubscribed}
-                  refresh={refreshTrial}
-                  onConfirmed={dropReturnMarker}
-                />
-              )}
               {((trial && !trial.exhausted) || plan) && (
                 <Card label={t('settings.accuracyOrSpeed')}>
                   <p className="pb-3 text-sm text-ink-muted">{t('settings.accuracyBody')}</p>

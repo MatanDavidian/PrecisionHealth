@@ -46,3 +46,4 @@ android/build/
 android/.gradle/
 android/*.aab
 android/*.apk
+android/store-screenshots/

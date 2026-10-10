@@ -18,9 +18,19 @@ if [ "$MODE" != "test" ] && [ "$MODE" != "live" ]; then
 fi
 
 SECRET=$(openssl rand -hex 32)
-printf '%s' "$SECRET" | pbcopy
+# Copied, and checked: anything else that writes the clipboard (a browser
+# helper, a clipboard manager) can replace it before it is pasted.
+copy_secret() {
+  printf '%s' "$SECRET" | pbcopy
+  if [ "$(pbpaste)" != "$SECRET" ]; then
+    echo "✗ could not put the secret on the clipboard (pbcopy failed)"
+    exit 1
+  fi
+}
+copy_secret
 REF=$(cat supabase/.temp/project-ref 2>/dev/null || echo '<project-ref>')
-echo "1. The webhook's signing secret is on the clipboard."
+echo "1. The webhook's signing secret is on the clipboard (64 characters)."
+echo "   Paste it straight away — copying anything else replaces it. Type c below to copy it again."
 echo "   Lemon Squeezy ($MODE mode) → Settings → Webhooks → + :"
 echo "     Callback URL:   https://$REF.supabase.co/functions/v1/lemonsqueezy-webhook"
 echo "     Signing secret: paste"
@@ -28,8 +38,14 @@ echo "     Events:         subscription_created, subscription_updated, subscript
 echo "                     subscription_resumed, subscription_expired, subscription_paused,"
 echo "                     subscription_unpaused, subscription_payment_success,"
 echo "                     subscription_payment_refunded, order_refunded"
-read -r -p "   Saved the webhook? [y/N] " answer
-[ "$answer" = "y" ] || exit 1
+while true; do
+  read -r -p "   Saved the webhook? [y = saved / c = copy the secret again / n = stop] " answer
+  case "$answer" in
+    y) break ;;
+    c) copy_secret; echo "   ✓ on the clipboard again" ;;
+    *) exit 1 ;;
+  esac
+done
 
 echo
 echo "2. Lemon Squeezy ($MODE mode) → Settings → API → + : create a key and copy it."

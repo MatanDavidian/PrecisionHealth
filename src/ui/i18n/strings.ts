@@ -613,6 +613,9 @@ const en = {
   // Written into the store once, on first run, so a fresh install has a day to
   // look at. Frozen in whatever language was chosen then — which is correct:
   // once written they are records like any other, exactly as a real meal is.
+  'sample.title': 'Sample day.',
+  'sample.body':
+    'These meals and readings are made up, so there is something to look at. Log your own and they sit alongside — and the sample never goes into an account.',
   'seed.eggsAndOats': 'Eggs and oats',
   'seed.grilledChicken': 'Grilled chicken breast',
   'seed.riceAndVegetables': 'Rice and vegetables',
@@ -1415,6 +1418,8 @@ const he: Dictionary = {
   'settings.deleteFailed': 'שום דבר לא נמחק.',
 
   // ------------------------------------------------------------ sample day --
+  'sample.title': 'יום לדוגמה.',
+  'sample.body': 'הארוחות והמדידות האלה בדויות, כדי שיהיה על מה להסתכל. רשמו משלכם והם יופיעו לצידן — והדוגמה אף פעם לא עוברת לחשבון.',
   'seed.eggsAndOats': 'ביצים ושיבולת שועל',
   'seed.grilledChicken': 'חזה עוף בגריל',
   'seed.riceAndVegetables': 'אורז וירקות',

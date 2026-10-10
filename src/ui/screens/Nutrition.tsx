@@ -1,3 +1,4 @@
+import { SampleDayLabel } from '../components/SampleDayLabel'
 import { useEffect, useState } from 'react'
 import { Card } from '../components/Card'
 import { MealForm } from '../components/MealForm'
@@ -130,6 +131,8 @@ export function Nutrition() {
           onToday={selected.goToday}
         />
       </header>
+
+      <SampleDayLabel data={data} />
 
       <div className="grid gap-4">
         {/* The label follows the day on screen. It said "Today's total" on

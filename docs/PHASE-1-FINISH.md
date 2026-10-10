@@ -449,3 +449,55 @@ Then     PWA manifest and icons · motion · accessibility pass
    designer.
 5. **Offline logging** — accept online-first (D16) for Phase 1, or build a
    queue now.
+
+---
+
+## Handover — next steps (2026-10-10, evening)
+
+**State:**
+- 14 commits are on `main`, not pushed. They cover:
+  - Play Billing, server and app
+  - the Android TWA configuration
+  - the Play listing drafts and screenshots
+  - `/delete-account`
+  - the Garmin Store build and listing
+  - the policy wording draft
+- **Uncommitted work in progress: the "Sample day" label.** It consists of
+  `src/ui/components/SampleDayLabel.tsx`, its use in Today and Nutrition,
+  `sample.*` strings, and `e2e/sample-day.spec.ts`. All other tests pass with
+  it. One new test fails: "a day with nothing from the sample" must jump
+  to `/nutrition?d=${dayKey(-365)}`, because the test seed reaches back
+  further than 20 days. Fix that test, run `npx playwright test`, commit.
+
+**Next for Claude:**
+1. Finish the sample-day label (above).
+2. Owner says "push" → run `./scripts/deploy-functions.sh`. That applies
+   0016 and deploys `play-billing` and `play-rtdn`.
+3. When the owner approves the wording in `docs/android/store-listing.md`
+   (open work 3), apply it to `src/policy/documents.ts` with a version bump.
+4. A script to fill the review account with a sample week. It needs
+   `REVIEW_EMAIL` / `REVIEW_PASSWORD` in `.env.local`.
+5. Once the Play upload exists: `public/.well-known/assetlinks.json`
+   (`android/README.md`).
+
+**Next for the owner:**
+1. Wait for Google's identity check. Then verify the phone, and look at
+   "Android developer verification".
+2. Recruit 14–15 Android testers.
+3. Garmin: create the Connect IQ developer account. Run
+   `garmin/build.sh --store`, upload, take screenshots in the simulator,
+   and submit (`docs/garmin/store-listing.md`).
+4. Play Console, once verified:
+   - the payments profile
+   - the product `vimetry_monthly`
+   - the service account, whose key goes in `GOOGLE_PLAY_SERVICE_ACCOUNT`
+   - the Pub/Sub push to `play-rtdn?token=…` (`GOOGLE_PLAY_RTDN_TOKEN`)
+   - all of this is in `docs/ANDROID-APP.md` step 4
+5. Build the Android package (`android/README.md`), upload to internal
+   testing, then start the 14-day closed test.
+6. Read and approve the drafts in `docs/android/store-listing.md`:
+   - Data safety answers
+   - the 30-day deletion promise
+   - the Google Play policy wording
+   - the reviewer password, which goes only in the Play Console
+7. Take a real photo-and-estimate screenshot on a phone.

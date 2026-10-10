@@ -9,6 +9,12 @@ the forms are declarations made in the owner's name.
 policy, and so do careful users. The answers below were written from the
 policy as it stands on 2026-10-09.
 
+**The listing claims only what the app does.** A Garmin watch sends calories
+burned, steps, distance, resting heart rate, stress, respiration and VO₂ max
+(`garmin/source/Sync.mc`) — **not sleep**. The Privacy Policy's "Sleep — from
+the same source" describes data the app can hold but does not yet receive;
+consider rewording it at the next policy change.
+
 **Before release, the Privacy Policy and the Terms need a paragraph about
 Google Play:**
 - Google as a second seller, holding the payment details for in-app
@@ -24,13 +30,13 @@ That is a version bump, so signed-in users re-consent once.
 **App name** (30 characters at most): `Vimetry`
 
 **Short description** (80 at most):
-- EN: `Log meals by photo or in words, beside your training, sleep and recovery.` (73)
-- HE: `רישום ארוחות בתמונה או במילים, לצד אימונים, שינה והתאוששות.`
+- EN: `Log meals by photo or in words, and see them beside your activity.` (67)
+- HE: `רישום ארוחות בתמונה או במילים, לצד הפעילות שלכם.`
 
 **Full description, EN** (4,000 at most):
 
 ```
-Vimetry is a personal health log that puts what you eat beside how you train, sleep and recover.
+Vimetry is a personal health log that puts what you eat beside how much you move.
 
 Photograph a meal, or describe it in a sentence, and get an estimate of its calories, protein, carbs and fat — with how confident the estimate is, item by item, and the assumptions behind it. Adjust any number before you save. Nothing you log is ever silently overwritten: corrections are new entries, so your record stays honest.
 
@@ -40,12 +46,12 @@ LOG IN THREE WAYS
 • Again — repeat something you eat often in one tap. No AI, no waiting.
 
 SEE THE DAY AND THE WEEK
-• Today: calories and macros against your goal, activity, sleep and recovery.
+• Today: calories and macros against your goal, beside your activity.
 • The week: what you ate against what you burned, day by day — and a plain account of days with no figures, rather than a guess.
 • Missed a day? Fill it from your own average, marked as an estimate.
 
 WITH YOUR GARMIN
-Connect a Garmin watch for calories burned, steps, resting heart rate, sleep and more.
+Connect a Garmin watch (Forerunner 265 and 265S, more to come) for calories burned, steps, distance, resting heart rate, stress and VO₂ max.
 
 YOUR DATA IS YOURS
 • Meal photos are not stored. A photo is sent for analysis once and then discarded.
@@ -64,7 +70,7 @@ In English and Hebrew.
 **Full description, HE:**
 
 ```
-Vimetry הוא יומן בריאות אישי ששם את מה שאתם אוכלים לצד האימונים, השינה וההתאוששות.
+Vimetry הוא יומן בריאות אישי ששם את מה שאתם אוכלים לצד כמה שאתם זזים.
 
 צלמו ארוחה, או תארו אותה במשפט, וקבלו הערכה של הקלוריות, החלבון, הפחמימות והשומן — עם מידת הביטחון בהערכה, פריט אחר פריט, וההנחות שמאחוריה. אפשר לתקן כל מספר לפני השמירה. שום דבר שתרשמו לא נדרס בשקט: תיקונים הם רשומות חדשות, כך שהרישום שלכם נשאר נאמן.
 
@@ -74,12 +80,12 @@ Vimetry הוא יומן בריאות אישי ששם את מה שאתם אוכל
 • שוב — חזרה על משהו שאתם אוכלים לעיתים קרובות בנגיעה אחת. בלי בינה מלאכותית, בלי המתנה.
 
 היום והשבוע
-• היום: קלוריות ומאקרו מול היעד שלכם, פעילות, שינה והתאוששות.
+• היום: קלוריות ומאקרו מול היעד שלכם, לצד הפעילות שלכם.
 • השבוע: מה אכלתם מול מה ששרפתם, יום אחר יום — ותיאור כן של ימים בלי נתונים, במקום ניחוש.
 • פספסתם יום? אפשר למלא אותו מהממוצע שלכם, מסומן כהערכה.
 
 עם ה־Garmin שלכם
-חברו שעון Garmin לקלוריות שנשרפו, צעדים, דופק במנוחה, שינה ועוד.
+חברו שעון Garmin (Forerunner 265 ו־265S, ועוד בהמשך) לקלוריות שנשרפו, צעדים, מרחק, דופק במנוחה, מתח ו־VO₂ max.
 
 הנתונים שלכם שייכים לכם
 • תמונות ארוחות לא נשמרות. תמונה נשלחת לניתוח פעם אחת ואז נמחקת.
@@ -146,7 +152,7 @@ Privacy Policy names each one.
 | --- | --- | --- | --- | --- |
 | Personal info → Email address | yes | optional (only with an account) | no | Account management, App functionality |
 | Health and fitness → Health info (meals and their nutrients, weight, body measurements, goals) | yes | optional (only with an account; without one it stays on the phone) | no | App functionality |
-| Health and fitness → Fitness info (activity, steps, heart rate, sleep — from Garmin) | yes | optional | no | App functionality |
+| Health and fitness → Fitness info (calories burned, steps, distance, resting heart rate, stress, respiration, VO₂ max — from a Garmin watch) | yes | optional | no | App functionality |
 | Photos and videos → Photos (a meal photo, for analysis) | yes | optional | **yes** — sent once, not stored | App functionality |
 | Financial info → Purchase history (whether you subscribe, and when it renews) | yes | optional | no | App functionality, Account management |
 | App info and performance → Crash logs (error reports: message, page path, app version, browser; no account, no health data) | yes | not optional | no | Analytics |

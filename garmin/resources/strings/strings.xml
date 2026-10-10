@@ -1,5 +1,5 @@
 <strings>
-  <string id="AppName">Garmin Data POC</string>
-  <string id="SettingUrl">Sync URL</string>
-  <string id="SettingToken">Device token</string>
+  <string id="AppName">Vimetry</string>
+  <string id="SettingUrl">Server address (leave empty)</string>
+  <string id="SettingToken">Vimetry device token</string>
 </strings>

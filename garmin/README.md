@@ -1,3 +1,21 @@
+# Vimetry for Garmin watches
+
+**Today (2026-10-10):** the watch app is **Vimetry**. It sends the day's
+activity numbers to the owner's Vimetry account with a device token:
+- once a day in the background
+- whenever it is opened
+
+What it sends, the permissions and the Store submission are described in
+[`../docs/garmin/store-listing.md`](../docs/garmin/store-listing.md).
+
+- Sideload build: `./build.sh` (compiles in `local.env`'s token, your own).
+- Store package: `./build.sh --store` (no token compiled in, ever).
+
+**The history below is the original probe (v0), kept for what it
+established** — chiefly that `History.calories` is TOTAL energy, not active.
+
+---
+
 # Garmin Connect IQ — POC v0
 
 A watch app that **reads and prints. It saves nothing and sends nothing.**

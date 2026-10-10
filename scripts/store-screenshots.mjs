@@ -67,7 +67,7 @@ for (const locale of ['en-US', 'he-IL']) {
     </head><body style="margin:0;width:1024px;height:500px;background:#f1ece1;display:flex;align-items:center;gap:56px;padding:0 96px;box-sizing:border-box">
     <div style="width:132px;height:132px;border-radius:50%;background:#c2673e;flex:none"></div>
     <div><div style="font-family:Fraunces,serif;font-size:96px;color:#2b2721;line-height:1">Vimetry</div>
-    <div style="font-family:Inter,sans-serif;font-size:28px;color:#6f6a60;padding-top:18px;white-space:nowrap">What you eat, beside how you train and sleep.</div></div>
+    <div style="font-family:Inter,sans-serif;font-size:28px;color:#6f6a60;padding-top:18px;white-space:nowrap">What you eat, beside how you move.</div></div>
     </body></html>`)
   await page.waitForLoadState('networkidle')
   await page.screenshot({ path: join(OUT, 'feature-graphic.png') })

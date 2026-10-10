@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Vimetry",
   "short_name": "Vimetry",
-  "description": "Log what you eat by photo or in words, and see it beside training, sleep and recovery.",
+  "description": "Log what you eat by photo or in words, and see it beside your activity.",
   "start_url": "/?source=app",
   "scope": "/",
   "display": "standalone",

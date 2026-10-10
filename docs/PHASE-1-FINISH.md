@@ -354,6 +354,17 @@ Today a stranger lands on a sample day with no explanation.
   next meal; connect a Garmin.
 
 ### Publishing the Garmin app · M work, weeks of calendar · M + C
+> **Ready to submit, 2026-10-10:**
+> - the app is renamed Vimetry (it was "Garmin Data POC")
+> - `garmin/build.sh --store` builds the Store package with no device token
+>   and the production address
+> - the listing, the setup steps and the owner's checklist are in
+>   `docs/garmin/store-listing.md`
+>
+> The UUID was made permanent on 2026-09-06. Left for the owner: the Connect
+> IQ developer account, the upload, the simulator screenshots, and the
+> submission.
+
 The code is ready: the watch reads its server address and token from a
 settings page before the compiled-in values, so a Store build needs no code
 change. Remaining:

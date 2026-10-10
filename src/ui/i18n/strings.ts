@@ -416,6 +416,13 @@ const en = {
   'signin.signedOutNote':
     'Signed out, the app still works — everything stays in this browser, and nothing is sent anywhere. Your API key never syncs either way.',
   'signin.errSend': 'Could not send the code',
+  'signin.reviewer': 'App reviewer? Sign in with a password',
+  'signin.reviewerNote':
+    'For app-store review accounts. Everyone else signs in with the code we email — there is no password to set.',
+  'signin.password': 'Password',
+  'signin.withPassword': 'Sign in',
+  'signin.backToCode': 'Use an email code instead',
+  'signin.errPassword': 'That email and password were not accepted',
   'signin.errCode': 'That code was not accepted',
 
   // --------------------------------------------------------------- today ---
@@ -1193,6 +1200,12 @@ const he: Dictionary = {
   'signin.signedOutNote':
     'גם בלי כניסה האפליקציה עובדת — הכל נשאר בדפדפן הזה, ושום דבר לא נשלח לשום מקום. מפתח ה-API שלכם לא מסתנכרן בשום מצב.',
   'signin.errSend': 'לא הצלחנו לשלוח את הקוד',
+  'signin.reviewer': 'בודקים את האפליקציה? כניסה עם סיסמה',
+  'signin.reviewerNote': 'לחשבונות בדיקה של חנויות האפליקציות. כל השאר נכנסים עם קוד שנשלח במייל — אין סיסמה להגדיר.',
+  'signin.password': 'סיסמה',
+  'signin.withPassword': 'כניסה',
+  'signin.backToCode': 'כניסה עם קוד במייל',
+  'signin.errPassword': 'האימייל והסיסמה האלה לא התקבלו',
   'signin.errCode': 'הקוד הזה לא התקבל',
 
   // --------------------------------------------------------------- today ---

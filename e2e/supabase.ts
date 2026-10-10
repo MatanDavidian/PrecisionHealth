@@ -97,6 +97,8 @@ export interface StubOptions {
   sendFails?: string
   /** Reject whatever code is typed. */
   codeFails?: string
+  /** Reject a password sign-in (the reviewer path), as Supabase does a wrong one. */
+  passwordFails?: boolean
   /** What the analysis endpoint does when the app asks it to read a photo. */
   analysis?: 'exhausted' | 'down' | 'planExhausted'
   /**
@@ -283,7 +285,11 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
       : json(route, sessionBody()),
   )
 
-  await page.route('**/auth/v1/token**', (route) => json(route, sessionBody()))
+  await page.route('**/auth/v1/token**', (route) =>
+    options.passwordFails && route.request().url().includes('grant_type=password')
+      ? json(route, { error: 'invalid_grant', error_description: 'Invalid login credentials', msg: 'Invalid login credentials' }, 400)
+      : json(route, sessionBody()),
+  )
   await page.route('**/auth/v1/user**', (route) => json(route, sessionBody().user))
   await page.route('**/auth/v1/logout**', (route) =>
     route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*' }, body: '' }),

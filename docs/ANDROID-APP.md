@@ -76,7 +76,20 @@ Google's checks take days to weeks and run while the code is written.
 - **Find 12 testers with Android phones.** Friends and family count. Each
   needs a Google account.
 
-### 1. Make vimetry.app installable (a PWA) · M · C
+### 1. Make vimetry.app installable (a PWA) · M · C — built 2026-10-10
+
+> **Built:**
+> - `public/manifest.webmanifest`
+> - icons from `scripts/make-icons.mjs`, a stand-in mark until the logo
+>   exists
+> - `public/sw.js`: pages network-first with an offline copy; the build's
+>   scripts precached. Supabase and OpenAI are never touched.
+> - proved by `e2e/installable.spec.ts`
+>
+> **Found on the way, for step 4:** `Permissions-Policy: payment=()` in
+> `public/_headers` blocks the Payment Request API that Play Billing uses.
+> It must become `payment=(self)` when billing is built.
+
 
 Worth doing on its own: Chrome and Safari can then "Add to Home screen"
 today. On iPhone that also stops Safari clearing a signed-out person's data.
@@ -109,7 +122,19 @@ today. On iPhone that also stops Safari clearing a signed-out person's data.
 - Build the AAB in CI next to the website, or by hand to start with. The
   keystore never goes in the repo.
 
-### 3. Sign-in that a Google reviewer can use · S · C
+### 3. Sign-in that a Google reviewer can use · S · C — built 2026-10-10
+
+> **Built:** on the sign-in card, the link "App reviewer? Sign in with a
+> password" (`signInWithPassword` in `src/data/session.ts`,
+> `e2e/reviewer-signin.spec.ts`). It is on screen rather than behind a URL,
+> because the Android app has no address bar.
+>
+> **Still to do:**
+> - **Owner:** Supabase → Authentication → Add user: `review@vimetry.app`,
+>   a long random password, Auto Confirm. The password goes in the Play
+>   Console's App access section, and nowhere else.
+> - **C:** a script that fills that account with a sample week.
+
 
 Reviewers need a working login, and they cannot read our email codes.
 - A reviewer account (`review@vimetry.app`) with a password.

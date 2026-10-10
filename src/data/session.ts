@@ -105,6 +105,22 @@ export async function verifySignInCode(email: string, code: string): Promise<Ses
   return current
 }
 
+/**
+ * Signs in with a password — for app-store reviewers only.
+ *
+ * Google's and Apple's reviewers have to sign in, and cannot read a code we
+ * email them. So one review account has a password (docs/ANDROID-APP.md,
+ * step 3). Everyone else's account has none, and this simply fails for them;
+ * the email code stays the way in.
+ */
+export async function signInWithPassword(email: string, password: string): Promise<Session> {
+  const supabase = await getSupabaseClient()
+  const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+  if (error) throw new Error(error.message)
+  current = sessionFrom(data.session?.user)
+  return current
+}
+
 export async function signOut(): Promise<void> {
   if (!isAuthAvailable) return
   const supabase = await getSupabaseClient()

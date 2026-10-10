@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { sendSignInCode, verifySignInCode } from '@/data/session'
+import { sendSignInCode, signInWithPassword, verifySignInCode } from '@/data/session'
 import { Card } from '../components/Card'
 import { useT } from '../i18n'
 
@@ -13,6 +13,9 @@ type Stage =
   | { kind: 'sending' }
   | { kind: 'code' }
   | { kind: 'verifying' }
+  /** The app-store reviewer's way in; see signInWithPassword. */
+  | { kind: 'password' }
+  | { kind: 'signingIn' }
 
 /**
  * Sign in by email — no passwords, which is the right shape for a family app
@@ -29,6 +32,7 @@ export function SignIn() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
+  const [password, setPassword] = useState('')
   const [stage, setStage] = useState<Stage>({ kind: 'email' })
   const [error, setError] = useState<string>()
 
@@ -61,7 +65,23 @@ export function SignIn() {
     }
   }
 
-  const busy = stage.kind === 'sending' || stage.kind === 'verifying'
+  async function submitPassword(event: FormEvent) {
+    event.preventDefault()
+    if (!email.trim() || !password) return
+    setStage({ kind: 'signingIn' })
+    setError(undefined)
+    try {
+      await signInWithPassword(email, password)
+      navigate('/today')
+    } catch {
+      // One message for every failure: which part was wrong is not for a sign-in form to say.
+      setError(t('signin.errPassword'))
+      setStage({ kind: 'password' })
+    }
+  }
+
+  const busy = stage.kind === 'sending' || stage.kind === 'verifying' || stage.kind === 'signingIn'
+  const withPassword = stage.kind === 'password' || stage.kind === 'signingIn'
 
   return (
     <div className="mx-auto max-w-md">
@@ -71,7 +91,53 @@ export function SignIn() {
       </header>
 
       <Card>
-        {stage.kind === 'email' || stage.kind === 'sending' ? (
+        {withPassword ? (
+          <form onSubmit={submitPassword}>
+            <p className="pb-4 text-xs text-ink-muted">{t('signin.reviewerNote')}</p>
+            <label className={label} htmlFor="email">
+              {t('signin.email')}
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="username"
+              className={field}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <label className={`${label} pt-3`} htmlFor="password">
+              {t('signin.password')}
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              className={field}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <div className="flex flex-wrap gap-3 pt-4">
+              <button
+                type="submit"
+                disabled={busy || !email.trim() || !password}
+                className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-surface disabled:opacity-40"
+              >
+                {stage.kind === 'signingIn' ? t('signin.checking') : t('signin.withPassword')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStage({ kind: 'email' })
+                  setPassword('')
+                  setError(undefined)
+                }}
+                className="rounded-full border border-hairline px-4 py-2 text-sm"
+              >
+                {t('signin.backToCode')}
+              </button>
+            </div>
+          </form>
+        ) : stage.kind === 'email' || stage.kind === 'sending' ? (
           <form onSubmit={requestCode}>
             <label className={label} htmlFor="email">
               {t('signin.email')}
@@ -135,6 +201,24 @@ export function SignIn() {
         )}
 
         {error && <p className="pt-3 text-xs text-accent">{error}</p>}
+
+        {/*
+          Small and labelled for who it is for: Google's and Apple's reviewers,
+          who must sign in and cannot read an emailed code. Inside the Android
+          app there is no address bar, so it has to be on screen.
+        */}
+        {stage.kind === 'email' && (
+          <button
+            type="button"
+            onClick={() => {
+              setStage({ kind: 'password' })
+              setError(undefined)
+            }}
+            className="mt-4 block text-xs text-ink-muted underline"
+          >
+            {t('signin.reviewer')}
+          </button>
+        )}
       </Card>
 
       <p className="px-1 pt-4 text-xs text-ink-muted">{t('signin.signedOutNote')}</p>

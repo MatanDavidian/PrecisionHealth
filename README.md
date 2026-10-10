@@ -31,7 +31,9 @@ Node 20+.
 ## High-level decisions
 
 Full reasoning in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); the plan they
-serve is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+serve is in [`docs/ROADMAP.md`](docs/ROADMAP.md). What finishes Phase 1 is in
+[`docs/PHASE-1-FINISH.md`](docs/PHASE-1-FINISH.md); the Android app and Google
+Play Billing in [`docs/ANDROID-APP.md`](docs/ANDROID-APP.md).
 
 | # | Decision | In short |
 |---|---|---|

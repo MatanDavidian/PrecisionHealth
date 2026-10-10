@@ -1,0 +1,237 @@
+# Android app on Google Play — roadmap
+
+Decided 2026-10-10:
+- Vimetry goes to the **Play Store** as an Android app.
+- Inside that app, it sells the subscription through **Google Play Billing**:
+  a second payment system beside Lemon Squeezy, kept in sync on one account.
+- The Play Store and the Garmin app are the **next two Phase 1 steps**
+  (`docs/PHASE-1-FINISH.md`).
+
+Sizes: **S** under half a day · **M** one to two days · **L** three to five.
+Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
+
+---
+
+## The shape of it
+
+**One web app, wrapped.** The Android app is a Trusted Web Activity (TWA):
+Chrome showing vimetry.app full-screen, with no browser bar, under the app's
+own name and icon. It is built with Google's Bubblewrap.
+- There is no second codebase. A website deploy updates the app too, with no
+  store review for ordinary changes.
+- Play Billing works inside a TWA through two browser APIs:
+  - the **Digital Goods API** lists purchases
+  - the **Payment Request API** runs the purchase, with Google Play as the
+    payment method
+
+  Enabled with Bubblewrap's `playBilling` feature; requires Chrome 101 or
+  later on the phone.
+  Source: developer.chrome.com → Trusted Web Activity → "Receive payments
+  via Google Play Billing".
+
+**One subscription per account, from either store.** The account is what
+pays, not the device:
+- Someone who subscribed on the website signs in to the Android app and has
+  their plan there.
+- Someone who subscribed on Android signs in on the website and has it there
+  too.
+
+The allowances, the rules (cancel → end of month, refund → at once, delete →
+billing stops) and the screens stay the same; only who sells it differs.
+
+**Who sells where:**
+
+| Where the person is | Subscribe button | Manage button |
+| --- | --- | --- |
+| Android app (TWA) | Google Play Billing | Google Play's subscription page |
+| Website, any browser | Lemon Squeezy | Lemon Squeezy portal, or Google Play's page if the plan came from Play |
+
+Play's payments policy is the reason for that split: digital subscriptions
+bought inside a Play app go through Play Billing. The app must therefore
+never show a Lemon Squeezy checkout inside the TWA. Check the policy again at
+step 4 below, because it has been changing (court rulings, the user-choice
+billing programmes).
+
+**Money.** Google takes **15%** on subscriptions and handles sales tax and
+VAT. At $8.99 that leaves about $7.64, against about $7.99 through Lemon
+Squeezy. The allowance stays affordable (`docs/ops/payments.md`). Prices per
+country are set in the Play Console; keep the US price at $8.99.
+
+---
+
+## Steps
+
+### 0. Start the clocks now · M · calendar
+
+Google's checks take days to weeks and run while the code is written.
+
+- **Play Console developer account:** play.google.com/console, $25 once,
+  then identity verification, which takes a few days.
+  - Choose *personal* or *organisation*. An organisation account needs a
+    D-U-N-S number. A personal account must run a **closed test with at
+    least 12 testers for 14 days in a row** before it may publish
+    (re-check both numbers at signup).
+- **A Google payments (merchant) profile** linked to the Play Console. This
+  is what lets the app sell anything.
+- **Find 12 testers with Android phones.** Friends and family count. Each
+  needs a Google account.
+
+### 1. Make vimetry.app installable (a PWA) · M · C
+
+Worth doing on its own: Chrome and Safari can then "Add to Home screen"
+today. On iPhone that also stops Safari clearing a signed-out person's data.
+
+- `manifest.webmanifest`: name, short name, start URL, colours, display
+  `standalone`, icons.
+- Icons: 192 and 512 px, maskable versions, and the 512 px Play Store
+  icon. **This needs the logo**, so Phase 1 item "Logo, home-screen icon"
+  moves up. A temporary mark will do for the closed test.
+- A service worker. It caches the app shell so the app opens offline and
+  meets Chrome's install criteria. It does not cache data: the app stays
+  online-first (D16).
+- CSP: allow the manifest and the service worker. Test under the enforced
+  policy, as `e2e/security-headers.spec.ts` does.
+- Tests: the manifest is valid, the app is installable (Lighthouse's PWA
+  check), and it opens offline to a clear "you're offline" screen.
+
+### 2. The Android package · S · C + M
+
+- Bubblewrap `init` from the manifest:
+  - package name `app.vimetry` (permanent once uploaded — decide carefully)
+  - `playBilling` enabled
+- **Signing:** use Play App Signing. Google holds the app key; we keep only
+  the upload key. Losing the upload key is recoverable; losing an app key is
+  not.
+- `/.well-known/assetlinks.json` on vimetry.app, so Android trusts that the
+  app and the site belong together. Without it the TWA shows a browser bar.
+  Served from `public/.well-known/` (check Cloudflare serves the dot
+  folder, and its content type).
+- Build the AAB in CI next to the website, or by hand to start with. The
+  keystore never goes in the repo.
+
+### 3. Sign-in that a Google reviewer can use · S · C
+
+Reviewers need a working login, and they cannot read our email codes.
+- A reviewer account (`review@vimetry.app`) with a password.
+- A password sign-in path that only that account can use. The rest of the
+  world keeps email codes.
+- The account holds a realistic sample week, and **no real person's data**.
+
+### 4. Google Play Billing · L (5–7 days) · C, with M for the console parts
+
+**Owner, in the consoles:**
+- Play Console → Monetise → Subscriptions:
+  - product `vimetry_monthly`
+  - base plan: monthly auto-renewing at $8.99, local prices from that
+  - grace period on
+  - account hold on
+- Google Cloud project: a service account with access to the Play Developer
+  API (invited in Play Console → Users and permissions). Its key becomes a
+  Supabase secret.
+- Real-time developer notifications (RTDN): a Pub/Sub topic, with an
+  authenticated push subscription to our new webhook.
+- License testers: their purchases are free and renew every few minutes,
+  which is how renewal and expiry get tested.
+
+**Code:**
+- Migration: `subscriptions.provider` (`lemonsqueezy` | `google_play`) and
+  the fields Play needs:
+  - purchase token, as the id
+  - `linkedPurchaseToken`, for a resubscribe or plan change
+  - expiry time
+  - acknowledged
+
+  Entitlement keeps one rule set. Play states map onto ours:
+
+  | Play state | Our status |
+  | --- | --- |
+  | `ACTIVE` | active |
+  | `IN_GRACE_PERIOD` | `past_due` (access continues) |
+  | `ON_HOLD`, `PAUSED` | no access |
+  | `CANCELED` | cancelled, until the expiry time |
+  | `EXPIRED` | expired |
+  | voided / revoked | refunded, access ends at once |
+
+- **`play-billing` function** (user JWT). The app sends the purchase token
+  after a purchase. The server:
+  1. checks it with the Play Developer API (`purchases.subscriptionsv2.get`)
+  2. checks `obfuscatedExternalAccountId` is this account (set at purchase,
+     like Lemon Squeezy's custom data)
+  3. **acknowledges it** (Google refunds unacknowledged purchases after three
+     days)
+  4. stores it
+
+  It refuses a second subscription when one is already active from either
+  store.
+- **`play-rtdn` function** (no user JWT; verifies Google's signed push
+  token):
+  - every notification carries only a token, so it **re-reads the state
+    from the API** rather than trusting the message
+  - duplicate and out-of-order handling, as with the Lemon Squeezy webhook
+  - voided-purchase notifications are refunds
+- **delete-account:** cancels a Play subscription through the API, as it
+  does Lemon Squeezy's, and refuses to delete if that fails.
+- **The app:**
+  - Inside the TWA, Subscribe opens Play's purchase sheet and Manage opens
+    Play's subscriptions page. The Lemon Squeezy checkout never appears
+    there.
+  - On the website, a Play subscription shows "Manage on Google Play".
+  - On start, `listPurchases()` finishes any purchase whose acknowledgement
+    was missed.
+- **Tests**, at the same depth as Lemon Squeezy:
+  - handler tests with a faked Play Developer API and faked RTDN pushes:
+    renew, cancel, grace, hold, expire, refund, deleted account, wrong
+    account, replayed token
+  - SQL checks
+  - e2e with a faked Digital Goods API
+- **Terms and Privacy Policy:**
+  - Google as a second seller and processor (it holds the payment details)
+  - the Play refund route (refunds go through Google)
+
+### 5. The store listing and Google's forms · M · M + C drafts
+
+- **Listing:**
+  - short and full descriptions, in English and Hebrew (C drafts)
+  - phone screenshots and a feature graphic (C makes these with Playwright)
+  - category Health & Fitness
+- **Data safety form:** what is collected, why, encrypted in transit,
+  deletable in the app. It must match the Privacy Policy line by line.
+- **Health apps declaration**, plus the target audience (adults; the Terms
+  say no under-16s) and the content rating questionnaire.
+- **App access:** the reviewer account from step 3.
+
+### 6. Closed test → production · calendar, at least 14 days · M
+
+- Internal testing first (a few people, immediate). Then the **closed test
+  with 12 or more testers for 14 days**, using Play's test cards and license
+  testers for the subscription.
+- Then apply for production access and submit for review. A first review of
+  a health app can take a week or more.
+
+---
+
+## Timeline
+
+| Week | Code (C) | Owner (M) |
+| --- | --- | --- |
+| 1 | PWA: manifest, service worker, icons from a temporary mark; assetlinks; reviewer sign-in | Play Console account + verification; payments profile; recruit testers |
+| 2 | Bubblewrap package; Play Billing server and webhook | Console: product, service account, Pub/Sub; upload to internal testing |
+| 3 | Billing in the app, tests, policy and listing drafts | Forms; start the closed test |
+| 4–5 | Fixes from testers | Closed test runs 14 days; then apply for production |
+
+About **two weeks of code**, and **four to six weeks of calendar** before
+the first public release, most of it Google's clocks. The Garmin submission
+(`docs/PHASE-1-FINISH.md`) runs in parallel: its review clock is also
+measured in weeks, so start its owner steps in week 1 too.
+
+## Risks
+
+- **Play's payments policy changes.** Re-read it at step 4, and again
+  before submitting.
+- **The TWA depends on Chrome** being installed and up to date on the
+  phone. Most Android phones have it; billing needs Chrome 101 or later.
+- **Two sellers for one plan.** The rules are the same; the risk is drift.
+  One entitlement function (`_shared/plan.ts`) for both, and tests that run
+  every scenario against both providers.
+- **Refund paths differ.** Google refunds without asking us. We learn it
+  from the voided-purchase notification, and must end access then.

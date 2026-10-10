@@ -37,13 +37,14 @@ handler tests for every function.
 
 | # | What | Who | Note |
 | --- | --- | --- | --- |
-| 1 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | C | The last payment gap, and small. Lemon Squeezy has both events; tick them on the webhook once handled. Before going live |
-| 2 | **Publish the Garmin app** | M + C | Start early: Garmin's review takes weeks (section below) |
-| 3 | **Onboarding for a first-time visitor** | M + C | Designed first in Claude Design, then built (section below) |
-| 4 | **Contract tests on a local Supabase** | C | Needs the local stack (~2 GB download) — run with the owner around |
-| 5 | **Model quality check** on real meal photos | M (+ C script) | GPT-6.1 Sol is the baseline (`docs/ops/model-evaluation.md`). When there are photos, C writes a script that runs them through both models and scores them |
-| 6 | **Re-measure the cost per analysis**, update `docs/ops/pricing.md` | C | After a few weeks of real usage, from the ledger |
-| 7 | **Logo, home-screen icon, motion, accessibility scan** | M + C | Lowest priority (P3 below) |
+| 1 | **Android app on the Play Store**, selling through Google Play Billing | M + C | Next. Plan: `docs/ANDROID-APP.md` — about two weeks of code, four to six weeks of calendar (Google's verification and a 14-day closed test). Owner starts the Play Console account now |
+| 2 | **Publish the Garmin app** | M + C | Next, alongside 1 — Garmin's review also takes weeks, so its owner steps start in the same week (section below) |
+| 3 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | C | Small; before going live with payments. Lemon Squeezy has both events; tick them on the webhook once handled |
+| 4 | **Logo and home-screen icon** | M + C | Moved up: the Android app and the installable website need icons. A temporary mark will do for the closed test; motion and the accessibility scan stay P3 |
+| 5 | **Onboarding for a first-time visitor** | M + C | Designed first in Claude Design, then built (section below) |
+| 6 | **Contract tests on a local Supabase** | C | Needs the local stack (~2 GB download) — run with the owner around |
+| 7 | **Model quality check** on real meal photos | M (+ C script) | GPT-6.1 Sol is the baseline (`docs/ops/model-evaluation.md`). When there are photos, C writes a script that runs them through both models and scores them |
+| 8 | **Re-measure the cost per analysis**, update `docs/ops/pricing.md` | C | After a few weeks of real usage, from the ledger — and with Play's 15% in it |
 | — | **Go live with payments** | M | When the owner decides: `docs/ops/payments.md` step 4 — copy the product to live, longest key expiry, `set-billing-secrets.sh live` |
 
 ### Small things waiting on the owner
@@ -65,7 +66,7 @@ handler tests for every function.
   an active test-mode subscription from testing. Refund it, or keep it for
   testing as a subscriber.
 
-**Next:** chargebacks, then start the Garmin submission.
+**Next (decided 2026-10-10):** the Play Store and the Garmin app, side by side. Week 1 is mostly the owner starting Google's and Garmin's clocks (accounts, verification, testers) while C makes the website installable.
 
 ---
 

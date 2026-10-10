@@ -246,6 +246,7 @@ repository or a chat.
    > when the refund is made. One subscription covers the app and the
    > website, whichever you bought it from, and an account cannot hold two
    > at once.
-4. **A sample week in the review account** — C, a script that signs in as
-   `review@vimetry.app`. It needs the password in `.env.local` as
-   `REVIEW_EMAIL` / `REVIEW_PASSWORD`, put there by the owner.
+4. ~~A sample week in the review account~~ — **done 2026-10-11**
+   (`scripts/seed-review-account.ts`): three weeks of meals, activity
+   readings, a workout and goals, all from the app's sample set with fresh
+   ids. It refuses any account but the review one, and won't write twice.

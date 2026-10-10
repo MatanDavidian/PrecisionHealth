@@ -462,8 +462,9 @@ Then     PWA manifest and icons · motion · accessibility pass
 **Next for Claude:**
 1. When the owner approves the wording in `docs/android/store-listing.md`
    (open work 3), apply it to `src/policy/documents.ts` with a version bump.
-2. A script to fill the review account with a sample week. It needs
-   `REVIEW_EMAIL` / `REVIEW_PASSWORD` in `.env.local`.
+2. ~~A sample week for the review account~~ — done 2026-10-11. Run
+   `npx vite-node scripts/seed-review-account.ts`: 47 meals over 19 days,
+   readings, a workout and goals. Running it again writes nothing.
 3. Once the Play upload exists: `public/.well-known/assetlinks.json`
    (`android/README.md`).
 

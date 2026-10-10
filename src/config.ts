@@ -10,11 +10,10 @@ import type { AppSettings } from '@/data/repositories'
 
 export const DEFAULT_SETTINGS: AppSettings = {
   /**
-   * Chosen after comparing models on the same photo: against gpt-4o-mini it
-   * found roughly twice as many items, separated dry pantry goods from cooked
-   * portions, and gave calibrated rather than flat confidence.
+   * For someone on their own key: the app's own default, GPT-6.1 Sol, since
+   * the gpt-5.6 models were retired from the app (2026-10-09).
    */
-  model: 'gpt-5.6-sol',
+  model: 'gpt-6.1-sol',
   /** On, because it is what makes the photo flow two taps. */
   autoAnalyze: true,
 }

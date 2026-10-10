@@ -64,6 +64,8 @@ export function Settings() {
         })
       : undefined
   const { session, authAvailable, trial, plan, refreshTrial, refresh } = useDataRevision()
+  /** Analysis runs on our account — the trial or a subscription — not on a key of their own. */
+  const onOurAccount = Boolean((trial && !trial.exhausted) || plan)
   const dropReturnMarker = useCallback(() => {
     setParams(
       (current) => {
@@ -292,252 +294,498 @@ export function Settings() {
                   onConfirmed={dropReturnMarker}
                 />
               )}
-              <Card label={t('settings.apiKey')}>
-                <div className="pb-3">
-                  <label className={label} htmlFor="apiKey">
-                    {t('settings.key')}
-                  </label>
-                  <input
-                    id="apiKey"
-                    type="password"
-                    autoComplete="off"
-                    spellCheck={false}
-                    className={field}
-                    placeholder={t('settings.keyPlaceholder')}
-                    value={keyInput}
-                    onChange={(e) => {
-                      setKeyInput(e.target.value)
-                      setTest({ kind: 'idle' })
-                    }}
-                  />
-                </div>
+              {onOurAccount ? (
+                <>
+                  <Card label={t('settings.accuracyOrSpeed')}>
+                    <p className="pb-3 text-sm text-ink-muted">{t('settings.accuracyBody')}</p>
+                    <ModelPicker
+                      suggestedModel={trial?.suggestedModel ?? TRIAL_MODEL}
+                      selected={settings.trialModel}
+                      onSelect={(model) => {
+                        void update({ trialModel: model })
+                        refreshTrial()
+                      }}
+                    />
+                    <div className="pt-4">
+                      <label className="flex items-start gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5"
+                          checked={settings.autoAnalyze}
+                          onChange={(e) => void update({ autoAnalyze: e.target.checked })}
+                        />
+                        <span>
+                          {t('settings.autoAnalyze')}
+                          <span className="block text-xs text-ink-muted">
+                            {t('settings.autoAnalyzeHint')}
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                  </Card>
+                  {/*
+                    Folded away: while analysis runs on our account a key of
+                    the person's own is not used, and its setup steps are noise.
+                  */}
+                  <details className="rounded-card bg-card p-5">
+                    <summary className="cursor-pointer text-sm font-medium">
+                      {t('settings.ownKeyInstead')}
+                    </summary>
+                    <p className="pt-2 pb-4 text-xs text-ink-muted">{t('settings.ownKeyInsteadBody')}</p>
+                    <div className="pb-3">
+                      <label className={label} htmlFor="apiKey">
+                        {t('settings.key')}
+                      </label>
+                      <input
+                        id="apiKey"
+                        type="password"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className={field}
+                        placeholder={t('settings.keyPlaceholder')}
+                        value={keyInput}
+                        onChange={(e) => {
+                          setKeyInput(e.target.value)
+                          setTest({ kind: 'idle' })
+                        }}
+                      />
+                    </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const key = keyInput.trim()
-                      // Saving a key is exactly when the account's model list becomes
-                      // available — waiting for a separate Refresh click just looks
-                      // like the feature is broken.
-                      void update({ apiKey: key }).then(() => loadModels(key))
-                    }}
-                    className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
-                  >
-                    {t('settings.saveKey')}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!keyInput.trim() || test.kind === 'testing'}
-                    onClick={() => void runTest()}
-                    className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft disabled:opacity-40"
-                  >
-                    {test.kind === 'testing' ? t('settings.testing') : t('settings.testKey')}
-                  </button>
-                  {test.kind === 'done' && (
-                    <span className={`text-xs ${test.ok ? 'text-leaf' : 'text-accent'}`}>
-                      {test.message}
-                    </span>
-                  )}
-                  {saved && <span className="text-xs text-leaf">{t('settings.saved')}</span>}
-                </div>
-
-                {/*
-              Shown only when there is no key: the steps matter exactly once, and
-              the ChatGPT-Plus point is the misunderstanding almost everyone
-              arrives with.
-              */}
-                {/* A subscriber has no need of a key, so no need of the steps to get one. */}
-                {!settings.apiKey && !plan && (
-                  <div className="mt-4 rounded-xl border border-hairline p-3">
-                    <p className="text-sm font-medium">{t('settings.noKeyTitle')}</p>
-                    <ol className="list-decimal space-y-1 ps-4 pt-2 text-xs leading-relaxed text-ink-muted">
-                      <li>
-                        {t('settings.step1Open')}{' '}
-                        <a
-                          className="underline"
-                          href="https://platform.openai.com/api-keys"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          platform.openai.com/api-keys
-                        </a>{' '}
-                        {t('settings.step1')}
-                      </li>
-                      <li>
-                        {t('settings.step2Add')}{' '}
-                        <a
-                          className="underline"
-                          href="https://platform.openai.com/settings/organization/billing"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {t('settings.billing')}
-                        </a>{' '}
-                        {t('settings.step2Tail')}
-                      </li>
-                      <li>{t('settings.step3')}</li>
-                    </ol>
-                    <p className="pt-2 text-xs leading-relaxed text-ink-muted">
-                      <strong>{t('settings.notIncludedBold')}</strong> {t('settings.notIncluded')}
-                    </p>
-                  </div>
-                )}
-
-                <div className="pt-4 text-xs leading-relaxed text-ink-muted">
-                  <p>
-                    {t('settings.storedHead')} <strong>{t('settings.storedBold')}</strong>
-                    {t('settings.storedTail')}
-                  </p>
-                  <p className="pt-2">
-                    {t('settings.scriptsHead')}{' '}
-                    <a
-                      className="underline"
-                      href="https://platform.openai.com/settings/organization/limits"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t('settings.spendingLimit')}
-                    </a>
-                    {t('settings.scriptsTail')}{' '}
-                    <a
-                      className="underline"
-                      href="https://openai.com/policies/api-data-usage-policies"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t('settings.dataPolicies')}
-                    </a>
-                    .
-                  </p>
-                </div>
-              </Card>
-              {((trial && !trial.exhausted) || plan) && (
-                <Card label={t('settings.accuracyOrSpeed')}>
-                  <p className="pb-3 text-sm text-ink-muted">{t('settings.accuracyBody')}</p>
-                  <ModelPicker
-                    suggestedModel={trial?.suggestedModel ?? TRIAL_MODEL}
-                    selected={settings.trialModel}
-                    onSelect={(model) => {
-                      void update({ trialModel: model })
-                      refreshTrial()
-                    }}
-                  />
-                </Card>
-              )}
-              <Card label={t('settings.analysis')}>
-                <div className="pb-4">
-                  <div className="flex items-baseline justify-between gap-3 pb-1">
-                    <label className={label.replace(' pb-1', '')} htmlFor="model">
-                      {t('settings.model')}
-                    </label>
-                    {settings.apiKey && (
+                    <div className="flex flex-wrap items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => void loadModels(settings.apiKey!)}
-                        disabled={loadingModels}
-                        className="text-xs text-ink-muted underline disabled:opacity-40"
+                        onClick={() => {
+                          const key = keyInput.trim()
+                          // Saving a key is exactly when the account's model list becomes
+                          // available — waiting for a separate Refresh click just looks
+                          // like the feature is broken.
+                          void update({ apiKey: key }).then(() => loadModels(key))
+                        }}
+                        className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
                       >
-                        {loadingModels ? t('settings.loading') : t('settings.refreshList')}
+                        {t('settings.saveKey')}
                       </button>
-                    )}
-                  </div>
-
-                  {models.length > 0 && !customModel ? (
-                    <select
-                      id="model"
-                      className={field}
-                      value={models.some((m) => m.id === settings.model) ? settings.model : ''}
-                      onChange={(e) => {
-                        if (e.target.value === '__custom__') {
-                          setCustomModel(true)
-                          return
-                        }
-                        void update({ model: e.target.value })
-                      }}
-                    >
-                      {!models.some((m) => m.id === settings.model) && (
-                        <option value="">
-                          {t('settings.notInList', { model: settings.model })}
-                        </option>
+                      <button
+                        type="button"
+                        disabled={!keyInput.trim() || test.kind === 'testing'}
+                        onClick={() => void runTest()}
+                        className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft disabled:opacity-40"
+                      >
+                        {test.kind === 'testing' ? t('settings.testing') : t('settings.testKey')}
+                      </button>
+                      {test.kind === 'done' && (
+                        <span className={`text-xs ${test.ok ? 'text-leaf' : 'text-accent'}`}>
+                          {test.message}
+                        </span>
                       )}
-                      <optgroup label={t('settings.canRead')}>
-                        {models
-                          .filter((m) => m.vision)
-                          .map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.id}
-                              {m.note ? ` — ${m.note}` : ''}
+                      {saved && <span className="text-xs text-leaf">{t('settings.saved')}</span>}
+                    </div>
+
+                    {/*
+                  Shown only when there is no key: the steps matter exactly once, and
+                  the ChatGPT-Plus point is the misunderstanding almost everyone
+                  arrives with.
+                  */}
+                    {!settings.apiKey && !onOurAccount && (
+                      <div className="mt-4 rounded-xl border border-hairline p-3">
+                        <p className="text-sm font-medium">{t('settings.noKeyTitle')}</p>
+                        <ol className="list-decimal space-y-1 ps-4 pt-2 text-xs leading-relaxed text-ink-muted">
+                          <li>
+                            {t('settings.step1Open')}{' '}
+                            <a
+                              className="underline"
+                              href="https://platform.openai.com/api-keys"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              platform.openai.com/api-keys
+                            </a>{' '}
+                            {t('settings.step1')}
+                          </li>
+                          <li>
+                            {t('settings.step2Add')}{' '}
+                            <a
+                              className="underline"
+                              href="https://platform.openai.com/settings/organization/billing"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {t('settings.billing')}
+                            </a>{' '}
+                            {t('settings.step2Tail')}
+                          </li>
+                          <li>{t('settings.step3')}</li>
+                        </ol>
+                        <p className="pt-2 text-xs leading-relaxed text-ink-muted">
+                          <strong>{t('settings.notIncludedBold')}</strong> {t('settings.notIncluded')}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="pt-4 text-xs leading-relaxed text-ink-muted">
+                      <p>
+                        {t('settings.storedHead')} <strong>{t('settings.storedBold')}</strong>
+                        {t('settings.storedTail')}
+                      </p>
+                      <p className="pt-2">
+                        {t('settings.scriptsHead')}{' '}
+                        <a
+                          className="underline"
+                          href="https://platform.openai.com/settings/organization/limits"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t('settings.spendingLimit')}
+                        </a>
+                        {t('settings.scriptsTail')}{' '}
+                        <a
+                          className="underline"
+                          href="https://openai.com/policies/api-data-usage-policies"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t('settings.dataPolicies')}
+                        </a>
+                        .
+                      </p>
+                    </div>
+                    <div className="pt-4">
+                      <div className="pb-4">
+                        <div className="flex items-baseline justify-between gap-3 pb-1">
+                          <label className={label.replace(' pb-1', '')} htmlFor="model">
+                            {t('settings.model')}
+                          </label>
+                          {settings.apiKey && (
+                            <button
+                              type="button"
+                              onClick={() => void loadModels(settings.apiKey!)}
+                              disabled={loadingModels}
+                              className="text-xs text-ink-muted underline disabled:opacity-40"
+                            >
+                              {loadingModels ? t('settings.loading') : t('settings.refreshList')}
+                            </button>
+                          )}
+                        </div>
+
+                        {models.length > 0 && !customModel ? (
+                          <select
+                            id="model"
+                            className={field}
+                            value={models.some((m) => m.id === settings.model) ? settings.model : ''}
+                            onChange={(e) => {
+                              if (e.target.value === '__custom__') {
+                                setCustomModel(true)
+                                return
+                              }
+                              void update({ model: e.target.value })
+                            }}
+                          >
+                            {!models.some((m) => m.id === settings.model) && (
+                              <option value="">
+                                {t('settings.notInList', { model: settings.model })}
+                              </option>
+                            )}
+                            <optgroup label={t('settings.canRead')}>
+                              {models
+                                .filter((m) => m.vision)
+                                .map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.id}
+                                    {m.note ? ` — ${m.note}` : ''}
+                                  </option>
+                                ))}
+                            </optgroup>
+                            {/* Shown but unselectable: seeing why a model is missing beats
+                    wondering where it went. */}
+                            <optgroup label={t('settings.textOnly')}>
+                              {models
+                                .filter((m) => !m.vision)
+                                .map((m) => (
+                                  <option key={m.id} value={m.id} disabled>
+                                    {m.id}
+                                  </option>
+                                ))}
+                            </optgroup>
+                            <option value="__custom__">{t('settings.typeMyself')}</option>
+                          </select>
+                        ) : (
+                          <input
+                            id="model"
+                            className={field}
+                            value={settings.model}
+                            onChange={(e) => setSettings({ ...settings, model: e.target.value })}
+                            onBlur={(e) =>
+                              void update({ model: e.target.value.trim() || DEFAULT_SETTINGS.model })
+                            }
+                          />
+                        )}
+
+                        <p className="pt-1 text-xs text-ink-muted">
+                          {loadingModels
+                            ? t('settings.loadingModels')
+                            : modelsError
+                              ? modelsError
+                              : models.length > 0
+                                ? t('settings.modelsCount', {
+                                    vision: models.filter((m) => m.vision).length,
+                                    total: models.length,
+                                  })
+                                : settings.apiKey
+                                  ? t('settings.saveThenRefresh')
+                                  : t('settings.addKeyToLoad')}{' '}
+                          {t('settings.defaultIs', { model: DEFAULT_SETTINGS.model })}
+                        </p>
+
+                        {models.length > 0 && customModel && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomModel(false)}
+                            className="pt-1 text-xs text-ink-muted underline"
+                          >
+                            {t('settings.pickFromList')}
+                          </button>
+                        )}
+                      </div>
+
+                    </div>
+                  </details>
+                </>
+              ) : (
+                <>
+                  <Card label={t('settings.apiKey')}>
+                    <div className="pb-3">
+                      <label className={label} htmlFor="apiKey">
+                        {t('settings.key')}
+                      </label>
+                      <input
+                        id="apiKey"
+                        type="password"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className={field}
+                        placeholder={t('settings.keyPlaceholder')}
+                        value={keyInput}
+                        onChange={(e) => {
+                          setKeyInput(e.target.value)
+                          setTest({ kind: 'idle' })
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const key = keyInput.trim()
+                          // Saving a key is exactly when the account's model list becomes
+                          // available — waiting for a separate Refresh click just looks
+                          // like the feature is broken.
+                          void update({ apiKey: key }).then(() => loadModels(key))
+                        }}
+                        className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+                      >
+                        {t('settings.saveKey')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!keyInput.trim() || test.kind === 'testing'}
+                        onClick={() => void runTest()}
+                        className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft disabled:opacity-40"
+                      >
+                        {test.kind === 'testing' ? t('settings.testing') : t('settings.testKey')}
+                      </button>
+                      {test.kind === 'done' && (
+                        <span className={`text-xs ${test.ok ? 'text-leaf' : 'text-accent'}`}>
+                          {test.message}
+                        </span>
+                      )}
+                      {saved && <span className="text-xs text-leaf">{t('settings.saved')}</span>}
+                    </div>
+
+                    {/*
+                  Shown only when there is no key: the steps matter exactly once, and
+                  the ChatGPT-Plus point is the misunderstanding almost everyone
+                  arrives with.
+                  */}
+                    {!settings.apiKey && !onOurAccount && (
+                      <div className="mt-4 rounded-xl border border-hairline p-3">
+                        <p className="text-sm font-medium">{t('settings.noKeyTitle')}</p>
+                        <ol className="list-decimal space-y-1 ps-4 pt-2 text-xs leading-relaxed text-ink-muted">
+                          <li>
+                            {t('settings.step1Open')}{' '}
+                            <a
+                              className="underline"
+                              href="https://platform.openai.com/api-keys"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              platform.openai.com/api-keys
+                            </a>{' '}
+                            {t('settings.step1')}
+                          </li>
+                          <li>
+                            {t('settings.step2Add')}{' '}
+                            <a
+                              className="underline"
+                              href="https://platform.openai.com/settings/organization/billing"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {t('settings.billing')}
+                            </a>{' '}
+                            {t('settings.step2Tail')}
+                          </li>
+                          <li>{t('settings.step3')}</li>
+                        </ol>
+                        <p className="pt-2 text-xs leading-relaxed text-ink-muted">
+                          <strong>{t('settings.notIncludedBold')}</strong> {t('settings.notIncluded')}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="pt-4 text-xs leading-relaxed text-ink-muted">
+                      <p>
+                        {t('settings.storedHead')} <strong>{t('settings.storedBold')}</strong>
+                        {t('settings.storedTail')}
+                      </p>
+                      <p className="pt-2">
+                        {t('settings.scriptsHead')}{' '}
+                        <a
+                          className="underline"
+                          href="https://platform.openai.com/settings/organization/limits"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t('settings.spendingLimit')}
+                        </a>
+                        {t('settings.scriptsTail')}{' '}
+                        <a
+                          className="underline"
+                          href="https://openai.com/policies/api-data-usage-policies"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t('settings.dataPolicies')}
+                        </a>
+                        .
+                      </p>
+                    </div>
+                  </Card>
+                  <Card label={t('settings.analysis')}>
+                    <div className="pb-4">
+                      <div className="flex items-baseline justify-between gap-3 pb-1">
+                        <label className={label.replace(' pb-1', '')} htmlFor="model">
+                          {t('settings.model')}
+                        </label>
+                        {settings.apiKey && (
+                          <button
+                            type="button"
+                            onClick={() => void loadModels(settings.apiKey!)}
+                            disabled={loadingModels}
+                            className="text-xs text-ink-muted underline disabled:opacity-40"
+                          >
+                            {loadingModels ? t('settings.loading') : t('settings.refreshList')}
+                          </button>
+                        )}
+                      </div>
+
+                      {models.length > 0 && !customModel ? (
+                        <select
+                          id="model"
+                          className={field}
+                          value={models.some((m) => m.id === settings.model) ? settings.model : ''}
+                          onChange={(e) => {
+                            if (e.target.value === '__custom__') {
+                              setCustomModel(true)
+                              return
+                            }
+                            void update({ model: e.target.value })
+                          }}
+                        >
+                          {!models.some((m) => m.id === settings.model) && (
+                            <option value="">
+                              {t('settings.notInList', { model: settings.model })}
                             </option>
-                          ))}
-                      </optgroup>
-                      {/* Shown but unselectable: seeing why a model is missing beats
-              wondering where it went. */}
-                      <optgroup label={t('settings.textOnly')}>
-                        {models
-                          .filter((m) => !m.vision)
-                          .map((m) => (
-                            <option key={m.id} value={m.id} disabled>
-                              {m.id}
-                            </option>
-                          ))}
-                      </optgroup>
-                      <option value="__custom__">{t('settings.typeMyself')}</option>
-                    </select>
-                  ) : (
-                    <input
-                      id="model"
-                      className={field}
-                      value={settings.model}
-                      onChange={(e) => setSettings({ ...settings, model: e.target.value })}
-                      onBlur={(e) =>
-                        void update({ model: e.target.value.trim() || DEFAULT_SETTINGS.model })
-                      }
-                    />
-                  )}
+                          )}
+                          <optgroup label={t('settings.canRead')}>
+                            {models
+                              .filter((m) => m.vision)
+                              .map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.id}
+                                  {m.note ? ` — ${m.note}` : ''}
+                                </option>
+                              ))}
+                          </optgroup>
+                          {/* Shown but unselectable: seeing why a model is missing beats
+                  wondering where it went. */}
+                          <optgroup label={t('settings.textOnly')}>
+                            {models
+                              .filter((m) => !m.vision)
+                              .map((m) => (
+                                <option key={m.id} value={m.id} disabled>
+                                  {m.id}
+                                </option>
+                              ))}
+                          </optgroup>
+                          <option value="__custom__">{t('settings.typeMyself')}</option>
+                        </select>
+                      ) : (
+                        <input
+                          id="model"
+                          className={field}
+                          value={settings.model}
+                          onChange={(e) => setSettings({ ...settings, model: e.target.value })}
+                          onBlur={(e) =>
+                            void update({ model: e.target.value.trim() || DEFAULT_SETTINGS.model })
+                          }
+                        />
+                      )}
 
-                  <p className="pt-1 text-xs text-ink-muted">
-                    {loadingModels
-                      ? t('settings.loadingModels')
-                      : modelsError
-                        ? modelsError
-                        : models.length > 0
-                          ? t('settings.modelsCount', {
-                              vision: models.filter((m) => m.vision).length,
-                              total: models.length,
-                            })
-                          : settings.apiKey
-                            ? t('settings.saveThenRefresh')
-                            : t('settings.addKeyToLoad')}{' '}
-                    {t('settings.defaultIs', { model: DEFAULT_SETTINGS.model })}
-                  </p>
+                      <p className="pt-1 text-xs text-ink-muted">
+                        {loadingModels
+                          ? t('settings.loadingModels')
+                          : modelsError
+                            ? modelsError
+                            : models.length > 0
+                              ? t('settings.modelsCount', {
+                                  vision: models.filter((m) => m.vision).length,
+                                  total: models.length,
+                                })
+                              : settings.apiKey
+                                ? t('settings.saveThenRefresh')
+                                : t('settings.addKeyToLoad')}{' '}
+                        {t('settings.defaultIs', { model: DEFAULT_SETTINGS.model })}
+                      </p>
 
-                  {models.length > 0 && customModel && (
-                    <button
-                      type="button"
-                      onClick={() => setCustomModel(false)}
-                      className="pt-1 text-xs text-ink-muted underline"
-                    >
-                      {t('settings.pickFromList')}
-                    </button>
-                  )}
-                </div>
+                      {models.length > 0 && customModel && (
+                        <button
+                          type="button"
+                          onClick={() => setCustomModel(false)}
+                          className="pt-1 text-xs text-ink-muted underline"
+                        >
+                          {t('settings.pickFromList')}
+                        </button>
+                      )}
+                    </div>
 
-                <label className="flex items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={settings.autoAnalyze}
-                    onChange={(e) => void update({ autoAnalyze: e.target.checked })}
-                  />
-                  <span>
-                    {t('settings.autoAnalyze')}
-                    <span className="block text-xs text-ink-muted">
-                      {t('settings.autoAnalyzeHint')}
-                    </span>
-                  </span>
-                </label>
-              </Card>
+                    <label className="flex items-start gap-3 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5"
+                        checked={settings.autoAnalyze}
+                        onChange={(e) => void update({ autoAnalyze: e.target.checked })}
+                      />
+                      <span>
+                        {t('settings.autoAnalyze')}
+                        <span className="block text-xs text-ink-muted">
+                          {t('settings.autoAnalyzeHint')}
+                        </span>
+                      </span>
+                    </label>
+                  </Card>
+                </>
+              )}
               <Card label={t('settings.photos')}>
                 <p className="text-sm text-ink-muted">{t('settings.photosBody')}</p>
               </Card>

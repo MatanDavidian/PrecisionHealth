@@ -274,6 +274,9 @@ const en = {
     'Changes the app immediately, and asks the model to answer in the same language. Kept on this device.',
   'settings.apiKey': 'OpenAI API key',
   'settings.accuracyOrSpeed': 'Accuracy or speed',
+  'settings.ownKeyInstead': 'Use your own OpenAI key instead',
+  'settings.ownKeyInsteadBody':
+    'Not needed now — your analyses run on our account. A key of your own takes over only when there are no free analyses left and no subscription.',
   'settings.plan': 'Subscription',
   'settings.planPitch':
     '{name}: {photos} photo analyses and {texts} written ones a month, on the most accurate model or the fastest — your choice. {price} a month; cancel any time.',
@@ -1048,6 +1051,9 @@ const he: Dictionary = {
     'משנה את האפליקציה מיד, ומבקש מהמודל לענות באותה שפה. נשמר במכשיר הזה.',
   'settings.apiKey': 'מפתח API של OpenAI',
   'settings.accuracyOrSpeed': 'דיוק או מהירות',
+  'settings.ownKeyInstead': 'להשתמש במפתח OpenAI משלכם במקום',
+  'settings.ownKeyInsteadBody':
+    'לא נחוץ עכשיו — הניתוחים שלכם רצים על החשבון שלנו. מפתח משלכם נכנס לפעולה רק כשאין יותר ניתוחים חינמיים ואין מנוי.',
   'settings.plan': 'מנוי',
   'settings.planPitch':
     '{name}: {photos} ניתוחי תמונה ו־{texts} ניתוחי טקסט בחודש, על המודל המדויק ביותר או על המהיר — לבחירתכם. {price} לחודש; אפשר לבטל בכל רגע.',

@@ -3,6 +3,7 @@ import { ensureSeeded, selectRepositoriesFor, selectEstimatorFor } from '@/data'
 import { readTrialStatus, type TrialStatus } from '@/data/trial'
 import { readPlanStatus, type PlanStatus } from '@/data/plan'
 import { askToKeepOnce } from '@/data/persistence'
+import { inAndroidApp, reconcilePlayPurchases } from '@/data/playBilling'
 import { getSupabaseClient, isSupabaseConfigured } from '@/data/supabase/client'
 import {
   getSession,
@@ -148,6 +149,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })
     })
   }, [applyEstimator, t])
+
+  /*
+    In the Android app, signed in: tell the server about anything Google Play
+    lists that it may not have heard of — a purchase the app was closed in
+    the middle of reporting. Unreported, Play would refund it in three days.
+  */
+  useEffect(() => {
+    if (!session.authenticated || !inAndroidApp()) return
+    void reconcilePlayPurchases().then((reported) => {
+      if (reported) void applyEstimator(session)
+    })
+  }, [session, applyEstimator])
 
   const refreshTrial = useCallback(() => {
     void applyEstimator(session)

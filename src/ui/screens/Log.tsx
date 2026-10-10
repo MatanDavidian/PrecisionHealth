@@ -32,6 +32,7 @@ import { currentUserId } from '@/data/session'
 import type { Meal, UsualFood, UsualMeal } from '@/domain'
 import { MAX_FOLLOW_UPS } from '../../../supabase/functions/_shared/prompt'
 import { PLAN_PRICE } from '../../../supabase/functions/_shared/plan'
+import { inAndroidApp } from '@/data/playBilling'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
@@ -511,7 +512,7 @@ export function Log() {
               to="/settings?tab=ai"
               className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
             >
-              {t('log.exhausted.subscribe', { price: PLAN_PRICE })}
+              {inAndroidApp() ? t('log.exhausted.seePlan') : t('log.exhausted.subscribe', { price: PLAN_PRICE })}
             </Link>
             <Link
               to="/settings?tab=ai"
@@ -542,7 +543,7 @@ export function Log() {
                 to="/settings?tab=ai"
                 className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
               >
-                {t('log.exhausted.subscribe', { price: PLAN_PRICE })}
+                {inAndroidApp() ? t('log.exhausted.seePlan') : t('log.exhausted.subscribe', { price: PLAN_PRICE })}
               </Link>
             )}
             <Link

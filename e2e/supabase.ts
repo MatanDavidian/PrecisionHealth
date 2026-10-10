@@ -105,7 +105,9 @@ export interface StubOptions {
    * A subscription the webhook has stored. Billed on the 1st by default and
    * active; dates are relative to `NOW`, the browser's pinned clock.
    */
-  subscription?: { status?: string; endsInDays?: number }
+  subscription?: { status?: string; endsInDays?: number; provider?: 'lemonsqueezy' | 'google_play' }
+  /** What play-billing answers when the Android app reports a Google Play purchase. */
+  play?: 'ok' | 'already' | 'down'
   /** This month's paid analyses already used, by kind. */
   planUsed?: { PHOTO?: number; TEXT?: number }
   /** What the billing function answers. */
@@ -196,6 +198,8 @@ const json = (route: Route, body: unknown, status = 200, headers: Record<string,
 export async function stubSupabase(page: Page, options: StubOptions = {}): Promise<StubTables> {
   const { trialUsed = 0 } = options
   const tables: StubTables = { meals: [], observations: [], billing: [] }
+  /** Set once play-billing accepts a purchase: the account then holds a Google Play subscription. */
+  let boughtOnPlay = false
 
   /*
     Anything Supabase-shaped that is not handled below is aborted rather than
@@ -229,18 +233,20 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
     }
     const table = url.pathname.split('/').pop() as 'meals' | 'observations'
     if (url.pathname.endsWith('/subscriptions')) {
-      if (!options.subscription) return json(route, [])
+      const subscription = options.subscription ?? (boughtOnPlay ? { provider: 'google_play' as const } : undefined)
+      if (!subscription) return json(route, [])
       const day = 86_400_000
-      const status = options.subscription.status ?? 'active'
+      const status = subscription.status ?? 'active'
       return json(route, [{
         id: 'sub-e2e',
         user_id: ACCOUNT.id,
         status,
         billing_anchor: 1,
         renews_at: new Date(NOW.getTime() + 20 * day).toISOString(),
-        ends_at: options.subscription.endsInDays === undefined
+        provider: subscription.provider ?? 'lemonsqueezy',
+        ends_at: subscription.endsInDays === undefined
           ? null
-          : new Date(NOW.getTime() + options.subscription.endsInDays * day).toISOString(),
+          : new Date(NOW.getTime() + subscription.endsInDays * day).toISOString(),
         refunded_at: null,
         last_payment_at: new Date(NOW.getTime() - 5 * day).toISOString(),
         source_created_at: new Date(NOW.getTime() - 60 * day).toISOString(),
@@ -320,6 +326,15 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
     tables.billing.push(action)
     if (options.billing === 'down') return json(route, { error: 'billing_unavailable' }, 502)
     return json(route, { url: action === 'portal' ? LEMON_PORTAL : LEMON_CHECKOUT })
+  })
+
+  await page.route('**/functions/v1/play-billing**', (route) => {
+    const token = String((route.request().postDataJSON() as { purchaseToken?: string } | null)?.purchaseToken ?? '')
+    tables.billing.push(`play:${token}`)
+    if (options.play === 'down') return json(route, { error: 'billing_unavailable' }, 502)
+    if (options.play === 'already') return json(route, { error: 'already_subscribed' }, 409)
+    boughtOnPlay = true
+    return json(route, { ok: true })
   })
 
   // Lemon Squeezy itself: a stand-in page, so following the link is observable and nothing leaves the machine.

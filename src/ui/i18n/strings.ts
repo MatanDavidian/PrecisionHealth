@@ -277,6 +277,14 @@ const en = {
   'settings.ownKeyInstead': 'Use your own OpenAI key instead',
   'settings.ownKeyInsteadBody':
     'Not needed now — your analyses run on our account. A key of your own takes over only when there are no free analyses left and no subscription.',
+  'settings.planPitchNoPrice':
+    '{name}: {photos} photo analyses and {texts} written ones a month, on the most accurate model or the fastest — your choice. Cancel any time.',
+  'settings.subscribePlay': 'Subscribe with Google Play',
+  'settings.subscribeNotePlay': 'Payment is handled by Google Play, in your currency. Manage or cancel it there any time.',
+  'settings.playUnavailable':
+    'Subscribing in the app needs an up-to-date Chrome. Update Chrome from the Play Store, then open Vimetry again.',
+  'settings.manageNotePlay': 'Change your card, cancel, or see receipts — on Google Play.',
+  'settings.manageOnWeb': 'This subscription was bought on the Vimetry website, so it is managed there, in a browser.',
   'settings.plan': 'Subscription',
   'settings.planPitch':
     '{name}: {photos} photo analyses and {texts} written ones a month, on the most accurate model or the fastest — your choice. {price} a month; cancel any time.',
@@ -467,6 +475,7 @@ const en = {
   'log.exhausted.stillPhoto':
     'Your photo is still here — connect a key and press Analyze to pick up where you left off.',
   'log.exhausted.subscribe': 'Subscribe — {price} a month',
+  'log.exhausted.seePlan': 'See the subscription',
   'log.planOut.titlePhoto': 'This month’s photo analyses are used',
   'log.planOut.titleText': 'This month’s written analyses are used',
   'log.planOut.resets': 'Your plan includes {allowance} a month, and they start again on {date}.',
@@ -1061,6 +1070,13 @@ const he: Dictionary = {
   'settings.ownKeyInstead': 'להשתמש במפתח OpenAI משלכם במקום',
   'settings.ownKeyInsteadBody':
     'לא נחוץ עכשיו — הניתוחים שלכם רצים על החשבון שלנו. מפתח משלכם נכנס לפעולה רק כשאין יותר ניתוחים חינמיים ואין מנוי.',
+  'settings.planPitchNoPrice':
+    '{name}: {photos} ניתוחי תמונה ו־{texts} ניתוחי טקסט בחודש, על המודל המדויק ביותר או על המהיר — לבחירתכם. אפשר לבטל בכל רגע.',
+  'settings.subscribePlay': 'הרשמה למנוי דרך Google Play',
+  'settings.subscribeNotePlay': 'התשלום מטופל על ידי Google Play, במטבע שלכם. אפשר לנהל או לבטל אותו שם בכל רגע.',
+  'settings.playUnavailable': 'כדי להירשם מתוך האפליקציה צריך Chrome מעודכן. עדכנו את Chrome מחנות Play ופתחו שוב את Vimetry.',
+  'settings.manageNotePlay': 'החלפת כרטיס, ביטול או צפייה בקבלות — ב־Google Play.',
+  'settings.manageOnWeb': 'המנוי הזה נקנה באתר של Vimetry, ולכן מנהלים אותו שם, בדפדפן.',
   'settings.plan': 'מנוי',
   'settings.planPitch':
     '{name}: {photos} ניתוחי תמונה ו־{texts} ניתוחי טקסט בחודש, על המודל המדויק ביותר או על המהיר — לבחירתכם. {price} לחודש; אפשר לבטל בכל רגע.',
@@ -1250,6 +1266,7 @@ const he: Dictionary = {
   'log.exhausted.stillPhoto':
     'התמונה שלכם עדיין כאן — חברו מפתח ולחצו על ניתוח כדי להמשיך מאיפה שהפסקתם.',
   'log.exhausted.subscribe': 'הרשמה למנוי — {price} לחודש',
+  'log.exhausted.seePlan': 'לפרטי המנוי',
   'log.planOut.titlePhoto': 'ניתוחי התמונה של החודש נוצלו',
   'log.planOut.titleText': 'ניתוחי הטקסט של החודש נוצלו',
   'log.planOut.resets': 'המנוי כולל {allowance} בחודש, והם מתחדשים ב־{date}.',

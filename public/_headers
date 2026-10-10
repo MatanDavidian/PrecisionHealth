@@ -22,6 +22,9 @@
 
 # Security, on every response.
 #
+# payment=(self): Google Play Billing in the Android app runs through the
+# Payment Request API, on this origin only (docs/ANDROID-APP.md, step 4).
+#
 # The CSP is ENFORCED (since 2026-10-09), after six days in report-only mode
 # with no violations: the browser suite walks the app under this exact policy
 # on every CI run (e2e/security-headers.spec.ts), and the daily check:live
@@ -34,5 +37,5 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: geolocation=(), microphone=(), payment=(), usb=()
+  Permissions-Policy: geolocation=(), microphone=(), payment=(self), usb=()
   Strict-Transport-Security: max-age=31536000

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { billingLink, type BillingAction } from '@/data/billing'
+import { buyOnPlay } from '@/data/playBilling'
 import type { PlanStatus } from '@/data/plan'
 import {
   PLAN_ALLOWANCE,
@@ -22,13 +23,22 @@ const CONFIRM_EVERY_MS = 3000
  * re-reads the plan every few seconds until it appears, rather than showing
  * "Subscribe" to someone who has just paid.
  */
+/**
+ * Where the plan can be bought from here: the website sells it through Lemon
+ * Squeezy; inside the Android app only Google Play may (Play's policy), and
+ * an old Chrome there cannot offer Play at all.
+ */
+export type Store = { kind: 'web' } | { kind: 'play'; price?: string } | { kind: 'play-unavailable' }
+
 export function PlanCard({
   signedIn,
   plan,
   justSubscribed,
   refresh,
   onConfirmed,
+  store = { kind: 'web' },
 }: {
+  store?: Store
   signedIn: boolean
   plan?: PlanStatus
   justSubscribed: boolean
@@ -61,6 +71,25 @@ export function PlanCard({
 
   const date = (iso: string) =>
     new Date(iso).toLocaleDateString(lang, { day: 'numeric', month: 'long' })
+
+  const buyInApp = async () => {
+    setBusy('checkout')
+    setProblem(undefined)
+    const result = await buyOnPlay()
+    setBusy(undefined)
+    if (result.ok) {
+      refresh()
+      return
+    }
+    if (result.reason === 'cancelled') return
+    setProblem(
+      result.reason === 'already_subscribed'
+        ? t('settings.alreadySubscribed')
+        : result.reason === 'not_signed_in'
+          ? t('settings.planSignIn')
+          : t('settings.billingUnavailable'),
+    )
+  }
 
   const go = async (action: BillingAction) => {
     setBusy(action)
@@ -112,25 +141,51 @@ export function PlanCard({
               {t('settings.planResets', { date: date(plan.periodEnd) })}
             </p>
           )}
-          <div className="pt-4">
-            <button type="button" className={secondary} disabled={Boolean(busy)} onClick={() => void go('portal')}>
-              {busy === 'portal' ? t('settings.billingWait') : t('settings.manage')}
-            </button>
-            <p className="pt-2 text-xs text-ink-muted">{t('settings.manageNote')}</p>
-          </div>
+          {plan.provider === 'lemonsqueezy' && store.kind !== 'web' ? (
+            // Bought on the website; inside the Play app it is managed there, not linked to.
+            <p className="pt-4 text-xs text-ink-muted">{t('settings.manageOnWeb')}</p>
+          ) : (
+            <div className="pt-4">
+              <button type="button" className={secondary} disabled={Boolean(busy)} onClick={() => void go('portal')}>
+                {busy === 'portal' ? t('settings.billingWait') : t('settings.manage')}
+              </button>
+              <p className="pt-2 text-xs text-ink-muted">
+                {plan.provider === 'google_play' ? t('settings.manageNotePlay') : t('settings.manageNote')}
+              </p>
+            </div>
+          )}
         </>
       ) : (
         <>
           <p className="text-sm text-ink-muted">
-            {t('settings.planPitch', {
-              name: PLAN_NAME,
-              photos: PLAN_ALLOWANCE.PHOTO,
-              texts: PLAN_ALLOWANCE.TEXT,
-              price: PLAN_PRICE,
-            })}
+            {store.kind === 'web' || (store.kind === 'play' && store.price)
+              ? t('settings.planPitch', {
+                  name: PLAN_NAME,
+                  photos: PLAN_ALLOWANCE.PHOTO,
+                  texts: PLAN_ALLOWANCE.TEXT,
+                  price: store.kind === 'play' ? store.price! : PLAN_PRICE,
+                })
+              : t('settings.planPitchNoPrice', {
+                  name: PLAN_NAME,
+                  photos: PLAN_ALLOWANCE.PHOTO,
+                  texts: PLAN_ALLOWANCE.TEXT,
+                })}
           </p>
           <div className="pt-4">
-            {signedIn ? (
+            {store.kind === 'play-unavailable' ? (
+              <p className="text-sm">{t('settings.playUnavailable')}</p>
+            ) : store.kind === 'play' && signedIn ? (
+              <>
+                <button type="button" className={primary} disabled={Boolean(busy)} onClick={() => void buyInApp()}>
+                  {busy === 'checkout'
+                    ? t('settings.billingWait')
+                    : store.price
+                      ? t('settings.subscribe', { price: store.price })
+                      : t('settings.subscribePlay')}
+                </button>
+                <p className="pt-2 text-xs text-ink-muted">{t('settings.subscribeNotePlay')}</p>
+              </>
+            ) : signedIn ? (
               <button
                 type="button"
                 className={primary}
@@ -142,7 +197,7 @@ export function PlanCard({
             ) : (
               <p className="text-sm">{t('settings.planSignIn')}</p>
             )}
-            <p className="pt-2 text-xs text-ink-muted">{t('settings.subscribeNote')}</p>
+            {store.kind === 'web' && <p className="pt-2 text-xs text-ink-muted">{t('settings.subscribeNote')}</p>}
           </div>
         </>
       )}

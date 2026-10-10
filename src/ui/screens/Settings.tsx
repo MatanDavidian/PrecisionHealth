@@ -8,7 +8,8 @@ import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { useDataRevision } from '../DataProvider'
 import { ModelPicker } from '../components/ModelPicker'
-import { PlanCard } from '../components/PlanCard'
+import { PlanCard, type Store } from '../components/PlanCard'
+import { inAndroidApp, playBilling, playPrice } from '@/data/playBilling'
 import { TRIAL_MODEL } from '../../../supabase/functions/_shared/prompt'
 import { signOut } from '@/data/session'
 import type { AppSettings } from '@/data/repositories'
@@ -86,6 +87,14 @@ export function Settings() {
   /** True when the chosen model is not in the account list — shows the text field. */
   const [customModel, setCustomModel] = useState(false)
   const [usage, setUsage] = useState<string>()
+  /** Where the plan is sold from here: Lemon Squeezy on the web, Google Play in the Android app. */
+  const [store, setStore] = useState<Store>({ kind: 'web' })
+  useEffect(() => {
+    if (!inAndroidApp()) return
+    void playBilling().then(async (service) =>
+      setStore(service ? { kind: 'play', price: await playPrice(service, lang) } : { kind: 'play-unavailable' }),
+    )
+  }, [lang])
   const [persistence, setPersistence] = useState<Persistence>('unknown')
   const [askedToKeep, setAskedToKeep] = useState(false)
   useEffect(() => {
@@ -292,6 +301,7 @@ export function Settings() {
                   justSubscribed={justSubscribed}
                   refresh={refreshTrial}
                   onConfirmed={dropReturnMarker}
+                  store={store}
                 />
               )}
               {onOurAccount ? (

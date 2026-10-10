@@ -35,6 +35,9 @@ export const PLAN_ALLOWANCE: Record<AnalysisKind, number> = {
 export const PLAN_PRICE = 'US$8.99'
 export const PLAN_NAME = 'Vimetry Monthly'
 
+/** The plan's product id on Google Play. Inside the Android app, Play sells it at Play's local prices. */
+export const PLAY_PRODUCT_ID = 'vimetry_monthly'
+
 /**
  * A subscription as the webhook stores it (`public.subscriptions`).
  *

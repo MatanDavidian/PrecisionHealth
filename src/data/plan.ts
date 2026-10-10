@@ -22,6 +22,8 @@ export interface Allowance {
 }
 
 export interface PlanStatus {
+  /** Who sold it — Google Play's are managed on Google Play. */
+  provider: 'lemonsqueezy' | 'google_play'
   status: string
   /** False once cancelled: `periodEnd` is then when access ends, not a reset. */
   renews: boolean
@@ -59,6 +61,7 @@ export async function readPlanStatus(userId: UserId): Promise<PlanStatus | undef
   }
   const [photos, texts] = await Promise.all([count('PHOTO'), count('TEXT')])
   return {
+    provider: period.provider,
     status: period.status,
     renews: period.renews,
     periodEnd: period.end,

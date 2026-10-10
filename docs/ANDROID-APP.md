@@ -142,7 +142,41 @@ Reviewers need a working login, and they cannot read our email codes.
   world keeps email codes.
 - The account holds a realistic sample week, and **no real person's data**.
 
-### 4. Google Play Billing · L (5–7 days) · C, with M for the console parts
+### 4. Google Play Billing · L (5–7 days) · C, with M for the console parts — code built 2026-10-10
+
+> **Built and tested against a fake Google; waiting on the consoles.**
+>
+> **Server:**
+> - migration 0016 (`provider`, `linked_purchase_token`)
+> - `_shared/playState.ts`, `_shared/googlePlay.ts`,
+>   `_shared/playSubscriptions.ts`
+> - `play-billing` and `play-rtdn`
+> - Play cancellation in `delete-account`, and Play's own page in `billing`
+>
+> **App:** `src/data/playBilling.ts`.
+> - Detects the Android app by its start URL `/?source=twa`.
+> - Subscribe runs Play's sheet, at Play's local price.
+> - On every start it reports any purchase the server was not told about.
+> - Inside the app, Lemon Squeezy is never offered or linked.
+> - `Permissions-Policy` now allows `payment=(self)`.
+>
+> **Tests:** `supabase/test/play-billing.ts`, `play-rtdn.ts`, Play cases in
+> `delete-account.ts` and `billing.ts`, `src/data/__tests__/playState.test.ts`,
+> SQL checks for 0016, `e2e/android-billing.spec.ts`.
+>
+> **One difference from the plan:** inside a TWA, Play cannot carry our
+> account id, so a purchase is bound to the first account that verifies it
+> (`play-billing`, signed in), and refused to any other.
+>
+> **Owner, when the console is ready:**
+> - Create the product `vimetry_monthly`.
+> - Create the service account. Its JSON key goes in the
+>   `GOOGLE_PLAY_SERVICE_ACCOUNT` secret.
+> - Create the Pub/Sub topic, with a push subscription to
+>   `…/functions/v1/play-rtdn?token=<GOOGLE_PLAY_RTDN_TOKEN>`.
+> - Then run `./scripts/deploy-functions.sh`. It applies 0016 and deploys
+>   the two new functions.
+
 
 **Owner, in the consoles:**
 - Play Console → Monetise → Subscriptions:

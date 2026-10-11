@@ -62,3 +62,26 @@ With real meal photos, ideally 20 or more with known portions:
    - re-measure the cost per analysis
    - update `docs/ops/pricing.md`
    - decide which models subscribers get
+
+## Running it
+
+`scripts/eval-models.ts` does steps 1–3 of the evaluation above:
+1. Put the meal photos (JPEG or PNG) in one folder.
+2. Optionally, add a `truth.csv` beside them:
+   ```
+   file,kcal,protein_g,items
+   lunch-1.jpg,640,42,"chicken breast; rice; salad"
+   ```
+3. Run:
+   ```bash
+   npx vite-node scripts/eval-models.ts ~/Desktop/meal-photos model-eval
+   ```
+
+It writes `model-eval/report.md` and `model-eval/results.csv`:
+- the share of answers within ±20% of GPT-6.1 Sol, and of the truth
+- the questions asked
+- the mean time and cost per model
+- each photo's items, side by side
+
+Photos go to OpenAI on `OPENAI_API_KEY` from `.env.local`, and nowhere else.
+On a single test plate, both models together cost about 1.5¢.

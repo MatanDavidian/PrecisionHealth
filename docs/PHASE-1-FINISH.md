@@ -417,7 +417,7 @@ change. Remaining:
 | Medium | ✅ **DST and travel** (`clockChanges.test.ts`, 2026-10-09; found and fixed an ambiguous-hour bug): day keys and the week across 25 Oct and the spring change | The clocks change in three weeks |
 | Medium | ✅ Handler tests for `delete-account` and `issue-device-token` (2026-10-09/10) | Deletion is irreversible |
 | Medium | Contract tests against a local Supabase instead of production | Stops growing the test account (2,066 meals so far), and lets CI run them without production credentials |
-| Medium | ✅ A HEIC photo (`heic-photo.spec.ts`); a non-food photo, a double-tapped Save | Edge scenarios above |
+| Medium | ✅ A HEIC photo (`heic-photo.spec.ts`), a double-tapped Save (`double-save.spec.ts`); a non-food photo (needs a real model — part of the evaluation) | Edge scenarios above |
 | Low | Accessibility scan (axe); watch sync logic beyond the existing simulator probe | Useful, not urgent |
 
 ---

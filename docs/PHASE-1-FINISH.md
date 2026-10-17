@@ -294,7 +294,7 @@ handled; the gaps are marked.
 | **Israel's clocks go back, 25 Oct** | ✅ tested on both real dates; the browser suite passes in those weeks (`E2E_TODAY`) | — | done 2026-10-09 |
 | Offline while signed in | the save fails with a banner (D16, online-first) | accept for Phase 1; revisit with real usage | P2 |
 | Session expires mid-analysis | **done 2026-10-17:** said in both languages ("nothing was counted"), with "Sign in again", which returns to Log; the photo survives and can be retried (`trial.spec.ts`) | — | ✓ |
-| Years of history exported | paged reads; size untested | a bounded test at ~50k records | P2 |
+| Years of history exported | **tested 2026-10-17** (`exportAtScale.test.ts`): 50,000 meals (25 years at five a day) arrive complete, each once, in 51 pages; the file is ~70 MB, built in well under a second before the network | if real files grow large, write it without indentation (about a third smaller) | ✓ |
 | Many free accounts from one person | the daily ceiling caps total cost | watch it in the daily counts; limit later if it happens | P3 |
 | Under-16s | the terms say no; no age gate | accept for Phase 1 | P3 |
 

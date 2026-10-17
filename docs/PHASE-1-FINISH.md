@@ -459,44 +459,70 @@ Later
 
 ---
 
-## Handover — next steps (2026-10-10, evening)
+## Handover — next steps (2026-10-17)
 
 **State:**
-- Everything is pushed and deployed (2026-10-11): migration 0016 applied,
-  `play-billing` and `play-rtdn` live and healthy. They answer "not
-  configured" until the Google Play secrets exist (owner step 4 below).
+- **Live and green:** everything is pushed and deployed. The 10-day deploy
+  gap is closed: a time-zone flaw in three tests had failed CI since 10 Oct,
+  and CI now runs the unit tests in two extreme zones so it cannot recur.
+- **Cloudflare Web Analytics is off.** Its injected script was blocked by
+  our CSP; the policy promises no analytics, so it stays off.
+  Cloudflare's server-side traffic analytics are unaffected.
+- **Google account type:** a support ticket was sent on 2026-10-17 and is
+  pending. Google's AI assistant answered that a Personal account may
+  publish a non-medical nutrition and fitness app, because organisations
+  are required only for medical and human-subjects-research apps. Wait
+  for the human answer before uploading anything.
 
-**Next for Claude:**
-1. When the owner approves the wording in `docs/android/store-listing.md`
-   (open work 3), apply it to `src/policy/documents.ts` with a version bump.
-2. ~~A sample week for the review account~~ — done 2026-10-11. Run
-   `npx vite-node scripts/seed-review-account.ts`: 47 meals over 19 days,
-   readings, a workout and goals. Running it again writes nothing.
-3. Once the Play upload exists: `public/.well-known/assetlinks.json`
-   (`android/README.md`).
+**Next for Claude — before the first Play upload** (Google's own
+requirements, confirmed by its support assistant):
+1. **Privacy Policy and Terms links in Settings**, always visible. Google
+   requires a privacy policy inside the app; today it appears only on the
+   sign-in consent screen and `/delete-account`.
+2. **The medical disclaimer in the app:** "General suggestions, not medical
+   advice — for medical questions, talk to a healthcare professional." It
+   goes on the week-insights card and in Settings.
+3. **"Report this answer"** on AI estimates and week insights, sent
+   in-app (Google's AI-generated content policy; whether it applies to us
+   is unclear, so this removes the doubt).
+4. **Hide the own-OpenAI-key option inside the Android app.** Its setup
+   links to paying OpenAI, which Play could read as steering payments
+   outside Play Billing. The website is unchanged.
+5. **Listing wording:** "does not diagnose, treat or advise" becomes
+   "does not diagnose or treat, and gives no medical advice", and the
+   weekly suggestions are mentioned (`docs/android/store-listing.md`).
+
+**Next for Claude — when the owner approves:**
+- the Google Play wording for the Privacy Policy and Terms
+  (`docs/android/store-listing.md`, open work 3), together with fixing the
+  Terms' "does not … advise", which should say no *medical* advice. One
+  version bump, one re-consent.
+- `public/.well-known/assetlinks.json`, once the first Play upload exists
+  (`android/README.md`).
 
 **Next for the owner:**
-0. **Google account type (2026-10-17):** ask Play support whether a
-   Personal account may publish a nutrition and activity app. Start a
-   D-U-N-S number in parallel, in case the answer is "Organisation"
-   (`docs/ANDROID-APP.md`, step 0).
-1. Wait for Google's identity check. Then verify the phone, and look at
-   "Android developer verification".
-2. Recruit 14–15 Android testers.
-3. Garmin: create the Connect IQ developer account. Run
-   `garmin/build.sh --store`, upload, take screenshots in the simulator,
-   and submit (`docs/garmin/store-listing.md`).
-4. Play Console, once verified:
-   - the payments profile
-   - the product `vimetry_monthly`
-   - the service account, whose key goes in `GOOGLE_PLAY_SERVICE_ACCOUNT`
-   - the Pub/Sub push to `play-rtdn?token=…` (`GOOGLE_PLAY_RTDN_TOKEN`)
-   - all of this is in `docs/ANDROID-APP.md` step 4
-5. Build the Android package (`android/README.md`), upload to internal
-   testing, then start the 14-day closed test.
-6. Read and approve the drafts in `docs/android/store-listing.md`:
-   - Data safety answers
-   - the 30-day deletion promise
-   - the Google Play policy wording
-   - the reviewer password, which goes only in the Play Console
-7. Take a real photo-and-estimate screenshot on a phone.
+1. **Google:** wait for the ticket's answer.
+   - If it confirms Personal: carry on.
+   - If it says Organisation: register a business, get a D-U-N-S number,
+     open an Organisation account (`docs/ANDROID-APP.md`, step 0).
+2. **Testers:** recruit 14–15 people with Android phones.
+3. **Garmin:** create the Connect IQ developer account, then run
+   `garmin/build.sh --store`, upload, take simulator screenshots, and
+   submit (`docs/garmin/store-listing.md`).
+4. **Play Console, once the answer is in and verification is done:**
+   - payments profile
+   - product `vimetry_monthly`
+   - service account (`GOOGLE_PLAY_SERVICE_ACCOUNT`)
+   - Pub/Sub push to `play-rtdn?token=…` (`GOOGLE_PLAY_RTDN_TOKEN`)
+   - (`docs/ANDROID-APP.md`, step 4)
+5. **Build the Android package** (`android/README.md`): internal testing,
+   then the 14-day closed test.
+6. **Read and approve the drafts** in `docs/android/store-listing.md`.
+7. **A real photo-and-estimate screenshot**, taken on a phone.
+8. **Unchanged, when ready:**
+   - go live with payments (`docs/ops/payments.md`, step 4)
+   - the support email on Lemon Squeezy receipts
+   - confirm the GPT-6 prices in OpenAI
+   - the logo and onboarding designs
+   - the Supabase DPA, a restore drill, the `www` redirect, the trademark
+     search

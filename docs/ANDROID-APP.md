@@ -93,6 +93,18 @@ Google's checks take days to weeks and run while the code is written.
 >    Organisation account needs. It requires a registered business.
 >
 > The code does not depend on the answer.
+>
+> **Update:** a support ticket was sent on 2026-10-17. Google's AI
+> assistant answered that a Personal account may publish it, because
+> organisations are required only for medical and human-subjects-research
+> apps. Its conditions:
+> - the Health apps declaration (Activity and fitness, Nutrition and weight
+>   management)
+> - a "not a medical device" disclaimer with a consult-a-professional
+>   reminder
+> - a privacy policy in the listing and inside the app
+>
+> We are waiting for the human answer before uploading.
 
 ### 1. Make vimetry.app installable (a PWA) · M · C — built 2026-10-10
 

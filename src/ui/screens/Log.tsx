@@ -490,12 +490,14 @@ export function Log() {
             >
               {t('log.exhausted.byHand')}
             </Link>
-            <Link
-              to="/settings?tab=ai"
-              className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
-            >
-              {t('log.exhausted.connectKey')}
-            </Link>
+            {!inAndroidApp() && (
+              <Link
+                to="/settings?tab=ai"
+                className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+              >
+                {t('log.exhausted.connectKey')}
+              </Link>
+            )}
           </div>
           <p className="pt-3 text-xs text-ink-muted">{t('log.planOut.still')}</p>
         </Card>
@@ -505,7 +507,7 @@ export function Log() {
         <Card>
           <h2 className="font-display text-xl">{t('log.exhausted.title')}</h2>
           <p className="pt-1 text-sm text-ink-muted">
-            {t('log.exhausted.body', { count: trial?.allowance ?? 10 })}
+            {t(inAndroidApp() ? 'log.exhausted.bodyApp' : 'log.exhausted.body', { count: trial?.allowance ?? 10 })}
           </p>
           <div className="flex flex-wrap gap-3 pt-4">
             <Link
@@ -514,12 +516,14 @@ export function Log() {
             >
               {inAndroidApp() ? t('log.exhausted.seePlan') : t('log.exhausted.subscribe', { price: PLAN_PRICE })}
             </Link>
-            <Link
-              to="/settings?tab=ai"
-              className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
-            >
-              {t('log.exhausted.connectKey')}
-            </Link>
+            {!inAndroidApp() && (
+              <Link
+                to="/settings?tab=ai"
+                className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
+              >
+                {t('log.exhausted.connectKey')}
+              </Link>
+            )}
             <Link
               to="/nutrition"
               className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"
@@ -528,14 +532,16 @@ export function Log() {
             </Link>
           </div>
           <p className="pt-3 text-xs text-ink-muted">
-            {fromText ? t('log.exhausted.stillText') : t('log.exhausted.stillPhoto')}
+            {inAndroidApp()
+              ? t('log.planOut.still')
+              : fromText ? t('log.exhausted.stillText') : t('log.exhausted.stillPhoto')}
           </p>
         </Card>
       )}
 
       {needsKey && !trial?.remaining && !analysis && (
         <Card label={t('log.setup.label')}>
-          <p className="text-sm text-ink-muted">{t('log.setup.body')}</p>
+          <p className="text-sm text-ink-muted">{t(inAndroidApp() ? 'log.setup.bodyApp' : 'log.setup.body')}</p>
           <div className="flex flex-wrap gap-3 pt-3">
             {/* Signed in, the trial spent: the plan is the other way to keep the AI. */}
             {session.authenticated && trial?.exhausted && !plan && (
@@ -546,16 +552,25 @@ export function Log() {
                 {inAndroidApp() ? t('log.exhausted.seePlan') : t('log.exhausted.subscribe', { price: PLAN_PRICE })}
               </Link>
             )}
-            <Link
-              to="/settings?tab=ai"
-              className={
-                session.authenticated && trial?.exhausted && !plan
-                  ? 'rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft'
-                  : 'rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface'
-              }
-            >
-              {t('log.setup.addKey')}
-            </Link>
+            {/* In the Android app there is no own-key route (Play's payments policy); signing in is the way to the free analyses. */}
+            {inAndroidApp() ? (
+              !session.authenticated && (
+                <Link to="/signin" className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface">
+                  {t('log.setup.signIn')}
+                </Link>
+              )
+            ) : (
+              <Link
+                to="/settings?tab=ai"
+                className={
+                  session.authenticated && trial?.exhausted && !plan
+                    ? 'rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft'
+                    : 'rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface'
+                }
+              >
+                {t('log.setup.addKey')}
+              </Link>
+            )}
             <Link
               to="/nutrition"
               className="rounded-full border border-hairline px-4 py-2 text-sm transition-colors hover:bg-card-soft"

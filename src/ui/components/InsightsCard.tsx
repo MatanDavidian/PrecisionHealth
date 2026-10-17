@@ -118,6 +118,9 @@ export function InsightsCard({
               ))}
             </ul>
           )}
+          {/* Said where the suggestions are, not only in the Terms (Google
+              Play's health policy, and the honest place for it). */}
+          <p className="pt-2 text-xs text-ink-muted">{t('insights.notMedical')}</p>
 
           <div className="flex flex-wrap items-center gap-3 pt-4">
             <span className="tabular ltr-nums rounded-full bg-surface/70 px-2.5 py-0.5 text-[0.72rem] text-ink-muted">

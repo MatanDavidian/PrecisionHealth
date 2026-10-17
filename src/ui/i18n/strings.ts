@@ -274,6 +274,8 @@ const en = {
     'Changes the app immediately, and asks the model to answer in the same language. Kept on this device.',
   'settings.apiKey': 'OpenAI API key',
   'settings.accuracyOrSpeed': 'Accuracy or speed',
+  'settings.appAnalysisOnPlan':
+    'In the app, photo and text analysis comes with the free analyses or the subscription above. Logging by hand is always free.',
   'settings.ownKeyInstead': 'Use your own OpenAI key instead',
   'settings.ownKeyInsteadBody':
     'Not needed now — your analyses run on our account. A key of your own takes over only when there are no free analyses left and no subscription.',
@@ -407,6 +409,11 @@ const en = {
   'form.kcal': 'kcal',
 
   // ------------------------------------------------------------- sign in ---
+  'legal.notMedical':
+    'Vimetry is not a medical device. It does not diagnose, treat, cure or prevent any condition, and its suggestions are not medical advice — for medical questions, talk to a healthcare professional.',
+  'legal.privacy': 'Privacy Policy',
+  'legal.terms': 'Terms of Use',
+  'legal.deleteAccount': 'Deleting your account',
   'deleteInfo.title': 'Delete your account',
   'deleteInfo.subtitle': 'How to remove your Vimetry account and everything in it.',
   'deleteInfo.inAppLabel': 'In the app',
@@ -492,6 +499,11 @@ const en = {
   'log.exhausted.stillText': 'What you wrote is still here — connect a key and press Try again.',
   'log.exhausted.stillPhoto':
     'Your photo is still here — connect a key and press Analyze to pick up where you left off.',
+  'log.exhausted.bodyApp':
+    'The first {count} analyses were run on our account, so you could try the app without setting anything up. To keep going, the subscription includes analyses every month — or keep logging by hand, which is always free.',
+  'log.setup.bodyApp':
+    'Photo and text estimates come with an account: sign in for 10 free analyses, then the subscription. Logging by hand is always free.',
+  'log.setup.signIn': 'Sign in for 10 free analyses',
   'log.exhausted.subscribe': 'Subscribe — {price} a month',
   'log.exhausted.seePlan': 'See the subscription',
   'log.planOut.titlePhoto': 'This month’s photo analyses are used',
@@ -651,6 +663,7 @@ const en = {
   'insights.willSend': 'Sends {meals} meals across 7 days, your totals and your goal. No name, no account, nothing that says who you are.',
   'insights.observations': 'What is in the data',
   'insights.suggestions': 'Worth trying',
+  'insights.notMedical': 'General suggestions, not medical advice — for medical questions, talk to a healthcare professional.',
   'insights.nothingToSuggest': 'Nothing worth changing on this evidence.',
   'insights.confidence': '{count}% sure',
   'insights.lowConfidence': 'Thin week — worth reading as a hint rather than a verdict.',
@@ -1088,6 +1101,7 @@ const he: Dictionary = {
     'משנה את האפליקציה מיד, ומבקש מהמודל לענות באותה שפה. נשמר במכשיר הזה.',
   'settings.apiKey': 'מפתח API של OpenAI',
   'settings.accuracyOrSpeed': 'דיוק או מהירות',
+  'settings.appAnalysisOnPlan': 'באפליקציה, ניתוח תמונות וטקסט מגיע עם הניתוחים החינמיים או עם המנוי שלמעלה. רישום ידני תמיד בחינם.',
   'settings.ownKeyInstead': 'להשתמש במפתח OpenAI משלכם במקום',
   'settings.ownKeyInsteadBody':
     'לא נחוץ עכשיו — הניתוחים שלכם רצים על החשבון שלנו. מפתח משלכם נכנס לפעולה רק כשאין יותר ניתוחים חינמיים ואין מנוי.',
@@ -1220,6 +1234,11 @@ const he: Dictionary = {
   'form.kcal': 'קלוריות',
 
   // ------------------------------------------------------------- sign in ---
+  'legal.notMedical':
+    'Vimetry אינו מכשיר רפואי. הוא לא מאבחן, לא מטפל, לא מרפא ולא מונע שום מצב, וההצעות שלו אינן ייעוץ רפואי — בשאלות רפואיות, פנו לאיש מקצוע בתחום הבריאות.',
+  'legal.privacy': 'מדיניות הפרטיות',
+  'legal.terms': 'תנאי השימוש',
+  'legal.deleteAccount': 'מחיקת החשבון',
   'deleteInfo.title': 'מחיקת החשבון',
   'deleteInfo.subtitle': 'איך מוחקים את החשבון ב־Vimetry ואת כל מה שבו.',
   'deleteInfo.inAppLabel': 'מתוך האפליקציה',
@@ -1302,6 +1321,10 @@ const he: Dictionary = {
   'log.exhausted.stillText': 'מה שכתבתם עדיין כאן — חברו מפתח ולחצו על ניסיון נוסף.',
   'log.exhausted.stillPhoto':
     'התמונה שלכם עדיין כאן — חברו מפתח ולחצו על ניתוח כדי להמשיך מאיפה שהפסקתם.',
+  'log.exhausted.bodyApp':
+    '{count} הניתוחים הראשונים רצו על החשבון שלנו, כדי שתוכלו לנסות את האפליקציה בלי להגדיר שום דבר. כדי להמשיך, המנוי כולל ניתוחים בכל חודש — או המשיכו לרשום ידנית, וזה תמיד בחינם.',
+  'log.setup.bodyApp': 'הערכות מתמונה ומטקסט מגיעות עם חשבון: היכנסו ל־10 ניתוחים בחינם, ואחר כך המנוי. רישום ידני תמיד בחינם.',
+  'log.setup.signIn': 'כניסה ל־10 ניתוחים בחינם',
   'log.exhausted.subscribe': 'הרשמה למנוי — {price} לחודש',
   'log.exhausted.seePlan': 'לפרטי המנוי',
   'log.planOut.titlePhoto': 'ניתוחי התמונה של החודש נוצלו',
@@ -1455,6 +1478,7 @@ const he: Dictionary = {
   'insights.willSend': 'נשלחות {meals} ארוחות מ-7 ימים, הסיכומים שלכם והיעד. בלי שם, בלי חשבון, בלי שום דבר שמזהה אתכם.',
   'insights.observations': 'מה שרואים בנתונים',
   'insights.suggestions': 'שווה לנסות',
+  'insights.notMedical': 'הצעות כלליות, לא ייעוץ רפואי — בשאלות רפואיות, פנו לאיש מקצוע בתחום הבריאות.',
   'insights.nothingToSuggest': 'אין מה לשנות על סמך הנתונים האלה.',
   'insights.confidence': 'ביטחון {count}%',
   'insights.lowConfidence': 'שבוע דל — כדאי לקרוא את זה כרמז ולא כפסק דין.',

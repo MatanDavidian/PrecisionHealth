@@ -67,6 +67,13 @@ export function Settings() {
   const { session, authAvailable, trial, plan, refreshTrial, refresh } = useDataRevision()
   /** Analysis runs on our account — the trial or a subscription — not on a key of their own. */
   const onOurAccount = Boolean((trial && !trial.exhausted) || plan)
+  /*
+    Not inside the Android app. Its setup sends people to pay OpenAI for
+    credit, which Google Play can read as steering payment for an in-app
+    feature outside Play Billing. There, analysis comes with the trial or the
+    subscription; on the website nothing changes.
+  */
+  const ownKeyOffered = !inAndroidApp()
   const dropReturnMarker = useCallback(() => {
     setParams(
       (current) => {
@@ -337,6 +344,7 @@ export function Settings() {
                     Folded away: while analysis runs on our account a key of
                     the person's own is not used, and its setup steps are noise.
                   */}
+                  {ownKeyOffered && (
                   <details className="rounded-card bg-card p-5">
                     <summary className="cursor-pointer text-sm font-medium">
                       {t('settings.ownKeyInstead')}
@@ -559,8 +567,9 @@ export function Settings() {
 
                     </div>
                   </details>
+                  )}
                 </>
-              ) : (
+              ) : ownKeyOffered ? (
                 <>
                   <Card label={t('settings.apiKey')}>
                     <div className="pb-3">
@@ -795,6 +804,8 @@ export function Settings() {
                     </label>
                   </Card>
                 </>
+              ) : (
+                <p className="px-1 text-sm text-ink-muted">{t('settings.appAnalysisOnPlan')}</p>
               )}
               <Card label={t('settings.photos')}>
                 <p className="text-sm text-ink-muted">{t('settings.photosBody')}</p>
@@ -887,6 +898,20 @@ export function Settings() {
               <AccountData session={session} authAvailable={authAvailable} onChanged={refresh} />
             </>
           )}
+          {/*
+            On every tab, signed in or not: what the app is not, and where its
+            policies are. Google Play requires the privacy policy inside the
+            app itself — until this it was reachable only from the consent
+            screen at sign-in.
+          */}
+          <footer className="flex flex-col gap-2 px-1 pt-8 text-xs text-ink-muted">
+            <p>{t('legal.notMedical')}</p>
+            <p className="flex flex-wrap gap-x-4 gap-y-1">
+              <Link className="underline" to="/privacy">{t('legal.privacy')}</Link>
+              <Link className="underline" to="/terms">{t('legal.terms')}</Link>
+              <Link className="underline" to="/delete-account">{t('legal.deleteAccount')}</Link>
+            </p>
+          </footer>
         </div>
       </div>
     </div>

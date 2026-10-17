@@ -40,6 +40,35 @@ export function scrub(text: string): string {
   return REPLACEMENTS.reduce((result, [pattern, replacement]) => result.replace(pattern, replacement), text)
 }
 
+/**
+ * A Content Security Policy violation, as one line — or undefined for one
+ * that is not ours to fix.
+ *
+ * Only what was blocked, by origin, and which rule blocked it: Cloudflare's
+ * injected analytics script was blocked this way for days with nothing
+ * saying so. A browser extension's injections are its own business, and a
+ * report-only policy blocks nothing.
+ */
+export function cspViolationMessage(violation: {
+  blockedURI: string
+  effectiveDirective: string
+  disposition?: string
+  sourceFile?: string
+}): string | undefined {
+  if (violation.disposition && violation.disposition !== 'enforce') return undefined
+  const extension = /^(chrome|moz|safari(-web)?|ms-browser)-extension:/
+  if (extension.test(violation.blockedURI) || extension.test(violation.sourceFile ?? '')) return undefined
+  let blocked = violation.blockedURI || 'inline'
+  try {
+    const url = new URL(blocked)
+    if (url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'wss:') blocked = url.origin
+    else blocked = url.protocol.replace(/:$/, '')
+  } catch {
+    // Already a keyword: inline, eval, data, blob.
+  }
+  return `Content Security Policy blocked ${blocked} (${violation.effectiveDirective})`
+}
+
 /** Only the path: `/nutrition?d=2026-10-09` is `/nutrition`. */
 export function routeOf(path: string): string {
   return path.split(/[?#]/)[0].slice(0, LIMITS.route)

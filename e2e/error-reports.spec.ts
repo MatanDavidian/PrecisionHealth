@@ -52,6 +52,26 @@ test('an unhandled rejection is reported too', async ({ page }) => {
   await expect.poll(() => reports.map((r) => `${r.kind}: ${r.message}`)).toEqual(['rejection: sync gave up'])
 })
 
+test('something the Content Security Policy blocks is reported, by origin only', async ({ page }) => {
+  const reports = await collectReports(page)
+  await open(page, '/today')
+  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  // A real violation: a policy added to the page, then an image it forbids —
+  // as Cloudflare's injected analytics script was blocked in production.
+  await page.evaluate(() => {
+    const meta = document.createElement('meta')
+    meta.httpEquiv = 'Content-Security-Policy'
+    meta.content = "img-src 'self'"
+    document.head.append(meta)
+    const image = document.createElement('img')
+    image.src = 'https://tracker.example/pixel.gif?user=someone@example.com'
+    document.body.append(image)
+  })
+  await expect.poll(() => reports.map((r) => r.message))
+    .toEqual(['Content Security Policy blocked https://tracker.example (img-src)'])
+  expect(JSON.stringify(reports)).not.toContain('someone')
+})
+
 test('cross-origin noise is not reported', async ({ page }) => {
   const reports = await collectReports(page)
   await open(page, '/today')

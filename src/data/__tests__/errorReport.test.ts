@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanReport, fingerprintSource, routeOf, scrub } from '../../../supabase/functions/_shared/errorReport'
+import { cleanReport, cspViolationMessage, fingerprintSource, routeOf, scrub } from '../../../supabase/functions/_shared/errorReport'
 
 describe('what an error report may not carry', () => {
   it('an embedded photo', () => {
@@ -64,5 +64,34 @@ describe('a report', () => {
     const elsewhere = fingerprintSource({ kind: 'error', message: 'Day 2026-10-10 has 4 meals', stack: 'Error\n  at y (b.js:3:1)' })
     expect(a).toBe(b)
     expect(a).not.toBe(elsewhere)
+  })
+})
+
+describe('a Content Security Policy violation', () => {
+  it('is reported by origin and rule, without the path or query', () => {
+    expect(cspViolationMessage({
+      blockedURI: 'https://static.cloudflareinsights.com/beacon.min.js?token=abc',
+      effectiveDirective: 'script-src-elem',
+      disposition: 'enforce',
+    })).toBe('Content Security Policy blocked https://static.cloudflareinsights.com (script-src-elem)')
+  })
+
+  it('names an inline script or a data URL without quoting it', () => {
+    expect(cspViolationMessage({ blockedURI: 'inline', effectiveDirective: 'script-src-elem' }))
+      .toBe('Content Security Policy blocked inline (script-src-elem)')
+    expect(cspViolationMessage({ blockedURI: 'data:image/png;base64,AAAA', effectiveDirective: 'img-src' }))
+      .toBe('Content Security Policy blocked data (img-src)')
+    expect(cspViolationMessage({ blockedURI: '', effectiveDirective: 'style-src-attr' }))
+      .toBe('Content Security Policy blocked inline (style-src-attr)')
+  })
+
+  it('is not ours when an extension caused it, or when nothing was blocked', () => {
+    expect(cspViolationMessage({ blockedURI: 'chrome-extension://abc/inject.js', effectiveDirective: 'script-src' }))
+      .toBeUndefined()
+    expect(cspViolationMessage({
+      blockedURI: 'inline', effectiveDirective: 'script-src', sourceFile: 'moz-extension://abc/content.js',
+    })).toBeUndefined()
+    expect(cspViolationMessage({ blockedURI: 'https://x.example', effectiveDirective: 'img-src', disposition: 'report' }))
+      .toBeUndefined()
   })
 })

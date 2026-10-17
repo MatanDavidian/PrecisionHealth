@@ -1,8 +1,9 @@
 /**
  * Tells us when the app breaks in someone's browser.
  *
- * Uncaught errors, unhandled promise rejections, and screens that fail to
- * render (via ErrorBoundary) go to the `report-error` function. What is sent
+ * Uncaught errors, unhandled promise rejections, screens that fail to render
+ * (via ErrorBoundary), and anything the Content Security Policy blocks go to
+ * the `report-error` function. What is sent
  * is cleaned first (`_shared/errorReport.ts`, and again on the server): the
  * message, the stack, the page's path without its query, the build, and the
  * browser. Never an account or anything logged.
@@ -11,7 +12,7 @@
  * that are not ours — browser extensions, cross-origin "Script error." — are
  * not sent at all.
  */
-import { cleanReport, routeOf, type ErrorKind } from '../../supabase/functions/_shared/errorReport'
+import { cleanReport, cspViolationMessage, routeOf, type ErrorKind } from '../../supabase/functions/_shared/errorReport'
 import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase/client'
 
 const MAX_PER_PAGE = 5
@@ -59,4 +60,9 @@ export function reportError(kind: ErrorKind, cause: unknown): void {
 export function installErrorReporting(): void {
   window.addEventListener('error', (event) => reportError('error', event.error ?? event.message))
   window.addEventListener('unhandledrejection', (event) => reportError('rejection', event.reason))
+  // Something the CSP blocked: a script, a font, a connection we forgot to allow.
+  document.addEventListener('securitypolicyviolation', (event) => {
+    const message = cspViolationMessage(event)
+    if (message) reportError('error', message)
+  })
 }

@@ -332,7 +332,8 @@ added after** (see below). No public checkout link before this is live.
 >   sides.
 > - Alerting: the daily check prints the top three and turns red at 25 a day.
 > - The Privacy Policy (2026-10-09) says so.
-> - Not done: CSP violation reports.
+> - CSP violations (added 2026-10-17): whatever the policy blocks is reported
+>   as an error, by origin and rule only; browser extensions' are ignored.
 
 Nothing reports an exception today. Two options:
 

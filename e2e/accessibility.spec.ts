@@ -25,6 +25,10 @@ for (const path of SCREENS) {
 
     const { violations } = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      // Not preloading stylesheets: axe would fetch Google Fonts' CSS itself,
+      // which the CSP's connect-src rightly refuses — a violation of the
+      // checker's making, not the app's.
+      .options({ preload: false })
       .analyze()
 
     const problems = violations.flatMap((violation) =>

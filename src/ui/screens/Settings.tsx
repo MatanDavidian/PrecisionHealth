@@ -227,7 +227,7 @@ export function Settings() {
           `card-soft` — a shade deeper than the app's own sidebar, so a second
           level of navigation reads as underneath the first instead of beside it.
         */}
-        <nav className="flex w-full shrink-0 gap-1 rounded-full bg-card p-1 sm:w-[188px] sm:flex-col sm:rounded-none sm:bg-transparent sm:p-0">
+        <nav aria-label={t('settings.title')} className="flex w-full shrink-0 gap-1 rounded-full bg-card p-1 sm:w-[188px] sm:flex-col sm:rounded-none sm:bg-transparent sm:p-0">
           {TABS.map((option) => (
             <button
               key={option.tab}

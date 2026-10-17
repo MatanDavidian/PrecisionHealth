@@ -38,22 +38,23 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Wordmark className="text-2xl" />
         </div>
 
+        {/* Each nav named by its heading, so a screen reader can tell them apart. */}
         <SectionLabel>{t('nav.overview')}</SectionLabel>
-        <nav className="flex flex-col gap-1">
+        <nav aria-label={t('nav.overview')} className="flex flex-col gap-1">
           {TRACK.slice(0, 2).map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
 
         <SectionLabel>{t('nav.track')}</SectionLabel>
-        <nav className="flex flex-col gap-1">
+        <nav aria-label={t('nav.track')} className="flex flex-col gap-1">
           {TRACK.slice(2).map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
 
         <SectionLabel>{t('nav.app')}</SectionLabel>
-        <nav className="flex flex-col gap-1">
+        <nav aria-label={t('nav.app')} className="flex flex-col gap-1">
           <NavItem to="/settings" label="nav.settings" />
         </nav>
       </aside>

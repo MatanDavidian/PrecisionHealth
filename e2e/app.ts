@@ -65,10 +65,24 @@ export async function pinTime(page: Page, at: Date) {
   pinned.add(page)
 }
 
+/** Pages whose report endpoints are already answered here. */
+const quiet = new WeakSet<Page>()
+
 export const open = async (page: Page, path: string) => {
   // Only if the test has not chosen its own — a spec about what happens at
   // eleven at night must not be dragged back to lunchtime.
   if (!pinned.has(page)) await pinTime(page, NOW)
+  /*
+    The test build talks to the real Supabase project, so an error report
+    from a test page would land in production's table — and once did, 162 of
+    them, from the accessibility scan (2026-10-17). Answered here instead. A
+    spec that reads the reports routes them itself AFTER calling open():
+    the later route wins.
+  */
+  if (!quiet.has(page)) {
+    quiet.add(page)
+    await page.route(/\/functions\/v1\/report-(error|ai)/, (route) => route.fulfill({ status: 204 }))
+  }
   await page.goto(`${path}${path.includes('?') ? '&' : '?'}fake=1`)
   await page.waitForLoadState('networkidle')
 }

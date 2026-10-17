@@ -58,6 +58,12 @@ describe('a report', () => {
     expect(Object.keys(report)).not.toContain('userId')
   })
 
+  it('keeps the build’s commit, and only a commit', () => {
+    const commit = '65aea51c0ffee0123456789abcdef0123456789a'
+    expect(cleanReport({ kind: 'error', message: 'x', version: commit })!.version).toBe(commit)
+    expect(cleanReport({ kind: 'error', message: 'x', version: 'me@example.com' })!.version).toBeUndefined()
+  })
+
   it('groups the same error whatever numbers it quoted', () => {
     const a = fingerprintSource({ kind: 'error', message: 'Day 2026-10-09 has 3 meals', stack: 'Error\n  at x (a.js:10:5)' })
     const b = fingerprintSource({ kind: 'error', message: 'Day 2026-10-10 has 4 meals', stack: 'Error\n  at x (a.js:10:5)' })

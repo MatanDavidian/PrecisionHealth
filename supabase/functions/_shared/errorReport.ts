@@ -93,7 +93,8 @@ export function cleanReport(input: unknown): ErrorReport | undefined {
     message: text(raw.message, LIMITS.message)!,
     stack: text(raw.stack, LIMITS.stack),
     route: typeof raw.route === 'string' ? routeOf(raw.route) : undefined,
-    version: text(raw.version, LIMITS.version),
+    // A commit hash, which the scrubber would take for a secret: checked, not scrubbed.
+    version: typeof raw.version === 'string' && /^[0-9a-f]{7,40}$/.test(raw.version) ? raw.version : undefined,
     browser: text(raw.browser, LIMITS.browser),
   }
 }

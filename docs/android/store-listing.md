@@ -224,10 +224,14 @@ repository or a chat.
    (`e2e/delete-account-info.spec.ts`). Owner: it promises deletion
    **within 30 days** of an emailed request — the GDPR limit is one month.
    Change the wording if that is not a promise you want to make.
-3. **Privacy Policy and Terms: Google Play as a seller.** Drafted below for
-   the owner to approve. Once approved, C applies it in
-   `src/policy/documents.ts` with a version bump, so signed-in users
-   re-consent once.
+3. ~~**Privacy Policy and Terms: Google Play as a seller.**~~ **Applied
+   2026-10-17** (both documents now version 2026-10-17; signed-in users
+   agree once more). The live text in `src/policy/documents.ts` is the
+   source; the drafts below were changed on review: the 14-day refund
+   promise covers Play purchases too (refunded from the Play Console), the
+   Terms say "not a medical device … not medical advice" in the listing's
+   words, "your own key" is "on the website", and the Privacy Policy no
+   longer claims sleep data that nothing collects.
 
    **Privacy Policy, "What this app holds"** — the subscription bullet
    becomes:

@@ -189,6 +189,8 @@ export class EstimateError extends Error {
   constructor(
     readonly kind:
       | 'NO_KEY'
+      /** Signed in, but the session has ended: signing in again carries on. */
+      | 'SESSION'
       | 'BAD_KEY'
       | 'RATE_LIMIT'
       | 'PROVIDER'
@@ -207,6 +209,7 @@ export class EstimateError extends Error {
 
 export const ESTIMATE_ERROR_TEXT: Record<EstimateError['kind'], string> = {
   NO_KEY: 'No API key yet — add one in Settings to analyze photos.',
+  SESSION: 'You were signed out — sign in again to carry on.',
   BAD_KEY: 'The provider rejected your API key. Check it in Settings.',
   RATE_LIMIT: 'The provider is busy or over quota. Try again shortly.',
   PROVIDER: 'The provider returned an error. Try again shortly.',

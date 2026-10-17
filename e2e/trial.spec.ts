@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { openSignedIn, signIn } from './supabase'
+import { openSignedIn, signIn, STUB_ACCOUNT, stubSupabase } from './supabase'
 
 /**
  * The free trial, and what happens when it runs out or the server does not
@@ -86,4 +86,35 @@ test('a server that cannot be reached is retryable, not a dead end', async ({ pa
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'log it by hand' })).toBeVisible()
   await expect(page.locator('main')).toContainText('a bowl of pasta with tomato sauce')
+})
+
+test('a session that ended mid-analysis: sign in again, and the photo is still there', async ({ page }) => {
+  await signIn(page, { trialUsed: 1, analysis: 'expired', consented: true })
+  await openSignedIn(page, '/log')
+  await page.setInputFiles('input[type=file]', 'e2e/fixtures-meal.jpg')
+
+  await expect(page.getByText('You were signed out, so the analysis did not run. Nothing was counted.'))
+    .toBeVisible({ timeout: 20_000 })
+  await page.getByRole('link', { name: 'Sign in again' }).click()
+
+  await page.getByLabel('Email').fill(STUB_ACCOUNT.email)
+  await page.getByRole('button', { name: 'Email me a code' }).click()
+  await page.getByLabel(/Or enter the code/).fill('123456')
+  await page.getByRole('button', { name: 'Sign in with code' }).click()
+
+  // Back where the photo was taken, with it, and with a way to run it again.
+  await expect(page).toHaveURL(/\/log$/)
+  await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Discard photo' })).toBeVisible()
+  await expect(page.getByText(/Your photo and details are still here/)).toBeVisible()
+})
+
+test('after signing in, only a path inside the app is followed', async ({ page }) => {
+  await stubSupabase(page, { consented: true })
+  await page.goto('/signin?next=//evil.example')
+  await page.getByLabel('Email').fill(STUB_ACCOUNT.email)
+  await page.getByRole('button', { name: 'Email me a code' }).click()
+  await page.getByLabel(/Or enter the code/).fill('123456')
+  await page.getByRole('button', { name: 'Sign in with code' }).click()
+  await expect(page).toHaveURL(/\/today$/)
 })

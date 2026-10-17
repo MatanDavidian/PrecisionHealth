@@ -68,6 +68,8 @@ export interface Analysis {
     unreadable?: boolean
     /** Set when it is a subscriber's month that ran out, not the trial. */
     plan?: { kind: 'PHOTO' | 'TEXT'; allowance: number; resetsAt: string; renews: boolean }
+    /** The session ended: sign in again, and the photo is still here to retry. */
+    signIn?: boolean
   }
   model: string
   /**
@@ -222,6 +224,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         ? { kind: cause.analysisKind, allowance: cause.allowance, resetsAt: cause.resetsAt, renews: cause.renews }
         : undefined
       const exhausted = cause instanceof TrialExhaustedError || Boolean(plan)
+      const signIn = known && cause.kind === 'SESSION'
       buzz(15)
       setAnalysis((current) =>
         current && current.id === String(id)
@@ -230,12 +233,15 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
               status: 'failed',
               finishedAt: Date.now(),
               error: {
-                message: known
-                  ? cause.message
-                  : t(input.kind === 'photo' ? 'log.error.photo' : 'log.error.text'),
+                message: signIn
+                  ? t('log.error.session')
+                  : known
+                    ? cause.message
+                    : t(input.kind === 'photo' ? 'log.error.photo' : 'log.error.text'),
                 retryable: !known || cause.kind !== 'NO_KEY',
                 exhausted,
                 plan,
+                signIn,
               },
             }
           : current,

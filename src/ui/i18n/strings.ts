@@ -105,6 +105,8 @@ const en = {
   'log.savedLink': 'See today',
 
   'log.error.photo': 'Something went wrong reading the photo',
+  'log.error.session': 'You were signed out, so the analysis did not run. Nothing was counted.',
+  'log.error.signInAgain': 'Sign in again',
   'log.error.text': 'Something went wrong reading your description',
   'log.error.stillHereText': 'What you wrote is',
   'log.error.stillHerePhoto': 'Your photo and details are',
@@ -949,6 +951,8 @@ const he: Dictionary = {
   'log.savedLink': 'לצפייה בהיום',
 
   'log.error.photo': 'משהו השתבש בקריאת התמונה',
+  'log.error.session': 'התנתקתם, ולכן הניתוח לא רץ. שום דבר לא נספר.',
+  'log.error.signInAgain': 'להתחבר מחדש',
   'log.error.text': 'משהו השתבש בקריאת התיאור שלכם',
   'log.error.stillHereText': 'מה שכתבתם',
   'log.error.stillHerePhoto': 'התמונה והפרטים שלכם',

@@ -293,7 +293,7 @@ handled; the gaps are marked.
 | **iPhone photo picked on Android or desktop (HEIC)** | **done 2026-10-09**: recognised by its bytes and named, with how to send a JPEG (it used to spin for ever) | decoding it in the browser needs a 3 MB LGPL decoder and `worker-src blob:` in the CSP — owner's call | P1 |
 | **Israel's clocks go back, 25 Oct** | ✅ tested on both real dates; the browser suite passes in those weeks (`E2E_TODAY`) | — | done 2026-10-09 |
 | Offline while signed in | the save fails with a banner (D16, online-first) | accept for Phase 1; revisit with real usage | P2 |
-| Session expires mid-analysis | "sign in again" | check the photo survives | P2 |
+| Session expires mid-analysis | **done 2026-10-17:** said in both languages ("nothing was counted"), with "Sign in again", which returns to Log; the photo survives and can be retried (`trial.spec.ts`) | — | ✓ |
 | Years of history exported | paged reads; size untested | a bounded test at ~50k records | P2 |
 | Many free accounts from one person | the daily ceiling caps total cost | watch it in the daily counts; limit later if it happens | P3 |
 | Under-16s | the terms say no; no age gate | accept for Phase 1 | P3 |

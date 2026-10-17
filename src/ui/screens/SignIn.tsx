@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { sendSignInCode, signInWithPassword, verifySignInCode } from '@/data/session'
 import { Card } from '../components/Card'
 import { useT } from '../i18n'
@@ -30,6 +30,9 @@ type Stage =
 export function SignIn() {
   const t = useT()
   const navigate = useNavigate()
+  // Where to go back to — only a path inside the app, never another site.
+  const next = useSearchParams()[0].get('next')
+  const destination = next && /^\/[a-z]/i.test(next) ? next : '/today'
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
@@ -58,7 +61,7 @@ export function SignIn() {
     try {
       await verifySignInCode(email, code)
       // The session subscription swaps the store; this just gets out of the way.
-      navigate('/today')
+      navigate(destination)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t('signin.errCode'))
       setStage({ kind: 'code' })
@@ -72,7 +75,7 @@ export function SignIn() {
     setError(undefined)
     try {
       await signInWithPassword(email, password)
-      navigate('/today')
+      navigate(destination)
     } catch {
       // One message for every failure: which part was wrong is not for a sign-in form to say.
       setError(t('signin.errPassword'))

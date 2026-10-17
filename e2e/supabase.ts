@@ -100,7 +100,7 @@ export interface StubOptions {
   /** Reject a password sign-in (the reviewer path), as Supabase does a wrong one. */
   passwordFails?: boolean
   /** What the analysis endpoint does when the app asks it to read a photo. */
-  analysis?: 'exhausted' | 'down' | 'planExhausted'
+  analysis?: 'exhausted' | 'down' | 'planExhausted' | 'expired'
   /**
    * A subscription the webhook has stored. Billed on the 1st by default and
    * active; dates are relative to `NOW`, the browser's pinned clock.
@@ -306,6 +306,7 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
       return json(route, { error: 'trial_exhausted', used: 10, allowance: 10 }, 402)
     }
     if (options.analysis === 'down') return route.abort('connectionfailed')
+    if (options.analysis === 'expired') return json(route, { error: 'not_signed_in' }, 401)
     if (options.analysis === 'planExhausted') {
       const sent = (route.request().postDataJSON() ?? {}) as { photo?: string }
       const kind = sent.photo ? 'PHOTO' : 'TEXT'

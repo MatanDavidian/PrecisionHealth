@@ -158,7 +158,7 @@ export class ProxyEstimator implements FoodEstimator {
       applyGramsHint(validateEstimate(p, m), hints.totalGrams)) as never,
   ): Promise<T> {
     const token = await this.options.getAccessToken()
-    if (!token) throw new EstimateError('NO_KEY', 'Not signed in')
+    if (!token) throw new EstimateError('SESSION', 'Not signed in')
 
     const doFetch = this.options.fetchImpl ?? fetch
 
@@ -216,7 +216,7 @@ export class ProxyEstimator implements FoodEstimator {
         body.renews !== false,
       )
     }
-    if (response.status === 401) throw new EstimateError('NO_KEY', 'Session expired — sign in again')
+    if (response.status === 401) throw new EstimateError('SESSION', 'Session expired — sign in again')
     if (!response.ok || !body?.content) {
       if (body?.error === 'free_analysis_unavailable') {
         // The owner's budget, not the user's trial — and their own key still

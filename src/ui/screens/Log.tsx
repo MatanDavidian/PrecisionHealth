@@ -688,6 +688,13 @@ export function Log() {
       {analysis?.error && !analysis.error.exhausted && (
         <Card>
           <p className="text-sm text-accent">{analysis.error.message}</p>
+          {analysis.error.signIn && (
+            <p className="pt-1 text-sm">
+              <Link to="/signin?next=/log" className="font-medium underline">
+                {t('log.error.signInAgain')}
+              </Link>
+            </p>
+          )}
           {analysis.error.retryable && (
             <p className="pt-1 text-xs text-ink-muted">
               {fromText ? t('log.error.stillHereText') : t('log.error.stillHerePhoto')}{' '}

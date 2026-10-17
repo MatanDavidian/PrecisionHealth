@@ -80,7 +80,7 @@ describe('analysis through our own server', () => {
   it('asks the user to sign in again when the token has expired', async () => {
     const fetchImpl = (async () => reply({ error: 'not_signed_in' }, 401)) as unknown as typeof fetch
     await expect(new ProxyEstimator(options(fetchImpl)).estimate(photo, {})).rejects.toMatchObject({
-      kind: 'NO_KEY',
+      kind: 'SESSION',
     })
   })
 

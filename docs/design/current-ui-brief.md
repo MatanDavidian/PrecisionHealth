@@ -315,9 +315,9 @@ phone, so the stepper is kept, below the switch.
 
 ## Two greys, and one rule for selection
 
-`ink-muted` (#8a8375) is for text you skim past — uppercase eyebrows, the date
+`ink-muted` (#656056) is for text you skim past — uppercase eyebrows, the date
 under a heading, unselected entries in the app's own sidebar. `ink-soft`
-(#6f6a60) is for text you actually read: the explanatory line inside a card, and
+(#504c45) is for text you actually read: the explanatory line inside a card, and
 the unselected half of a switch. At 14px the lighter grey asks you to work for
 it, which is why the design uses the darker one there and why collapsing both
 into `ink-muted` made every screen look slightly out of focus.
@@ -447,7 +447,7 @@ load-bearing.
 
 ```
 canvas      #f1ece1     ink         #2b2721
-surface     #faf7f0     ink-muted   #8a8375
+surface     #faf7f0     ink-muted   #656056
 card        #e8e1d1     hairline    #ddd4c2
 card-soft   #eee8da     accent      #c2673e   (terracotta: primary actions, warnings)
 leaf        #6f7f53     accent-soft #e8d3c4

@@ -403,7 +403,7 @@ change. Remaining:
 | **Design pass** | First visit, empty states and the Log screen, in Claude Design: the screens a stranger sees in their first minute. |
 | **Motion** | Purposeful and short (150–250 ms): totals counting to their new value after a save, estimate rows arriving in turn, week bars growing, the striped estimate filling in. Everything off under `prefers-reduced-motion`. Nothing decorative. |
 | **Sound** | **No.** People log meals in restaurants, at work and in bed, and a health app that makes noise announces itself. A short vibration on save on Android (iOS does not support it from the web) gives the same confirmation silently. |
-| **Accessibility** | An automated axe scan of the main screens in the browser suite; check the muted grey text against the cream background for contrast. |
+| **Accessibility** | ✅ **Scan added 2026-10-17** (`e2e/accessibility.spec.ts`, WCAG 2.1 AA, eight screens, phone and desktop). The only failures were contrast: the two greys were darkened to pass (same hue). **Owner's call:** the brand orange `#c2673e` and green `#6f7f53` also fall short as text and behind white button text (2.7–4.1 against 4.5). Shades that pass everywhere: orange `#8c4a2d`, green `#54613f` — noticeably darker, so decide alongside the logo; until then the scan lets those two through, by name. |
 
 ---
 
@@ -419,7 +419,7 @@ change. Remaining:
 | Medium | ✅ Handler tests for `delete-account` and `issue-device-token` (2026-10-09/10) | Deletion is irreversible |
 | Medium | Contract tests against a local Supabase instead of production | Stops growing the test account (2,066 meals so far), and lets CI run them without production credentials |
 | Medium | ✅ A HEIC photo (`heic-photo.spec.ts`), a double-tapped Save (`double-save.spec.ts`); a non-food photo (needs a real model — part of the evaluation) | Edge scenarios above |
-| Low | Accessibility scan (axe); watch sync logic beyond the existing simulator probe | Useful, not urgent |
+| Low | ✅ Accessibility scan (axe, 2026-10-17); watch sync logic beyond the existing simulator probe | Useful, not urgent |
 
 ---
 

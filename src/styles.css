@@ -26,9 +26,13 @@
    * switch — and it is darker because at 14px the lighter one asks you to work
    * for it. Collapsing them into one grey is what makes a screen look flat and
    * slightly out of focus against the design.
+   *
+   * Both darkened on 2026-10-17 to pass WCAG AA (4.5:1) on every background
+   * they sit on, the darkest being `card`: the old ones measured 2.9:1 and
+   * 4.1:1 there (`e2e/accessibility.spec.ts`). Same hue, same order.
    */
-  --color-ink-soft: #6f6a60;
-  --color-ink-muted: #8a8375;
+  --color-ink-soft: #504c45;
+  --color-ink-muted: #656056;
   --color-hairline: #ddd4c2;
 
   /*

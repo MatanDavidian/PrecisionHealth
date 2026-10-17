@@ -16,7 +16,7 @@ FUNCTIONS_WITH_USER_JWT=(estimate-food delete-account issue-device-token billing
 # No user JWT: the watch carries a device token, the health check a health
 # token, Lemon Squeezy a signature, Google's Pub/Sub a secret on its URL — and
 # error reports come from signed-out visitors too.
-FUNCTIONS_WITHOUT_JWT=(device-sync health lemonsqueezy-webhook report-error play-rtdn)
+FUNCTIONS_WITHOUT_JWT=(device-sync health lemonsqueezy-webhook report-error play-rtdn report-ai)
 
 # 1. Only committed code, so the version stamp means something.
 if ! git diff --quiet HEAD -- supabase/; then

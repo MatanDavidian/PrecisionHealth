@@ -25,6 +25,7 @@ answers with an `x-vimetry-version` header naming its commit.
 | `issue-device-token` | signed-in app | — | "Adding a watch" below |
 | `device-sync` | the watch (`--no-verify-jwt`, device token) | — | "After a long gap in syncing" below |
 | `report-error` | any visitor (`--no-verify-jwt`) | — | `docs/PHASE-1-FINISH.md`, error monitoring |
+| `report-ai` | any visitor (`--no-verify-jwt`) | — | `docs/PHASE-1-FINISH.md`, handover 2026-10-17 (Report this answer) |
 | `health` | the daily check (`--no-verify-jwt`, `x-health-token`) | `HEALTH_TOKEN` | `docs/ops/operations-setup.md` |
 
 Secrets are set with `npx supabase secrets set NAME=value`, or for payments

@@ -1,5 +1,6 @@
 import type { WeekInsight } from '@/ai/estimator'
 import { useT } from '../i18n'
+import { ReportAnswer } from './ReportAnswer'
 
 export type InsightsState =
   | { kind: 'idle' }
@@ -145,6 +146,7 @@ export function InsightsCard({
               {t('insights.dismiss')}
             </button>
           </div>
+          <ReportAnswer kind="insight" model={state.insight.model} />
         </div>
       )}
     </section>

@@ -2,6 +2,7 @@ import type { EstimateResult } from '@/ai/estimator'
 import { correctsAnything, type EstimateCorrection } from '@/data/estimatedMeal'
 import { Card } from '../Card'
 import { useT } from '../../i18n'
+import { ReportAnswer } from '../ReportAnswer'
 
 /**
  * What the model came back with, whatever it was shown.
@@ -57,6 +58,9 @@ export function EstimateCard({
         >
           {fromText ? t('estimate.describeSomethingElse') : t('estimate.tryAnotherPhoto')}
         </button>
+        <div>
+          <ReportAnswer kind="estimate" model={result.model} />
+        </div>
       </Card>
     )
   }
@@ -185,6 +189,7 @@ export function EstimateCard({
             {t('estimate.discard')}
           </button>
         </div>
+        <ReportAnswer kind="estimate" model={result.model} />
       </Card>
     </div>
   )

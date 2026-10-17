@@ -158,6 +158,7 @@ Privacy Policy names each one.
 | Photos and videos → Photos (a meal photo, for analysis) | yes | optional | **yes** — sent once, not stored | App functionality |
 | Financial info → Purchase history (whether you subscribe, and when it renews) | yes | optional | no | App functionality, Account management |
 | App info and performance → Crash logs (error reports: message, page path, app version, browser; no account, no health data) | yes | not optional | no | Analytics |
+| App activity → Other user-generated content (a report about an AI answer: the reason, an optional note, the model; no account, no meal, no answer) | yes | optional (only if you report) | no | App functionality; Fraud prevention, security, and compliance |
 
 **Not collected:**
 - location
@@ -239,6 +240,19 @@ repository or a chat.
    > subscription: it takes the payment, holds your payment details, and
    > tells us whether you subscribed and when it renews. It receives no
    > health data.
+
+   **Privacy Policy, after "When the app breaks"** — a new section, for
+   "Report this answer" (built 2026-10-17):
+   > **When you report an AI answer.** Under each AI estimate and the
+   > week's insights there is "Report this answer". A report holds the
+   > reason you chose, the note you wrote if any, which AI model answered,
+   > and the app's version. It does not include the meal, the photo, the
+   > answer or your account, and email addresses, keys and similar are
+   > removed from the note before it is kept. Reports are kept for a year.
+
+   **Privacy Policy, "Why we hold it"** — the error-report bullet becomes:
+   > To find and fix what breaks, and what the AI gets wrong, from reports
+   > that are not linked to you.
 
    **Terms, "Subscription"** — after the Lemon Squeezy paragraph:
    > In the Android app, the subscription is sold by Google Play instead, at

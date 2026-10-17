@@ -19,8 +19,10 @@ export const EXPECTED_SCHEMA = {
     'reservation_grace',
     'health_missing',
     'record_client_error',
+    'record_ai_report',
   ],
   tables: [
+    'ai_reports',
     'app_admins',
     'billing_events',
     'client_errors',

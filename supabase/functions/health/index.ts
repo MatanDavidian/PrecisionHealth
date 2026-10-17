@@ -166,6 +166,7 @@ Deno.serve(async (request) => {
     { data: recent, error: recentError },
     { data: errorRows, error: errorsError },
     { data: disputeRows, error: disputesError },
+    { data: reportRows, error: reportsError },
   ] = await Promise.all([
     admin
       .from('usage')
@@ -185,6 +186,8 @@ Deno.serve(async (request) => {
       .select('event_name, object_id, received_at')
       .like('event_name', 'dispute_%')
       .gte('received_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+    // AI answers people reported from the app in the last day (migration 0017).
+    admin.from('ai_reports').select('reason').gte('created_at', since),
   ])
 
   const outcomes: Record<string, number> = {}
@@ -214,6 +217,12 @@ Deno.serve(async (request) => {
           .map(({ count, message, route, version, kind }) => ({ count, kind, message, route, version: version?.slice(0, 7) })),
       }
 
+  const byReason: Record<string, number> = {}
+  for (const row of (reportRows as { reason: string }[] | null) ?? []) {
+    byReason[row.reason] = (byReason[row.reason] ?? 0) + 1
+  }
+  const aiReports = reportsError ? { error: 'ai_reports unreadable' } : { last24h: byReason }
+
   // Only keys that are set, and each distinct key once under its first name.
   const seen = new Set<string>()
   const keys = OPENAI_KEYS.flatMap(([key, names]) => {
@@ -241,6 +250,7 @@ Deno.serve(async (request) => {
           ? { error: 'usage ledger unreadable' }
           : { spentTodayMicros: spentMicros, ceilingMicros, planSpentTodayMicros: planSpentMicros, planCeilingMicros, outcomes },
       clientErrors,
+      aiReports,
       openai: probes,
       disputes: disputesError
         ? { error: 'billing_events unreadable' }

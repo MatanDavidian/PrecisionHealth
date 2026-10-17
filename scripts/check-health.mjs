@@ -34,6 +34,7 @@ const FUNCTIONS = [
   'report-error',
   'play-billing',
   'play-rtdn',
+  'report-ai',
 ]
 /** Alert before the ceiling refuses people, not after. */
 const SPEND_WARNING = 0.8
@@ -181,6 +182,21 @@ else {
         for (const top of errors.top ?? []) {
           console.log(`    ${top.count}× ${top.kind} on ${top.route ?? '?'} (${top.version ?? '?'}): ${top.message}`)
         }
+      }
+
+      // AI answers reported from the app (report-ai). Offensive or harmful
+      // ones turn the check red: Google Play expects them to be acted on.
+      const reports = body.aiReports
+      if (!reports) console.log('    AI reports: not reported by this deploy')
+      else if (reports.error) fail(reports.error)
+      else {
+        const counts = reports.last24h ?? {}
+        const total = Object.values(counts).reduce((sum, n) => sum + n, 0)
+        const serious = (counts.offensive ?? 0) + (counts.harmful ?? 0)
+        const line = `AI answers reported since yesterday: ${total}` +
+          (total ? ` (${Object.entries(counts).map(([reason, n]) => `${n} ${reason}`).join(', ')})` : '')
+        if (serious) fail(`${line} — read them in Supabase → Table editor → ai_reports`)
+        else pass(line)
       }
     }
   } catch {

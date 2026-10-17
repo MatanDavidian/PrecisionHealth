@@ -23,7 +23,7 @@ Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
 | Legal | Terms and Privacy Policy live (both 2026-10-09: subscription terms, error reports); OpenAI DPA signed; privacy@ and support@ forward |
 | Payments | Lemon Squeezy connected in **test mode**, every flow passed end to end on 2026-10-10 (purchase, both allowances, cancel, refund, account deletion). **Live mode deliberately not yet** — owner's decision |
 | Tests | 525 unit, 318 browser, 11 server handler suites (every function), DB invariants on Postgres, a race test, a live-site check |
-| Operations | CI deploys; migrations tracked (0001–0016); one deploy script; daily health check with email — schema, versions, both spend ceilings, every OpenAI key against every model, browser errors, payment disputes, payments key expiry |
+| Operations | CI deploys; migrations tracked (0001–0017); one deploy script; daily health check with email — schema, versions, both spend ceilings, every OpenAI key against every model, browser errors, reported AI answers, payment disputes, payments key expiry |
 | Android | Play Billing (server and app), the TWA configuration, listing drafts, screenshots, a reviewer sign-in and sample data — built; waiting on Google's account verification (`docs/ANDROID-APP.md`) |
 | Garmin | renamed Vimetry; a Store build with no token; listing and checklist (`docs/garmin/store-listing.md`) — waiting on the owner's developer account |
 
@@ -474,29 +474,35 @@ Later
   are required only for medical and human-subjects-research apps. Wait
   for the human answer before uploading anything.
 
-**Next for Claude — before the first Play upload** (Google's own
-requirements, confirmed by its support assistant):
-1. **Privacy Policy and Terms links in Settings**, always visible. Google
-   requires a privacy policy inside the app; today it appears only on the
-   sign-in consent screen and `/delete-account`.
-2. **The medical disclaimer in the app:** "General suggestions, not medical
-   advice — for medical questions, talk to a healthcare professional." It
-   goes on the week-insights card and in Settings.
-3. **"Report this answer"** on AI estimates and week insights, sent
-   in-app (Google's AI-generated content policy; whether it applies to us
-   is unclear, so this removes the doubt).
-4. **Hide the own-OpenAI-key option inside the Android app.** Its setup
-   links to paying OpenAI, which Play could read as steering payments
-   outside Play Billing. The website is unchanged.
-5. **Listing wording:** "does not diagnose, treat or advise" becomes
-   "does not diagnose or treat, and gives no medical advice", and the
-   weekly suggestions are mentioned (`docs/android/store-listing.md`).
+**Done — before the first Play upload** (Google's own requirements,
+confirmed by its support assistant; built 2026-10-17, tested in
+`e2e/play-readiness.spec.ts`; **needs "push" and a deploy**):
+1. **Privacy Policy and Terms links in Settings**, on every tab, with
+   "Vimetry is not a medical device" and the account-deletion link.
+2. **The medical disclaimer** under the week's suggestions: "General
+   suggestions, not medical advice — for medical questions, talk to a
+   healthcare professional."
+3. **"Report this answer"** under every AI estimate (including a refusal)
+   and under the week's insights. The report holds only the reason, an
+   optional note (scrubbed), the model and the build — not the meal, the
+   photo, the answer or the account. It is stored in `ai_reports`
+   (migration 0017, function `report-ai`), at most 500 a day, kept a year.
+   The daily health check counts them and turns red on any offensive or
+   harmful one: read them in Supabase → Table editor → `ai_reports`.
+4. **No own-OpenAI-key option inside the Android app** (`?source=twa`):
+   signed out, it offers sign-in for the free analyses; with the trial
+   spent, the plan. The website is unchanged.
+5. **Listing wording:** the disclaimer is now in Google's words ("does not
+   diagnose, treat, cure or prevent … not medical advice"), and the
+   week's suggestions and in-app reporting are described
+   (`docs/android/store-listing.md`).
 
 **Next for Claude — when the owner approves:**
 - the Google Play wording for the Privacy Policy and Terms
   (`docs/android/store-listing.md`, open work 3), together with fixing the
-  Terms' "does not … advise", which should say no *medical* advice. One
-  version bump, one re-consent.
+  Terms' "does not … advise", which should say no *medical* advice, and
+  the new Privacy Policy section on reporting an AI answer (drafted there
+  too). One version bump, one re-consent.
 - `public/.well-known/assetlinks.json`, once the first Play upload exists
   (`android/README.md`).
 

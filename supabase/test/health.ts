@@ -34,6 +34,9 @@ const stub = Deno.serve({ port: 8998, onListen: () => {} }, (req) => {
   if (url.pathname === '/rest/v1/billing_events') {
     return Response.json(disputes)
   }
+  if (url.pathname === '/rest/v1/ai_reports') {
+    return Response.json([{ reason: 'wrong' }, { reason: 'offensive' }, { reason: 'wrong' }])
+  }
   if (url.pathname === '/rest/v1/client_errors') {
     if (errorsDown) return Response.json({ message: 'down' }, { status: 500 })
     return Response.json([
@@ -105,6 +108,8 @@ const call = (token?: string) =>
     body.last24h.planCeilingMicros === 50_000_000, JSON.stringify(body.last24h))
   check('browser errors are counted, worst first', body.clientErrors.total === 12 && body.clientErrors.distinct === 2 &&
     body.clientErrors.top[0].count === 9 && body.clientErrors.top[0].version === 'abcdef0', JSON.stringify(body.clientErrors))
+  check('reported AI answers are counted by reason', body.aiReports.last24h.wrong === 2 &&
+    body.aiReports.last24h.offensive === 1, JSON.stringify(body.aiReports))
   check('outcomes are counted', body.last24h.outcomes.OK === 2 && body.last24h.outcomes.PROVIDER_ERROR === 1,
     JSON.stringify(body.last24h.outcomes))
   check('no secret is echoed', !text.includes('sk-stub') && !text.includes('stub-service-key') && !text.includes(TOKEN))

@@ -742,3 +742,54 @@ exception
 end
 $$;
 reset role;
+
+\echo '== 0017: AI answers can be reported, privately and boundedly =='
+set role postgres;
+select public.record_ai_report('estimate', 'offensive', 'rude', 'gpt-6-luna', 'abc');
+select case when (select count(*) from public.ai_reports where reason = 'offensive' and model = 'gpt-6-luna') = 1
+  then 'PASS: a report is recorded'
+  else 'FAIL: a report was not recorded' end;
+
+insert into public.ai_reports (kind, reason)
+select 'insight', 'other' from generate_series(1, 499);
+select case when public.record_ai_report('insight', 'wrong', null, null, null) = false
+             and (select count(*) from public.ai_reports) = 500
+  then 'PASS: a day holds at most 500 reports'
+  else 'FAIL: the daily bound did not hold' end;
+
+delete from public.ai_reports;
+insert into public.ai_reports (created_at, kind, reason) values (now() - interval '366 days', 'estimate', 'wrong');
+select public.record_ai_report('estimate', 'wrong', repeat('x', 600), repeat('m', 100), null);
+select case when (select count(*) from public.ai_reports) = 1
+             and (select char_length(note) from public.ai_reports) = 500
+             and (select char_length(model) from public.ai_reports) = 64
+  then 'PASS: reports older than a year are dropped, and long fields are cut'
+  else 'FAIL: retention or truncation did not hold' end;
+
+do $$
+begin
+  insert into public.ai_reports (kind, reason) values ('estimate', 'spam');
+  raise exception 'FAIL: an unknown reason was accepted';
+exception
+  when check_violation then raise notice 'PASS: reason is offensive, harmful, wrong or other';
+end
+$$;
+
+set role authenticated;
+do $$
+begin
+  perform count(*) from public.ai_reports;
+  raise exception 'FAIL: a user could read AI reports';
+exception
+  when insufficient_privilege then raise notice 'PASS: AI reports are service-role only';
+end
+$$;
+do $$
+begin
+  perform public.record_ai_report('estimate', 'wrong', null, null, null);
+  raise exception 'FAIL: a user could write AI reports directly';
+exception
+  when insufficient_privilege then raise notice 'PASS: reporting goes through the function only';
+end
+$$;
+reset role;

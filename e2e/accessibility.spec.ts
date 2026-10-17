@@ -8,9 +8,9 @@ import { open } from './app'
  *
  * One exception, written down rather than hidden: the brand's orange and
  * green — as text, and as the fill behind white button text — measure 2.7–4.1
- * against the 4.5 AA asks. Changing them changes the look, so it waits for the
- * owner (with the logo work); proposed shades are in the roadmap. Everything
- * else, the greys included, must pass.
+ * against the 4.5 AA asks. The owner compared the passing shades and kept the
+ * brand (2026-10-17, docs/PHASE-1-FINISH.md, P3). Everything else, the greys
+ * included, must pass.
  */
 const PENDING_BRAND_COLOURS = ['#c2673e', '#6f7f53']
 

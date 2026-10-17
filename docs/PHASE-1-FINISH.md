@@ -476,7 +476,7 @@ Later
 
 **Done — before the first Play upload** (Google's own requirements,
 confirmed by its support assistant; built 2026-10-17, tested in
-`e2e/play-readiness.spec.ts`; **needs "push" and a deploy**):
+`e2e/play-readiness.spec.ts`; pushed and deployed the same day):
 1. **Privacy Policy and Terms links in Settings**, on every tab, with
    "Vimetry is not a medical device" and the account-deletion link.
 2. **The medical disclaimer** under the week's suggestions: "General

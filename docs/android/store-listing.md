@@ -49,6 +49,7 @@ SEE THE DAY AND THE WEEK
 • Today: calories and macros against your goal, beside your activity.
 • The week: what you ate against what you burned, day by day — and a plain account of days with no figures, rather than a guess.
 • Missed a day? Fill it from your own average, marked as an estimate.
+• Ask for insights on your week: what stands out in the numbers, and one to three small changes worth trying — general habits, not medical advice. Any AI answer can be reported from inside the app.
 
 WITH YOUR GARMIN
 Connect a Garmin watch (Forerunner 265 and 265S, more to come) for calories burned, steps, distance, resting heart rate, stress and VO₂ max.
@@ -62,7 +63,7 @@ YOUR DATA IS YOURS
 FREE, WITH A SUBSCRIPTION FOR MORE
 Logging by hand, the week view and exporting are free. New accounts get 10 AI analyses free. Vimetry Monthly includes 100 photo analyses and 200 written ones a month; cancel any time from Google Play.
 
-Not a medical device. Vimetry records and shows your own data; it does not diagnose, treat or advise. If something about your health worries you, talk to a doctor.
+Vimetry is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Its suggestions are general habits, not medical advice — consult a healthcare professional for medical advice, diagnosis or treatment.
 
 In English and Hebrew.
 ```
@@ -83,6 +84,7 @@ Vimetry הוא יומן בריאות אישי ששם את מה שאתם אוכל
 • היום: קלוריות ומאקרו מול היעד שלכם, לצד הפעילות שלכם.
 • השבוע: מה אכלתם מול מה ששרפתם, יום אחר יום — ותיאור כן של ימים בלי נתונים, במקום ניחוש.
 • פספסתם יום? אפשר למלא אותו מהממוצע שלכם, מסומן כהערכה.
+• בקשו תובנות על השבוע שלכם: מה בולט במספרים, ואחד עד שלושה שינויים קטנים שכדאי לנסות — הרגלים כלליים, לא ייעוץ רפואי. אפשר לדווח על כל תשובה של הבינה המלאכותית מתוך האפליקציה.
 
 עם ה־Garmin שלכם
 חברו שעון Garmin (Forerunner 265 ו־265S, ועוד בהמשך) לקלוריות שנשרפו, צעדים, מרחק, דופק במנוחה, מתח ו־VO₂ max.
@@ -96,7 +98,7 @@ Vimetry הוא יומן בריאות אישי ששם את מה שאתם אוכל
 חינם, עם מנוי למי שרוצה יותר
 רישום ידני, תצוגת השבוע וייצוא — בחינם. חשבונות חדשים מקבלים 10 ניתוחי בינה מלאכותית בחינם. Vimetry Monthly כולל 100 ניתוחי תמונה ו־200 ניתוחי טקסט בחודש; אפשר לבטל בכל רגע מ־Google Play.
 
-לא מכשיר רפואי. Vimetry רושם ומציג את הנתונים שלכם; הוא לא מאבחן, לא מטפל ולא מייעץ. אם משהו בבריאות שלכם מדאיג אתכם, פנו לרופא.
+Vimetry אינו מכשיר רפואי, ואינו מאבחן, מטפל, מרפא או מונע שום מצב רפואי. ההצעות שלו הן הרגלים כלליים ולא ייעוץ רפואי — לייעוץ, אבחון או טיפול רפואי, פנו לאיש מקצוע בתחום הבריאות.
 
 באנגלית ובעברית.
 ```

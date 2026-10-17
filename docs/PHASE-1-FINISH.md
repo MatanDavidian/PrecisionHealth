@@ -398,7 +398,7 @@ change. Remaining:
 
 | Item | Recommendation |
 | --- | --- |
-| **Logo** | Needed in five places now: Lemon Squeezy store, Garmin listing and launcher icon, favicon, home-screen icon, emails. Today it is an orange dot. Explore directions in the existing Claude Design canvas, then either finish one there or hand the chosen direction to a designer for a clean vector. It must read at 16 px and on a round watch face, and be checked alongside the trademark search for the name. |
+| **Logo** | **Decided 2026-10-17 (owner):** for now the icon stays the orange dot, and the name carries the same dot as the dot of its i (`src/ui/components/Wordmark.tsx`, the sidebar). **Before the public launch:** a distinctive mark — direction A, "Dial" (a plate whose rim is the measuring, the dot at its centre), in the Claude Design canvas "Vimetry logo" (https://claude.ai/artifact/EG3RWq7X5xJFmeuRjHcBMq). Then `scripts/make-icons.mjs` and the Garmin launcher icon follow it. Original note: needed in five places now: Lemon Squeezy store, Garmin listing and launcher icon, favicon, home-screen icon, emails. Today it is an orange dot. Explore directions in the existing Claude Design canvas, then either finish one there or hand the chosen direction to a designer for a clean vector. It must read at 16 px and on a round watch face, and be checked alongside the trademark search for the name. |
 | **Home-screen app (PWA)** | ✅ **Done 2026-10-10:** manifest, icons, and a service worker that opens the app offline (app files only, never data). |
 | **Design pass** | First visit, empty states and the Log screen, in Claude Design: the screens a stranger sees in their first minute. |
 | **Motion** | Purposeful and short (150–250 ms): totals counting to their new value after a save, estimate rows arriving in turn, week bars growing, the striped estimate filling in. Everything off under `prefers-reduced-motion`. Nothing decorative. |
@@ -453,8 +453,8 @@ Later
 1. ~~**Error monitoring**~~ — decided: our own table (built 2026-10-09).
 2. ~~**Deploys through CI**~~ — decided: CI only, Cloudflare's own deploys off (2026-10-03).
 3. **The default model** — GPT-6.1 Sol for now (2026-10-09); confirm after the evaluation on real photos.
-4. **Logo** — finish it in Claude Design, or hand a chosen direction to a
-   designer.
+4. ~~**Logo**~~ — decided 2026-10-17: the dot now, in the name too; the
+   Dial before the public launch (P3).
 5. **Offline logging** — accept online-first (D16) for Phase 1, or build a
    queue now.
 

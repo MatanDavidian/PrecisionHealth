@@ -241,18 +241,9 @@ repository or a chat.
    > tells us whether you subscribed and when it renews. It receives no
    > health data.
 
-   **Privacy Policy, after "When the app breaks"** — a new section, for
-   "Report this answer" (built 2026-10-17):
-   > **When you report an AI answer.** Under each AI estimate and the
-   > week's insights there is "Report this answer". A report holds the
-   > reason you chose, the note you wrote if any, which AI model answered,
-   > and the app's version. It does not include the meal, the photo, the
-   > answer or your account, and email addresses, keys and similar are
-   > removed from the note before it is kept. Reports are kept for a year.
-
-   **Privacy Policy, "Why we hold it"** — the error-report bullet becomes:
-   > To find and fix what breaks, and what the AI gets wrong, from reports
-   > that are not linked to you.
+   (The Privacy Policy section on reporting an AI answer is already in, as
+   of 2026-10-17, without a version bump: it is optional and linked to
+   nobody, so it does not change anything for people who already agreed.)
 
    **Terms, "Subscription"** — after the Lemon Squeezy paragraph:
    > In the Android app, the subscription is sold by Google Play instead, at

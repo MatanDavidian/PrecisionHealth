@@ -500,9 +500,9 @@ confirmed by its support assistant; built 2026-10-17, tested in
 **Next for Claude — when the owner approves:**
 - the Google Play wording for the Privacy Policy and Terms
   (`docs/android/store-listing.md`, open work 3), together with fixing the
-  Terms' "does not … advise", which should say no *medical* advice, and
-  the new Privacy Policy section on reporting an AI answer (drafted there
-  too). One version bump, one re-consent.
+  Terms' "does not … advise", which should say no *medical* advice. One
+  version bump, one re-consent. (Reporting an AI answer is already in the
+  Privacy Policy, added 2026-10-17 without a bump.)
 - `public/.well-known/assetlinks.json`, once the first Play upload exists
   (`android/README.md`).
 

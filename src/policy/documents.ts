@@ -108,6 +108,12 @@ export const PRIVACY_POLICY: PolicyDocument = {
       ],
     },
     {
+      heading: 'When you report an AI answer',
+      body: [
+        'Under each AI estimate and the week’s insights there is “Report this answer”. A report holds the reason you chose, the note you wrote if any, which AI model answered, and the app’s version. It does not include the meal, the photo, the answer or your account, and email addresses, keys and similar are removed from the note before it is kept. Reports are kept for a year.',
+      ],
+    },
+    {
       heading: 'Meal photographs are not stored',
       body: [
         'This is the part people ask about, so it is stated plainly. We do not store your meal photographs. A photograph is sent for analysis once and then discarded: it is not written to this device, not written to our database, and not kept by us in any form.',
@@ -123,7 +129,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'To keep your account working — signing in, and keeping devices in step.',
         'To meter AI analyses — the free trial and a subscription’s monthly allowance.',
         'To know whether you have a subscription, so it can be honoured.',
-        'To find and fix what breaks, from error reports that are not linked to you.',
+        'To find and fix what breaks, and what the AI gets wrong, from reports that are not linked to you.',
       ],
       body: [
         'In the EU and UK, our basis for processing health data is your explicit consent (GDPR Art. 9(2)(a)). You give it when you create an account, we record which version of this policy you agreed to and when, and you can withdraw it at any time by deleting your account.',

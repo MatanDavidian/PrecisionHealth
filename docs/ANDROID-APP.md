@@ -76,6 +76,24 @@ Google's checks take days to weeks and run while the code is written.
 - **Find 12 testers with Android phones.** Friends and family count. Each
   needs a Google account.
 
+> **Open question, 2026-10-17: personal or organisation account?**
+>
+> The account was created as **Personal** (2026-10-10). Google's
+> requirements say organisations must register for "Health apps, such as
+> Medical apps and Human Subjects Research apps", and a Google email warns
+> that health apps are not permitted on Personal accounts.
+>
+> Vimetry tracks nutrition and activity. It is not medical and not
+> research, but Google's health declaration counts "Nutrition and weight
+> management" and "Activity and fitness" as health categories.
+>
+> The plan:
+> 1. Ask Play support in writing whether a Personal account may publish it.
+> 2. Meanwhile, start a **D-U-N-S number** (free, slow), which an
+>    Organisation account needs. It requires a registered business.
+>
+> The code does not depend on the answer.
+
 ### 1. Make vimetry.app installable (a PWA) · M · C — built 2026-10-10
 
 > **Built:**

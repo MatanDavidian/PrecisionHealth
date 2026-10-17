@@ -476,6 +476,10 @@ Later
    (`android/README.md`).
 
 **Next for the owner:**
+0. **Google account type (2026-10-17):** ask Play support whether a
+   Personal account may publish a nutrition and activity app. Start a
+   D-U-N-S number in parallel, in case the answer is "Organisation"
+   (`docs/ANDROID-APP.md`, step 0).
 1. Wait for Google's identity check. Then verify the phone, and look at
    "Android developer verification".
 2. Recruit 14–15 Android testers.

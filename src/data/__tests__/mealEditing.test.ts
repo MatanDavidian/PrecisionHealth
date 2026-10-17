@@ -45,12 +45,12 @@ beforeEach(async () => {
 const lunch = () =>
   buildMeal(USER, {
     slot: 'LUNCH',
-    at: new Date('2026-08-26T12:30:00'),
+    at: new Date('2026-08-26T12:30:00+03:00'),
     items: [
       { name: 'Rice', amount: 300, energyKcal: 400, proteinG: 8, carbsG: 88, fatG: 2 },
       { name: 'Chicken', amount: 170, energyKcal: 280, proteinG: 53, carbsG: 0, fatG: 6 },
     ],
-  })
+  }, 'Asia/Jerusalem')
 
 /** What the day now reads as, straight from the store — the whole point. */
 const readDay = async (repos: Awaited<ReturnType<typeof fresh>>) => {
@@ -89,7 +89,7 @@ describe('editing a meal already in the store', () => {
     const result = await new FakeEstimator().estimate(new Blob(), {})
     const { meal, inference } = buildEstimatedMeal(USER, {
       slot: 'LUNCH',
-      at: new Date('2026-08-26T12:30:00'),
+      at: new Date('2026-08-26T12:30:00+03:00'),
       zone: 'Asia/Jerusalem',
       hints: {},
       source: { kind: 'photo', photo: { width: 1, height: 1, bytes: 1, sha256: 'a'.repeat(64) } },
@@ -190,7 +190,7 @@ describe('a meal logged from words', () => {
     const result = await new FakeEstimator().estimateFromText('two eggs on toast', {})
     const { meal, inference } = buildEstimatedMeal(USER, {
       slot: 'BREAKFAST',
-      at: new Date('2026-08-26T08:00:00'),
+      at: new Date('2026-08-26T08:00:00+03:00'),
       zone: 'Asia/Jerusalem',
       hints: {},
       source: { kind: 'text', description: 'two eggs on toast' },

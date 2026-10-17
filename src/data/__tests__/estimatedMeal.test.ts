@@ -49,7 +49,7 @@ beforeEach(async () => {
 
 const photoMealInput = (overrides: Partial<Parameters<typeof buildEstimatedMeal>[1]> = {}) => ({
   slot: 'LUNCH' as const,
-  at: new Date('2026-08-20T12:30:00'),
+  at: new Date('2026-08-20T12:30:00+03:00'),
   zone: 'Asia/Jerusalem',
   hints: {},
   source: { kind: 'photo' as const, photo: PHOTO },
@@ -187,7 +187,7 @@ describe('failures are audited too', () => {
     )
 
     const inference = buildFailedInference(USER, {
-      at: new Date('2026-08-20T12:30:00'),
+      at: new Date('2026-08-20T12:30:00+03:00'),
       model: 'fake-vision',
       hints: {},
       photo: PHOTO,
@@ -238,7 +238,7 @@ describe('no image bytes are ever persisted', () => {
     const { db, repos } = await fresh()
     await repos.inferences.add(
       buildFailedInference(USER, {
-        at: new Date('2026-08-20T12:30:00'),
+        at: new Date('2026-08-20T12:30:00+03:00'),
         model: 'fake-vision',
         hints: { foodName: 'salad' },
         photo: PHOTO,

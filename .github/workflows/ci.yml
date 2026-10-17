@@ -40,6 +40,13 @@ jobs:
       # The Supabase contract tests skip themselves without test-account
       # credentials, which CI deliberately does not hold.
       - run: npm test
+      # Again, at both ends of the clock. A test that mixes the machine's zone
+      # with a fixed one fails only while the two are on different dates — on
+      # a UTC runner, only some hours of the night, which is how one blocked a
+      # deploy for a week (2026-10-10). Between them these two zones disagree
+      # with Israel's date at every hour, so such a test fails on every run.
+      - run: TZ=Pacific/Kiritimati npm test
+      - run: TZ=Pacific/Pago_Pago npm test
       - run: npm run build
 
   e2e:

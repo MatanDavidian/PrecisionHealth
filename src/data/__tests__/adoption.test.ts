@@ -4,14 +4,21 @@ import { deleteDB, type IDBPDatabase } from 'idb'
 import { createIndexedDbRepositories, seedOnce } from '../idb/indexedDbRepositories'
 import { DB_NAME, openHealthDB, type HealthDB } from '../idb/schema'
 import { adoptInto, findAdoptableRecords, isGeneratedId } from '../adoption'
-import { buildMeal, newId } from '../newRecords'
+import { buildMeal, deviceZone, newId } from '../newRecords'
 import { buildSeed } from '../mock/seed'
 import { LOCAL_USER_ID } from '../session'
 import { canonical, dayKey, deviceReading, nextVersion, type Observation, type UserId } from '@/domain'
 import type { HealthRepositories } from '../repositories'
 
 const ACCOUNT = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' as UserId
-const ZONE = 'Asia/Jerusalem'
+/*
+  The device's own zone, as the app uses everywhere (deviceZone). This was
+  'Asia/Jerusalem', and it disagreed with the code under test whenever the
+  machine was elsewhere and the two zones were on different dates: CI runs in
+  UTC, so from 21:00 to midnight every night "today" here was tomorrow there,
+  and the suite failed (2026-10-10, blocking a deploy for a week).
+*/
+const ZONE = deviceZone()
 const today = () => dayKey(new Date().toISOString(), ZONE)
 
 let connection: IDBPDatabase<HealthDB> | undefined

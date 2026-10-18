@@ -76,7 +76,17 @@ Google's checks take days to weeks and run while the code is written.
 - **Find 12 testers with Android phones.** Friends and family count. Each
   needs a Google account.
 
-> **Open question, 2026-10-17: personal or organisation account?**
+> **Answered 2026-10-18: the Personal account is fine.** Google Play
+> Developer Support (a person, "Ruth", replying to the ticket): an
+> organisation account is mandatory only for medical apps and human-subjects
+> research apps; an app focused on fitness and nutrition tracking, without
+> medical diagnosis or device functionality, is in the health and fitness
+> category and "typically does not require an organization account". They
+> do not pre-check compliance: submit, and review takes up to seven days.
+> No D-U-N-S number or business registration is needed. The record of how
+> it was asked follows.
+>
+> **The question, as it stood on 2026-10-17: personal or organisation account?**
 >
 > The account was created as **Personal** (2026-10-10). Google's
 > requirements say organisations must register for "Health apps, such as
@@ -104,7 +114,8 @@ Google's checks take days to weeks and run while the code is written.
 >   reminder
 > - a privacy policy in the listing and inside the app
 >
-> We are waiting for the human answer before uploading.
+> ~~We are waiting for the human answer before uploading.~~ Answered
+> 2026-10-18, above: carry on with the Personal account.
 
 ### 1. Make vimetry.app installable (a PWA) · M · C — built 2026-10-10
 

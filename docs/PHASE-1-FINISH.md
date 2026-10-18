@@ -469,11 +469,10 @@ Later
 - **Cloudflare Web Analytics is off.** Its injected script was blocked by
   our CSP; the policy promises no analytics, so it stays off.
   Cloudflare's server-side traffic analytics are unaffected.
-- **Google account type:** a support ticket was sent on 2026-10-17 and is
-  pending. Google's AI assistant answered that a Personal account may
-  publish a non-medical nutrition and fitness app, because organisations
-  are required only for medical and human-subjects-research apps. Wait
-  for the human answer before uploading anything.
+- **Google account type: settled 2026-10-18.** Google Play Developer
+  Support answered the ticket: the Personal account is fine — organisation
+  accounts are required only for medical and human-subjects-research apps
+  (`docs/ANDROID-APP.md`, step 0). Uploading may start.
 
 **Done — before the first Play upload** (Google's own requirements,
 confirmed by its support assistant; built 2026-10-17, tested in
@@ -509,15 +508,13 @@ confirmed by its support assistant; built 2026-10-17, tested in
   (`android/README.md`).
 
 **Next for the owner:**
-1. **Google:** wait for the ticket's answer.
-   - If it confirms Personal: carry on.
-   - If it says Organisation: register a business, get a D-U-N-S number,
-     open an Organisation account (`docs/ANDROID-APP.md`, step 0).
+1. ~~**Google:** wait for the ticket's answer.~~ **Answered 2026-10-18:
+   Personal is fine.** Carry on with 4–5 below.
 2. **Testers:** recruit 14–15 people with Android phones.
 3. **Garmin:** create the Connect IQ developer account, then run
    `garmin/build.sh --store`, upload, take simulator screenshots, and
    submit (`docs/garmin/store-listing.md`).
-4. **Play Console, once the answer is in and verification is done:**
+4. **Play Console** (the answer is in; needs identity verification done):
    - payments profile
    - product `vimetry_monthly`
    - service account (`GOOGLE_PLAY_SERVICE_ACCOUNT`)

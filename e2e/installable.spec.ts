@@ -26,6 +26,19 @@ test('the manifest is served as a manifest', async ({ request }) => {
   for (const icon of manifest.icons) expect((await request.get(icon.src)).ok(), icon.src).toBe(true)
 })
 
+test('the Android app is vouched for: assetlinks.json names the package and both keys', async ({ request }) => {
+  // Without it the Android app (a TWA) shows a browser bar (android/README.md).
+  const response = await request.get('/.well-known/assetlinks.json')
+  expect(response.ok()).toBe(true)
+  const [link] = await response.json()
+  expect(link.relation).toContain('delegate_permission/common.handle_all_urls')
+  expect(link.target.package_name).toBe('app.vimetry')
+  expect(link.target.sha256_cert_fingerprints).toHaveLength(2)
+  for (const fingerprint of link.target.sha256_cert_fingerprints) {
+    expect(fingerprint).toMatch(/^([0-9A-F]{2}:){31}[0-9A-F]{2}$/)
+  }
+})
+
 test('the service worker installs, and the app then opens offline', async ({ page, context }) => {
   await open(page, '/today')
   await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })

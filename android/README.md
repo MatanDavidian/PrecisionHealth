@@ -50,6 +50,13 @@ Play App Signing when uploading the first bundle.
 
 ## Digital Asset Links: proving the app and the site belong together
 
+**Done 2026-11-12:** `public/.well-known/assetlinks.json` holds the app
+signing key (from Play Console → Protected by Play → App signing,
+`38:B1:DC:91:…:CB:66`) and the upload key (`DD:22:7D:E2:…:85:E6`);
+`public/_headers` serves it as JSON. Tested locally in
+`e2e/installable.spec.ts` and live in `e2e-live/live.spec.ts`. The steps
+below are how it was done, for when a key changes.
+
 Without this file the app shows a browser address bar. Once the bundle is
 uploaded:
 

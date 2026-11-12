@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vimetry",
+      "sha256_cert_fingerprints": [
+        "38:B1:DC:91:BB:18:FE:7C:04:65:F0:DA:2A:97:87:E9:BD:99:D8:D6:61:26:41:83:10:C6:12:62:69:89:CB:66",
+        "DD:22:7D:E2:B7:6A:F8:42:30:5E:A9:2E:5F:2C:97:16:A7:C5:4B:80:38:34:01:0C:36:E9:86:FE:D4:6C:85:E6"
+      ]
+    }
+  }
+]

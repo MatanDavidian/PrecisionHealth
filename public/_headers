@@ -20,6 +20,14 @@
   Content-Type: application/manifest+json
   Cache-Control: public, max-age=3600
 
+# Digital Asset Links: tells Android the app app.vimetry and this site belong
+# together, so the Android app opens full-screen with no browser bar
+# (android/README.md). Android reads it as JSON, so it must not be served as
+# the SPA's index.html.
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=3600
+
 # Security, on every response.
 #
 # payment=(self): Google Play Billing in the Android app runs through the

@@ -40,6 +40,16 @@ test('the live site sends its security headers', async ({ request }) => {
   expect(headers['x-content-type-options']).toBe('nosniff')
 })
 
+test('the live site vouches for the Android app, as JSON — not the app\'s HTML', async ({ request }) => {
+  // The SPA fallback (_redirects) would answer any missing file with
+  // index.html and a 200, which Android reads as "no link": the app would
+  // quietly grow a browser bar.
+  const response = await request.get('/.well-known/assetlinks.json')
+  expect(response.headers()['content-type']).toContain('application/json')
+  const [link] = await response.json()
+  expect(link.target.package_name).toBe('app.vimetry')
+})
+
 test('the live app starts, and nothing on the page fails to load', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(`page error: ${error.message}`))

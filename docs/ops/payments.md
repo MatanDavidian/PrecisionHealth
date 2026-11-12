@@ -1,7 +1,21 @@
 # Payments — Lemon Squeezy
 
-Status (2026-10-10): **connected in test mode.** The webhook, API key, store
-and variant are set. Next: a test purchase (step 3). Live mode is untouched.
+Status (2026-11-12): **LIVE.** Real payments are on.
+- Store 472304, live variant **2368401** (Vimetry Monthly, $8.99/month); the
+  test variant was 2227203.
+- Live webhook 151439 → `lemonsqueezy-webhook`, 12 events: the ten below
+  plus `dispute_created` and `dispute_resolved`. Created through the API
+  with the live key, its signing secret generated and set without being
+  printed.
+- Live API key valid until **2031-11-12**; the daily check warns 14 days
+  before.
+- `LEMONSQUEEZY_TEST_MODE` is unset, so test-mode events are ignored and
+  test-mode subscriptions no longer count for anything (`inThisMode`).
+- The store's contact email is support@vimetry.app.
+
+Test mode (2026-10-10) passed every flow end to end; the first live check is
+a purchase with a 100%-off code, then cancelled (Lemon Squeezy advises
+against buying with your own card).
 
 ## What was decided
 

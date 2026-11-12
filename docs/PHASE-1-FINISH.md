@@ -21,7 +21,7 @@ Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
 | Product | nutrition (photo, words, manual, repeat, adjust, fill a missed day), week view, insights, Garmin sync, Hebrew; GPT-6.1 Sol and GPT-6 Luna only; installable, opens offline; the sample day is labelled |
 | Accounts | sign-in, consent, export, deletion (cancels billing first), data moved in on first sign-in; signed out, the browser is asked to keep the data |
 | Legal | Terms and Privacy Policy live (both 2026-10-17: Google Play as a second seller, AI reports, not-a-medical-device wording); OpenAI DPA signed; privacy@ and support@ forward |
-| Payments | Lemon Squeezy connected in **test mode**, every flow passed end to end on 2026-10-10 (purchase, both allowances, cancel, refund, account deletion). **Live mode deliberately not yet** — owner's decision |
+| Payments | **Lemon Squeezy LIVE since 2026-11-12** (`docs/ops/payments.md`). Before that, in **test mode**, every flow passed end to end on 2026-10-10 (purchase, both allowances, cancel, refund, account deletion). **Live mode deliberately not yet** — owner's decision |
 | Tests | 525 unit, 318 browser, 11 server handler suites (every function), DB invariants on Postgres, a race test, a live-site check |
 | Operations | CI deploys; migrations tracked (0001–0017); one deploy script; daily health check with email — schema, versions, both spend ceilings, every OpenAI key against every model, browser errors, reported AI answers, payment disputes, payments key expiry |
 | Android | Play Billing (server and app), the TWA configuration, listing drafts, screenshots, a reviewer sign-in and sample data — built; waiting on Google's account verification (`docs/ANDROID-APP.md`) |

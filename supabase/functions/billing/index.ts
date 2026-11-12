@@ -15,7 +15,7 @@
  */
 import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { createCheckout, customerPortal } from '../_shared/lemonsqueezy.ts'
+import { createCheckout, customerPortal, inThisMode } from '../_shared/lemonsqueezy.ts'
 import { activePlan, type SubscriptionRow } from '../_shared/plan.ts'
 import { playManageUrl } from '../_shared/playState.ts'
 
@@ -61,7 +61,7 @@ Deno.serve(async (request) => {
     .select('*')
     .eq('user_id', user.id)
   if (error) return json({ error: 'ledger_unavailable' }, 503)
-  const rows = (subs ?? []) as SubscriptionRow[]
+  const rows = inThisMode((subs ?? []) as SubscriptionRow[])
 
   if (body?.action === 'checkout') {
     if (activePlan(rows, new Date())) return json({ error: 'already_subscribed' }, 409)

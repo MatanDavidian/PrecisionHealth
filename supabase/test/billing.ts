@@ -44,6 +44,8 @@ const subscription = (fields: Record<string, unknown> = {}) => ({
   refunded_at: null,
   last_payment_at: null,
   source_created_at: new Date(Date.now() - 10 * DAY).toISOString(),
+  // Written while Lemon Squeezy was in test mode, as the tests run by default.
+  test_mode: true,
   ...fields,
 })
 
@@ -86,6 +88,20 @@ console.log('\nSubscribing')
   const r = await call({ action: 'checkout' }, { token: 'user-token' })
   check('nobody pays twice: refused while subscribed', r.status === 409 && r.body.error === 'already_subscribed' &&
     lemon.calls.length === 0, JSON.stringify(r.body))
+}
+{
+  // Gone live: last month's test subscription charges nobody, so it must not
+  // count as a plan — or this account could never buy the real one.
+  reset({ LEMONSQUEEZY_TEST_MODE: undefined })
+  table('subscriptions').push(subscription({ test_mode: true }))
+  const r = await call({ action: 'checkout' }, { token: 'user-token' })
+  check('once live, a leftover test subscription does not block a real checkout', r.status === 200, JSON.stringify(r.body))
+}
+{
+  reset({ LEMONSQUEEZY_TEST_MODE: undefined })
+  table('subscriptions').push(subscription({ test_mode: false }))
+  const r = await call({ action: 'checkout' }, { token: 'user-token' })
+  check('but a live one still does', r.status === 409)
 }
 {
   reset()

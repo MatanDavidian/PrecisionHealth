@@ -135,6 +135,15 @@ console.log('\nBilling stops first')
   check('and if Google will not cancel it, the account is not deleted', r.status === 502 && !deleted())
 }
 {
+  // Gone live (no LEMONSQUEEZY_TEST_MODE here): a test-mode subscription
+  // cannot be cancelled with the live key, and charges nobody.
+  reset()
+  table('subscriptions').push({ ...subscription('active'), test_mode: true })
+  const r = await call({ confirm: 'DELETE' }, { token: 'user-token' })
+  check('a leftover test-mode subscription does not block deleting the account', r.status === 200 && deleted() &&
+    lemon.calls.length === 0, JSON.stringify(r.body))
+}
+{
   reset()
   db.failing.add('subscriptions')
   const r = await call({ confirm: 'DELETE' }, { token: 'user-token' })

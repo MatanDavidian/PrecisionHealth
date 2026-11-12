@@ -26,7 +26,7 @@
  */
 import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { cancelSubscription } from '../_shared/lemonsqueezy.ts'
+import { cancelSubscription, inThisMode } from '../_shared/lemonsqueezy.ts'
 import { cancel as cancelPlay } from '../_shared/googlePlay.ts'
 import { STILL_CHARGING } from '../_shared/plan.ts'
 
@@ -94,10 +94,12 @@ Deno.serve(async (request) => {
 
   const { data: subs, error: subsError } = await admin
     .from('subscriptions')
-    .select('id, status, provider')
+    .select('id, status, provider, test_mode')
     .eq('user_id', user.id)
   if (subsError && subsError.code !== UNDEFINED_TABLE) return json({ error: 'billing_unknown' }, 503)
-  for (const sub of subs ?? []) {
+  // A subscription from the other Lemon Squeezy mode charges nobody and cannot
+  // be cancelled with this key, so it must not hold the deletion hostage.
+  for (const sub of inThisMode(subs ?? [])) {
     if (!STILL_CHARGING.has(sub.status)) continue
     const cancelled = sub.provider === 'google_play' ? await cancelPlay(sub.id) : await cancelSubscription(sub.id)
     if (!cancelled) return json({ error: 'billing_cancel_failed' }, 502)

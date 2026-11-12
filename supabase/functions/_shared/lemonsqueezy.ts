@@ -15,6 +15,19 @@ const API = 'https://api.lemonsqueezy.com/v1'
 
 export const testMode = () => Deno.env.get('LEMONSQUEEZY_TEST_MODE') === '1'
 
+/**
+ * Only the subscriptions of the mode Lemon Squeezy is in now.
+ *
+ * Test and live are separate worlds at Lemon Squeezy: once live, a test-mode
+ * subscription never charges anyone and cannot be reached with the live API
+ * key. Counted anyway, a leftover from testing would keep granting the plan,
+ * refuse that account a real checkout, and — being impossible to cancel —
+ * block its deletion. Google Play rows have no such mode and always count.
+ */
+export function inThisMode<T extends { provider?: string | null; test_mode?: boolean | null }>(rows: T[]): T[] {
+  return rows.filter((row) => row.provider === 'google_play' || Boolean(row.test_mode) === testMode())
+}
+
 function headers(): HeadersInit | undefined {
   const key = Deno.env.get('LEMONSQUEEZY_API_KEY')
   if (!key) return undefined

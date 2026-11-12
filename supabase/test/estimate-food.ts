@@ -485,6 +485,16 @@ const fill = (n: number, fields: Partial<Row>) => {
   for (let i = 0; i < n; i++) usage.push(row({ key_source: 'MASTER_PLAN', outcome: 'OK', ...fields }))
 }
 {
+  // Live (no LEMONSQUEEZY_TEST_MODE in these tests): last month's test-mode
+  // subscription is not a plan.
+  reset()
+  subscriptions = [subscribed({ test_mode: true })]
+  for (let i = 0; i < TRIAL_ANALYSES; i++) usage.push(row({ outcome: 'OK' }))
+  const r = await call(photo())
+  check('a leftover test-mode subscription grants nothing once live', r.status === 402 &&
+    providerCalls.length === 0, String(r.status))
+}
+{
   reset()
   subscriptions = [subscribed()]
   for (let i = 0; i < TRIAL_ANALYSES; i++) usage.push(row({ outcome: 'OK' })) // the trial is long gone

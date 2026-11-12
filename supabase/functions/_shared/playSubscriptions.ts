@@ -14,6 +14,7 @@
 import { activePlan, type SubscriptionRow } from './plan.ts'
 import { playRow, type PlayPurchase } from './playState.ts'
 import { acknowledge, productId } from './googlePlay.ts'
+import { inThisMode } from './lemonsqueezy.ts'
 
 /** Postgres: a foreign key with nothing to point at — a deleted account. */
 const FOREIGN_KEY_VIOLATION = '23503'
@@ -70,7 +71,7 @@ export async function applyPurchase(
   // One plan per account: any OTHER subscription that gives access wins.
   const { data: theirs, error: listError } = await admin.from('subscriptions').select('*').eq('user_id', userId)
   if (listError) return { result: 'LEDGER_UNAVAILABLE' }
-  const others = ((theirs ?? []) as SubscriptionRow[]).filter(
+  const others = inThisMode((theirs ?? []) as SubscriptionRow[]).filter(
     (s) => s.id !== token && s.id !== purchase.linkedPurchaseToken,
   )
   const unacknowledged = purchase.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_PENDING'

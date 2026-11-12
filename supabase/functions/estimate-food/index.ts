@@ -49,6 +49,7 @@ import {
   type PlanPeriod,
   type SubscriptionRow,
 } from '../_shared/plan.ts'
+import { inThisMode } from '../_shared/lemonsqueezy.ts'
 
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
 const MAX_COMPLETION_TOKENS = 4000
@@ -156,7 +157,7 @@ Deno.serve(async (request) => {
       .select('*')
       .eq('user_id', user.id)
     if (subsError) return json({ error: 'ledger_unavailable' }, 503)
-    plan = activePlan((subs ?? []) as SubscriptionRow[], new Date())
+    plan = activePlan(inThisMode((subs ?? []) as SubscriptionRow[]), new Date())
   }
   const keySource = isAdmin ? 'MASTER_ADMIN' : plan ? 'MASTER_PLAN' : 'MASTER_TRIAL'
   const apiKey = isAdmin ? adminKey : plan ? planKey : trialKey

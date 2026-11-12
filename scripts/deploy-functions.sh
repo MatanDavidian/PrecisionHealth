@@ -58,8 +58,11 @@ rm -f "$VERSION_FILE.bak"
 grep -q "$VERSION" "$VERSION_FILE" || { echo "✗ could not stamp the version"; exit 1; }
 
 echo "→ deploying ${VERSION:0:7}"
-for fn in "${FUNCTIONS_WITH_USER_JWT[@]}"; do npx supabase functions deploy "$fn"; done
-for fn in "${FUNCTIONS_WITHOUT_JWT[@]}"; do npx supabase functions deploy "$fn" --no-verify-jwt; done
+# --yes: Supabase CLI 3 asks before every change to production. Running this
+# script IS that decision, made once, rather than eleven times over.
+# (Migrations above still ask: what they change is worth reading.)
+for fn in "${FUNCTIONS_WITH_USER_JWT[@]}"; do npx supabase functions deploy "$fn" --yes; done
+for fn in "${FUNCTIONS_WITHOUT_JWT[@]}"; do npx supabase functions deploy "$fn" --no-verify-jwt --yes; done
 
 # 5. Prove it: every function answers with this version, and health is green.
 echo "→ checking"

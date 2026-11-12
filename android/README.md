@@ -15,6 +15,8 @@ Google's **Bubblewrap**, and nothing generated is committed. The plan is in
 | `features.playBilling` | on (with `alphaDependencies`) | Google Play Billing through the Digital Goods and Payment Request APIs |
 | icons | `/icons/icon-512.png`, `/icons/maskable-512.png` | From `scripts/make-icons.mjs`; replace when the logo exists |
 | `minSdkVersion` | `24` (Android 7.0) | The lowest the libraries allow: Google's TWA helper needs 24, its billing module 23. Billing needs Chrome 101+ anyway |
+| `enableSiteSettingsShortcut` | on | **Must be on.** Off, Bubblewrap 1.27 leaves `ManageDataLauncherActivity` out of the manifest, while the TWA library (androidbrowserhelper 2.7.4) still registers that shortcut on every start — and the app crashes on launch ("Component class … does not exist"). Build 1 did exactly that. On, a long-press on the icon offers "Site settings" |
+| `appVersion` | `1.0.1` | The version *name*. Bubblewrap reads `appVersion`, not `appVersionName` — build 1 shipped with an empty name |
 | `enableNotifications` | on | **Required by Play Billing** (Bubblewrap refuses to build without it: the billing bridge runs through the same Android service). The app sends no notifications |
 | `signingKey.path` | `../vimetry-android-upload.keystore` | Relative to the build folder `~/Projects/vimetry-android`, so the key is `~/Projects/vimetry-android-upload.keystore`: **outside the repository** |
 
@@ -33,7 +35,19 @@ BUBBLEWRAP_KEYSTORE_PASSWORD=… BUBBLEWRAP_KEY_PASSWORD=… bubblewrap build --
 # → app-release-bundle.aab (upload this) and app-release-signed.apk
 ```
 
-Build 1 (versionCode 1, versionName 1.0.0) was made on 2026-11-12. The
+Build 1 (versionCode 1) was made on 2026-11-12 and **crashed on launch**
+(the site-settings row above). Build 2 (versionCode 2, 1.0.1) fixes it.
+
+**Test a build before uploading it** — this is how the crash was found and
+the fix proven, with no phone: an emulator (`sdkmanager "emulator"
+"system-images;android-35;google_apis_playstore;arm64-v8a"`, using current
+command-line tools in `~/.bubblewrap/android_sdk/cmdline-tools/latest`; AVD
+`vimetry`), `adb install` the APK, `adb shell am start -n
+app.vimetry/.LauncherActivity`, then `adb logcat -d | grep "FATAL
+EXCEPTION"`. An APK signed with any key but ours shows a browser bar; that
+is expected.
+
+The
 upload key's SHA-256 (public; goes into `assetlinks.json`):
 `DD:22:7D:E2:B7:6A:F8:42:30:5E:A9:2E:5F:2C:97:16:A7:C5:4B:80:38:34:01:0C:36:E9:86:FE:D4:6C:85:E6`
 

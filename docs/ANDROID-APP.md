@@ -227,7 +227,9 @@ Reviewers need a working login, and they cannot read our email codes.
   - account hold on
 - Google Cloud project: a service account with access to the Play Developer
   API (invited in Play Console → Users and permissions). Its key becomes a
-  Supabase secret.
+  Supabase secret: `./scripts/set-play-secrets.sh <key.json>` sets it, makes
+  the push token, and puts the push URL on the clipboard, printing nothing
+  secret.
 - Real-time developer notifications (RTDN): a Pub/Sub topic, with an
   authenticated push subscription to our new webhook.
 - License testers: their purchases are free and renew every few minutes,

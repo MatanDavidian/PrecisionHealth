@@ -51,9 +51,11 @@ handler tests for every function.
 
 ### Small things waiting on the owner
 
-- **Support email on receipts:** send a test to support@vimetry.app from an
-  address other than the Gmail it forwards to. If it arrives, set it as the
-  Lemon Squeezy store's contact email (today it shows the personal Gmail).
+- ~~**Support email on receipts**~~ — **done 2026-11-12:** a test from
+  another address reached Gmail through Cloudflare (it had landed out of
+  sight in Gmail, not lost), and the Lemon Squeezy store's contact email is
+  now support@vimetry.app. Worth a Gmail filter on `to:support@vimetry.app`
+  → Never send to Spam.
 - **OpenAI prices:** confirm the GPT-6 prices in the OpenAI dashboard. Ours
   came from third-party trackers (`docs/ops/model-evaluation.md`).
 - **HEIC decoding:** decide whether to decode iPhone photos in the browser.
@@ -532,7 +534,6 @@ documents (then the contact-phone check).
 7. **A real photo-and-estimate screenshot**, taken on a phone.
 8. **Unchanged, when ready:**
    - go live with payments (`docs/ops/payments.md`, step 4)
-   - the support email on Lemon Squeezy receipts
    - confirm the GPT-6 prices in OpenAI
    - the logo and onboarding designs
    - the Supabase DPA, a restore drill, the `www` redirect, the trademark

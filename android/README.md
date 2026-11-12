@@ -14,25 +14,35 @@ Google's **Bubblewrap**, and nothing generated is committed. The plan is in
 | `startUrl` | `/?source=twa` | How the site knows it is the app: Play Billing instead of Lemon Squeezy (`src/data/playBilling.ts`) |
 | `features.playBilling` | on (with `alphaDependencies`) | Google Play Billing through the Digital Goods and Payment Request APIs |
 | icons | `/icons/icon-512.png`, `/icons/maskable-512.png` | From `scripts/make-icons.mjs`; replace when the logo exists |
-| `signingKey.path` | `../../vimetry-android-upload.keystore` | **Outside the repository**, next to it |
+| `minSdkVersion` | `24` (Android 7.0) | The lowest the libraries allow: Google's TWA helper needs 24, its billing module 23. Billing needs Chrome 101+ anyway |
+| `enableNotifications` | on | **Required by Play Billing** (Bubblewrap refuses to build without it: the billing bridge runs through the same Android service). The app sends no notifications |
+| `signingKey.path` | `../vimetry-android-upload.keystore` | Relative to the build folder `~/Projects/vimetry-android`, so the key is `~/Projects/vimetry-android-upload.keystore`: **outside the repository** |
 
-## Building it (once the Play Console account is verified)
+## Building it
 
-Bubblewrap installs its own JDK and Android SDK the first time (about 1 GB),
-asking before each.
+First built 2026-11-12 with Bubblewrap 1.27.0, the JDK 17 already on the
+Mac (`~/.bubblewrap/config.json` → `jdkPath`) and the Android SDK Bubblewrap
+downloaded to `~/.bubblewrap/android_sdk`.
 
 ```bash
-npm install -g @bubblewrap/cli        # pin the version that is current then
-mkdir -p ../vimetry-android && cp android/twa-manifest.json ../vimetry-android/
-cd ../vimetry-android
-bubblewrap update                     # generates the Android project from the manifest
-bubblewrap build                      # → app-release-bundle.aab (+ an APK for testing)
+npm install -g @bubblewrap/cli@1.27.0
+mkdir -p ~/Projects/vimetry-android && cp android/twa-manifest.json ~/Projects/vimetry-android/
+cd ~/Projects/vimetry-android
+bubblewrap update --skipVersionUpgrade    # generates the Android project from the manifest
+BUBBLEWRAP_KEYSTORE_PASSWORD=… BUBBLEWRAP_KEY_PASSWORD=… bubblewrap build --skipPwaValidation
+# → app-release-bundle.aab (upload this) and app-release-signed.apk
 ```
 
-The first build asks to create the **upload key**:
-- It is a keystore file and two passwords.
-- Keep the file and both passwords in a password manager.
-- Never commit them: `*.keystore` is ignored.
+Build 1 (versionCode 1, versionName 1.0.0) was made on 2026-11-12. The
+upload key's SHA-256 (public; goes into `assetlinks.json`):
+`DD:22:7D:E2:B7:6A:F8:42:30:5E:A9:2E:5F:2C:97:16:A7:C5:4B:80:38:34:01:0C:36:E9:86:FE:D4:6C:85:E6`
+
+The **upload key** is `~/Projects/vimetry-android-upload.keystore` (PKCS12,
+alias `upload`, one password for store and key, valid ~27 years). It was
+created with `keytool`, its generated password written only to
+`~/Projects/vimetry-android-upload-PASSWORD.txt` (mode 600) — the owner moves
+it into a password manager, backs up the keystore, then deletes the text
+file. Never commit either: `*.keystore` is ignored.
 
 Losing the upload key is recoverable, because Google resets it on request
 under **Play App Signing**, which holds the real app-signing key. So enrol in

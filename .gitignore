@@ -47,3 +47,6 @@ android/.gradle/
 android/*.aab
 android/*.apk
 android/store-screenshots/
+
+# The Android upload key password file, should it ever land here.
+*-PASSWORD.txt

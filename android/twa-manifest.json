@@ -12,13 +12,13 @@
   "navigationDividerColor": "#E8E1D1",
   "navigationDividerColorDark": "#2B2721",
   "backgroundColor": "#F1ECE1",
-  "enableNotifications": false,
+  "enableNotifications": true,
   "startUrl": "/?source=twa",
   "iconUrl": "https://vimetry.app/icons/icon-512.png",
   "maskableIconUrl": "https://vimetry.app/icons/maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
-    "path": "../../vimetry-android-upload.keystore",
+    "path": "../vimetry-android-upload.keystore",
     "alias": "upload"
   },
   "appVersionName": "1.0.0",
@@ -37,5 +37,6 @@
   },
   "enableSiteSettingsShortcut": false,
   "isChromeOSOnly": false,
-  "fingerprints": []
+  "fingerprints": [],
+  "minSdkVersion": 24
 }

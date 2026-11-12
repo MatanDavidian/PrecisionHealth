@@ -44,7 +44,7 @@ test('the published documents are final, and say who runs this and how billing w
   await expect(page.getByText(/\[UNDECIDED/)).toHaveCount(0)
   await expect(page.getByText(/operated by Matan Davidian/).first()).toBeVisible()
   await expect(page.getByText(/Frankfurt, Germany/).first()).toBeVisible()
-  await expect(page.getByText(/Lemon Squeezy — sells the subscription/)).toBeVisible()
+  await expect(page.getByText(/Lemon Squeezy sells the subscription/)).toBeVisible()
 
   await open(page, '/terms')
   await expect(page.getByRole('heading', { name: 'Terms of Use' })).toBeVisible()

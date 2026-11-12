@@ -88,22 +88,22 @@ export const PRIVACY_POLICY: PolicyDocument = {
     {
       heading: 'What this app holds about you',
       body: [
-        'All of the following is health data, in the sense every privacy law uses. It is not diagnoses or genetics, but it is nutrition and physiology tied to an identified person, and that is the category that gets the strictest treatment.',
+        'The first four items below are health data, in the sense every privacy law uses. They are not diagnoses or genetics, but they are nutrition and physiology tied to an identified person, and that is the category that gets the strictest treatment.',
       ],
       bullets: [
-        'Meals — what you ate, when, and their calories and macronutrients, whether you typed them, described them, or photographed them.',
-        'Body measurements — weight, body fat, and anything else you record.',
-        'Activity and recovery — calories burned, steps, distance, resting heart rate, VO₂ max, respiration and stress, when you connect a Garmin watch.',
-        'Goals — the programme you chose and any target you set.',
+        'Meals: what you ate, when, and their calories and macronutrients, whether you typed them, described them, or photographed them.',
+        'Body measurements: weight, body fat, and anything else you record.',
+        'Activity and recovery: calories burned, steps, distance, resting heart rate, VO₂ max, respiration and stress, when you connect a Garmin watch.',
+        'Goals: the programme you chose and any target you set.',
         'Your email address, if you create an account.',
-        'Whether you subscribe — your plan and when it renews. Card and billing details are held by Lemon Squeezy, or by Google Play if you subscribed in the Android app — not by us.',
+        'Whether you subscribe: your plan and when it renews. Card and billing details are held by Lemon Squeezy, or by Google Play if you subscribed in the Android app. We never hold them.',
         'The language you chose to read the app in.',
       ],
     },
     {
       heading: 'When the app breaks',
       body: [
-        'If something in the app fails in your browser, it sends us a short error report so we can fix it: the error message, where in the code it happened, which page of the app you were on (without anything after the address), the app’s version, and your browser’s name and version. It is not linked to your account, and it carries no health data — before anything is kept, email addresses, keys and anything else that could identify you are removed from it. Reports are kept for 90 days.',
+        'If something in the app fails in your browser, it sends us a short error report so we can fix it: the error message, where in the code it happened, which page of the app you were on (without anything after the address), the app’s version, and your browser’s name and version. It is not linked to your account, and it carries no health data. Before anything is kept, email addresses, keys and anything else that could identify you are removed from it. Reports are kept for 90 days.',
       ],
     },
     {
@@ -116,7 +116,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       heading: 'Meal photographs are not stored',
       body: [
         'This is the part people ask about, so it is stated plainly. We do not store your meal photographs. A photograph is sent for analysis once and then discarded: it is not written to this device, not written to our database, and not kept by us in any form.',
-        'What is kept is the result — the foods identified, the estimated amounts, how confident the model was, and a record of the photograph’s size and fingerprint so that an estimate can be traced back to the request that produced it.',
+        'What is kept is the result: the foods identified, the estimated amounts, how confident the model was, and a record of the photograph’s size and fingerprint so that an estimate can be traced back to the request that produced it.',
         'One thing we cannot promise on someone else’s behalf: OpenAI, who read the photograph for us, retain what is sent to their API for up to 30 days for abuse monitoring before deleting it. That is their policy, not ours, and we would rather tell you than let "never stored" imply more than it means.',
       ],
     },
@@ -125,11 +125,14 @@ export const PRIVACY_POLICY: PolicyDocument = {
       bullets: [
         'To show you your own record and work out totals, trends and progress against your goals. Without this there is no app.',
         'To produce estimates from what you photograph or describe, which is the feature you came for.',
-        'To keep your account working — signing in, and keeping devices in step.',
-        'To meter AI analyses — the free trial and a subscription’s monthly allowance.',
+        'To keep your account working: signing in, and keeping devices in step.',
+        'To meter AI analyses: the free trial and a subscription’s monthly allowance.',
         'To know whether you have a subscription, so it can be honoured.',
         'To find and fix what breaks, and what the AI gets wrong, from reports that are not linked to you.',
       ],
+    },
+    {
+      heading: 'Our legal basis',
       body: [
         'In the EU and UK, our basis for processing health data is your explicit consent (GDPR Art. 9(2)(a)). You give it when you create an account, we record which version of this policy you agreed to and when, and you can withdraw it at any time by deleting your account.',
       ],
@@ -140,26 +143,26 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'These are the only third parties involved. Each is a processor acting on our instructions, not a party we sell anything to. We do not sell your data, and we do not use it for advertising.',
       ],
       bullets: [
-        'Supabase — hosts the database and handles sign-in. Everything in your account is stored there, in Frankfurt, Germany.',
-        'OpenAI — receives the meal photograph or description you ask us to analyse, and the weekly summary when you ask for an insight. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
-        'Cloudflare — serves the app itself, and forwards mail sent to our @vimetry.app addresses.',
-        'Brevo, in France — sends the sign-in emails. It receives your email address and the one-time code and link it delivers, and records whether the email was opened and the link clicked. It receives no health data.',
-        'Lemon Squeezy — sells the subscription as our merchant of record: it takes the payment, handles sales tax, and sends receipts, so it holds your name, email, country and payment details. We receive a record that you subscribed, never your card. It receives no health data.',
-        'Google — if you subscribe inside the Android app, Google Play sells the subscription: it takes the payment, holds your payment details, and tells us whether you subscribed and when it renews. It receives no health data. If you installed the Android app from Google Play, Google also knows that, under its own privacy policy.',
+        'Supabase hosts the database and handles sign-in. Everything in your account is stored there, in Frankfurt, Germany.',
+        'OpenAI receives the meal photograph or description you ask us to analyse, and the weekly summary when you ask for an insight. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
+        'Cloudflare serves the app itself, and forwards mail sent to our @vimetry.app addresses.',
+        'Brevo, in France, sends the sign-in emails. It receives your email address and the one-time code and link it delivers, and records whether the email was opened and the link clicked. It receives no health data.',
+        'Lemon Squeezy sells the subscription as our merchant of record. It takes the payment, handles sales tax, and sends receipts, so it holds your name, email, country and payment details. We receive a record that you subscribed, never your card. It receives no health data.',
+        'Google: if you subscribe inside the Android app, Google Play sells the subscription. It takes the payment, holds your payment details, and tells us whether you subscribed and when it renews. It receives no health data. If you installed the Android app from Google Play, Google also knows that, under its own privacy policy.',
       ],
     },
     {
       heading: 'What we send to OpenAI, exactly',
       body: [
-        'When you photograph or describe a meal, that photograph or description is sent, with the hints you supplied — the day, and anything you typed in "add details". When you ask for a weekly insight, a summary of that week’s totals is sent.',
+        'When you photograph or describe a meal, that photograph or description is sent, with the hints you supplied: the day, and anything you typed in "add details". When you ask for a weekly insight, a summary of that week’s totals is sent.',
         'The weekly summary carries no identity at all: no name, no email, no account id, no record ids. That is enforced in the code and there is a test asserting it.',
-        'If you supply your own OpenAI key in Settings, requests go directly from your browser to OpenAI and never pass through our servers. That key is stored on your device only and is never uploaded, synced, or included in an export.',
+        'If you supply your own OpenAI key in Settings (on the website), requests go directly from your browser to OpenAI and never pass through our servers. That key is stored on your device only and is never uploaded, synced, or included in an export.',
       ],
     },
     {
       heading: 'Where it is held, and for how long',
       body: [
-        'Signed out, everything stays in this browser and nowhere else. Signing in copies it to your account and keeps it in step from then on.',
+        'Signed out, everything stays on this device and nowhere else. Signing in copies it to your account and keeps it in step from then on.',
         'Our database is hosted by Supabase in Frankfurt, Germany, inside the EU. OpenAI’s servers are in the United States. For people in the EU, EEA, Switzerland or UK, this is governed by OpenAI’s Data Processing Addendum, which we have signed: EU and Swiss data is processed by OpenAI Ireland, and any onward transfer outside Europe is made under the European Commission’s Standard Contractual Clauses or an adequacy decision; UK data is covered by the Standard Contractual Clauses with the UK Addendum.',
         'We keep your records until you delete them or delete your account. We do not have a retention timer that quietly removes your history, because a health record that disappears on a schedule is not much of a record.',
       ],
@@ -167,17 +170,17 @@ export const PRIVACY_POLICY: PolicyDocument = {
     {
       heading: 'What you can do',
       bullets: [
-        'See everything we hold — Settings → Account & data → Download my data. It is a single JSON file, built in your browser, containing every record in your account.',
-        'Delete everything — Settings → Account & data → Delete my account. This removes your account and every record in it, permanently and immediately. We cannot recover it afterwards.',
-        'Correct anything — every number in the app is editable, and corrections are kept alongside what they replaced rather than overwriting it.',
-        'Withdraw your consent — by deleting your account. The app cannot function without processing the data described here, so there is no partial version of this.',
-        `Complain — in the EU or UK, to your local supervisory authority. In Israel, to the Privacy Protection Authority. We would rather you told us first: ${CONTACT_EMAIL}.`,
+        'See everything we hold: Settings → Account & data → Download my data. It is a single JSON file, built in your browser, containing every record in your account.',
+        'Delete everything: Settings → Account & data → Delete my account. This removes your account and every record in it, permanently and immediately. We cannot recover it afterwards.',
+        'Correct anything: every number in the app is editable, and corrections are kept alongside what they replaced rather than overwriting it.',
+        'Withdraw your consent, by deleting your account. The app cannot function without processing the data described here, so there is no partial version of this.',
+        `Complain: in the EU or UK, to your local supervisory authority. In Israel, to the Privacy Protection Authority. We would rather you told us first: ${CONTACT_EMAIL}.`,
       ],
     },
     {
       heading: 'Security',
       body: [
-        'Access to your records is enforced by the database itself, per row, so a mistake in the app cannot expose another person’s data. Connections are encrypted. Device tokens — used to let a watch send readings — are stored hashed, never in the form the device holds.',
+        'Access to your records is enforced by the database itself, per row, so a mistake in the app cannot expose another person’s data. Connections are encrypted. Device tokens, which let a watch send readings, are stored hashed, never in the form the device holds.',
         'No system is perfect and we will not claim otherwise. If something happens that affects you, we will tell you.',
       ],
     },

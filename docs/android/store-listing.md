@@ -25,6 +25,42 @@ That is a version bump, so signed-in users re-consent once.
 
 ---
 
+## Trader status and countries (decided 2026-11-12)
+
+**Declared: not a trader** ("זהו חשבון שאינו עסק" / "This is a non-business
+account"), in Play Console → account details → About you.
+
+Why: Google requires every developer to declare trader status under EEA and
+UK consumer law (deadline 2027-02-01; help: answer/17594752, "Trader status
+declaration"). Selling subscriptions makes a seller in the EEA/UK a trader,
+and **a trader on a personal account has their phone number and full address
+shown publicly on Google Play** (from 2027-03-01). Google's own text: "If you
+don't distribute apps in the European Economic Area or the United Kingdom,
+you can declare as a non-trader."
+
+**The rule this creates — never break it:** the app is **not offered in the
+EEA or the UK**, on any track (closed test and production alike). Declaring
+non-trader while distributing there is prohibited and can get the app
+removed globally.
+
+Exclude, in each track's **Countries/regions**:
+- **EU (27):** Austria, Belgium, Bulgaria, Croatia, Cyprus, Czechia,
+  Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Ireland,
+  Italy, Latvia, Lithuania, Luxembourg, Malta, Netherlands, Poland,
+  Portugal, Romania, Slovakia, Slovenia, Spain, Sweden
+- **The rest of the EEA:** Iceland, Liechtenstein, Norway
+- **The United Kingdom**
+- Any EU overseas region the list shows separately (Réunion, Guadeloupe,
+  Martinique, French Guiana, Mayotte)
+
+Everything else may stay on — Israel, the US, Switzerland and the rest.
+The website (Lemon Squeezy) is unaffected; this is Google Play only.
+
+**To open Europe later:** switch the declaration to trader (Google allows
+changing it at any time), decide what address and phone to show — ideally a
+business address; ask Play support whether one may replace a home address
+— then add the countries.
+
 ## Store listing
 
 **App name** (30 characters at most): `Vimetry`

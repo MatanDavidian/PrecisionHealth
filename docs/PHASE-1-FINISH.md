@@ -507,6 +507,12 @@ confirmed by its support assistant; built 2026-10-17, tested in
 - `public/.well-known/assetlinks.json`, once the first Play upload exists
   (`android/README.md`).
 
+**Update 2026-11-12:** the Play account declared **non-trader**, so the app
+is **not offered in the EEA or UK** on any track — the full rule and the
+country list are in `docs/android/store-listing.md`, "Trader status and
+countries". "Create app" stays locked until Google approves the identity
+documents (then the contact-phone check).
+
 **Next for the owner:**
 1. ~~**Google:** wait for the ticket's answer.~~ **Answered 2026-10-18:
    Personal is fine.** Carry on with 4–5 below.

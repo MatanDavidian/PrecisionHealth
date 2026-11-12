@@ -21,15 +21,15 @@ export SUPABASE_DB_PASSWORD
 
 echo
 echo "→ before"
-npx supabase migration list
+npx supabase migration list --remote
 
 echo
 read -r -p "Record 0001–0013 as already applied? [y/N] " answer
 [ "$answer" = "y" ] || { echo "Nothing changed."; exit 0; }
-npx supabase migration repair --status applied "${APPLIED[@]}"
+npx supabase migration repair --remote --status applied "${APPLIED[@]}"
 
 echo
 echo "→ after — expect 0001–0013 on both sides, nothing pending:"
-npx supabase migration list
+npx supabase migration list --remote
 echo
 echo "Done. From now on ./scripts/deploy-functions.sh applies only new migrations."

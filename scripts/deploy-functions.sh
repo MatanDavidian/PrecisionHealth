@@ -36,10 +36,19 @@ echo "→ type-checking functions"
 npm run -s check:functions >/dev/null
 
 # 3. Migrations before the code that depends on them.
-echo "→ applying pending migrations"
-echo "  Supabase will list what it is about to apply. It must be ONLY new migrations."
-echo "  If it lists 0001, answer n and do the one-time setup in supabase/README.md → Migrations."
-npx supabase db push
+#
+# --remote: since Supabase CLI 3, `db push` targets a LOCAL database unless
+# told otherwise (functions and secrets still go to the linked project). A
+# dry run first, so a deploy with nothing to migrate never asks to change
+# production.
+echo "→ checking for pending migrations"
+if npx supabase db push --remote --dry-run 2>/dev/null | grep -q '"upToDate":true'; then
+  echo "  none"
+else
+  echo "  Supabase will list what it is about to apply. It must be ONLY new migrations."
+  echo "  If it lists 0001, answer n and do the one-time setup in supabase/README.md → Migrations."
+  npx supabase db push --remote
+fi
 
 # 4. Stamp, deploy, and always restore the stamp.
 VERSION_FILE=supabase/functions/_shared/version.ts

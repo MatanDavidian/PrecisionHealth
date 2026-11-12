@@ -213,14 +213,14 @@ export const TERMS: PolicyDocument = {
     {
       heading: 'This is not medical advice',
       body: [
-        'The most important sentence here. This app is a tool for recording and looking at your own data. It is not a medical device: it does not diagnose, treat, cure or prevent any medical condition, and nothing it shows you — the week’s suggestions included — is medical advice or a medical opinion. Its suggestions are general habits.',
+        'The most important sentence here. This app is a tool for recording and looking at your own data. It is not a medical device: it does not diagnose, treat, cure or prevent any medical condition, and nothing it shows you, the week’s suggestions included, is medical advice or a medical opinion. Its suggestions are general habits.',
         'If something in your health worries you, talk to a doctor. Do not let a number in this app talk you out of that, and do not change medication, treatment, or how you eat in a way that matters on the strength of it.',
       ],
     },
     {
       heading: 'Estimates are estimates',
       body: [
-        'When you photograph or describe a meal, the numbers you get back are a model’s best guess from a picture or a sentence. They can be wrong, sometimes badly — a hidden tablespoon of oil is invisible and worth two hundred calories.',
+        'When you photograph or describe a meal, the numbers you get back are a model’s best guess from a picture or a sentence. They can be wrong, sometimes badly: a hidden tablespoon of oil is invisible and worth two hundred calories.',
         'The app is built to say so: every estimate shows how confident it is, unconfirmed items are marked as unconfirmed, and you can correct any of it. Please treat the numbers accordingly.',
       ],
     },
@@ -235,19 +235,19 @@ export const TERMS: PolicyDocument = {
     {
       heading: 'Free analyses',
       body: [
-        'New accounts get 10 AI analyses on our account, with no card needed, so the app can be tried without setting anything up. That allowance is a courtesy, not an entitlement, and we may change it. When it runs out you can subscribe, connect your own key on the website, or keep logging by hand — nothing you have recorded is affected either way.',
+        'New accounts get 10 AI analyses on our account, with no card needed, so the app can be tried without setting anything up. That allowance is a courtesy, not an entitlement, and we may change it. When it runs out you can subscribe, connect your own key on the website, or keep logging by hand. Nothing you have recorded is affected either way.',
       ],
     },
     {
       heading: 'Subscription',
       body: [
-        'Vimetry Monthly costs US$8.99 a month and includes, each month, 100 AI analyses of photos and 200 of written descriptions (written leftovers and week insights count as written). The two are counted separately, on whichever of the offered models you choose, and unused analyses do not carry over. Answering a follow-up question about a meal is free. Repeating a meal you have logged before uses no analysis at all. Everything else in the app — logging by hand, the week view, exporting your data — is free with or without a subscription.',
+        'Vimetry Monthly costs US$8.99 a month and includes, each month, 100 AI analyses of photos and 200 of written descriptions (written leftovers and week insights count as written). The two are counted separately, on whichever of the offered models you choose, and unused analyses do not carry over. Answering a follow-up question about a meal is free. Repeating a meal you have logged before uses no analysis at all. Everything else in the app (logging by hand, the week view, exporting your data) is free with or without a subscription.',
         'Payments are handled by Lemon Squeezy, our merchant of record: your purchase is made from Lemon Squeezy, and its terms apply to the payment. Depending on where you live, sales tax or VAT may be added at checkout.',
         'In the Android app, the subscription is sold by Google Play instead, at Google Play’s price for your country, and Google Play’s terms apply to the payment. You manage and cancel it in Google Play, with the same rule: cancelling stops the next renewal, and you keep what you paid for until the end of the month. One subscription covers the app and the website, whichever you bought it from, and an account cannot hold two at once.',
         'Your subscription renews automatically each month until you cancel. On the website, you can cancel at any time from Settings → Photo analysis → Manage subscription, or from the link in your receipt email. Cancelling stops the next renewal; you keep the analyses and access you have paid for until the end of the current month.',
         `Refunds: if you are not happy, ask within 14 days of any charge and we will refund that charge in full, whichever of the two it was paid through. Email ${SUPPORT_EMAIL}. If you paid through Google Play, you can also ask Google directly, under its own refund policy. A refunded subscription ends when the refund is made, rather than at the end of the month, and is not charged again.`,
-        'If you delete your account, we cancel your subscription first, so you are not charged again. Deleting does not by itself refund the current month — ask if you would like that.',
-        'If the price changes, we will tell you at least 30 days before, and the new price applies from your next renewal after that — so there is always time to cancel first.',
+        'If you delete your account, we cancel your subscription first, so you are not charged again. Deleting does not by itself refund the current month. Ask if you would like that.',
+        'If the price changes, we will tell you at least 30 days before, and the new price applies from your next renewal after that, so there is always time to cancel first.',
       ],
     },
     {

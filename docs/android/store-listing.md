@@ -179,7 +179,7 @@ Google's wording, our answers.
     - that a subscription is cancelled first
     - an email route for anyone who cannot sign in
 
-**Shared (sent to a third party for its own use):** **none.** Supabase,
+**Shared (sent to a third party for its own use):** **none.** That includes OpenAI receiving meal photos: Google exempts transfers to a service provider processing on the developer's behalf and instructions, and OpenAI does so under the signed DPA. Supabase,
 OpenAI, Cloudflare, Brevo and Lemon Squeezy act on our behalf as service
 providers (processors), which Google's form does not count as sharing. The
 Privacy Policy names each one.
@@ -192,7 +192,7 @@ Privacy Policy names each one.
 | Personal info → User IDs (the account's internal id, which every record is stored under; Google's own example is "an account ID") | yes | optional (only with an account) | no | Account management, App functionality |
 | Health and fitness → Health info (meals and their nutrients, weight, body measurements, goals) | yes | optional (only with an account; without one it stays on the phone) | no | App functionality |
 | Health and fitness → Fitness info (calories burned, steps, distance, resting heart rate, stress, respiration, VO₂ max — from a Garmin watch) | yes | optional | no | App functionality |
-| Photos and videos → Photos (a meal photo, for analysis) | yes | optional | **yes** — sent once, not stored | App functionality |
+| Photos and videos → Photos (a meal photo, for analysis) | yes | optional | **no**: we discard it at once, but OpenAI keeps API inputs up to 30 days for abuse monitoring (the Privacy Policy says so), which is more than Google's "in memory, for the request only" | App functionality |
 | Financial info → Purchase history (whether you subscribe, and when it renews) | yes | optional | no | App functionality, Account management |
 | App info and performance → Crash logs (error reports: message, page path, app version, browser; no account, no health data) | yes | not optional | no | Analytics |
 | App activity → Other user-generated content (a report about an AI answer: the reason, an optional note, the model; no account, no meal, no answer) | yes | optional (only if you report) | no | App functionality; Fraud prevention, security, and compliance |

@@ -40,7 +40,7 @@ echo "  with access to Vimetry: View financial data, Manage orders and subscript
 
 REF=$(cat supabase/.temp/project-ref)
 echo "→ setting GOOGLE_PLAY_SERVICE_ACCOUNT"
-npx supabase secrets set "GOOGLE_PLAY_SERVICE_ACCOUNT=$(cat "$KEY_FILE")" >/dev/null
+npx supabase secrets set --yes "GOOGLE_PLAY_SERVICE_ACCOUNT=$(cat "$KEY_FILE")" >/dev/null
 
 NEW_TOKEN=yes
 if npx supabase secrets list 2>/dev/null | grep -q GOOGLE_PLAY_RTDN_TOKEN; then
@@ -49,7 +49,7 @@ if npx supabase secrets list 2>/dev/null | grep -q GOOGLE_PLAY_RTDN_TOKEN; then
 fi
 if [ "$NEW_TOKEN" = "yes" ]; then
   TOKEN=$(openssl rand -hex 24)
-  npx supabase secrets set "GOOGLE_PLAY_RTDN_TOKEN=$TOKEN" >/dev/null
+  npx supabase secrets set --yes "GOOGLE_PLAY_RTDN_TOKEN=$TOKEN" >/dev/null
   URL="https://$REF.supabase.co/functions/v1/play-rtdn?token=$TOKEN"
   printf '%s' "$URL" | pbcopy
   [ "$(pbpaste)" = "$URL" ] || { echo "✗ could not put the push URL on the clipboard"; exit 1; }

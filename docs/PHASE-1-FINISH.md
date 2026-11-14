@@ -509,6 +509,21 @@ confirmed by its support assistant; built 2026-10-17, tested in
 - `public/.well-known/assetlinks.json`, once the first Play upload exists
   (`android/README.md`).
 
+**Update 2026-11-14: the closed test is submitted to Google's review.**
+- Play Console set up end to end: app `app.vimetry` created; every "Set up
+  your app" form done (privacy policy, reviewer access, no ads, content
+  rating: Everyone / PEGI 3 / 3+, target audience 18+ with Google's minor
+  blocking, Data safety, no advertising ID, health declaration: activity
+  and fitness + nutrition and weight management, nothing medical); store
+  listing in English and Hebrew with fresh screenshots and the
+  dot-on-the-i feature graphic; category Health & Fitness.
+- Builds: v1 crashed on launch (the site-settings shortcut, fixed); v2
+  (1.0.1) runs on the owner's phone, full-screen (assetlinks.json live).
+- Internal testing: v2, list `testers1`. Closed testing (Alpha): v2,
+  **Israel only**, list `testers1`, feedback to support@vimetry.app.
+- Next: when Google approves, send the opt-in link to 12+ testers; each
+  one's 14 days start when they join. Then apply for production.
+
 **Update 2026-11-12:** the Play account declared **non-trader**, so the app
 is **not offered in the EEA or UK** on any track — the full rule and the
 country list are in `docs/android/store-listing.md`, "Trader status and

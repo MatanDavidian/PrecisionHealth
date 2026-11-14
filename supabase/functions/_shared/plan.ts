@@ -7,7 +7,7 @@
  * Deno and Vite can load it.
  *
  * Decided 2026-10-09 (docs/ops/payments.md):
- * - US$8.99 a month
+ * - US$8.99 a month; lowered to US$4.99 on 2026-11-14 as the launch price
  * - 100 photo analyses and 200 written ones a month, on either offered model
  * - cancelling keeps access to the end of the paid month
  * - a full refund ends access at once
@@ -20,7 +20,9 @@ export const PLAN_ALLOWANCE: Record<AnalysisKind, number> = {
   /*
     Three or four meals a day. At GPT-6.1 Sol's measured cost — about 1.6¢ an
     ordinary plate, perhaps 4¢ a crowded one — the whole allowance costs
-    $1.60–$4, against $7.99 net of Lemon Squeezy's fees.
+    $1.60–$4, against $4.24 net of either seller's fees (Lemon Squeezy's
+    5% + 50¢, or Play's 15%). With text at full use too ($1.30), only a
+    subscriber who uses everything on crowded plates costs more than that.
   */
   PHOTO: 100,
   /*
@@ -32,7 +34,7 @@ export const PLAN_ALLOWANCE: Record<AnalysisKind, number> = {
 }
 
 /** Shown in the app. The real price is whatever Lemon Squeezy charges; keep them equal. */
-export const PLAN_PRICE = 'US$8.99'
+export const PLAN_PRICE = 'US$4.99'
 export const PLAN_NAME = 'Vimetry Monthly'
 
 /** The plan's product id on Google Play. Inside the Android app, Play sells it at Play's local prices. */

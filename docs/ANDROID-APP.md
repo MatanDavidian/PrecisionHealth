@@ -53,9 +53,10 @@ step 4 below, because it has been changing (court rulings, the user-choice
 billing programmes).
 
 **Money.** Google takes **15%** on subscriptions and handles sales tax and
-VAT. At $8.99 that leaves about $7.64, against about $7.99 through Lemon
-Squeezy. The allowance stays affordable (`docs/ops/payments.md`). Prices per
-country are set in the Play Console; keep the US price at $8.99.
+VAT. At $4.99 (the launch price since 2026-11-14) that leaves about $4.24,
+the same as through Lemon Squeezy (5% + 50¢). The allowance stays affordable
+(`docs/ops/payments.md`). Prices per country are set in the Play Console;
+keep the US price equal to Lemon Squeezy's and to `PLAN_PRICE`.
 
 ---
 
@@ -222,7 +223,7 @@ Reviewers need a working login, and they cannot read our email codes.
 **Owner, in the consoles:**
 - Play Console → Monetise → Subscriptions:
   - product `vimetry_monthly`
-  - base plan: monthly auto-renewing at $8.99, local prices from that
+  - base plan: monthly auto-renewing at $4.99, local prices from that
   - grace period on
   - account hold on
 - Google Cloud project: a service account with access to the Play Developer

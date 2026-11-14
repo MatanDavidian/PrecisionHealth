@@ -23,7 +23,7 @@ test('when the trial is spent, the plan is offered and leads to Lemon Squeezy', 
 
   await expect(page.getByText(/100 photo analyses and 200 written ones a month/)).toBeVisible()
   await expect(page.getByText(/Your card never reaches this app/)).toBeVisible()
-  await page.getByRole('button', { name: 'Subscribe — US$8.99 a month' }).click()
+  await page.getByRole('button', { name: 'Subscribe — US$4.99 a month' }).click()
 
   await page.waitForURL(LEMON_CHECKOUT)
   await expect(page.getByRole('heading', { name: /Lemon Squeezy/ })).toBeVisible()
@@ -91,7 +91,7 @@ test('the trial’s last analysis offers the subscription first', async ({ page 
   await page.getByRole('button', { name: /^Estimate/i }).first().click()
 
   await expect(page.getByText('That was the last one on us')).toBeVisible({ timeout: 20_000 })
-  await page.getByRole('link', { name: 'Subscribe — US$8.99 a month' }).click()
+  await page.getByRole('link', { name: 'Subscribe — US$4.99 a month' }).click()
   await expect(page.getByText('Subscription', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: /^Subscribe/ })).toBeVisible()
 })
@@ -99,7 +99,7 @@ test('the trial’s last analysis offers the subscription first', async ({ page 
 test('signed in with the trial spent, the setup card offers the plan beside a key', async ({ page }) => {
   await signIn(page, { trialUsed: 10 })
   await openSignedIn(page, '/log')
-  await expect(page.getByRole('link', { name: 'Subscribe — US$8.99 a month' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('link', { name: 'Subscribe — US$4.99 a month' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('link', { name: 'Add API key' })).toBeVisible()
 })
 

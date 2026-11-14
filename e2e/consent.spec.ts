@@ -49,7 +49,7 @@ test('the published documents are final, and say who runs this and how billing w
   await open(page, '/terms')
   await expect(page.getByRole('heading', { name: 'Terms of Use' })).toBeVisible()
   await expect(page.getByText(/\[UNDECIDED/)).toHaveCount(0)
-  await expect(page.getByText(/US\$8\.99 a month and includes, each month, 100 AI analyses of photos and 200 of written/)).toBeVisible()
+  await expect(page.getByText(/US\$4\.99 a month and includes, each month, 100 AI analyses of photos and 200 of written/)).toBeVisible()
   await expect(page.getByText(/within 14 days of any charge/)).toBeVisible()
   await expect(page.getByText(/A refunded subscription ends when the refund is made/)).toBeVisible()
   await expect(page.getByText(/If you delete your account, we cancel your subscription first/)).toBeVisible()

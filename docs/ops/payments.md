@@ -1,7 +1,7 @@
 # Payments — Lemon Squeezy
 
 Status (2026-11-12): **LIVE.** Real payments are on.
-- Store 472304, live variant **2368401** (Vimetry Monthly, $8.99/month); the
+- Store 472304, live variant **2368401** (Vimetry Monthly, $4.99/month since 2026-11-14; was $8.99); the
   test variant was 2227203.
 - Live webhook 151439 → `lemonsqueezy-webhook`, 12 events: the ten below
   plus `dispute_created` and `dispute_resolved`. Created through the API
@@ -21,7 +21,7 @@ against buying with your own card).
 
 | | |
 | --- | --- |
-| Price | US$8.99 a month (Vimetry Monthly) |
+| Price | US$4.99 a month (Vimetry Monthly), the launch price from 2026-11-14; it was US$8.99. The same on Google Play. |
 | Each month | 100 photo analyses and 200 written ones, counted separately, on GPT-6.1 Sol or GPT-6 Luna — the user's choice |
 | Counts as written | a description, a leftover in words, week insights |
 | Free | answering a follow-up question; "Again" (repeating a past meal never calls the AI) |
@@ -39,7 +39,11 @@ Why the numbers: measured on the app's real prompts on 2026-10-09:
 | GPT-6 Luna | ≈ $0.001 | ≈ $0.0005 |
 
 So a subscriber who uses everything on Sol costs about $1.60–$4 for photos
-plus up to $1.30 for text, against $7.99 net of Lemon Squeezy's fees.
+plus up to $1.30 for text, against $4.24 net of either seller's fees
+(Lemon Squeezy 5% + 50¢, Play 15%). A typical subscriber, using about half,
+leaves $1.60–$2.80; only one who uses everything on crowded plates costs more
+than the price. Raising it later applies to new subscribers; existing ones keep
+their price unless moved, with 30 days' notice (Terms of Use).
 
 ## Two sellers, one plan (2026-10-11)
 
@@ -107,7 +111,7 @@ Say "push", then run `./scripts/deploy-functions.sh`. This applies migration
 
 In the Lemon Squeezy dashboard, switch on **Test mode** (bottom left), then:
 
-1. **Products:** Vimetry Monthly must exist as a subscription at $8.99 every
+1. **Products:** Vimetry Monthly must exist as a subscription at $4.99 every
    month.
 2. **Settings → Customer portal:** make sure it is on.
 3. Run:

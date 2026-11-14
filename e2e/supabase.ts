@@ -1,8 +1,6 @@
 import type { Page, Route } from '@playwright/test'
-import { PRIVACY_POLICY } from '../src/policy/documents'
+import { DOCUMENTS } from '../src/policy/documents'
 import { NOW } from './app'
-
-const CURRENT_POLICY_VERSION = PRIVACY_POLICY.version
 
 /**
  * A Supabase project that only exists inside the browser tab.
@@ -361,11 +359,12 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
     there.
   */
   const granted: Record<string, unknown>[] = options.consented
-    ? ['PRIVACY', 'TERMS'].map((subject) => ({
+    ? (['PRIVACY', 'TERMS'] as const).map((subject) => ({
         subject,
-        // Read from the app's own documents, so bumping a policy version does
+        // Read from the app's own documents, each its own version (they need
+        // not match: the Terms moved alone on 2026-11-14), so bumping one does
         // not silently leave every test consenting to something historical.
-        version: CURRENT_POLICY_VERSION,
+        version: DOCUMENTS[subject].version,
         action: 'GRANTED',
         recorded_at: new Date().toISOString(),
       }))

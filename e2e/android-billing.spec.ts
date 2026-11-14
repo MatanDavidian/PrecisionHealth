@@ -121,6 +121,6 @@ test('on the website, nothing changes: Lemon Squeezy as before', async ({ page }
   await fakePlay(page)
   await signIn(page, { trialUsed: 10 })
   await openSignedIn(page, '/settings?tab=ai')
-  await expect(page.getByRole('button', { name: 'Subscribe — US$8.99 a month' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Subscribe — US$4.99 a month' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(/Lemon Squeezy, our merchant of record/)).toBeVisible()
 })

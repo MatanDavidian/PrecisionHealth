@@ -74,32 +74,32 @@ business address; ask Play support whether one may replace a home address
 ```
 Vimetry is a personal health log that puts what you eat beside how much you move.
 
-Photograph a meal, or describe it in a sentence, and get an estimate of its calories, protein, carbs and fat — with how confident the estimate is, item by item, and the assumptions behind it. Adjust any number before you save. Nothing you log is ever silently overwritten: corrections are new entries, so your record stays honest.
+Photograph a meal, or describe it in a sentence, and get an estimate of its calories, protein, carbs and fat, with how confident the estimate is, item by item, and the assumptions behind it. Adjust any number before you save. Nothing you log is ever silently overwritten: corrections are new entries, so your record stays honest.
 
 LOG IN THREE WAYS
-• Photo — the default. Take a picture or choose one; add a note like "no oil" if it helps.
-• Write — "two eggs on toast and a black coffee".
-• Again — repeat something you eat often in one tap. No AI, no waiting.
+• Photo: the default. Take a picture, and add a note like "no oil" if it helps.
+• Write: "two eggs on toast and a black coffee".
+• Again: repeat something you eat often in one tap. No AI, no waiting.
 
 SEE THE DAY AND THE WEEK
 • Today: calories and macros against your goal, beside your activity.
-• The week: what you ate against what you burned, day by day — and a plain account of days with no figures, rather than a guess.
+• The week: what you ate against what you burned, day by day, with a plain account of days with no figures rather than a guess.
 • Missed a day? Fill it from your own average, marked as an estimate.
-• Ask for insights on your week: what stands out in the numbers, and one to three small changes worth trying — general habits, not medical advice. Any AI answer can be reported from inside the app.
+• Ask for insights on your week: what stands out in the numbers, and one to three small changes worth trying. They are general habits, not medical advice. Any AI answer can be reported from inside the app.
 
-WITH YOUR GARMIN
-Connect a Garmin watch (Forerunner 265 and 265S, more to come) for calories burned, steps, distance, resting heart rate, stress and VO₂ max.
+GARMIN, COMING SOON
+A Vimetry watch app for Garmin (Forerunner 265 and 265S first) is on its way, for calories burned, steps, distance, resting heart rate, stress and VO₂ max.
 
 YOUR DATA IS YOURS
-• Meal photos are not stored. A photo is sent for analysis once and then discarded.
-• Use it without an account, kept in this phone only — or sign in to keep it in your account across devices.
+• Vimetry does not keep your meal photos: a photo is sent for analysis once, and only the result is saved.
+• Use it without an account, kept on this phone only, or sign in to keep it in your account across devices.
 • Export everything, any time. Delete your account and all of it, from the app.
 • No ads. Your data is never sold.
 
 FREE, WITH A SUBSCRIPTION FOR MORE
 Logging by hand, the week view and exporting are free. New accounts get 10 AI analyses free. Vimetry Monthly includes 100 photo analyses and 200 written ones a month; cancel any time from Google Play.
 
-Vimetry is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Its suggestions are general habits, not medical advice — consult a healthcare professional for medical advice, diagnosis or treatment.
+Vimetry is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Its suggestions are general habits, not medical advice. Consult a healthcare professional for medical advice, diagnosis or treatment.
 
 In English and Hebrew.
 ```
@@ -109,32 +109,32 @@ In English and Hebrew.
 ```
 Vimetry הוא יומן בריאות אישי ששם את מה שאתם אוכלים לצד כמה שאתם זזים.
 
-צלמו ארוחה, או תארו אותה במשפט, וקבלו הערכה של הקלוריות, החלבון, הפחמימות והשומן — עם מידת הביטחון בהערכה, פריט אחר פריט, וההנחות שמאחוריה. אפשר לתקן כל מספר לפני השמירה. שום דבר שתרשמו לא נדרס בשקט: תיקונים הם רשומות חדשות, כך שהרישום שלכם נשאר נאמן.
+צלמו ארוחה, או תארו אותה במשפט, וקבלו הערכה של הקלוריות, החלבון, הפחמימות והשומן, עם מידת הביטחון בהערכה, פריט אחר פריט, וההנחות שמאחוריה. אפשר לתקן כל מספר לפני השמירה. שום דבר שתרשמו לא נדרס בשקט: תיקונים הם רשומות חדשות, כך שהרישום שלכם נשאר נאמן.
 
 שלוש דרכים לרשום
-• תמונה — ברירת המחדל. צלמו או בחרו תמונה; הוסיפו הערה כמו "בלי שמן" אם זה עוזר.
-• כתיבה — "שתי ביצים על טוסט וקפה שחור".
-• שוב — חזרה על משהו שאתם אוכלים לעיתים קרובות בנגיעה אחת. בלי בינה מלאכותית, בלי המתנה.
+• תמונה: ברירת המחדל. צלמו, והוסיפו הערה כמו "בלי שמן" אם זה עוזר.
+• כתיבה: "שתי ביצים על טוסט וקפה שחור".
+• שוב: חזרה על משהו שאתם אוכלים לעיתים קרובות בנגיעה אחת. בלי בינה מלאכותית, בלי המתנה.
 
 היום והשבוע
 • היום: קלוריות ומאקרו מול היעד שלכם, לצד הפעילות שלכם.
-• השבוע: מה אכלתם מול מה ששרפתם, יום אחר יום — ותיאור כן של ימים בלי נתונים, במקום ניחוש.
+• השבוע: מה אכלתם מול מה ששרפתם, יום אחר יום, ותיאור כן של ימים בלי נתונים במקום ניחוש.
 • פספסתם יום? אפשר למלא אותו מהממוצע שלכם, מסומן כהערכה.
-• בקשו תובנות על השבוע שלכם: מה בולט במספרים, ואחד עד שלושה שינויים קטנים שכדאי לנסות — הרגלים כלליים, לא ייעוץ רפואי. אפשר לדווח על כל תשובה של הבינה המלאכותית מתוך האפליקציה.
+• בקשו תובנות על השבוע שלכם: מה בולט במספרים, ואחד עד שלושה שינויים קטנים שכדאי לנסות. אלה הרגלים כלליים, לא ייעוץ רפואי. אפשר לדווח על כל תשובה של הבינה המלאכותית מתוך האפליקציה.
 
-עם ה־Garmin שלכם
-חברו שעון Garmin (Forerunner 265 ו־265S, ועוד בהמשך) לקלוריות שנשרפו, צעדים, מרחק, דופק במנוחה, מתח ו־VO₂ max.
+Garmin, בקרוב
+אפליקציית שעון של Vimetry ל־Garmin (קודם ל־Forerunner 265 ו־265S) בדרך, לקלוריות שנשרפו, צעדים, מרחק, דופק במנוחה, מתח ו־VO₂ max.
 
 הנתונים שלכם שייכים לכם
-• תמונות ארוחות לא נשמרות. תמונה נשלחת לניתוח פעם אחת ואז נמחקת.
-• אפשר להשתמש בלי חשבון, בטלפון הזה בלבד — או להיכנס לחשבון ולשמור את הנתונים בין מכשירים.
+• Vimetry לא שומר את תמונות הארוחות: תמונה נשלחת לניתוח פעם אחת, ורק התוצאה נשמרת.
+• אפשר להשתמש בלי חשבון, בטלפון הזה בלבד, או להיכנס לחשבון ולשמור את הנתונים בין מכשירים.
 • ייצוא של הכול, בכל רגע. מחיקת החשבון וכל מה שבו, מתוך האפליקציה.
 • בלי פרסומות. הנתונים שלכם לעולם לא נמכרים.
 
 חינם, עם מנוי למי שרוצה יותר
-רישום ידני, תצוגת השבוע וייצוא — בחינם. חשבונות חדשים מקבלים 10 ניתוחי בינה מלאכותית בחינם. Vimetry Monthly כולל 100 ניתוחי תמונה ו־200 ניתוחי טקסט בחודש; אפשר לבטל בכל רגע מ־Google Play.
+רישום ידני, תצוגת השבוע וייצוא בחינם. חשבונות חדשים מקבלים 10 ניתוחי בינה מלאכותית בחינם. Vimetry Monthly כולל 100 ניתוחי תמונה ו־200 ניתוחי טקסט בחודש; אפשר לבטל בכל רגע מ־Google Play.
 
-Vimetry אינו מכשיר רפואי, ואינו מאבחן, מטפל, מרפא או מונע שום מצב רפואי. ההצעות שלו הן הרגלים כלליים ולא ייעוץ רפואי — לייעוץ, אבחון או טיפול רפואי, פנו לאיש מקצוע בתחום הבריאות.
+Vimetry אינו מכשיר רפואי, ואינו מאבחן, מטפל, מרפא או מונע שום מצב רפואי. ההצעות שלו הן הרגלים כלליים ולא ייעוץ רפואי. לייעוץ, אבחון או טיפול רפואי, פנו לאיש מקצוע בתחום הבריאות.
 
 באנגלית ובעברית.
 ```

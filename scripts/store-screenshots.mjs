@@ -60,14 +60,15 @@ for (const locale of ['en-US', 'he-IL']) {
   await context.close()
 }
 // The feature graphic Play shows above the listing: 1024×500, no transparency.
+// The name as the app draws it (src/ui/components/Wordmark.tsx): the icon's
+// orange dot is the dot of the i — the owner's choice of 2026-10-17.
 {
   const page = await browser.newPage({ viewport: { width: 1024, height: 500 } })
   await page.setContent(`<html><head>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400&family=Inter:wght@400&display=swap" rel="stylesheet">
-    </head><body style="margin:0;width:1024px;height:500px;background:#f1ece1;display:flex;align-items:center;gap:56px;padding:0 96px;box-sizing:border-box">
-    <div style="width:132px;height:132px;border-radius:50%;background:#c2673e;flex:none"></div>
-    <div><div style="font-family:Fraunces,serif;font-size:96px;color:#2b2721;line-height:1">Vimetry</div>
-    <div style="font-family:Inter,sans-serif;font-size:28px;color:#6f6a60;padding-top:18px;white-space:nowrap">What you eat, beside how you move.</div></div>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400&display=swap" rel="stylesheet">
+    </head><body style="margin:0;width:1024px;height:500px;background:#f1ece1;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box">
+    <div style="font-family:Fraunces,serif;font-weight:600;font-size:150px;color:#2b2721;line-height:1;letter-spacing:-0.01em">V<span style="position:relative;display:inline-block">ı<span style="position:absolute;left:calc(50% + 0.045em);top:0.2em;width:0.17em;height:0.17em;transform:translateX(-50%);border-radius:50%;background:#c2673e"></span></span>metry</div>
+    <div style="font-family:Inter,sans-serif;font-size:32px;color:#504c45;padding-top:28px;white-space:nowrap">What you eat, beside how you move.</div>
     </body></html>`)
   await page.waitForLoadState('networkidle')
   await page.screenshot({ path: join(OUT, 'feature-graphic.png') })

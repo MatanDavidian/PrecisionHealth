@@ -189,6 +189,7 @@ Privacy Policy names each one.
 | Category → type | Collected | Optional? | Ephemeral? | Purposes |
 | --- | --- | --- | --- | --- |
 | Personal info → Email address | yes | optional (only with an account) | no | Account management, App functionality |
+| Personal info → User IDs (the account's internal id, which every record is stored under; Google's own example is "an account ID") | yes | optional (only with an account) | no | Account management, App functionality |
 | Health and fitness → Health info (meals and their nutrients, weight, body measurements, goals) | yes | optional (only with an account; without one it stays on the phone) | no | App functionality |
 | Health and fitness → Fitness info (calories burned, steps, distance, resting heart rate, stress, respiration, VO₂ max — from a Garmin watch) | yes | optional | no | App functionality |
 | Photos and videos → Photos (a meal photo, for analysis) | yes | optional | **yes** — sent once, not stored | App functionality |

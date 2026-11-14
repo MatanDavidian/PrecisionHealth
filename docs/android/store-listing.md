@@ -66,8 +66,8 @@ business address; ask Play support whether one may replace a home address
 **App name** (30 characters at most): `Vimetry`
 
 **Short description** (80 at most):
-- EN: `Log meals by photo or in words, and see them beside your activity.` (67)
-- HE: `רישום ארוחות בתמונה או במילים, לצד הפעילות שלכם.`
+- EN: `Log meals by photo or in words, beside your activity, with weekly insights.` (75)
+- HE: `רישום ארוחות בתמונה או במילים, לצד הפעילות שלכם, עם תובנות שבועיות.`
 
 **Full description, EN** (4,000 at most):
 

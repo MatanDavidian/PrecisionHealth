@@ -236,6 +236,29 @@ Reviewers need a working login, and they cannot read our email codes.
 - License testers: their purchases are free and renew every few minutes,
   which is how renewal and expiry get tested.
 
+**Done 2026-11-15** (owner, guided):
+- Merchant account on the existing individual payments profile; public
+  merchant name Vimetry, card-statement name VIMETRY, products "software";
+  payouts to an ILS bank account (pending Google's test deposit).
+- `vimetry_monthly` ("Vimetry Monthly"), base plan `monthly`: auto-renewing,
+  US$4.99 converted per country, 7-day grace then automatic account hold
+  (60 days in all), resubscribe allowed, pause on. Active.
+- Google Cloud project `vimetry`, on its own billing account "Vimetry" with
+  a ₪5 budget alert (the Gemini project stays unbilled). Google Play
+  Android Developer API enabled. Service account
+  `play-billing@vimetry.iam.gserviceaccount.com`, invited in Play Console
+  with View financial data and Manage orders and subscriptions on Vimetry
+  only. Its key is only in `GOOGLE_PLAY_SERVICE_ACCOUNT`; the file was
+  deleted.
+- Pub/Sub topic `projects/vimetry/topics/play-rtdn`, publisher
+  `google-play-developer-notifications@system.gserviceaccount.com`; push
+  subscription `play-rtdn-push` to the `?token=` URL (no authentication,
+  no payload unwrapping, which `play-rtdn` needs, never expires, 60 s ack
+  deadline, exponential backoff).
+- Play Console RTDN on that topic, subscriptions and voided purchases only.
+  The test notification arrived: `billing_events` row `play_test` / `TEST`.
+- Still to do: license testers (the closed test's addresses).
+
 **Code:**
 - Migration: `subscriptions.provider` (`lemonsqueezy` | `google_play`) and
   the fields Play needs:

@@ -37,6 +37,14 @@ test('every response carries the security headers', async ({ request }) => {
   expect(headers['strict-transport-security']).toContain('max-age=')
 })
 
+test('the Android app may reach Google Play Billing', async ({ request }) => {
+  // Chrome fetches the payment method's manifest from play.google.com before
+  // the purchase sheet opens; without this, Subscribe fails inside the app.
+  const csp = (await request.get('/settings')).headers()['content-security-policy']
+  const connect = csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('connect-src')) ?? ''
+  expect(connect.split(/\s+/)).toContain('https://play.google.com')
+})
+
 test('signed out, the whole app runs inside its content security policy', async ({ page }) => {
   await watchForViolations(page)
 

@@ -17,9 +17,12 @@ Who: **C** = Claude in the repo · **M** = Matan.
 
 ## Bugs
 
-None known. The last two were found and fixed on 2026-11-15 during the first
-Play purchase: the site's security policy blocked Google Play's purchase
-sheet, and Play subscriptions said "Lemon Squeezy" on their buttons.
+None known. Found and fixed on 2026-11-15: the site's security policy
+blocked Google Play's purchase sheet; Play subscriptions said "Lemon
+Squeezy" on their buttons; and on a tester's phone "Take a photo" did
+nothing, because the browser was not allowed to use the camera and Android
+says nothing when that happens (the app now notices and offers the photo
+picker).
 
 ## Tasks for Claude
 

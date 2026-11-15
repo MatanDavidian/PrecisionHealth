@@ -11,6 +11,9 @@ import { useT } from '../../i18n'
  * It is optional and collapsed, because most meals need nothing said about
  * them and a form in front of the shutter is a reason not to log at all.
  */
+/** How long a camera that is going to open may take to cover the page. */
+const CAMERA_WAIT_MS = 1500
+
 export function PhotoPanel({
   note,
   onNoteChange,
@@ -39,6 +42,59 @@ export function PhotoPanel({
 }) {
   const t = useT()
   const fileInput = useRef<HTMLInputElement>(null)
+
+  /*
+    On Android, "Take a photo" asks the browser to open the camera straight
+    away, and a browser that is not allowed to use the camera does nothing at
+    all: no camera, no message. A tester met exactly that on 2026-11-15, on
+    the same phone the app works on for its owner.
+
+    A camera that does open takes the page out of sight within a moment. So
+    if the page is still in front a second and a half after the tap, and no
+    photo came, the tap went nowhere: say so, say how to allow the camera,
+    and offer the phone's own photo picker, which needs no permission.
+  */
+  const [cameraStuck, setCameraStuck] = useState(false)
+  const picked = useRef(false)
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+    }
+  }, [])
+
+  const openCamera = () => {
+    const input = fileInput.current
+    if (!input) return
+    setCameraStuck(false)
+    picked.current = false
+    input.setAttribute('capture', 'environment')
+    input.click()
+    if (!/Android/i.test(navigator.userAgent)) return
+    let left = false
+    const onBlur = () => {
+      left = true
+    }
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') left = true
+    }
+    window.addEventListener('blur', onBlur)
+    document.addEventListener('visibilitychange', onHidden)
+    window.setTimeout(() => {
+      window.removeEventListener('blur', onBlur)
+      document.removeEventListener('visibilitychange', onHidden)
+      if (!left && !picked.current && alive.current) setCameraStuck(true)
+    }, CAMERA_WAIT_MS)
+  }
+
+  /** The phone's own picker: gallery and files, and on most phones the camera too. */
+  const chooseInstead = () => {
+    const input = fileInput.current
+    if (!input) return
+    input.removeAttribute('capture')
+    input.click()
+  }
   // Open by default once a photo is waiting: adding a detail is the reason it
   // is waiting at all.
   const [noteOpen, setNoteOpen] = useState(note.trim().length > 0)
@@ -71,7 +127,11 @@ export function PhotoPanel({
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0]
-          if (file) onPhoto(file)
+          if (file) {
+            picked.current = true
+            setCameraStuck(false)
+            onPhoto(file)
+          }
           e.target.value = ''
         }}
       />
@@ -94,13 +154,27 @@ export function PhotoPanel({
       ) : (
         <button
           type="button"
-          onClick={() => fileInput.current?.click()}
+          onClick={openCamera}
           className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-card border border-dashed border-hairline bg-card text-ink-muted transition-colors hover:bg-card-soft"
         >
           <CameraIcon />
           <span className="text-sm font-medium text-ink">{t('log.photo.take')}</span>
           <span className="text-xs">{t('log.photo.orLibrary')}</span>
         </button>
+      )}
+
+      {cameraStuck && !held && (
+        <div role="status" className="mt-3 rounded-card border border-hairline bg-card-soft p-4">
+          <p className="text-sm font-medium">{t('log.photo.cameraStuck')}</p>
+          <p className="pt-1 text-xs leading-relaxed text-ink-muted">{t('log.photo.cameraFix')}</p>
+          <button
+            type="button"
+            onClick={chooseInstead}
+            className="mt-3 rounded-full bg-accent px-4 py-2 text-sm font-medium text-surface"
+          >
+            {t('log.photo.chooseInstead')}
+          </button>
+        </div>
       )}
 
       {held && (

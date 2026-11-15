@@ -51,6 +51,7 @@ Vimetry → Test and release → Closed testing → Alpha → Testers.
 | What they see | Cause | Fix |
 | --- | --- | --- |
 | "App not available … hasn't been published yet or isn't available for this account" | The Google account signed in on that browser is not in `testers1`, or the link was opened within a few hours of the list changing | Check the address under the avatar against the list, letter for letter. With several accounts on the phone, open the link in an incognito tab and sign in with the invited one. Otherwise wait a few hours |
+| Tapping "Take a photo" does nothing | The browser behind the app (Chrome) is not allowed to use the camera, so Android opens nothing and says nothing. Seen on a tester's phone, 2026-11-15 | Android Settings → Apps → Chrome → Permissions → Camera → Allow. Since that day the app notices after a second and a half, says so, and offers "Choose a photo instead" |
 | The Play page says the app is not available in their country | Their Play account is set to a country other than Israel | Nothing to do on their side. Adding countries to the closed test is the owner's choice; never the EEA or UK while declared non-trader (`store-listing.md`, "Trader status and countries") |
 | "Your subscription has ended" half an hour after subscribing | A test subscription renews every 5 minutes and ends after 6 renewals | Expected. They can subscribe again |
 | Asked to agree to the Terms again | The Terms changed on 2026-11-14 (the price) | Expected, once |

@@ -57,6 +57,10 @@ const en = {
 
   'log.photo.take': 'Take a photo',
   'log.photo.orLibrary': 'or choose one from your library',
+  'log.photo.cameraStuck': 'The camera did not open.',
+  'log.photo.cameraFix':
+    'This usually means the browser is not allowed to use the camera. To allow it: Android Settings → Apps → Chrome → Permissions → Camera. Or pick a photo here:',
+  'log.photo.chooseInstead': 'Choose a photo instead',
   'log.photo.heldAlt': 'The meal you just photographed',
   'log.photo.analyzeNow': 'Analyze this photo',
   'log.photo.discard': 'Take another',
@@ -917,6 +921,10 @@ const he: Dictionary = {
 
   'log.photo.take': 'צילום תמונה',
   'log.photo.orLibrary': 'או בחירה מגלריית התמונות',
+  'log.photo.cameraStuck': 'המצלמה לא נפתחה.',
+  'log.photo.cameraFix':
+    'בדרך כלל זה אומר שלדפדפן אין הרשאה להשתמש במצלמה. כדי לאפשר: הגדרות אנדרואיד ← אפליקציות ← Chrome ← הרשאות ← מצלמה. או בחרו תמונה כאן:',
+  'log.photo.chooseInstead': 'בחירת תמונה במקום',
   'log.photo.heldAlt': 'הארוחה שצילמתם',
   'log.photo.analyzeNow': 'לנתח את התמונה',
   'log.photo.discard': 'לצלם שוב',

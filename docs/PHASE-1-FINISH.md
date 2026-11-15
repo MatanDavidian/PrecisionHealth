@@ -525,9 +525,10 @@ confirmed by its support assistant; built 2026-10-17, tested in
 - Price lowered to **US$4.99** on the website, Lemon Squeezy and Play
   (the owner's decision; arithmetic in `docs/ops/payments.md`). Terms
   version 2026-11-14, one re-consent.
-- **Not yet verified: a real purchase inside the Android app** — the one
-  link untested is the server reading a purchase from Play with the
-  service account, whose permissions can take up to a day to reach the API.
+- ~~Not yet verified: a real purchase inside the Android app~~ **Verified
+  the same day:** purchase, acknowledgement and a 5-minute renewal, end to
+  end (`docs/ANDROID-APP.md`, "Done 2026-11-15"). Still to try: cancelling
+  in Play, and a refund from Play Console.
 
 **Next, in order (2026-11-15):**
 1. Owner: get the opt-in link working for the first testers ("App not

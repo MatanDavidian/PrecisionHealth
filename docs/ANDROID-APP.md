@@ -257,7 +257,16 @@ Reviewers need a working login, and they cannot read our email codes.
   deadline, exponential backoff).
 - Play Console RTDN on that topic, subscriptions and voided purchases only.
   The test notification arrived: `billing_events` row `play_test` / `TEST`.
-- Still to do: license testers (the closed test's addresses).
+- License testers: the list `testers1` (done the same day).
+- **First real purchase, 2026-11-15, verified end to end** (the owner, a
+  license tester, in the closed-test app): Play's sheet showed the test card
+  at ₪16.00; `play-billing` stored the row (`active`, `test_mode`), and the
+  first 5-minute renewal arrived through Pub/Sub as `play_renewed` /
+  `APPLIED`, moving `renews_at` on. The purchase notification beat the
+  app's own report by five seconds and was logged `UNLINKED`, as designed:
+  the app's report then bound the token to the account.
+- Found on the way: the site's CSP blocked `https://play.google.com`, which
+  Chrome fetches before the purchase sheet opens; allowed since 868014e.
 
 **Code:**
 - Migration: `subscriptions.provider` (`lemonsqueezy` | `google_play`) and

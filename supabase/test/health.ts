@@ -186,7 +186,7 @@ const call = (token?: string) =>
   const res = await call(TOKEN)
   const text = await res.text()
   const body = JSON.parse(text)
-  check('every key is tried against every offered model', probed.length === 6, JSON.stringify(probed))
+  check('every key is tried against every offered model', probed.length === 9, JSON.stringify(probed))
   const failing = body.openai.filter((p: { ok: boolean }) => !p.ok)
   check('a key that cannot run a model fails the check, naming key, model and code', res.status === 503 &&
     failing.length === 1 && failing[0].key === 'plans' && failing[0].model === 'gpt-6.1-sol' &&
@@ -198,7 +198,7 @@ const call = (token?: string) =>
   probed.length = 0
   const again = await call(TOKEN)
   await again.body?.cancel()
-  check('the same key under two names is tried once', probed.length === 4 && again.status === 200,
+  check('the same key under two names is tried once', probed.length === 6 && again.status === 200,
     `${probed.length} ${again.status}`)
   Deno.env.delete('OPENAI_PLANS_KEY')
   Deno.env.delete('OPENAI_ADMIN_KEY')

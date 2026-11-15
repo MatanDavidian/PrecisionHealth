@@ -25,7 +25,7 @@ test('a new account is told the trade-off exists, before it matters', async ({ p
   await expect(page.getByRole('link', { name: 'See the options' })).toBeVisible()
 })
 
-test('the picker offers exactly the two GPT-6 models, the best one first', async ({ page }) => {
+test('the picker offers exactly the three GPT-6 models, the best one first', async ({ page }) => {
   // Late in the trial, on purpose: there is no separate budget on the best model to lock it.
   await signIn(page, { trialUsed: 9 })
   await openSignedIn(page, '/settings')
@@ -35,9 +35,14 @@ test('the picker offers exactly the two GPT-6 models, the best one first', async
   await expect(picker).toHaveValue('gpt-6.1-sol')
   await expect(picker.locator('option')).toHaveText([
     'Most accurate · gpt-6.1-sol',
+    'Balanced · gpt-6.1-terra',
     'Fastest · gpt-6-luna',
   ])
   await expect(picker.locator('option:disabled')).toHaveCount(0)
+
+  await picker.selectOption('gpt-6.1-terra')
+  await expect(picker).toHaveValue('gpt-6.1-terra')
+  await expect(page.getByText(/A middle way/)).toBeVisible()
 
   await picker.selectOption('gpt-6-luna')
   await expect(picker).toHaveValue('gpt-6-luna')

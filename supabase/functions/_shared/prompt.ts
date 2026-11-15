@@ -279,6 +279,8 @@ export const MODEL_RATES: Record<string, { input: number; output: number }> = {
     the ledger's cost and the daily ceiling, never what a user is charged.
   */
   'gpt-6.1-sol': { input: 2, output: 10 },
+  // GPT-6.1 Terra, released 26 Oct 2026: half of Sol, by the same kind of source.
+  'gpt-6.1-terra': { input: 1, output: 5 },
   'gpt-6-luna': { input: 0.1, output: 0.5 },
   'gpt-4o-mini': { input: 0.15, output: 0.6 },
 }
@@ -355,7 +357,7 @@ export const dailyBudgetMicros = (
 export const TRIAL_ANALYSES = 10
 
 /**
- * The two models a trial may run (2026-10-09), both GPT-6.
+ * The models a trial may run (two since 2026-10-09, Terra added 2026-11-15), all GPT-6.
  *
  * GPT-5.6 is retired from the app: GPT-6.1 Sol costs a third of what
  * gpt-5.6-sol did per output token, which is also why the trial no longer
@@ -371,10 +373,16 @@ export const TRIAL_ANALYSES = 10
  * baseline for that evaluation (docs/ops/model-evaluation.md).
  */
 export const MODEL_SOL = 'gpt-6.1-sol'
+/**
+ * Offered since 2026-11-15, at the owner's request, to be judged on real
+ * meals: half Sol's price, so if it reads plates as well, it is the default
+ * that makes the plan's price comfortable (docs/ROADMAP.md, Epic 2).
+ */
+export const MODEL_TERRA = 'gpt-6.1-terra'
 export const MODEL_LUNA = 'gpt-6-luna'
 
-/** The only models a trial may run. Anything else is refused server-side. */
-export const TRIAL_MODELS = [MODEL_SOL, MODEL_LUNA] as const
+/** The only models a trial may run, the most careful first. Anything else is refused server-side. */
+export const TRIAL_MODELS = [MODEL_SOL, MODEL_TERRA, MODEL_LUNA] as const
 export type TrialModel = (typeof TRIAL_MODELS)[number]
 
 /** Where a trial starts: the best one. */
@@ -383,6 +391,8 @@ export const TRIAL_MODEL = MODEL_SOL
 /** What each model is FOR, in the user's terms rather than the vendor's. */
 export const MODEL_LABELS: Record<string, { name: string; detail: string }> = {
   [MODEL_SOL]: { name: 'Most accurate', detail: 'Reads a crowded plate carefully.' },
+  // Not yet measured on real meals, so it promises a position, not a result.
+  [MODEL_TERRA]: { name: 'Balanced', detail: 'A middle way: quicker than the most accurate, more careful than the fastest.' },
   [MODEL_LUNA]: { name: 'Fastest', detail: 'Quick and rough. Best for simple, obvious meals.' },
 }
 

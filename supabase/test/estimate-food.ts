@@ -20,6 +20,7 @@ import {
   MAX_FOLLOW_UPS,
   MODEL_LUNA,
   MODEL_SOL,
+  MODEL_TERRA,
   TRIAL_ANALYSES,
   TRIAL_MODEL,
   costMicros,
@@ -378,6 +379,15 @@ console.log('\nThe model choice')
     providerCalls[0]?.model)
   check('booked at its own prices', usage.some((x) => x.outcome === 'OK' && x.model === MODEL_LUNA &&
     x.cost_micros === costMicros(MODEL_LUNA, IN_TOKENS, OUT_TOKENS)), outcomes())
+}
+{
+  reset()
+  const r = await call(meal({ model: MODEL_TERRA }))
+  check('GPT-6.1 Terra runs when asked for', r.status === 200 && providerCalls[0]?.model === MODEL_TERRA &&
+    r.body.model === MODEL_TERRA, providerCalls[0]?.model)
+  check('booked at its own prices, half of Sol’s', usage.some((x) => x.outcome === 'OK' && x.model === MODEL_TERRA &&
+    x.cost_micros === costMicros(MODEL_TERRA, IN_TOKENS, OUT_TOKENS)) &&
+    costMicros(MODEL_TERRA, IN_TOKENS, OUT_TOKENS) * 2 === costMicros(MODEL_SOL, IN_TOKENS, OUT_TOKENS), outcomes())
 }
 for (const retired of ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-6-astra', 'gpt-made-up-and-expensive']) {
   reset()

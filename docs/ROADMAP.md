@@ -74,7 +74,7 @@ chosen from measurements, and the price of the plan rests on a measured cost.
 
 | Feature | Size | Who | Status |
 | --- | --- | --- | --- |
-| 2.1 **Offer GPT-6.1 Terra.** Released 2026-10-26 as `gpt-6.1-terra`, reported at US$1 / US$5 per million tokens, half of GPT-6.1 Sol. **Blocked on one owner step:** none of the three OpenAI projects (trial, plans, admin) may call it yet (`model_not_found`, tried 2026-11-15), and an offered model that a key cannot run turns the daily check red and fails for users. When the owner allows it in each project: the price table first, then the picker, the health probe covers it by itself | S | M, then C | now |
+| 2.1 ~~**Offer GPT-6.1 Terra.**~~ **Done 2026-11-15:** `gpt-6.1-terra` (released 2026-10-26, reported at US$1 / US$5 per million tokens, half of GPT-6.1 Sol) is the third choice in the picker, "Balanced". The owner allowed it in the OpenAI projects; one photo through the production prompt answered in the right shape, in 2.8 s against Sol's 4.5 s, at half the cost. Sol stays the default until 2.2. The daily check probes every key against it | S | M, then C | done |
 | 2.2 **Measure the models on real meals:** fifteen real plates through Sol, Terra and Luna (`scripts/eval-models.mjs`, `ops/model-evaluation.md`) | M | M (photos) + C | next |
 | 2.3 **Choose the default** from 2.2. If Terra reads plates as well as Sol, the full allowance costs US$1.45–2.65 instead of US$2.90–5.30, against US$4.24 received | S | M | after 2.2 |
 | 2.4 **Re-measure the cost per analysis** from the ledger after a few weeks of real use, with Play's 15% in it (`ops/pricing.md`) | S | C | later |
@@ -187,7 +187,7 @@ first customers ask for.
 
 ## Decisions the plan is waiting for
 
-1. **Allow `gpt-6.1-terra`** in the three OpenAI projects (Epic 2.1).
+1. ~~Allow `gpt-6.1-terra` in the three OpenAI projects (Epic 2.1).~~ Done 2026-11-15; the first health check after the deploy confirms each key.
 2. **Health Connect or coaches first**, once the spike (3.3) and the
    conversations (4.1) have answered. The recommendation is above.
 3. **A registered business.** Coaches paying, Meta's verification, and

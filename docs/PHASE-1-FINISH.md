@@ -43,7 +43,7 @@ handler tests for every function.
 | 2 | **Publish the Garmin app** | M + C | **Ready to submit 2026-10-10.** Owner: developer account, upload, simulator screenshots, submit (`docs/garmin/store-listing.md`) |
 | 3 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | M + C | **Visible since 2026-10-10:** the webhook logs them and the daily check turns red on any in 30 days. Lemon Squeezy's docs do not describe their contents, so automatic handling waits for a real one. Owner: tick both events on the webhook. Then decide the rule — end access while disputed, as a refund does? |
 | 4 | **Logo and home-screen icon** | M + C | Moved up: the Android app and the installable website need icons. A temporary mark will do for the closed test; motion and the accessibility scan stay P3 |
-| 5 | **Onboarding for a first-time visitor** | M + C | The sample-day label is done (2026-10-11). The first-visit cards and the signed-in empty state are designed first in Claude Design, then built (section below) |
+| 5 | **Onboarding for a first-time visitor** | M + C | The sample-day label is done (2026-10-11). **A first version is built (2026-11-15):** a welcome notice signed out and a where-to-start notice in a new account (section below). The design pass in Claude Design is still open |
 | 6 | **Contract tests on a local Supabase** | C | Needs the local stack (~2 GB download) — run with the owner around |
 | 7 | **Model quality check** on real meal photos | M (+ C script) | GPT-6.1 Sol is the baseline (`docs/ops/model-evaluation.md`). When there are photos, C writes a script that runs them through both models and scores them |
 | 8 | **Re-measure the cost per analysis**, update `docs/ops/pricing.md` | C | After a few weeks of real usage, from the ledger — and with Play's 15% in it |
@@ -352,12 +352,19 @@ The CSP report endpoint (P0.8) can post to the same function.
 ### Onboarding for a first-time visitor · M · C (design via Claude Design)
 Today a stranger lands on a sample day with no explanation.
 
-- Three short first-visit cards: what Vimetry is; where your data lives; "look
-  around with sample data" or "sign in for 10 free analyses".
+- ~~Three short first-visit cards: what Vimetry is; where your data lives; "look
+  around with sample data" or "sign in for 10 free analyses".~~ **Built
+  2026-11-15 as one notice, not three cards and not a modal** (`Welcome.tsx`
+  on Today, `e2e/onboarding.spec.ts`): what it is, where what you log is
+  kept, "Sign in and get 10 free analyses" or "Got it". Shown until
+  dismissed on that device. The design pass in Claude Design is still open.
 - ~~A visible **Sample data** label wherever the sample day is shown (Q5).~~
   Done 2026-10-11: `SampleDayLabel` on Today and Nutrition.
-- After first sign-in, an empty state that says what to do: photograph your
-  next meal; connect a Garmin.
+- ~~After first sign-in, an empty state that says what to do: photograph your
+  next meal; connect a Garmin.~~ **Built 2026-11-15:** an account with
+  nothing logged in 30 days is told to start with its next meal, with "Log a
+  meal". Connecting a Garmin is left out until the watch app is in Garmin's
+  store: a stranger could not finish that step.
 
 ### Publishing the Garmin app · M work, weeks of calendar · M + C
 > **Ready to submit, 2026-10-10:**

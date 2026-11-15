@@ -630,6 +630,17 @@ const en = {
   'sample.title': 'Sample day.',
   'sample.body':
     'These meals and readings are made up, so there is something to look at. Log your own and they sit alongside — and the sample never goes into an account.',
+  // First visit, and a new account's first day (components/Welcome.tsx).
+  'welcome.title': 'Welcome to Vimetry',
+  'welcome.what':
+    'Log what you eat by photo, in words or by hand, and see it beside your activity and your week.',
+  'welcome.data':
+    'Until you sign in, what you log stays in this browser. With an account it is kept in your account, and you can export or delete it at any time.',
+  'welcome.signIn': 'Sign in and get 10 free analyses',
+  'firstSteps.title': 'Nothing logged yet. Start with your next meal.',
+  'firstSteps.meal': 'Photograph it, or describe it in a few words, and the estimate is ready to check and save.',
+  'firstSteps.byHand': 'Logging by hand is always there too, and always free.',
+  'firstSteps.log': 'Log a meal',
   'seed.eggsAndOats': 'Eggs and oats',
   'seed.grilledChicken': 'Grilled chicken breast',
   'seed.riceAndVegetables': 'Rice and vegetables',
@@ -1461,6 +1472,15 @@ const he: Dictionary = {
   // ------------------------------------------------------------ sample day --
   'sample.title': 'יום לדוגמה.',
   'sample.body': 'הארוחות והמדידות האלה בדויות, כדי שיהיה על מה להסתכל. רשמו משלכם והם יופיעו לצידן — והדוגמה אף פעם לא עוברת לחשבון.',
+  'welcome.title': 'ברוכים הבאים ל־Vimetry',
+  'welcome.what': 'רשמו מה אכלתם בתמונה, במילים או ידנית, וראו את זה לצד הפעילות והשבוע שלכם.',
+  'welcome.data':
+    'עד שתיכנסו לחשבון, מה שתרשמו נשאר בדפדפן הזה. עם חשבון הוא נשמר בחשבון שלכם, ואפשר לייצא או למחוק אותו בכל רגע.',
+  'welcome.signIn': 'כניסה וקבלת 10 ניתוחים בחינם',
+  'firstSteps.title': 'עוד לא נרשם דבר. התחילו בארוחה הבאה.',
+  'firstSteps.meal': 'צלמו אותה, או תארו אותה בכמה מילים, וההערכה מוכנה לבדיקה ולשמירה.',
+  'firstSteps.byHand': 'רישום ידני תמיד אפשרי, ותמיד בחינם.',
+  'firstSteps.log': 'רישום ארוחה',
   'seed.eggsAndOats': 'ביצים ושיבולת שועל',
   'seed.grilledChicken': 'חזה עוף בגריל',
   'seed.riceAndVegetables': 'אורז וירקות',

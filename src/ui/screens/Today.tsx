@@ -52,6 +52,7 @@ import type { WeekEnergy } from '@/domain'
 import { currentUserId } from '@/data/session'
 import { useSearchParams } from 'react-router-dom'
 import { SampleDayLabel } from '../components/SampleDayLabel'
+import { Welcome } from '../components/Welcome'
 import type { StringKey } from '../i18n/strings'
 
 export function Today() {
@@ -321,6 +322,8 @@ export function Today() {
           )}
         </div>
       </header>
+
+      <Welcome today={today} />
 
       <SampleDayLabel data={data} />
 

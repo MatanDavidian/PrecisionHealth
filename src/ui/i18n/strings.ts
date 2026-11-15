@@ -300,12 +300,15 @@ const en = {
   'settings.planCancelled': '{name} · cancelled — yours until {date}',
   'settings.planPastDue':
     'Your last payment did not go through. Lemon Squeezy will try again; update your card under Manage subscription to keep your plan.',
+  'settings.planPastDuePlay':
+    'Your last payment did not go through. Google Play will try again; update your payment method under Manage subscription to keep your plan.',
   'settings.planPhotos': 'Photo analyses: {used} of {allowance} used this month',
   'settings.planTexts': 'Written analyses: {used} of {allowance} used this month',
   'settings.planResets': 'Both start again on {date}.',
   'settings.manage': 'Manage subscription',
   'settings.manageNote': 'Change your card, cancel, or download invoices — on Lemon Squeezy.',
   'settings.billingWait': 'Opening Lemon Squeezy…',
+  'settings.billingWaitPlay': 'Opening Google Play…',
   'settings.billingUnavailable': 'Payments are not available right now. Please try again in a few minutes.',
   'settings.alreadySubscribed': 'You already have a subscription.',
   'settings.billingSuccess': 'Thank you! Your subscription will appear here in a moment.',
@@ -1152,12 +1155,15 @@ const he: Dictionary = {
   'settings.planCancelled': '{name} · בוטל — פעיל עד {date}',
   'settings.planPastDue':
     'התשלום האחרון לא עבר. Lemon Squeezy ינסה שוב; עדכנו את הכרטיס בניהול המנוי כדי לשמור על המנוי.',
+  'settings.planPastDuePlay':
+    'התשלום האחרון לא עבר. Google Play ינסה שוב; עדכנו את אמצעי התשלום בניהול המנוי כדי לשמור על המנוי.',
   'settings.planPhotos': 'ניתוחי תמונה: {used} מתוך {allowance} נוצלו החודש',
   'settings.planTexts': 'ניתוחי טקסט: {used} מתוך {allowance} נוצלו החודש',
   'settings.planResets': 'שניהם מתחדשים ב־{date}.',
   'settings.manage': 'ניהול המנוי',
   'settings.manageNote': 'החלפת כרטיס, ביטול או הורדת חשבוניות — ב־Lemon Squeezy.',
   'settings.billingWait': 'פותחים את Lemon Squeezy…',
+  'settings.billingWaitPlay': 'פותחים את Google Play…',
   'settings.billingUnavailable': 'תשלומים לא זמינים כרגע. נסו שוב בעוד כמה דקות.',
   'settings.alreadySubscribed': 'כבר יש לכם מנוי.',
   'settings.billingSuccess': 'תודה! המנוי שלכם יופיע כאן בעוד רגע.',

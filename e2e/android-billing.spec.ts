@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { openSignedIn, signIn } from './supabase'
+import { LEMON_PORTAL, openSignedIn, signIn } from './supabase'
 
 /**
  * Subscribing inside the Android app, through Google Play (docs/ANDROID-APP.md,
@@ -107,6 +107,27 @@ test('one bought on Google Play is managed on Google Play — from the website t
   await signIn(page, { trialUsed: 10, subscription: { provider: 'google_play' } })
   await openSignedIn(page, '/settings?tab=ai')
   await expect(page.getByText('Change your card, cancel, or see receipts — on Google Play.')).toBeVisible({ timeout: 15_000 })
+})
+
+test('managing a Google Play subscription says Google Play, and the button works again on return', async ({ page }) => {
+  await signIn(page, { trialUsed: 10, subscription: { provider: 'google_play' } })
+  // The store answers 204, so the browser stays on this page in its "Opening…" state,
+  // as it does when Play opens in its own app.
+  await page.route(LEMON_PORTAL, (route) => route.fulfill({ status: 204 }))
+  await openSignedIn(page, '/settings?tab=ai')
+  await page.getByRole('button', { name: 'Manage subscription' }).click()
+  await expect(page.getByRole('button', { name: 'Opening Google Play…' })).toBeDisabled({ timeout: 15_000 })
+  await expect(page.getByText(/Lemon Squeezy/)).toHaveCount(0)
+  // Play opens in its own app; coming back must not leave the button stuck.
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')))
+  await expect(page.getByRole('button', { name: 'Manage subscription' })).toBeEnabled()
+})
+
+test('a failed Google Play renewal names Google Play, not Lemon Squeezy', async ({ page }) => {
+  await signIn(page, { trialUsed: 10, subscription: { provider: 'google_play', status: 'past_due' } })
+  await openSignedIn(page, '/settings?tab=ai')
+  await expect(page.getByText(/Google Play will try again/)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/Lemon Squeezy/)).toHaveCount(0)
 })
 
 test('on start, a purchase the app never reported is reported', async ({ page }) => {

@@ -96,6 +96,22 @@ export function PlanCard({
     setProblem(undefined)
     const link = await billingLink(action)
     if (link.ok) {
+      /*
+        Google Play opens in its own app and leaves this page where it was,
+        and a browser's back button can restore it from its cache: either
+        way the person comes back to a button still saying "Opening…" and
+        disabled. Coming back puts it right, and re-reads the plan, which
+        may have just been cancelled.
+      */
+      const back = () => {
+        if (document.visibilityState !== 'visible') return
+        document.removeEventListener('visibilitychange', back)
+        window.removeEventListener('pageshow', back)
+        setBusy(undefined)
+        refresh()
+      }
+      document.addEventListener('visibilitychange', back)
+      window.addEventListener('pageshow', back)
       window.location.assign(link.url)
       return
     }
@@ -130,7 +146,9 @@ export function PlanCard({
               : t('settings.planCancelled', { name: PLAN_NAME, date: date(plan.periodEnd) })}
           </p>
           {plan.status === 'past_due' && (
-            <p className="pt-1 text-sm text-accent">{t('settings.planPastDue')}</p>
+            <p className="pt-1 text-sm text-accent">
+              {plan.provider === 'google_play' ? t('settings.planPastDuePlay') : t('settings.planPastDue')}
+            </p>
           )}
           <ul className="space-y-1 pt-3 text-sm">
             <li>{t('settings.planPhotos', { used: plan.photos.used, allowance: plan.photos.allowance })}</li>
@@ -147,7 +165,9 @@ export function PlanCard({
           ) : (
             <div className="pt-4">
               <button type="button" className={secondary} disabled={Boolean(busy)} onClick={() => void go('portal')}>
-                {busy === 'portal' ? t('settings.billingWait') : t('settings.manage')}
+                {busy === 'portal'
+                  ? plan.provider === 'google_play' ? t('settings.billingWaitPlay') : t('settings.billingWait')
+                  : t('settings.manage')}
               </button>
               <p className="pt-2 text-xs text-ink-muted">
                 {plan.provider === 'google_play' ? t('settings.manageNotePlay') : t('settings.manageNote')}
@@ -178,7 +198,7 @@ export function PlanCard({
               <>
                 <button type="button" className={primary} disabled={Boolean(busy)} onClick={() => void buyInApp()}>
                   {busy === 'checkout'
-                    ? t('settings.billingWait')
+                    ? t('settings.billingWaitPlay')
                     : store.price
                       ? t('settings.subscribe', { price: store.price })
                       : t('settings.subscribePlay')}

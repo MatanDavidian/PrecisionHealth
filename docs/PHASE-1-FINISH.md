@@ -546,7 +546,11 @@ confirmed by its support assistant; built 2026-10-17, tested in
    Lemon Squeezy — it shows US$8.99. `scripts/record-demo.mjs` now says
    $4.99, so a new recording is correct.
 6. After 14 days: "Apply for production" — keep notes of what testers
-   report; Google asks. Claude drafts the answers.
+   report; Google asks. The invitation in both languages, what to do when
+   a tester is stuck, and the notes table are in
+   `docs/android/closed-test.md`.
+   Built the same day, waiting for a push and `scripts/deploy-functions.sh`:
+   the health check's Google Play probe, and the first-visit onboarding.
 7. Before the public launch: the Dial logo, a demo video from the Android
    app, support@ as the public developer email, a permanent free plan for
    the review account, the Garmin submission, the `www` redirect.

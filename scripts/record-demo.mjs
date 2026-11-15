@@ -267,7 +267,7 @@ await pause(2400)
 await caption('')
 
 // 6 — the plan
-await card(`<div class="dot"></div><h1>Vimetry</h1><p><b>Free</b> — 10 AI meal analyses, no card needed. Logging by hand, the week view and data export are always free.</p><p><b>Vimetry Monthly</b> — US$8.99 a month, 100 AI meal analyses. Cancel any time.</p><p style="font-size:15px">vimetry.app</p>`)
+await card(`<div class="dot"></div><h1>Vimetry</h1><p><b>Free</b> — 10 AI meal analyses, no card needed. Logging by hand, the week view and data export are always free.</p><p><b>Vimetry Monthly</b> — US$4.99 a month, 100 photo analyses and 200 written ones. Cancel any time.</p><p style="font-size:15px">vimetry.app</p>`)
 await pause(5500)
 
 const video = page.video()

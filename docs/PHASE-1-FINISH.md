@@ -20,11 +20,11 @@ Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
 | --- | --- |
 | Product | nutrition (photo, words, manual, repeat, adjust, fill a missed day), week view, insights, Garmin sync, Hebrew; GPT-6.1 Sol and GPT-6 Luna only; installable, opens offline; the sample day is labelled |
 | Accounts | sign-in, consent, export, deletion (cancels billing first), data moved in on first sign-in; signed out, the browser is asked to keep the data |
-| Legal | Terms and Privacy Policy live (both 2026-10-17: Google Play as a second seller, AI reports, not-a-medical-device wording); OpenAI DPA signed; privacy@ and support@ forward |
-| Payments | **Lemon Squeezy LIVE since 2026-11-12** (`docs/ops/payments.md`). Before that, in **test mode**, every flow passed end to end on 2026-10-10 (purchase, both allowances, cancel, refund, account deletion). **Live mode deliberately not yet** — owner's decision |
+| Legal | Terms and Privacy Policy live (Privacy 2026-10-17, Terms 2026-11-14 for the price; Google Play as a second seller, AI reports, not-a-medical-device wording); OpenAI DPA signed; privacy@ and support@ forward |
+| Payments | **Lemon Squeezy LIVE since 2026-11-12** (`docs/ops/payments.md`); **US$4.99 a month since 2026-11-14** (was $8.99), the same on Google Play; **Play Billing connected 2026-11-15**. Before that, in **test mode**, every flow passed end to end on 2026-10-10 (purchase, both allowances, cancel, refund, account deletion). **Live mode deliberately not yet** — owner's decision |
 | Tests | 525 unit, 318 browser, 11 server handler suites (every function), DB invariants on Postgres, a race test, a live-site check |
 | Operations | CI deploys; migrations tracked (0001–0017); one deploy script; daily health check with email — schema, versions, both spend ceilings, every OpenAI key against every model, browser errors, reported AI answers, payment disputes, payments key expiry |
-| Android | Play Billing (server and app), the TWA configuration, listing drafts, screenshots, a reviewer sign-in and sample data — built; waiting on Google's account verification (`docs/ANDROID-APP.md`) |
+| Android | Play Billing (server and app), the TWA configuration, listing drafts, screenshots, a reviewer sign-in and sample data — built. **Closed test live since 2026-11-14** (Alpha, v2 1.0.1, Israel only); Play Billing connected 2026-11-15; waiting on 12+ testers for 14 days (`docs/ANDROID-APP.md`) |
 | Garmin | renamed Vimetry; a Store build with no token; listing and checklist (`docs/garmin/store-listing.md`) — waiting on the owner's developer account |
 
 ---
@@ -39,7 +39,7 @@ handler tests for every function.
 
 | # | What | Who | Note |
 | --- | --- | --- | --- |
-| 1 | **Android app on the Play Store**, selling through Google Play Billing | M + C | **Code done 2026-10-10** (steps 1–4 and 5's drafts of `docs/ANDROID-APP.md`). Waiting on the owner: Google's verification, then the console setup, the package build, the 14-day closed test |
+| 1 | **Android app on the Play Store**, selling through Google Play Billing | M + C | **Code done 2026-10-10** (steps 1–4 and 5's drafts of `docs/ANDROID-APP.md`). Console setup, package and billing done; the closed test is live since 2026-11-14. **Left: 12+ testers for 14 days, then apply for production** (handover, update 2026-11-15) |
 | 2 | **Publish the Garmin app** | M + C | **Ready to submit 2026-10-10.** Owner: developer account, upload, simulator screenshots, submit (`docs/garmin/store-listing.md`) |
 | 3 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | M + C | **Visible since 2026-10-10:** the webhook logs them and the daily check turns red on any in 30 days. Lemon Squeezy's docs do not describe their contents, so automatic handling waits for a real one. Owner: tick both events on the webhook. Then decide the rule — end access while disputed, as a refund does? |
 | 4 | **Logo and home-screen icon** | M + C | Moved up: the Android app and the installable website need icons. A temporary mark will do for the closed test; motion and the accessibility scan stay P3 |
@@ -47,7 +47,7 @@ handler tests for every function.
 | 6 | **Contract tests on a local Supabase** | C | Needs the local stack (~2 GB download) — run with the owner around |
 | 7 | **Model quality check** on real meal photos | M (+ C script) | GPT-6.1 Sol is the baseline (`docs/ops/model-evaluation.md`). When there are photos, C writes a script that runs them through both models and scores them |
 | 8 | **Re-measure the cost per analysis**, update `docs/ops/pricing.md` | C | After a few weeks of real usage, from the ledger — and with Play's 15% in it |
-| — | **Go live with payments** | M | When the owner decides: `docs/ops/payments.md` step 4 — copy the product to live, longest key expiry, `set-billing-secrets.sh live` |
+| — | ~~**Go live with payments**~~ | M | **Done 2026-11-12.** Was: `docs/ops/payments.md` step 4 — copy the product to live, longest key expiry, `set-billing-secrets.sh live` |
 
 ### Small things waiting on the owner
 
@@ -509,6 +509,41 @@ confirmed by its support assistant; built 2026-10-17, tested in
 - `public/.well-known/assetlinks.json`, once the first Play upload exists
   (`android/README.md`).
 
+**Update 2026-11-15: the closed test is live, and Play Billing is connected.**
+- Google approved the closed test (Alpha shows "available to testers on
+  Google Play", 1 country). `testers1` has 4 addresses so far.
+- Play Billing set up end to end, and the test notification reached
+  `play-rtdn` (the full record is in `docs/ANDROID-APP.md`, "Done
+  2026-11-15"). License testing covers `testers1`.
+- Price lowered to **US$4.99** on the website, Lemon Squeezy and Play
+  (the owner's decision; arithmetic in `docs/ops/payments.md`). Terms
+  version 2026-11-14, one re-consent.
+- **Not yet verified: a real purchase inside the Android app** — the one
+  link untested is the server reading a purchase from Play with the
+  service account, whose permissions can take up to a day to reach the API.
+
+**Next, in order (2026-11-15):**
+1. Owner: get the opt-in link working for the first testers ("App not
+   available" means the signed-in Google account is not in `testers1`, or
+   the link is still propagating), then send it to all of them.
+2. Owner + Claude: the first purchase in the app as a license tester;
+   Claude checks `billing_events` and `subscriptions`. Then cancel, and
+   watch a 5-minute renewal and the expiry.
+3. Owner: reach 12+ testers (aim for 15–16); the 14 days count from the
+   12th. If Israel is too small a pool, add the US and Canada to the closed
+   test only (never the EEA or UK while non-trader).
+4. Owner: confirm Google's test deposit in the payments profile; ask an
+   accountant how VAT and income tax apply to Play sales (on Play the
+   owner is the seller; Lemon Squeezy is its own merchant of record).
+5. Owner: remove or replace the demo video in the Play listing and in
+   Lemon Squeezy — it shows US$8.99. `scripts/record-demo.mjs` now says
+   $4.99, so a new recording is correct.
+6. After 14 days: "Apply for production" — keep notes of what testers
+   report; Google asks. Claude drafts the answers.
+7. Before the public launch: the Dial logo, a demo video from the Android
+   app, support@ as the public developer email, a permanent free plan for
+   the review account, the Garmin submission, the `www` redirect.
+
 **Update 2026-11-14: the closed test is submitted to Google's review.**
 - Play Console set up end to end: app `app.vimetry` created; every "Set up
   your app" form done (privacy policy, reviewer access, no ads, content
@@ -533,22 +568,22 @@ documents (then the contact-phone check).
 **Next for the owner:**
 1. ~~**Google:** wait for the ticket's answer.~~ **Answered 2026-10-18:
    Personal is fine.** Carry on with 4–5 below.
-2. **Testers:** recruit 14–15 people with Android phones.
+2. **Testers:** recruit 14–15 people with Android phones. (4 so far, 2026-11-15.)
 3. **Garmin:** create the Connect IQ developer account, then run
    `garmin/build.sh --store`, upload, take simulator screenshots, and
    submit (`docs/garmin/store-listing.md`).
-4. **Play Console** (the answer is in; needs identity verification done):
+4. ~~**Play Console**~~ **done 2026-11-15** (was: needs identity verification done):
    - payments profile
    - product `vimetry_monthly`
    - service account (`GOOGLE_PLAY_SERVICE_ACCOUNT`)
    - Pub/Sub push to `play-rtdn?token=…` (`GOOGLE_PLAY_RTDN_TOKEN`)
    - (`docs/ANDROID-APP.md`, step 4)
-5. **Build the Android package** (`android/README.md`): internal testing,
-   then the 14-day closed test.
+5. ~~**Build the Android package**~~ **done** (`android/README.md`): internal
+   testing, then the 14-day closed test (live since 2026-11-14).
 6. **Read and approve the drafts** in `docs/android/store-listing.md`.
 7. **A real photo-and-estimate screenshot**, taken on a phone.
 8. **Unchanged, when ready:**
-   - go live with payments (`docs/ops/payments.md`, step 4)
+   - ~~go live with payments~~ done 2026-11-12
    - confirm the GPT-6 prices in OpenAI
    - the logo and onboarding designs
    - the Supabase DPA, a restore drill, the `www` redirect, the trademark

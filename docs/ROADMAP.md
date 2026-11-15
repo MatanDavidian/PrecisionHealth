@@ -1,6 +1,208 @@
 # Roadmap
 
-This reworks the phase plan in
+**The plan from 2026-11-15**, in epics and features. The owner's decision that
+day: Phase 1 is finished as a plan. What it still needs to launch is Epic 1;
+everything else left over from it waits in the pool
+([`BACKLOG.md`](BACKLOG.md)) until it is worth doing, and the work moves on to
+what makes the product worth paying for: devices, coaches, and the features
+people ask for.
+
+How this page is laid out:
+- **An epic** is a goal that takes weeks and can be said in one sentence.
+- **A feature** is a piece of it that ships on its own.
+- Sizes: **S** under half a day · **M** one to two days · **L** three to five
+  · **XL** weeks. Owner: **C** = Claude in the repo · **M** = Matan.
+- Status: **now** (in progress) · **next** (the one after) · **later** ·
+  **spike** (find out first, then decide).
+
+The history of how the app was built, slice by slice, starts at
+"[How it was built](#how-it-was-built-vertical-slices)" below and is kept as
+written.
+
+## The epics at a glance
+
+| # | Epic | Why it matters | Status |
+| --- | --- | --- | --- |
+| 1 | **Launch on Google Play** | Nothing else counts until a stranger can install and pay | now: waiting on testers and Google's 14 days |
+| 2 | **AI models and cost** | Half the cost per analysis decides whether US$4.99 is comfortable | now: small |
+| 3 | **Watches and scales** | The day should fill itself in, whatever is on the wrist | next: one spike, then build |
+| 4 | **Coaches and nutritionists** | The one feature that also brings customers | next: design and three conversations first |
+| 5 | **iPhone app** | Apple Watch, Apple Health, and the App Store are one project | later: the largest item here |
+| 6 | **More reasons to open the app** | Reminders, goals, the health scan, WhatsApp | later: pick after the launch |
+
+The recommended order, and the reasoning:
+
+```
+Now      Epic 1  testers → 14 days → apply for production      (calendar, not work)
+         Epic 2  GPT-6.1 Terra offered, then measured           (days)
+         Epic 3  the Garmin app published as it is              (owner, then Garmin's review)
+
+Next     Epic 3  spike: Health Connect inside the Android app   (2 days, decides the epic)
+         Epic 4  design, and three nutritionists asked          (owner's conversations)
+         then build the one the evidence supports first; the recommendation
+         is Health Connect, because a coach's view is worth more when the
+         client's weight and activity arrive by themselves
+
+Later    Epic 4  coaches, built and piloted
+         Epic 5  iPhone app
+         Epic 6  one feature at a time, chosen from what users ask for
+```
+
+## Epic 1 — Launch on Google Play
+
+**Done means:** the app is in production on Google Play in the countries
+chosen, and a stranger has installed it and subscribed.
+
+| Feature | Size | Who | Status |
+| --- | --- | --- | --- |
+| 1.1 Closed test: 12+ testers opted in for 14 days in a row (4 so far). The invitation and the troubleshooting table are in [`android/closed-test.md`](android/closed-test.md) | calendar | M | now |
+| 1.2 Tester feedback: written down as it comes, fixed as it comes | S each | M + C | now |
+| 1.3 Money: Google's test deposit confirmed in the payments profile; an accountant asked how VAT and income tax apply to Play sales | S | M | now |
+| 1.4 The listing tells the truth: the demo video shows US$8.99 and must go or be re-recorded; the public developer email becomes support@ | S | M | now |
+| 1.5 The reviewer's account never runs dry: a permanent free plan for review@ | S | C, with M's approval (it is a change to production data) | next |
+| 1.6 Apply for production: Google's questions answered from the notes | S | M + C | after the 14 days |
+| 1.7 The public launch: the Dial logo and icons, a demo video recorded in the Android app | M | M + C | before 1.6 is approved, if wanted; not a blocker |
+
+Built and verified on 2026-11-15: Play Billing end to end (purchase, renewal,
+cancellation, expiry), the daily check that the server can still read
+purchases, and the first-visit welcome (`ANDROID-APP.md`, `PHASE-1-FINISH.md`).
+
+## Epic 2 — AI models and cost
+
+**Done means:** the app offers the models worth offering, the default is
+chosen from measurements, and the price of the plan rests on a measured cost.
+
+| Feature | Size | Who | Status |
+| --- | --- | --- | --- |
+| 2.1 **Offer GPT-6.1 Terra.** Released 2026-10-26 as `gpt-6.1-terra`, reported at US$1 / US$5 per million tokens, half of GPT-6.1 Sol. **Blocked on one owner step:** none of the three OpenAI projects (trial, plans, admin) may call it yet (`model_not_found`, tried 2026-11-15), and an offered model that a key cannot run turns the daily check red and fails for users. When the owner allows it in each project: the price table first, then the picker, the health probe covers it by itself | S | M, then C | now |
+| 2.2 **Measure the models on real meals:** fifteen real plates through Sol, Terra and Luna (`scripts/eval-models.mjs`, `ops/model-evaluation.md`) | M | M (photos) + C | next |
+| 2.3 **Choose the default** from 2.2. If Terra reads plates as well as Sol, the full allowance costs US$1.45–2.65 instead of US$2.90–5.30, against US$4.24 received | S | M | after 2.2 |
+| 2.4 **Re-measure the cost per analysis** from the ledger after a few weeks of real use, with Play's 15% in it (`ops/pricing.md`) | S | C | later |
+
+## Epic 3 — Watches and scales
+
+**Done means:** a person with any common watch or smart scale sees their
+activity, sleep and weight in Vimetry without typing, on Android first.
+
+There are three ways such data can arrive, and choosing between them is the
+whole epic:
+
+1. **An app on the watch itself.** What exists today for Garmin (Connect IQ).
+   No approval needed, but it is one app per brand, it reaches only what the
+   watch exposes (no sleep, no HRV on Garmin), and each person must install
+   it and paste a token.
+2. **The phone's health hub.** On Android this is **Health Connect**, a
+   store on the phone that Samsung Health, Fitbit, Garmin Connect, Withings,
+   Xiaomi and most scale apps write into. On iPhone it is **Apple Health**.
+   One integration per platform covers nearly every watch and scale at once.
+3. **Each brand's cloud.** Withings, Fitbit, Oura and Polar let a website
+   connect directly. Garmin's (the Health API) needs partner approval, and
+   applications were closed when last checked (September 2026).
+
+**The recommendation is the second way, starting with Health Connect**,
+because the Android app is already on Play and one piece of work reaches
+Galaxy Watch, Pixel Watch, Fitbit, most smart scales, and Garmin too
+(Garmin Connect writes to Health Connect on Android 14 and later, though
+reports say it holds some data back; which data is a question for the spike).
+
+One real obstacle: today's Android app is a Trusted Web Activity, the website
+in a full-screen browser with no code of its own, and Health Connect can only
+be read by code inside the app. The spike is to add a small native part to
+the same Android project that reads Health Connect and sends it to
+`device-sync`, the endpoint the watch already uses, without disturbing Play
+Billing. If that does not work, the alternative is a different kind of app
+shell, which also changes how billing is done: a much larger job, to be
+weighed against the iPhone app in Epic 5, which needs that shell anyway.
+
+| Feature | Size | Who | Status |
+| --- | --- | --- | --- |
+| 3.1 **Publish the Garmin watch app as it is** (`garmin/store-listing.md`): developer account, upload, simulator screenshots, submit | M, then Garmin's review | M + C | now |
+| 3.2 **More Garmin models:** today the manifest lists the Forerunner 265 and 265S, proven on hardware. Add the models the simulator proves (Forerunner, Venu, vívoactive, fēnix families) | S–M | C | next |
+| 3.3 **Spike: Health Connect inside the Android app.** Two days to answer: can a native part live beside the TWA; which data Garmin, Samsung and a scale really share; what Google's Health Connect declaration asks for | M | C, on the emulator and M's phone | next |
+| 3.4 **Health Connect, built:** steps, total and active energy, sleep, resting heart rate, HRV, weight, body fat. They map onto codes the app already stores, and two sources disagreeing about a day is already handled (D6). Needs a Privacy Policy line, the Data safety form, and Google's review of the health permissions | L | C + M | after 3.3 |
+| 3.5 **Smart scales:** on Android they come with 3.4 for any scale whose app writes to Health Connect. A direct Withings connection for people who use only the website | M | C | later, on demand |
+| 3.6 **Sleep and HRV for Garmin owners:** through 3.4 if Garmin shares them; otherwise ask Garmin again about the Health API | S to find out | C + M | with 3.3 |
+| 3.7 **Other clouds** (Fitbit, Oura, Polar, Strava), one at a time | M each | C | later, on demand |
+
+## Epic 4 — Coaches and nutritionists
+
+**Done means:** a client can let their nutritionist or trainer see their
+meals, the coach can comment and suggest, and the client can end it at any
+moment, with three real coaches using it.
+
+Why it is high on the list: it is the only feature here that brings
+customers. One nutritionist with thirty clients is thirty installs that no
+advertising bought. Why it is not first: it changes the rule every row in the
+database is protected by (`auth.uid() = user_id`), and delegated access is
+exactly where health products are breached (`PHASES.md`, Phase 3). So it
+starts with design, not code.
+
+| Feature | Size | Who | Status |
+| --- | --- | --- | --- |
+| 4.1 **Three conversations:** the owner asks two or three working nutritionists or trainers what they do with clients' food logs today, and what they would pay for | S | M | next |
+| 4.2 **Design, on paper:** the client invites the coach, never the reverse; what a coach may see (meals, weight, activity) and for which period; a coach writes comments and suggestions and never edits the client's records; how it ends; who pays. One hour of legal advice on advice given through the app (in Israel "clinical dietitian" is a regulated profession, to be checked) | M | C + M | next |
+| 4.3 **The sharing model:** a grants table, row-level rules that let a coach read exactly what was granted and nothing else, a log of who read what, and tests that try to break it | L | C | after 4.2 |
+| 4.4 **The client's side:** invite by code, see who has access, revoke in one tap; consent recorded like the policies are | M | C | after 4.3 |
+| 4.5 **The coach's side:** a list of clients; a client's day and week, read-only | L | C | after 4.3 |
+| 4.6 **Comments and suggestions** on a meal, a day or a week, and the client told about them (in the app first, email after) | L | C | after 4.5 |
+| 4.7 **Pilot** with the coaches from 4.1, free, before any price is set | calendar | M | after 4.6 |
+| 4.8 **Paying for it:** per coach, per client, or included in the client's plan, decided from the pilot | M | M + C | after 4.7 |
+
+Also needed along the way: the Privacy Policy and Terms (a new version, one
+re-consent), Google's Data safety form (sharing at the user's own request is
+not "sharing" in Google's sense, to be confirmed against the form), and a
+security review before the pilot.
+
+## Epic 5 — iPhone app
+
+**Done means:** Vimetry is in the App Store, reads Apple Health (so Apple
+Watch and every scale that writes there), and sells the plan through Apple.
+
+The website already works on iPhones for logging by photo, words and hand.
+What an iPhone cannot do from a website is read Apple Health, so this epic is
+about the watch and the store, and it is the largest item on this page
+(`PHASES.md`, Phase 2): an Apple developer account (US$99 a year), an app
+shell around the web app that earns its place with real Apple Health
+integration (Apple rejects thin wrappers), Apple's in-app purchase as a third
+seller beside Lemon Squeezy and Google Play, and Apple's review.
+
+| Feature | Size | Who | Status |
+| --- | --- | --- | --- |
+| 5.1 Decide when: after Health Connect has shown what automatic data is worth, or sooner if coaches say their clients are on iPhones | S | M | later |
+| 5.2 The shell, Apple Health, the purchase, the listing, the review | XL | C + M | later |
+
+## Epic 6 — More reasons to open the app
+
+Candidates, not commitments. One at a time, chosen from what testers and
+first customers ask for.
+
+| Feature | Size | Notes |
+| --- | --- | --- |
+| 6.1 **Reminders:** "log your dinner", at hours the person chooses. The Android app already has notifications switched on | M | The cheapest thing here that brings people back |
+| 6.2 **Goals and streaks** (Slice 5 below): targets, adherence, weekly rollups, computed by rules and not by the model | L | |
+| 6.3 **Health scan** (Slice 6 below): the week across food, training, recovery and body, every claim linked to its records | L | |
+| 6.4 **WhatsApp intake** ([`features/whatsapp-intake.md`](features/whatsapp-intake.md)): send a photo to a number | L, plus Meta's verification | Needs a verified business with Meta |
+| 6.5 **Food database and barcodes:** the credible route to vitamins and minerals | XL | Needs a licensed database, or USDA plus Israeli tables |
+| 6.6 **Logging offline:** a queue that sends when the connection returns | L | Today a signed-in save fails with a banner (D16) |
+
+## Decisions the plan is waiting for
+
+1. **Allow `gpt-6.1-terra`** in the three OpenAI projects (Epic 2.1).
+2. **Health Connect or coaches first**, once the spike (3.3) and the
+   conversations (4.1) have answered. The recommendation is above.
+3. **A registered business.** Coaches paying, Meta's verification, and
+   opening the app in the EU and UK (which the non-trader declaration
+   forbids, `android/store-listing.md`) all lead to the same registration.
+   Worth deciding before Epic 4.8, not after.
+4. **Which countries the production release opens in.** Israel only, or more
+   outside the EEA and UK.
+
+---
+
+# How it was built: vertical slices
+
+What follows is the roadmap as it was written while the app was built, kept
+for its reasoning. It reworks the phase plan in
 [`requirements/AI_Driven_Health_App_Product_Roadmap.docx`](requirements/AI_Driven_Health_App_Product_Roadmap.docx).
 The product thinking there is kept; the *sequencing* is changed, for one reason
 given below.
@@ -300,6 +502,11 @@ to build now and expensive to retrofit.
 The slices below are Phase 2 and beyond. **None of them should start while
 Phase 1 is unfinished**, because each one adds surface that Phase 1 would then
 have to cover.
+
+> **Superseded 2026-11-15.** The owner closed Phase 1 as a plan: its launch
+> items are Epic 1 at the top of this page, the rest wait in
+> [`BACKLOG.md`](BACKLOG.md), and the order of what comes next is the epics
+> above, not the phases below.
 
 ## The three phases
 

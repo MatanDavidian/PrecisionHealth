@@ -1,5 +1,12 @@
 # The three phases
 
+> **Reordered on 2026-11-15.** The reasoning below still holds, but the
+> order does not: watches and scales, and coaches, moved ahead of the rest,
+> and the plan is now kept as epics in [`ROADMAP.md`](ROADMAP.md). The
+> warnings here about the trainer feature (design first, the client invites)
+> and about Apple (the watch and the App Store are one project) were carried
+> into Epics 4 and 5.
+
 The owner's plan, with what I would change. **The shape is right**, and one
 sentence in it matters more than the rest:
 

@@ -1,5 +1,11 @@
 # Finishing Phase 1
 
+> **Closed as a plan on 2026-11-15** (the owner's decision). What Phase 1
+> still needs to launch is **Epic 1** in [`ROADMAP.md`](ROADMAP.md); the
+> rest of what is open below moved to the pool, [`BACKLOG.md`](BACKLOG.md).
+> This page stays as the record of what was done and why. New work is
+> planned in the roadmap, not here.
+
 Written 2026-10-02, after a week in which photo analysis was broken in
 production for every signed-in user and nobody knew. That week is the best
 summary of what is left: the product works; the machinery that keeps it

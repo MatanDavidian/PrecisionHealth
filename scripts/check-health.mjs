@@ -171,6 +171,24 @@ else {
         }
       }
 
+      // Google Play: can the server still read purchases, and do Play's notifications have a way in.
+      const play = body.play
+      if (!play) console.log('    Google Play: not reported by this deploy')
+      else if (!play.configured) console.log('    Google Play: not connected yet')
+      else {
+        if (play.ok) pass('Google Play: the service account reads purchases')
+        else {
+          const why = {
+            bad_key: 'Google refused its key — make a new one and run scripts/set-play-secrets.sh',
+            refused: 'Play refused it — Play Console → Users and permissions (new permissions can take a day)',
+            unreachable: 'Google did not answer',
+          }[play.reason] ?? 'failed'
+          fail(`Google Play: the service account cannot read purchases${play.status ? ` (${play.status})` : ''}: ${why}`)
+        }
+        if (!play.notifications) fail('Google Play: GOOGLE_PLAY_RTDN_TOKEN is not set — renewals, cancels and refunds cannot arrive')
+        else console.log(`    Google Play notifications: last one ${play.lastNotificationAt?.slice(0, 16) ?? 'never'}`)
+      }
+
       // What broke in people's browsers since yesterday (report-error).
       const errors = body.clientErrors
       if (!errors) console.log('    browser errors: not reported by this deploy')

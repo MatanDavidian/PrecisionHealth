@@ -9,6 +9,7 @@
  *   - are the secrets the functions need set             (`secrets`)
  *   - what happened in the last 24 hours: spend against the day's ceiling,
  *     and how many analyses ended in each outcome        (`last24h`)
+ *   - can it still read purchases from Google Play       (`play`)
  *
  * It exists because of 25 Sep 2026, when analyses failed for a week on a
  * missing migration and nothing said so. The schema check alone would have
@@ -22,6 +23,7 @@
 import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { EXPECTED_SCHEMA } from '../_shared/schema.ts'
+import { playAccess } from '../_shared/googlePlay.ts'
 import {
   DEFAULT_PLAN_DAILY_BUDGET_MICROS,
   TRIAL_MODELS,
@@ -189,6 +191,13 @@ Deno.serve(async (request) => {
     // AI answers people reported from the app in the last day (migration 0017).
     admin.from('ai_reports').select('reason').gte('created_at', since),
   ])
+  // The newest thing Google Play told us (play-rtdn logs each one): a date, nothing else.
+  const { data: lastPlay } = await admin
+    .from('billing_events')
+    .select('received_at')
+    .eq('object_type', 'google_play')
+    .order('received_at', { ascending: false })
+    .limit(1)
 
   const outcomes: Record<string, number> = {}
   for (const row of (recent as { outcome: string }[] | null) ?? []) {
@@ -235,9 +244,23 @@ Deno.serve(async (request) => {
     keys.flatMap(([key, value]) => TRIAL_MODELS.map((model) => probe(key, value, model))),
   )
 
+  /*
+    Google Play, once it is connected: the service account must still be able
+    to read purchases, and the push secret must be set, or renewals, cancels
+    and refunds stop arriving and nothing else would say so.
+  */
+  const access = await playAccess()
+  const play = access.configured
+    ? {
+        ...access,
+        notifications: Boolean(Deno.env.get('GOOGLE_PLAY_RTDN_TOKEN')),
+        lastNotificationAt: (lastPlay as { received_at: string }[] | null)?.[0]?.received_at ?? null,
+      }
+    : access
+
   const ok =
     schemaMissing.length === 0 && secretsMissing.length === 0 && !spendError && !recentError &&
-    probes.every((p) => p.ok)
+    probes.every((p) => p.ok) && (!play.configured || (play.ok && play.notifications))
 
   return json(
     {
@@ -252,6 +275,7 @@ Deno.serve(async (request) => {
       clientErrors,
       aiReports,
       openai: probes,
+      play,
       disputes: disputesError
         ? { error: 'billing_events unreadable' }
         : { last30days: (disputeRows as { event_name: string; object_id: string; received_at: string }[] | null) ?? [] },

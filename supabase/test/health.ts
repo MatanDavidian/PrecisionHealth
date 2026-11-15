@@ -7,6 +7,8 @@
  *
  *   deno run --allow-net --allow-env supabase/test/health.ts
  */
+import { google, resetGoogle, serviceAccount } from './_stub.ts'
+
 const TOKEN = 'health-token-for-tests-only-0123456789'
 Deno.env.set('SUPABASE_URL', 'http://localhost:8998')
 Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'stub-service-key')
@@ -16,6 +18,7 @@ Deno.env.set('OPENAI_TRIAL_KEY', 'sk-stub-never-echoed')
 let schemaMissing: string[] = []
 let errorsDown = false
 let disputes: Record<string, string>[] = []
+let playEvents: Record<string, string>[] = []
 
 const stub = Deno.serve({ port: 8998, onListen: () => {} }, (req) => {
   const url = new URL(req.url)
@@ -32,7 +35,10 @@ const stub = Deno.serve({ port: 8998, onListen: () => {} }, (req) => {
       : Response.json([{ outcome: 'OK' }, { outcome: 'OK' }, { outcome: 'PROVIDER_ERROR' }])
   }
   if (url.pathname === '/rest/v1/billing_events') {
-    return Response.json(disputes)
+    // Two reads: the newest Google Play notification, and the month's disputes.
+    return url.searchParams.has('object_type')
+      ? Response.json(playEvents)
+      : Response.json(disputes)
   }
   if (url.pathname === '/rest/v1/ai_reports') {
     return Response.json([{ reason: 'wrong' }, { reason: 'offensive' }, { reason: 'wrong' }])
@@ -114,6 +120,8 @@ const call = (token?: string) =>
     JSON.stringify(body.last24h.outcomes))
   check('no secret is echoed', !text.includes('sk-stub') && !text.includes('stub-service-key') && !text.includes(TOKEN))
   check('payments not connected is said, not failed', body.billing.configured === false && res.status === 200)
+  check('Google Play not connected is said, not failed, and Google is not asked',
+    body.play.configured === false && res.status === 200 && google.calls.length === 0, JSON.stringify(body.play))
 }
 {
   schemaMissing = ['function reserve_analysis', 'outcome SETTLED_LATE']
@@ -194,6 +202,59 @@ const call = (token?: string) =>
     `${probed.length} ${again.status}`)
   Deno.env.delete('OPENAI_PLANS_KEY')
   Deno.env.delete('OPENAI_ADMIN_KEY')
+}
+
+{
+  // Google Play, connected: the service account must be able to read purchases.
+  const account = await serviceAccount()
+  const RTDN = 'rtdn-token-never-echoed'
+  Deno.env.set('GOOGLE_PLAY_SERVICE_ACCOUNT', account)
+  Deno.env.set('GOOGLE_PLAY_RTDN_TOKEN', RTDN)
+  playEvents = [{ received_at: '2026-11-14T22:58:00Z' }]
+  resetGoogle()
+  {
+    const res = await call(TOKEN)
+    const text = await res.text()
+    const body = JSON.parse(text)
+    check('Google Play connected and readable is healthy', res.status === 200 && body.play.configured === true &&
+      body.play.ok === true && body.play.notifications === true, JSON.stringify(body.play))
+    check('asked by reading, never by writing', google.calls.length === 1 && google.calls[0].method === 'GET' &&
+      google.calls[0].path.endsWith('/purchases/voidedpurchases'), JSON.stringify(google.calls))
+    check('and says when Play last sent a notification', body.play.lastNotificationAt === '2026-11-14T22:58:00Z',
+      JSON.stringify(body.play))
+    check('without echoing the key or the push secret', !text.includes('PRIVATE KEY') && !text.includes(RTDN) &&
+      !text.includes(google.issued))
+  }
+  {
+    google.mode = 'forbidden'
+    const res = await call(TOKEN)
+    const body = await res.json()
+    check('Play refusing the service account fails the check, and says so', res.status === 503 &&
+      body.play.ok === false && body.play.reason === 'refused' && body.play.status === 403, JSON.stringify(body.play))
+    google.mode = 'down'
+    const down = await call(TOKEN)
+    const downBody = await down.json()
+    check('Play not answering fails it as unreachable', down.status === 503 &&
+      downBody.play.reason === 'unreachable' && downBody.play.status === 503, JSON.stringify(downBody.play))
+    google.mode = 'ok'
+  }
+  {
+    Deno.env.set('GOOGLE_PLAY_SERVICE_ACCOUNT', JSON.stringify({ ...JSON.parse(account), private_key: 'not a key' }))
+    const res = await call(TOKEN)
+    const body = await res.json()
+    check('a key Google will not accept fails it as a bad key', res.status === 503 &&
+      body.play.ok === false && body.play.reason === 'bad_key', JSON.stringify(body.play))
+    Deno.env.set('GOOGLE_PLAY_SERVICE_ACCOUNT', account)
+  }
+  {
+    Deno.env.delete('GOOGLE_PLAY_RTDN_TOKEN')
+    const res = await call(TOKEN)
+    const body = await res.json()
+    check('without the push secret it fails: renewals and refunds could not arrive', res.status === 503 &&
+      body.play.ok === true && body.play.notifications === false, JSON.stringify(body.play))
+  }
+  Deno.env.delete('GOOGLE_PLAY_SERVICE_ACCOUNT')
+  playEvents = []
 }
 
 await stub.shutdown()

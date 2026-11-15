@@ -226,7 +226,7 @@ export async function call(body: unknown, init: { token?: string; headers?: Reco
  * held in `google.purchases`, keyed by token, in Play's own v2 shape.
  */
 export const google = {
-  mode: 'ok' as 'ok' | 'down' | 'ackFails' | 'cancelFails',
+  mode: 'ok' as 'ok' | 'down' | 'forbidden' | 'ackFails' | 'cancelFails',
   purchases: {} as Record<string, Record<string, unknown>>,
   voided: [] as string[],
   calls: [] as { method: string; path: string }[],
@@ -301,6 +301,8 @@ globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => 
     return Response.json({ error: { code: 401 } }, { status: 401 })
   }
   if (google.mode === 'down') return Response.json({ error: { code: 503 } }, { status: 503 })
+  // Signed in, but not (or no longer) a user of this app in Play Console.
+  if (google.mode === 'forbidden') return Response.json({ error: { code: 403, status: 'PERMISSION_DENIED' } }, { status: 403 })
 
   const path = decodeURIComponent(url.pathname)
   const v2 = path.match(/\/purchases\/subscriptionsv2\/tokens\/([^/]+)$/)

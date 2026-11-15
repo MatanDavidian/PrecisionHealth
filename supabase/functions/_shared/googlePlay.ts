@@ -161,3 +161,39 @@ export async function isVoided(token: string, sinceMillis: number): Promise<bool
   const voided: { purchaseToken?: string }[] = body?.voidedPurchases ?? []
   return voided.some((v) => v.purchaseToken === token)
 }
+
+export type PlayAccess =
+  /** No service account set: Google Play is not connected. */
+  | { configured: false }
+  | { configured: true; ok: true }
+  /**
+   * `bad_key`: Google would not give the service account a token (the key
+   * deleted, disabled or mangled). `refused`: signed in, but Play would not
+   * let it read this app's purchases (the user removed in Play Console, or
+   * its permissions changed). `unreachable`: neither answered.
+   */
+  | { configured: true; ok: false; reason: 'bad_key' | 'refused' | 'unreachable'; status?: number }
+
+/**
+ * Can the service account still read this app's purchases?
+ *
+ * For the daily health check. Asked the way a refund is confirmed
+ * (`isVoided`): the last hour's voided purchases, which reads and changes
+ * nothing, and needs the same permission every purchase lookup does. Without
+ * it, a key that stopped working would show only as customers who paid and
+ * got nothing.
+ */
+export async function playAccess(): Promise<PlayAccess> {
+  if (!playConfigured()) return { configured: false }
+  if (!(await accessToken())) return { configured: true, ok: false, reason: 'bad_key' }
+  const response = await call(`/purchases/voidedpurchases?type=1&maxResults=1&startTime=${Date.now() - 60 * 60 * 1000}`)
+  await response?.body?.cancel()
+  if (!response) return { configured: true, ok: false, reason: 'unreachable' }
+  if (response.ok) return { configured: true, ok: true }
+  return {
+    configured: true,
+    ok: false,
+    reason: response.status === 401 || response.status === 403 ? 'refused' : 'unreachable',
+    status: response.status,
+  }
+}

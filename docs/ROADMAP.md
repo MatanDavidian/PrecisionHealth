@@ -137,6 +137,13 @@ database is protected by (`auth.uid() = user_id`), and delegated access is
 exactly where health products are breached (`PHASES.md`, Phase 3). So it
 starts with design, not code.
 
+**The design is written (2026-11-16):**
+[`features/coaches.md`](features/coaches.md) holds the plan in six slices,
+the architecture, the code design, the screens, and nine decisions for the
+owner. Its central choice: the rule that protects every health table stays
+as it is, and a coach reads through a small set of database functions that
+check the grant, cut to its scope, and log the read.
+
 | Feature | Size | Who | Status |
 | --- | --- | --- | --- |
 | 4.1 **Three conversations:** the owner asks two or three working nutritionists or trainers what they do with clients' food logs today, and what they would pay for | S | M | next |

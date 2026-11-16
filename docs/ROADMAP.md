@@ -26,7 +26,7 @@ written.
 | 1 | **Launch on Google Play** | Nothing else counts until a stranger can install and pay | now: waiting on testers and Google's 14 days |
 | 2 | **AI models and cost** | Half the cost per analysis decides whether US$4.99 is comfortable | now: small |
 | 3 | **Watches and scales** | The day should fill itself in, whatever is on the wrist | next: one spike, then build |
-| 4 | **Coaches and nutritionists** | The one feature that also brings customers | next: design and three conversations first |
+| 4 | **Coaches and nutritionists** | The one feature that also brings customers | **set aside by the owner (2026-11-16)**, with the design and mock-ups done |
 | 5 | **iPhone app** | Apple Watch, Apple Health, and the App Store are one project | later: the largest item here |
 | 6 | **More reasons to open the app** | Reminders, goals, the health scan, WhatsApp | later: pick after the launch |
 
@@ -38,7 +38,7 @@ Now      Epic 1  testers → 14 days → apply for production      (calendar, no
          Epic 3  the Garmin app published as it is              (owner, then Garmin's review)
 
 Next     Epic 3  spike: Health Connect inside the Android app   (2 days, decides the epic)
-         Epic 4  design, and three nutritionists asked          (owner's conversations)
+         Epic 4  set aside on 2026-11-16, designed and mocked up
          then build the one the evidence supports first; the recommendation
          is Health Connect, because a coach's view is worth more when the
          client's weight and activity arrive by themselves
@@ -136,6 +136,11 @@ advertising bought. Why it is not first: it changes the rule every row in the
 database is protected by (`auth.uid() = user_id`), and delegated access is
 exactly where health products are breached (`PHASES.md`, Phase 3). So it
 starts with design, not code.
+
+**Set aside on 2026-11-16** (the owner's decision), after the design and the
+mock-ups were finished. Nothing is built. When it is picked up again, it
+starts from the document below; the owner's conversations with coaches
+(4.1) are still the first step.
 
 **The design is written (2026-11-16):**
 [`features/coaches.md`](features/coaches.md) holds the plan in six slices,

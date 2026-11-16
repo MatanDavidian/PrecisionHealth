@@ -3,7 +3,8 @@
 **One line:** a client can let their nutritionist or trainer read their food
 log, the coach can comment on it, and the client can end it in one tap.
 
-Status: **design only, nothing built** (2026-11-16). Epic 4 in
+Status: **design only, nothing built, and set aside by the owner on
+2026-11-16** after the design and mock-ups were done. Epic 4 in
 [`../ROADMAP.md`](../ROADMAP.md). This page is the plan, the architecture, the
 code design and the screens. It ends with the decisions the owner has to make
 before any code is written.

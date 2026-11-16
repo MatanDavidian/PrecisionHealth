@@ -502,17 +502,22 @@ top, a text box, and Send. No formatting, no attachments.
 ## 7. Decisions for the owner
 
 Each has a recommendation. None is expensive to change before slice C, and
-most are expensive after the pilot.
+most are expensive after the pilot. Three were decided on 2026-11-16 and are
+marked; the other six are open.
+
+Mock-ups of the nine screens in section 6 were made the same day as a
+clickable design canvas (kept with the owner, outside the repository), to
+show in the conversations of section 8.
 
 | # | Decision | Recommendation, and why |
 | --- | --- | --- |
-| 1 | Who starts: the coach sends a link, or the client makes a code | **The coach's link.** It is how coaches already onboard clients, and each link sent is also an invitation to install the app. The client still makes the grant |
-| 2 | What can be shared at first | **Meals and goals always; weight and activity by choice.** Sleep and recovery after the pilot |
+| 1 | Who starts: the coach sends a link, or the client makes a code | **Decided 2026-11-16: the coach's link.** It is how coaches already onboard clients, and each link sent is also an invitation to install the app. The client still makes the grant |
+| 2 | What can be shared at first | **Decided 2026-11-16: meals and goals always; weight and activity by choice.** Sleep and recovery after the pilot |
 | 3 | The suggested history | **The last 30 days**, so the coach has a baseline |
 | 4 | May the client reply to a comment | **Yes.** Otherwise replies go to WhatsApp and lose their context |
 | 5 | Does sharing end by itself | **No, but ask every 90 days.** Ending silently mid-work would be worse than a reminder |
 | 6 | The Hebrew word for "coach" | **"מלווה"**, which fits a trainer and a nutritionist alike and reads the same for a man or a woman. To be tested in the conversations |
-| 7 | Who may become a coach during the pilot | **Only people the owner invites**, by code |
+| 7 | Who may become a coach during the pilot | **Decided 2026-11-16: only people the owner invites**, by code. After the pilot the owner may open it: anyone can ask to be a coach when signing up, and the owner approves each one. That replaces `coach_invites` with a request that waits for approval, and needs a place for the owner to see and answer requests |
 | 8 | Who pays | **Nobody during the pilot.** Ask in the conversations; decide from what the pilot shows |
 | 9 | Does the coach see which numbers are AI estimates | **Yes.** A professional needs to know which numbers were measured and which were guessed |
 

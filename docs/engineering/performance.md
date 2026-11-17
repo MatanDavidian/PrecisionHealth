@@ -39,7 +39,7 @@ for a good first paint is under 1.8 s; the slow-phone run is inside it.
 
 | File | Size | Compressed |
 | --- | --- | --- |
-| The app (`index-*.js`) | 551 KB | 164 KB |
+| The app (`index-*.js`) | 567 KB | 170 KB |
 | The server SDK, on demand | 215 KB | 56 KB |
 | Styles | 36 KB | 8 KB |
 

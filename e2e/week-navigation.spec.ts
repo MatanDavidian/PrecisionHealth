@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { documentBox, open } from './app'
+import { dayKey, documentBox, open } from './app'
 
 /**
  * Calendar weeks, and moving between them.
@@ -16,6 +16,9 @@ test('shows the week the selected day falls in, and keeps the day', async ({ pag
 
   // Step back four days, so the selected day is very unlikely to be today.
   for (let i = 0; i < 4; i++) await page.getByRole('button', { name: /Previous/i }).click()
+  // Navigation settles a moment after the click (React Router 7 applies it as
+  // a transition), so wait for the fourth step before reading the day.
+  await expect(page.locator('header p').first()).toContainText(dayKey(-4))
   const selectedDay = await page.locator('header p').first().textContent()
 
   await page.getByRole('button', { name: 'Week', exact: true }).click()

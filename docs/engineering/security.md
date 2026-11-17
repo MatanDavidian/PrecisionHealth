@@ -3,12 +3,17 @@
 **One line:** Vimetry is safe to use for what it is today. People's data is
 walled off per account by the database itself, nothing that costs money can
 be triggered by a stranger, and no secret has ever been committed. Seven
-improvements are listed at the end; none is urgent, and the most important
-is the owner's own accounts.
+improvements are listed at the end, three done the same day; none is
+urgent, and the most important is the owner's own accounts. The code, its
+libraries and its history are now scanned on every push.
 
 Reviewed 2026-11-17, against the code at `e32795d`. Not a penetration test:
 a reading of every table rule, every server function and the browser's
-defences, plus a scan of the dependencies and of the whole git history.
+defences, a search of the code for the patterns static scanners look for
+(requests to user-chosen addresses, SQL built from strings, redirects,
+cross-window messages, weak randomness: none found), plus a scan of the
+dependencies and of the whole git history. Since then the same checks run
+automatically ("Scanning", below).
 
 ---
 
@@ -100,23 +105,49 @@ another site cannot borrow a visitor's session.
 - `.env` files, the keystore and service-account files are not in the
   repository. The Supabase URL and anon key in the built app are public by
   design; the database rules above are what protect the data.
-- **Dependencies** (`npm audit`, 2026-11-17):
-  - In what ships to users: **2 moderate**, both in `react-router` (an
-    open-redirect pattern and a server-rendering issue). Neither applies as
-    the app is written: it does no server rendering, and its only redirect
-    from user input is the validated `next` above.
-  - In the test and build tools only: 5 high and 2 critical, in `vitest` 2
-    and `vite`'s development server. They matter on a developer's machine
-    running those servers, never in the app people download.
+- **Dependencies** (2026-11-17, after the upgrades the review led to):
+  - In what ships to users: **none known.** The review found 2 moderate
+    advisories in `react-router` 6; it is now on 7.18.5.
+  - In the server functions (`deno audit`): none known. One function
+    imported its library from a third-party CDN (`esm.sh`) while the rest use
+    JSR with a lockfile; it now uses JSR too.
+  - In the test and build tools, which never ship: no critical (the review
+    found 2, cleared by `vitest` 4 and `vite` 6.4.6). 5 high remain, all one
+    advisory in `picomatch` (a slow regular expression in file matching) that
+    has no fixed release yet; Dependabot will offer it when there is one.
+
+## Scanning
+
+Run by `.github/workflows/security.yml` on every push and pull request, and
+every Monday, since advisories appear for libraries that have not changed.
+A failure turns the workflow red and GitHub emails the owner. It does not
+block a deploy: a new advisory should not hold back an unrelated fix.
+
+| Job | Checks | Fails on |
+| --- | --- | --- |
+| Libraries | `npm audit` on what ships; `npm audit` on the tools; `deno audit` on the server functions | Anything in what ships; critical in the tools; anything in the functions |
+| Our code (CodeQL) | GitHub's static analysis of all the TypeScript, app and functions, with the extended security queries: injection, unsafe redirects, weak crypto, leaked data | Findings appear under the repository's Security tab |
+| Secrets (Gitleaks) | Every commit in the history, for keys and tokens; the log is redacted | Any match. One test file that builds a throwaway key is allowed in `.gitleaks.toml`, and nothing else |
+| New libraries (pull requests only) | What a pull request adds, against GitHub's advisory database | Moderate or worse |
+
+**Dependabot** (`.github/dependabot.yml`) opens pull requests for library
+and GitHub Actions updates every Monday, minor and patch together. Each runs
+the full CI; one with every check green is safe to merge.
+
+**When it fails:** the job's log names the library or the line. For a
+library: upgrade it, or, when no fix exists yet and it does not ship (as
+`picomatch` today), note it here and lower the bar for that job only until a
+release arrives. For a secret: rotate it first, then remove it from the code;
+removing it from history comes last and does not undo the exposure.
 
 ## What to improve, in order
 
 | # | What | Why | Who | Size |
 | --- | --- | --- | --- | --- |
 | 1 | **Two-factor sign-in on every account that can ship or bill:** GitHub, Supabase, Cloudflare, Google Play Console, Google Cloud, OpenAI (Lemon Squeezy was set aside by the owner on 2026-11-12) | The most likely way this app is ever breached is not the code but a stolen password to one of these. GitHub alone can deploy to production | Owner | 1 hour |
-| 2 | **Upgrade the test tools** (`vitest` 2 → 4, `vite` 6 patch) | Clears all 7 high and critical findings | Claude | S |
-| 3 | **Upgrade `react-router`** to the fixed version | Clears the 2 moderate findings, before anything ever uses user input in a link | Claude | S–M (a major version) |
-| 4 | **Automatic dependency updates** (GitHub's Dependabot, weekly) | So the next advisory arrives as a pull request instead of waiting for a review like this one | Claude, owner approves | S |
+| 2 | ~~**Upgrade the test tools**~~ **Done 2026-11-17:** `vitest` 4, `vite` 6.4.6 | Cleared both critical findings | Claude | S |
+| 3 | ~~**Upgrade `react-router`**~~ **Done 2026-11-17:** 7.18.5 | Cleared the 2 moderate findings in what ships | Claude | S–M |
+| 4 | ~~**Automatic scanning and updates**~~ **Done 2026-11-17:** see "Scanning" above. Still the owner's: turn on **Dependabot alerts** and **secret scanning with push protection** under Settings → Code security (free for a public repository), so a security fix opens at once and a key is refused before it is ever pushed | So the next advisory arrives by itself instead of waiting for a review like this one | Claude, then owner | S |
 | 5 | **Check the sign-in rate limits** in the Supabase dashboard (emails and code attempts per hour) | Code sign-in is only as strong as the limit on guessing codes; the defaults are reasonable, but they are set outside the repository and were not checked here | Owner, with Claude | S |
 | 6 | **HSTS for subdomains** (`includeSubDomains`) | Once `www` redirects to the apex over HTTPS (still owed), every subdomain can be held to HTTPS too | Claude | S |
 | 7 | **An outside penetration test** before the coaches feature, or before handling another person's data in any new way | A second pair of eyes; sharing data between accounts is where row-level security is easiest to get wrong | Owner | M + C |
@@ -131,4 +162,5 @@ another site cannot borrow a visitor's session.
   at the top of the file, as the existing ones do.
 - Every new external address the app talks to goes into `connect-src` in
   `public/_headers`, and nowhere else.
-- Run `npm audit` and this checklist again before each major release.
+- The scans above run by themselves; read this checklist again before each
+  major release.

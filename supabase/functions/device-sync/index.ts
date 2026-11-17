@@ -16,7 +16,7 @@
  * done below against `device_tokens`, hashed.
  */
 import { VERSION } from '../_shared/version.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   keepRecentDays,
   MAX_DEVICE_SYNC_DAYS,

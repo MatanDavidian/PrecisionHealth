@@ -1,0 +1,10 @@
+# Gitleaks: the default rules, and one file let through.
+#
+# Keep this list short and specific. Allowing a whole test folder would also
+# hide a real key pasted into a test, which is exactly what this scan is for.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Builds a throwaway private key while the test runs; no key is stored in the file"
+paths = ['''^supabase/test/_stub\.ts$''']

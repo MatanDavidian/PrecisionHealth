@@ -1,0 +1,26 @@
+# Library updates, as pull requests, once a week. Each one runs the full CI,
+# so a pull request with every check green is safe to merge; one that fails
+# is a library that changed behaviour, to look at before merging.
+#
+# Security fixes are not limited to this schedule: with Dependabot alerts on
+# (Settings → Code security), GitHub opens those as soon as an advisory
+# appears. The server functions' Deno imports are not covered by Dependabot;
+# `deno audit` in .github/workflows/security.yml checks them.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Minor and patch updates together, one pull request a week.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday

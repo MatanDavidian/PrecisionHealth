@@ -1,0 +1,84 @@
+# Security scans: the libraries, our own code, and the history for secrets.
+#
+# On every push and pull request, and every Monday morning: new advisories are
+# published against libraries that have not changed, so a quiet week is no
+# proof of a safe one.
+#
+# Kept out of ci.yml on purpose. A finding here fails this workflow (and
+# GitHub emails the owner); it does not block a deploy, because an advisory
+# published tomorrow should not stop an unrelated fix going out today.
+#
+# What each job checks, and what to do when it fails:
+# docs/engineering/security.md, "Scanning".
+name: Security
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    name: Libraries (npm and Deno)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 20 }
+      # What ships to people: nothing known, at any severity.
+      - run: npm audit --omit=dev --audit-level=low
+      # The test and build tools, which never ship: nothing critical. (High is
+      # allowed while picomatch's ReDoS advisory has no fixed release.)
+      - run: npm audit --audit-level=critical
+      - uses: denoland/setup-deno@v2
+        with: { deno-version: v2.x }
+      - name: Server functions
+        working-directory: supabase/functions
+        run: deno audit
+
+  code:
+    name: Our code (CodeQL)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      # The app and the server functions are both TypeScript; one pass reads
+      # both. security-extended adds the less certain checks to the default set.
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@v4
+
+  secrets:
+    name: Secrets in the history (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      # The binary, pinned, rather than a third-party action: one less thing
+      # with access to the workflow's token. --redact keeps a found secret out
+      # of the public log.
+      - name: Scan every commit
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
+          ./gitleaks git --redact --no-banner -v .
+
+  review:
+    name: New libraries in a pull request
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v3
+        with:
+          fail-on-severity: moderate

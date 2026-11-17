@@ -169,3 +169,23 @@ test('"Put it back" and "Back to the estimate" undo, so nothing sticks by accide
   expect(meal.items.every((i) => i.provenance.source === 'AI_ESTIMATE')).toBe(true)
   expect(inference.output.corrections).toBeUndefined()
 })
+
+test('after saving a corrected meal, the next analysis still shows that it is working', async ({ page }) => {
+  // `slow` holds the fake model open, so the waiting state can be seen at all.
+  await open(page, '/log?slow=3000')
+  await page.setInputFiles('input[type=file]', PHOTO)
+  const skip = page.getByRole('button', { name: /Skip/i })
+  await expect(skip).toBeVisible({ timeout: 20_000 })
+  await skip.click()
+  await page.getByRole('button', { name: 'Adjust these numbers' }).click()
+  await expect(page.getByText('Your numbers')).toBeVisible()
+  await page.getByRole('button', { name: 'Save meal' }).click()
+  await expect(page.getByText(/Saved/).first()).toBeVisible({ timeout: 15_000 })
+
+  // The next meal, in words: its waiting state must not be hidden by the last one's corrections.
+  await page.locator('#log-mode-write').click()
+  await page.locator('main textarea').first().fill('two eggs and a slice of toast')
+  await page.getByRole('button', { name: /^Estimate/i }).first().click()
+  await expect(page.getByText('Working it out…')).toBeVisible({ timeout: 2_500 })
+  await expect(page.getByText('two eggs and a slice of toast')).toBeVisible()
+})

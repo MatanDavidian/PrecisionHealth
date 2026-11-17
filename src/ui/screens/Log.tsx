@@ -231,6 +231,14 @@ export function Log() {
     setFoodName('')
     setGrams('')
     setNote('')
+    /*
+      The corrections screen belongs to the estimate that was just saved or
+      thrown away. Left set, it hid the next analysis's waiting state and its
+      details until that answer arrived: a nearly empty screen for the whole
+      wait, after any meal whose numbers had been corrected (seen in the demo
+      video, 2026-11-17).
+    */
+    setAdjusting(false)
   }
 
   async function save(corrections?: EstimateCorrection[]) {

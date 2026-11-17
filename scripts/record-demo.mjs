@@ -244,16 +244,26 @@ await box.pressSequentially('Greek yogurt with honey, a banana and a black coffe
 await pause(600)
 await page.getByRole('button', { name: /^Estimate/i }).first().click()
 await caption('Same model, same honesty about what it is sure of', 0)
-await untilEstimate()
-await pause(2600)
+/*
+  A written meal takes the model several seconds, with only a ticking timer
+  on screen. A second caption halfway through keeps the wait from reading as
+  a frozen video (the owner's note on the 16 Nov take).
+*/
+const written = untilEstimate()
+await pause(4200)
+if (!(await page.getByRole('button', { name: 'Save meal' }).isVisible())) {
+  await caption('It weighs each item from your words: a few seconds', 0)
+}
+await written
+await pause(2200)
 await page.getByRole('button', { name: 'Save meal' }).click()
 await caption('Saved', 1400)
 
 // 3 — the day
 await nav('Nutrition')
-await caption('The day: every meal, and the totals', 3400)
+await caption('The day: every meal, and the totals', 3000)
 await scroll(450)
-await pause(2600)
+await pause(1200)
 
 // 4 — today
 /*
@@ -272,11 +282,11 @@ await page.getByRole('button', { name: 'Account & data' }).click()
 await caption('Your data is yours: download all of it, any time', 1500)
 const download = page.getByRole('button', { name: 'Download my data' })
 await download.scrollIntoViewIfNeeded()
-await pause(1500)
+await pause(900)
 const downloading = page.waitForEvent('download')
 await download.click()
 await downloading
-await pause(2400)
+await pause(1200)
 await caption('')
 
 // 6 — the plan

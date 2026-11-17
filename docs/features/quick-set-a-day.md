@@ -45,12 +45,15 @@ each"), so nobody has to work out what "less" means.
 1. **The week view's gaps card** (mock-up 1 and 2): the choice applies to
    every gap listed. "Average" is preselected, so one tap still does what it
    does today.
-2. **Today, for today only** (mock-up 3): a card appears when today has no
+2. **The Day tab, for a past day** (mock-up 5): a day with no meals,
+   opened in the Day tab, gets the same card ("Nothing logged on Sunday"),
+   with "Add the meals instead" under the main button.
+3. **Today, for today** (mock-up 3): a card appears when today has no
    meals and it is **16:00 or later** (the start of the reminder window).
    Earlier in the day an empty day is not a gap, only a day in progress.
    "Log meals instead" sits under the main button, because logging is
    always the better answer.
-3. **After setting** (mock-up 4): the day's totals are labelled
+4. **After setting** (mock-up 4): the day's totals are labelled
    "Estimated", the meal reads "The day, from your average · an estimate:
    nobody logged it", with Undo for a few seconds, then "Change it" and
    "Remove the estimate".
@@ -64,11 +67,12 @@ each"), so nobody has to work out what "less" means.
   does not teach the average anything.
 - **A real meal wins.** Logging a meal on a filled day replaces the
   estimate, as today.
-- **Not enough history, no offer.** With fewer than three logged days there
-  is no average to scale, so "Less", "Average" and "More" are not offered.
-  **Open question:** offer "A number" alone in that case? It needs no
-  history. The recommendation is yes, with no macros (calories only),
-  because there is no usual mix to scale.
+- **Too little history: a number only** (mock-up 6; decided by the owner,
+  2026-11-17). With fewer than three logged days there is no average to
+  scale, so "Less", "Average" and "More" are not shown. The card offers the
+  number field alone, calories only (protein, carbs and fat stay blank:
+  there is no usual mix to go by), and says why the other three are
+  missing and how many days are logged so far.
 
 ## Code design
 

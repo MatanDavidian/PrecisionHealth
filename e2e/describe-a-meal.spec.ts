@@ -17,7 +17,7 @@ test('describes a meal in words and files it on the day on screen', async ({ pag
   const heading = page.locator('header p').first()
   await expect(heading).toContainText(dayKey(-1))
 
-  await page.getByRole('button', { name: 'Add meal' }).click()
+  await page.getByRole('button', { name: 'Add meal', exact: true }).click()
 
   // The sheet names its destination: "Add meal" alone would not say where.
   await expect(page.getByText(/Add meal to/)).toBeVisible()

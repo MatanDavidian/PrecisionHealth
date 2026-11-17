@@ -19,13 +19,13 @@ test('a day with nothing from the sample has no label', async ({ page }) => {
   await expect(page.getByRole('note').filter({ hasText: 'Sample day.' })).toBeVisible({ timeout: 15_000 })
   // A year back: further than the test seed's history reaches.
   await open(page, `/nutrition?d=${dayKey(-365)}`)
-  await expect(page.getByRole('button', { name: 'Add meal' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Add meal', exact: true })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('note').filter({ hasText: 'Sample day.' })).toHaveCount(0)
 })
 
 test('an account is never seeded, and never labelled', async ({ page }) => {
   await signIn(page)
   await openSignedIn(page, '/today')
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Sample day.')).toHaveCount(0)
 })

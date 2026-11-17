@@ -221,3 +221,63 @@ export function findGaps(
     .filter((day) => day < today && !withMeals.has(day))
     .map((day) => ({ day, filled: filled.has(day) }))
 }
+
+/*
+  Quick-set (features/quick-set-a-day.md): the person says roughly how the day
+  compared with usual, or gives the number themselves.
+
+  Every choice still makes a PATTERN_FILL record, so both rules above hold
+  whichever was picked: it is never evidence for a later average, and a real
+  meal on the day outranks it.
+*/
+
+/** How the person described the day. */
+export type QuickSetChoice = 'LESS' | 'AVERAGE' | 'MORE' | 'NUMBER'
+
+/** "Less" and "more" are this far from the average (the owner's choice, 2026-11-17). */
+export const QUICK_SET_STEP = 0.15
+
+/** A number is refused above this: no ordinary day comes near it, and a typo can. */
+export const QUICK_SET_MAX_KCAL = 10_000
+
+/** A day's totals, without any claim about meals. */
+export type DayIntake = Pick<TypicalIntake, 'energyKcal' | 'proteinG' | 'carbsG' | 'fatG'>
+
+const RATIO: Record<Exclude<QuickSetChoice, 'NUMBER'>, number> = {
+  LESS: 1 - QUICK_SET_STEP,
+  AVERAGE: 1,
+  MORE: 1 + QUICK_SET_STEP,
+}
+
+/**
+ * The day a choice describes, or undefined when it cannot be honoured.
+ *
+ * - Less, average and more need an average to scale; without one there is
+ *   nothing to be less or more than.
+ * - A number with an average behind it keeps the person's usual mix: protein,
+ *   carbs and fat scale with the calories.
+ * - A number without one is calories only. The macros are zero, not
+ *   invented: there is no usual mix to go by, and the record says it is an
+ *   estimate either way.
+ */
+export function quickSetIntake(
+  choice: QuickSetChoice,
+  typical: DayIntake | undefined,
+  kcal?: number,
+): DayIntake | undefined {
+  if (choice !== 'NUMBER') {
+    if (!typical) return undefined
+    return scaled(typical, RATIO[choice])
+  }
+  if (kcal === undefined || !Number.isFinite(kcal) || kcal <= 0 || kcal > QUICK_SET_MAX_KCAL) return undefined
+  const energyKcal = Math.round(kcal)
+  if (!typical || typical.energyKcal <= 0) return { energyKcal, proteinG: 0, carbsG: 0, fatG: 0 }
+  return { ...scaled(typical, energyKcal / typical.energyKcal), energyKcal }
+}
+
+const scaled = (day: DayIntake, ratio: number): DayIntake => ({
+  energyKcal: Math.round(day.energyKcal * ratio),
+  proteinG: Math.round(day.proteinG * ratio),
+  carbsG: Math.round(day.carbsG * ratio),
+  fatG: Math.round(day.fatG * ratio),
+})

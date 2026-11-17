@@ -13,12 +13,21 @@ import { useT } from '../i18n'
  * "correct" affordance in a confirmation strip would be a second path to the
  * same screen.
  */
-export function FilledNotice({ days, onUndo }: { days: number; onUndo: () => void }) {
+export function FilledNotice({
+  days,
+  onUndo,
+  message,
+}: {
+  days: number
+  onUndo: () => void
+  /** Says what was set when it was not the plain average (quick-set). */
+  message?: string
+}) {
   const t = useT()
   return (
     <section className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-hairline bg-surface px-5 py-3.5">
       <p className="text-sm">
-        {days === 1 ? t('gaps.filledOne') : t('gaps.filledMany', { count: days })}
+        {message ?? (days === 1 ? t('gaps.filledOne') : t('gaps.filledMany', { count: days }))}
       </p>
       <button
         type="button"

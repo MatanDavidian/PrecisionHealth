@@ -15,12 +15,12 @@ test('a first visit says what Vimetry is and where the data stays, once', async 
   await expect(page.getByText(/Until you sign in, what you log stays in this browser/)).toBeVisible()
   // Not a modal: the day underneath is there to be looked at straight away.
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Got it' }).click()
   await expect(page.getByText('Welcome to Vimetry')).toHaveCount(0)
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Welcome to Vimetry')).toHaveCount(0)
 })
 
@@ -30,7 +30,7 @@ test('its one action is the way to the free analyses', async ({ page }) => {
   await expect(page).toHaveURL(/\/signin$/)
   // Followed is read: it does not greet them again on the way back.
   await open(page, '/today')
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Welcome to Vimetry')).toHaveCount(0)
 })
 
@@ -51,6 +51,6 @@ test('a new account with nothing logged is told where to start, once', async ({ 
   await page.getByRole('link', { name: 'Log a meal' }).click()
   await expect(page).toHaveURL(/\/log$/)
   await openSignedIn(page, '/today')
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Nothing logged yet. Start with your next meal.')).toHaveCount(0)
 })

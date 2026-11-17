@@ -157,7 +157,7 @@ const signIn = (context) =>
     await agree.click()
     await agree.waitFor({ state: 'hidden' })
   }
-  await page.getByRole('button', { name: 'Add meal' }).waitFor({ timeout: 30_000 })
+  await page.getByRole('button', { name: 'Add meal', exact: true }).waitFor({ timeout: 30_000 })
   await page.waitForTimeout(2500)
   for (let i = 0; i < 20; i += 1) {
     const remove = page.getByRole('button', { name: /^Delete / }).first()
@@ -272,7 +272,7 @@ await pause(1200)
   screen would misdescribe the app.
 */
 await nav('Today')
-await page.getByRole('heading', { name: 'Today' }).waitFor({ timeout: 30_000 })
+await page.getByRole('heading', { name: 'Today', exact: true }).waitFor({ timeout: 30_000 })
 // Not scrolled: below the totals sit activity and recovery, empty without a watch.
 await caption("Today: the day's totals in one place", 4600)
 

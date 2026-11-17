@@ -50,7 +50,8 @@ import {
   type Workout,
   type LeftoverEstimate,
   type CalendarDate,
-  type TypicalIntake,
+  type DayIntake,
+  type QuickSetChoice,
 } from '@/domain'
 import { buildPatternFilledDay } from '@/data/patternFilledDay'
 import { buildEstimatedMeal, type EstimatedMealInput } from '@/data/estimatedMeal'
@@ -410,8 +411,8 @@ export function useActions() {
    * the same shape as a whole-day repeat, for the same reason.
    */
   const fillDayFromPattern = useCallback(
-    async (typical: TypicalIntake, day: CalendarDate): Promise<Meal[]> => {
-      const estimate = buildPatternFilledDay(currentUserId(), typical, day)
+    async (typical: DayIntake, day: CalendarDate, choice: QuickSetChoice = 'AVERAGE'): Promise<Meal[]> => {
+      const estimate = buildPatternFilledDay(currentUserId(), typical, day, undefined, choice)
       const ok = await runWrite('that estimate', () => getRepositories().meals.add(estimate))
       return ok ? [estimate] : []
     },

@@ -29,7 +29,9 @@ import {
   isPatternFilled,
   weekStartOf,
   type DayGap,
+  type DayIntake,
   type Meal,
+  type QuickSetChoice,
   type TypicalIntake,
 } from '@/domain'
 import { useLang } from '../i18n'
@@ -52,6 +54,7 @@ import type { WeekEnergy } from '@/domain'
 import { currentUserId } from '@/data/session'
 import { useSearchParams } from 'react-router-dom'
 import { SampleDayLabel } from '../components/SampleDayLabel'
+import { SetDayCard } from '../components/QuickSet'
 import { Welcome } from '../components/Welcome'
 import type { StringKey } from '../i18n/strings'
 
@@ -117,8 +120,12 @@ export function Today() {
    */
   const [gaps, setGaps] = useState<DayGap[]>([])
   const [typical, setTypical] = useState<TypicalIntake>()
+  const [loggedBefore, setLoggedBefore] = useState<number>()
   const [filling, setFilling] = useState(false)
   const [justFilled, setJustFilled] = useState<Meal[]>()
+  /** The day just set from the Day tab, with how, so it can be said and undone. */
+  const [justSet, setJustSet] = useState<{ meals: Meal[]; kcal: number; choice: QuickSetChoice }>()
+  useEffect(() => setJustSet(undefined), [day])
 
   useEffect(() => {
     if (view !== 'week' || !week) return
@@ -134,6 +141,17 @@ export function Today() {
       const days = week.days.map((d) => d.day)
       const open = findGaps(days, latestVersions(history), today).filter((g) => !g.filled)
       setGaps(open)
+      // For "a number only": how far from an average the person is.
+      setLoggedBefore(
+        open.length
+          ? new Set(
+              latestVersions(history)
+                .filter((m) => !m.retracted && !isPatternFilled(m))
+                .map((m) => dayKeyOf(m.time))
+                .filter((d) => d < open[0].day),
+            ).size
+          : undefined,
+      )
       // Drawn for the FIRST gap: the average is the same either way, and
       // asking for one per gap would read the same history several times to
       // produce the same answer.
@@ -151,13 +169,13 @@ export function Today() {
     }
   }, [view, week, today, revision])
 
-  const fillGaps = async () => {
-    if (!typical || gaps.length === 0) return
+  const fillGaps = async (intake: DayIntake, choice: QuickSetChoice) => {
+    if (gaps.length === 0) return
     setFilling(true)
     try {
       const written: Meal[] = []
       for (const gap of gaps) {
-        written.push(...(await fillDayFromPattern(typical, gap.day)))
+        written.push(...(await fillDayFromPattern(intake, gap.day, choice)))
       }
       if (written.length) setJustFilled(written)
     } finally {
@@ -233,6 +251,21 @@ export function Today() {
   // taken the estimate out, so the two never appear together.)
   const logged = data.meals.filter((meal) => !isPatternFilled(meal))
   const estimatedDay = logged.length < data.meals.length
+  /*
+    Quick-set on the Day tab (quick-set-a-day.md): a day with nothing on it.
+    A past day always; today only from 16:00, the start of the evening, since
+    earlier an empty day is a day in progress, not a gap.
+  */
+  /** What the week's fill says when it was not the plain average. */
+  const filledMessage = (meals: Meal[]): string | undefined => {
+    const first = meals[0]
+    if (!first?.fillChoice) return undefined
+    const kcal = Math.round(convert(first.items[0].nutrients.energy, 'kcal')).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')
+    const days = new Set(meals.map((m) => dayKeyOf(m.time))).size
+    return days === 1 ? t('quickSet.done', { kcal }) : t('quickSet.filledManyKcal', { count: days, kcal })
+  }
+  const offerSetDay =
+    view === 'day' && logged.length === 0 && !estimatedDay && (day < today || (isToday && new Date().getHours() >= 16))
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -329,6 +362,38 @@ export function Today() {
 
       <AdoptionPrompt />
 
+      {justSet && view === 'day' && (
+        <div className="mb-4">
+          <FilledNotice
+            days={1}
+            message={
+              justSet.choice === 'AVERAGE'
+                ? t('quickSet.doneAverage', { kcal: Math.round(justSet.kcal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US') })
+                : t('quickSet.done', { kcal: Math.round(justSet.kcal).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US') })
+            }
+            onUndo={() => {
+              void deleteMeals(justSet.meals)
+              setJustSet(undefined)
+            }}
+          />
+        </div>
+      )}
+
+      {offerSetDay && (
+        <div className="mb-4">
+          <SetDayCard
+            key={day}
+            day={day}
+            isToday={isToday}
+            place="today"
+            onSet={async (intake, choice) => {
+              const meals = await fillDayFromPattern(intake, day, choice)
+              if (meals.length) setJustSet({ meals, kcal: intake.energyKcal, choice })
+            }}
+          />
+        </div>
+      )}
+
       {view === 'week' ? (
         week ? (
           weekBlocker(week, objective) ? (
@@ -351,7 +416,9 @@ export function Today() {
                         ? { count: typical.drawnFrom, from: typical.from, to: typical.to }
                         : undefined
                     }
-                    onFill={() => void fillGaps()}
+                    typical={typical}
+                    loggedDays={loggedBefore}
+                    onFill={(intake, choice) => void fillGaps(intake, choice)}
                     formatDay={(d) =>
                       new Date(`${d}T12:00:00Z`).toLocaleDateString(
                         document.documentElement.lang || undefined,
@@ -362,6 +429,7 @@ export function Today() {
                   {justFilled && justFilled.length > 0 && (
                     <FilledNotice
                       days={new Set(justFilled.map((m) => dayKeyOf(m.time))).size}
+                      message={filledMessage(justFilled)}
                       onUndo={() => {
                         void deleteMeals(justFilled)
                         setJustFilled(undefined)

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { deleteDB, type IDBPDatabase } from 'idb'
 import { createIndexedDbRepositories } from '../idb/indexedDbRepositories'
 import { DB_NAME, openHealthDB, type HealthDB } from '../idb/schema'
-import { buildPatternFilledDay, ESTIMATED_DAY_NAME } from '../patternFilledDay'
+import { buildPatternFilledDay, ESTIMATED_DAY_NAME, ESTIMATED_DAY_NAMES } from '../patternFilledDay'
 import { readWeek, readWeekReport } from '../week'
 import { buildMeal } from '../newRecords'
 import { dayKeyOf, type CalendarDate, type TypicalIntake, type UserId } from '@/domain'
@@ -105,5 +105,23 @@ describe('a filled day in the week', () => {
     expect(report.days.find((d) => d.day === LOGGED_LATER)?.meals.map((m) => m.foods)).toEqual([
       ['Pasta'],
     ])
+  })
+})
+
+describe('a quick-set day says which choice made it', () => {
+  it('the plain average looks exactly as every older fill does', () => {
+    const meal = buildPatternFilledDay(USER, AVERAGE, '2026-09-02' as CalendarDate, ZONE)
+    expect(meal.fillChoice).toBeUndefined()
+    expect(meal.items[0].name).toBe(ESTIMATED_DAY_NAME)
+  })
+
+  it('less, more and a number are named and recorded, and stay estimates', () => {
+    for (const choice of ['LESS', 'MORE', 'NUMBER'] as const) {
+      const meal = buildPatternFilledDay(USER, AVERAGE, '2026-09-02' as CalendarDate, ZONE, choice)
+      expect(meal.fillChoice).toBe(choice)
+      expect(meal.items[0].name).toBe(ESTIMATED_DAY_NAMES[choice])
+      expect(meal.provenance.source).toBe('PATTERN_FILL')
+      expect(meal.items[0].provenance.source).toBe('PATTERN_FILL')
+    }
   })
 })

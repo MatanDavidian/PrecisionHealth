@@ -19,7 +19,7 @@ async function collectReports(page: Page) {
 test('an uncaught error is reported once, with the page and build but nothing personal', async ({ page }) => {
   await open(page, `/nutrition?d=${dayKey(0)}`)
   const reports = await collectReports(page)
-  await expect(page.getByRole('button', { name: 'Add meal' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Add meal', exact: true })).toBeVisible({ timeout: 15_000 })
 
   // As the browser raises it for an uncaught error in the app's own script.
   // (A throw from Playwright's injected script arrives as a muted, cross-origin
@@ -45,7 +45,7 @@ test('an uncaught error is reported once, with the page and build but nothing pe
 test('an unhandled rejection is reported too', async ({ page }) => {
   await open(page, '/today')
   const reports = await collectReports(page)
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await page.evaluate(() => {
     void Promise.reject(new Error('sync gave up'))
   })
@@ -55,7 +55,7 @@ test('an unhandled rejection is reported too', async ({ page }) => {
 test('something the Content Security Policy blocks is reported, by origin only', async ({ page }) => {
   await open(page, '/today')
   const reports = await collectReports(page)
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   // A real violation: a policy added to the page, then an image it forbids —
   // as Cloudflare's injected analytics script was blocked in production.
   await page.evaluate(() => {
@@ -75,7 +75,7 @@ test('something the Content Security Policy blocks is reported, by origin only',
 test('cross-origin noise is not reported', async ({ page }) => {
   await open(page, '/today')
   const reports = await collectReports(page)
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await page.evaluate(() => {
     setTimeout(() => {
       throw new Error('from a script that is not ours')
@@ -88,7 +88,7 @@ test('cross-origin noise is not reported', async ({ page }) => {
 test('a flood of distinct errors stops at five per page', async ({ page }) => {
   await open(page, '/today')
   const reports = await collectReports(page)
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await page.evaluate(() => {
     for (let i = 0; i < 20; i++) {
       const error = new Error(`distinct failure ${'abcdefghijklmnopqrst'[i]}`)

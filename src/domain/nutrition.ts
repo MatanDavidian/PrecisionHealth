@@ -82,6 +82,11 @@ export interface Meal {
    * keeps it, and "I logged this twice" finally has an answer (Q7).
    */
   retracted?: boolean
+  /**
+   * On a filled day only: how the person described it (quick-set, 2026-11-17).
+   * Absent on days filled before then, which were all the plain average.
+   */
+  fillChoice?: 'LESS' | 'AVERAGE' | 'MORE' | 'NUMBER'
   provenance: Provenance
   /**
    * The meal this one was copied from, when it was logged with Repeat.

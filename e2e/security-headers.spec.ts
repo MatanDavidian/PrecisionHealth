@@ -49,7 +49,7 @@ test('signed out, the whole app runs inside its content security policy', async 
   await watchForViolations(page)
 
   await open(page, '/today')
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await open(page, '/today?view=week')
   await expect(page.getByRole('heading', { name: /This week/ })).toBeVisible({ timeout: 15_000 })
 
@@ -62,7 +62,7 @@ test('signed out, the whole app runs inside its content security policy', async 
   await page.getByRole('button', { name: 'Save meal' }).click()
 
   await open(page, `/nutrition?d=${dayKey(0)}`)
-  await expect(page.getByRole('button', { name: 'Add meal' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Add meal', exact: true })).toBeVisible({ timeout: 15_000 })
   await open(page, '/settings')
   for (const tab of ['Photo analysis', 'Account & data']) {
     await page.getByRole('button', { name: tab }).click()
@@ -79,7 +79,7 @@ test('signed in, talking to Supabase stays inside the policy too', async ({ page
   await watchForViolations(page)
   await signIn(page)
   await openSignedIn(page, '/today')
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await openSignedIn(page, '/settings')
   await page.getByRole('button', { name: 'Account & data' }).click()
 

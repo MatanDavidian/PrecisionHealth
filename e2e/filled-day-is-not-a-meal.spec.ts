@@ -112,7 +112,7 @@ test('a real meal logged on the filled day replaces the estimate, and deleting i
   const estimated = await dayCalories(page)
 
   // Log a real meal onto the filled day, through the same screen a person would.
-  await page.getByRole('button', { name: 'Add meal' }).click()
+  await page.getByRole('button', { name: 'Add meal', exact: true }).click()
   await page.getByRole('button', { name: 'Again', exact: true }).click()
   const usual = page.getByRole('button').filter({ hasText: /\d+ kcal/ }).first()
   await expect(usual).toBeVisible({ timeout: 10_000 })

@@ -196,19 +196,24 @@ test('several blank days are filled together, one estimate each, and undone toge
   await expect(page.locator('.estimated-fill')).toHaveCount(0)
 })
 
-test('with too little history, the gap is named but no fill is offered', async ({ page }) => {
+test('with too little history: no average to scale, so a number of your own only', async ({ page }) => {
   /*
     Every day before today blanked. There is nothing to average, and a fill
-    drawn from nothing would be a number with no basis dressed as a habit —
-    so the card says why instead of offering a button.
+    drawn from nothing would be a number with no basis dressed as a habit, so
+    less, average and more are not offered. Since quick-set (2026-11-17, the
+    owner's decision) the person may still give the number themselves:
+    calories only, and still marked as an estimate.
   */
   const today = dayKey(0)
   await blankDays(page, (day) => day < today)
 
   await open(page, '/today?view=week')
   await expect(page.getByText(/days have no meals on them/)).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByText(/Not enough logged days/)).toBeVisible()
+  await expect(page.getByText(/Less, average and more appear once you have logged 3 days/)).toBeVisible()
   await expect(page.getByRole('button', { name: /from your average/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Average', exact: false })).toHaveCount(0)
+  await expect(page.getByText(/Calories only/)).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Fill (it|all \d+): 1,800 kcal/ })).toBeVisible()
 })
 
 test('in Hebrew the offer, the fill and the estimate note all read right to left', async ({

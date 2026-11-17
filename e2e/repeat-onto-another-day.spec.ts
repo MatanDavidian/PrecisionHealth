@@ -24,7 +24,7 @@ test('repeats a usual onto the selected day, and not onto today', async ({ page 
   await expect(page.locator('header p').first()).toContainText(dayKey(-1))
   const pastBefore = await asNumber(totals)
 
-  await page.getByRole('button', { name: 'Add meal' }).click()
+  await page.getByRole('button', { name: 'Add meal', exact: true }).click()
   await page.getByRole('button', { name: 'Again', exact: true }).click()
 
   // Enough on each row to tell two similar meals apart.
@@ -69,13 +69,13 @@ test('editing the copy does not disturb the day it came from', async ({ page }) 
   const todayBefore = await asNumber(totals)
 
   await page.getByRole('button', { name: /Previous/i }).click()
-  await page.getByRole('button', { name: 'Add meal' }).click()
+  await page.getByRole('button', { name: 'Add meal', exact: true }).click()
   await page.getByRole('button', { name: 'Again', exact: true }).click()
 
   const first = page.getByRole('button').filter({ hasText: /\d+ kcal/ }).first()
   await expect(first).toBeVisible({ timeout: 10_000 })
   await first.click()
-  await expect(page.getByRole('button', { name: 'Add meal' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('button', { name: 'Add meal', exact: true })).toBeVisible({ timeout: 10_000 })
 
   // Edit the copy — the newest row on this day — and halve its first food.
   await page.locator('button[aria-label^="Edit "]').last().click()
@@ -83,7 +83,7 @@ test('editing the copy does not disturb the day it came from', async ({ page }) 
   const was = Number(await grams.inputValue())
   await grams.fill(String(Math.round(was / 2)))
   await page.getByRole('button', { name: /^Save/ }).click()
-  await expect(page.getByRole('button', { name: 'Add meal' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('button', { name: 'Add meal', exact: true })).toBeVisible({ timeout: 10_000 })
 
   await page.getByRole('button', { name: /Next/i }).click()
   await expect(page.locator('header p').first()).toContainText(dayKey(0))
@@ -97,7 +97,7 @@ test('says so plainly when there is nothing to repeat', async ({ page }) => {
   // reachable here, so this asserts the copy exists rather than the state — the
   // fixture always has meals. Kept as a guard on the string being wired up.
   await open(page, '/nutrition')
-  await page.getByRole('button', { name: 'Add meal' }).click()
+  await page.getByRole('button', { name: 'Add meal', exact: true }).click()
   await page.getByRole('button', { name: 'Again', exact: true }).click()
   await expect(page.getByText(/Adds a copy to/)).toBeVisible({ timeout: 10_000 })
 })

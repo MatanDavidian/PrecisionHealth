@@ -41,15 +41,15 @@ test('the Android app is vouched for: assetlinks.json names the package and both
 
 test('the service worker installs, and the app then opens offline', async ({ page, context }) => {
   await open(page, '/today')
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   expect(await workerReady(page)).toBe(true)
 
   await context.setOffline(true)
   await page.reload()
   // Signed out, the data is in this browser, so the whole day is there offline.
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   await page.goto('/nutrition')
-  await expect(page.getByRole('button', { name: 'Add meal' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Add meal', exact: true })).toBeVisible({ timeout: 15_000 })
   await context.setOffline(false)
 })
 
@@ -58,8 +58,8 @@ test('signed in, requests to Supabase go past the worker untouched', async ({ pa
   // requests, sign-in and the day would not load.
   await signIn(page)
   await openSignedIn(page, '/today')
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
   expect(await workerReady(page)).toBe(true)
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 15_000 })
 })

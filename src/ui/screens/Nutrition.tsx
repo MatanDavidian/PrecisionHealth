@@ -28,6 +28,7 @@ import {
 import { MealConflictNotice } from '../components/MealConflictNotice'
 import { useDataRevision } from '../DataProvider'
 import { useT } from '../i18n'
+import { SetDayCard } from '../components/QuickSet'
 import type { StringKey } from '../i18n/strings'
 
 /** A meal just deleted, kept only long enough to offer Undo. */
@@ -54,6 +55,7 @@ export function Nutrition() {
     deleteMeal,
     deleteMeals,
     undeleteMeal,
+    fillDayFromPattern,
   } = useActions()
   const { session } = useDataRevision()
   const [editing, setEditing] = useState<MealId>()
@@ -175,6 +177,33 @@ export function Nutrition() {
             />
           )}
         </Card>
+
+        {/*
+          Quick-set (quick-set-a-day.md): an empty past day, or today from
+          16:00. Adding the meals stays the first button here, since this is
+          the tab where meals are added; it names the day, so it is not a
+          second "Add meal" beside the list's own. Once the add-meal sheet is
+          open the card steps aside, and comes back if nothing is added.
+        */}
+        {logged.length === 0 &&
+          estimates.length === 0 &&
+          !manual &&
+          (day < today || (isToday && new Date().getHours() >= 16)) && (
+            <SetDayCard
+              key={day}
+              day={day}
+              isToday={isToday}
+              place="nutrition"
+              addMealLabel={t('nutrition.addMealTo', { day: dayLabel(day, today, t) })}
+              onAddMeal={() => {
+                setManual(true)
+                setEditing(undefined)
+              }}
+              onSet={async (intake, choice) => {
+                await fillDayFromPattern(intake, day, choice)
+              }}
+            />
+          )}
 
         <Card
           label={t('nutrition.loggedCount', { count: logged.length })}

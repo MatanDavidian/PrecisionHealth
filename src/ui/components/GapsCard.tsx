@@ -1,5 +1,7 @@
-import type { CalendarDate, DayGap } from '@/domain'
+import { useEffect, useState } from 'react'
+import type { CalendarDate, DayGap, DayIntake, QuickSetChoice } from '@/domain'
 import { useT } from '../i18n'
+import { initialQuickSet, intakeFor, QuickSetChooser, useKcal, type QuickSetValue } from './QuickSet'
 
 /**
  * The offer to fill days that were never logged.
@@ -19,9 +21,15 @@ export function GapsCard({
   busy,
   canFill,
   basis,
+  typical,
+  loggedDays,
   onFill,
   formatDay,
 }: {
+  /** The average to scale, when there is one (quick-set, 2026-11-17). */
+  typical?: DayIntake
+  /** Logged days before the gaps, for the "a number only" case. */
+  loggedDays?: number
   /** Open gaps only — days already filled are not offered again. */
   gaps: DayGap[]
   busy: boolean
@@ -42,11 +50,23 @@ export function GapsCard({
    * last week.
    */
   basis?: { count: number; from: CalendarDate; to: CalendarDate }
-  onFill: () => void
+  onFill: (intake: DayIntake, choice: QuickSetChoice) => void
   formatDay: (day: CalendarDate) => string
 }) {
   const t = useT()
+  const kcal = useKcal()
+  /*
+    Average first, so one tap still does what it always did; the other three
+    are there for "I ate a lot that day", "it was light", "about 1,800".
+  */
+  const [value, setValue] = useState<QuickSetValue>(() => initialQuickSet(canFill ? typical : undefined))
+  const usable = canFill ? typical : undefined
+  useEffect(() => {
+    setValue(initialQuickSet(usable))
+  }, [usable])
   if (gaps.length === 0) return null
+  const intake = intakeFor(value, usable)
+  const choice: QuickSetChoice = usable ? value.choice : 'NUMBER'
 
   const named = gaps.slice(0, 3).map((gap) => formatDay(gap.day))
   const days =
@@ -75,25 +95,37 @@ export function GapsCard({
         </p>
       )}
 
-      {canFill ? (
-        <button
-          type="button"
-          onClick={onFill}
-          disabled={busy}
-          className="mt-4 inline-flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-surface disabled:opacity-40"
-        >
-          <PatternIcon />
-          {busy
-            ? t('gaps.filling')
-            : gaps.length === 1
-              ? t('gaps.fillOne')
-              : t('gaps.fillAll', { count: gaps.length })}
-        </button>
-      ) : (
-        /* Named rather than silently absent: a missing button with no
-           explanation reads as a bug, not as a judgement about evidence. */
-        <p className="pt-3 text-xs text-ink-muted">{t('gaps.notEnoughHistory')}</p>
-      )}
+      <div className="pt-4">
+        <QuickSetChooser
+          typical={usable}
+          value={value}
+          onChange={setValue}
+          legend={t('quickSet.legendGaps')}
+          numberLabel={gaps.length === 1 ? t('quickSet.kcalLabelOne') : t('quickSet.kcalLabel')}
+          loggedDays={loggedDays}
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={() => intake && onFill(intake, choice)}
+        disabled={busy || !intake}
+        className="mt-4 inline-flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-surface disabled:opacity-40"
+      >
+        <PatternIcon />
+        {busy
+          ? t('gaps.filling')
+          : !intake
+            ? t('quickSet.enterNumber')
+            : choice === 'AVERAGE'
+              ? gaps.length === 1
+                ? t('gaps.fillOne')
+                : t('gaps.fillAll', { count: gaps.length })
+              : gaps.length === 1
+                ? t('quickSet.fillOneKcal', { kcal: kcal(intake.energyKcal) })
+                : t('quickSet.fillAllKcal', { count: gaps.length, kcal: kcal(intake.energyKcal) })}
+      </button>
+      <p className="pt-2 text-xs leading-relaxed text-ink-muted">{t('quickSet.note')}</p>
     </section>
   )
 }

@@ -1,14 +1,24 @@
 # Feature spec — quick-set a day
 
 **One line:** a day with no meals can be set in one tap to less than usual,
-the usual, more than usual, or a number of calories, from the week view and
-from Today.
+the usual, more than usual, or a number of calories, from the week view,
+the Day tab and the Nutrition tab.
 
-Status: **designed, not built** (2026-11-17). The canvas has ten screens:
-seven in English and three in Hebrew, right to left (mock-ups 8–10: the
-week, Today in the evening, Nutrition), in the app's own Hebrew wording. Epic 6 in
-[`../ROADMAP.md`](../ROADMAP.md). Mock-ups of the four screens below were made
-the same day as a clickable design canvas, kept with the owner.
+Status: **built 2026-11-17.** Where it is: the week's gaps card, the Day
+tab (an empty past day, or today from 16:00) and the Nutrition tab (an empty
+past day, or today from 16:00, with adding meals kept as the first button).
+Code: `quickSetIntake` in `src/domain/patternFill.ts`, the chooser and card
+in `src/ui/components/QuickSet.tsx`. Tests: `src/domain/__tests__/quickSet.test.ts`,
+`src/data/__tests__/patternFilledDay.test.ts` and `e2e/quick-set.spec.ts`
+(less, a number, average in the week; a past day set and taken back; today
+before 16:00 and in the evening; Nutrition; phone width; Hebrew). Epic 6 in
+[`../ROADMAP.md`](../ROADMAP.md). The design canvas (ten screens, three of
+them in Hebrew) is kept with the owner.
+
+Found while building: on a phone the number field pushed the card wider
+than the screen (a fieldset's default minimum width), and in the Nutrition
+tab the card's "Add meal" doubled the meal list's own. The card's button now
+names the day, and the card steps aside while the add-meal sheet is open.
 
 ---
 

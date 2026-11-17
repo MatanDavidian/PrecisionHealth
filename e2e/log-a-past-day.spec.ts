@@ -36,7 +36,7 @@ test('lands on the day it was typed for, and nowhere else', async ({ page }) => 
 
   // Manual entry used to be locked to today. It is reachable here now, and
   // Manual is the mode the sheet opens in.
-  await page.getByRole('button', { name: 'Add meal' }).click()
+  await page.getByRole('button', { name: 'Add meal', exact: true }).click()
   const form = page.locator('form')
   await form.getByLabel('Time').fill('07:30')
   await form.getByLabel('Food').fill('Backfilled porridge')

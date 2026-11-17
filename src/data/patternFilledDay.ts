@@ -13,7 +13,8 @@ import {
   type FoodItemId,
   type Meal,
   type MealId,
-  type TypicalIntake,
+  type DayIntake,
+  type QuickSetChoice,
   type UserId,
 } from '@/domain'
 
@@ -26,6 +27,14 @@ import {
  * be mistaken for food.
  */
 export const ESTIMATED_DAY_NAME = 'Estimated day (average of logged days)'
+
+/** The same, for the other quick-set choices, so an export says which was picked. */
+export const ESTIMATED_DAY_NAMES: Record<QuickSetChoice, string> = {
+  AVERAGE: ESTIMATED_DAY_NAME,
+  LESS: 'Estimated day (15% less than the average of logged days)',
+  MORE: 'Estimated day (15% more than the average of logged days)',
+  NUMBER: 'Estimated day (calories given by the person)',
+}
 
 /**
  * One record carrying a day's average, and nothing that looks like a meal.
@@ -50,9 +59,10 @@ export const ESTIMATED_DAY_NAME = 'Estimated day (average of logged days)'
  */
 export function buildPatternFilledDay(
   userId: UserId,
-  typical: TypicalIntake,
+  typical: DayIntake,
   day: CalendarDate,
   zone = deviceZone(),
+  choice: QuickSetChoice = 'AVERAGE',
 ): Meal {
   const recordedAt = new Date().toISOString()
   const provenance = { source: 'PATTERN_FILL' as const, kind: 'DERIVED' as const, recordedAt }
@@ -69,7 +79,7 @@ export function buildPatternFilledDay(
       {
         id: asId<'FoodItem'>(newId()) as FoodItemId,
         mealId,
-        name: ESTIMATED_DAY_NAME,
+        name: ESTIMATED_DAY_NAMES[choice],
         amount: canonical(0, 'g'),
         nutrients: {
           energy: canonical(Math.round(typical.energyKcal), 'kcal'),
@@ -82,6 +92,8 @@ export function buildPatternFilledDay(
         provenance,
       },
     ],
+    // Said only when it is not the plain average, which every older fill was.
+    ...(choice === 'AVERAGE' ? {} : { fillChoice: choice }),
     provenance,
   }
 }

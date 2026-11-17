@@ -61,6 +61,7 @@ chosen, and a stranger has installed it and subscribed.
 | 1.4 The listing tells the truth: the demo video shows US$8.99 and must go or be re-recorded; the public developer email becomes support@ | S | M | now |
 | 1.5 The reviewer's account never runs dry: a permanent free plan for review@ | S | C, with M's approval (it is a change to production data) | next |
 | 1.6 Apply for production: Google's questions answered from the notes | S | M + C | after the 14 days |
+| 1.6b **A new visitor's first photo:** signed out, the photo is held and the visitor is asked to sign in for the 10 free analyses at that moment, then comes back to it being analysed. Replaces today's dead end ("No API key configured" after the photo). **Designed 2026-11-17, next to build** ([`features/first-photo.md`](features/first-photo.md), mock-ups with the owner) | S–M | C | next |
 | 1.7 The public launch: the Dial logo and icons, a demo video recorded in the Android app | M | M + C | before 1.6 is approved, if wanted; not a blocker |
 
 Built and verified on 2026-11-15: Play Billing end to end (purchase, renewal,

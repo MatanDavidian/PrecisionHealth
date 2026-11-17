@@ -4,7 +4,12 @@
 that moment with the photo kept, and comes back to it being analysed, with
 no dead end.
 
-Status: **designed, not built** (2026-11-17, option B chosen by the owner).
+Status: **built 2026-11-17** (option B, chosen by the owner the same day).
+Tests: `e2e/first-photo.spec.ts` (held, sign-in with the photo waiting,
+nothing sent before consent, read by itself after, words as well as photos,
+the Android app without the own-key link, Hebrew). Found while building:
+the Android app was remembered only if a screen asked while `?source=twa`
+was still in the address; it is now stored at start-up (`main.tsx`).
 Epic 1 in [`../ROADMAP.md`](../ROADMAP.md). Mock-ups: a clickable design
 canvas of eight screens, five in English and three in Hebrew, kept with the
 owner.

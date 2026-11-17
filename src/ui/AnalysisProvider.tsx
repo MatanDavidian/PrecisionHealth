@@ -51,7 +51,13 @@ export type AnalysisInput =
  */
 export interface Analysis {
   id: string
-  status: 'running' | 'done' | 'failed'
+  /**
+   * `waiting`: taken, not sent, because nobody can pay for it yet: signed
+   * out, with no key of their own. It waits here, above the screens, so it
+   * survives the trip to the sign-in page and runs by itself on return
+   * (features/first-photo.md). Nothing has left the device.
+   */
+  status: 'waiting' | 'running' | 'done' | 'failed'
   startedAt: number
   finishedAt?: number
   slot: MealSlot
@@ -107,9 +113,15 @@ interface AnalysisContextValue {
   /** Sends the user's reply to the model's question and re-estimates. */
   answerQuestion: (answer: string) => void
   clear: () => void
+  /** Keeps a photo or a sentence without sending it, until `resume`. */
+  hold: (input: Blob | string, hints: EstimateHints, slot: MealSlot, label: string) => void
+  /** Sends what `hold` kept. Does nothing unless something is waiting. */
+  resume: () => void
 }
 
 const AnalysisContext = createContext<AnalysisContextValue>({
+  hold: () => {},
+  resume: () => {},
   start: async () => {},
   startText: async () => {},
   retry: () => {},
@@ -225,6 +237,19 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         : undefined
       const exhausted = cause instanceof TrialExhaustedError || Boolean(plan)
       const signIn = known && cause.kind === 'SESSION'
+      /*
+        No key and no account: nothing was sent and nothing is wrong with the
+        photo. It waits for a way to pay instead of failing with "No API key
+        configured" and a Try again that cannot work (first-photo.md). The
+        Log screen holds such photos before they get here; this catches any
+        that slip past it, such as one taken while settings were loading.
+      */
+      if (known && cause.kind === 'NO_KEY') {
+        setAnalysis((current) =>
+          current && current.id === String(id) ? { ...current, status: 'waiting', finishedAt: undefined } : current,
+        )
+        return
+      }
       buzz(15)
       setAnalysis((current) =>
         current && current.id === String(id)
@@ -388,6 +413,37 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     [rerun],
   )
 
+  const hold = useCallback(
+    (source: Blob | string, hints: EstimateHints, slot: MealSlot, label: string) => {
+      const id = ++runId.current
+      const input: AnalysisInput =
+        typeof source === 'string'
+          ? { kind: 'text', description: source.trim() }
+          : { kind: 'photo', url: URL.createObjectURL(source), meta: { width: 0, height: 0, bytes: source.size, sha256: '' }, blob: source }
+      setAnalysis({
+        id: String(id),
+        status: 'waiting',
+        startedAt: Date.now(),
+        slot,
+        label,
+        input,
+        hints,
+        model: getEstimator().model,
+        conversationId: newConversationId(),
+        answers: [],
+      })
+    },
+    [],
+  )
+
+  const resume = useCallback(() => {
+    const waiting = latest.current
+    if (!waiting || waiting.status !== 'waiting') return
+    // Started afresh, so the estimator chosen for the new session reads it.
+    if (waiting.input.kind === 'photo') void start(waiting.input.blob, waiting.hints, waiting.slot, waiting.label)
+    else void startText(waiting.input.description, waiting.hints, waiting.slot, waiting.label)
+  }, [start, startText])
+
   const clear = useCallback(() => {
     runId.current += 1
     setConversationId(undefined)
@@ -398,7 +454,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
   return (
     <AnalysisContext.Provider
-      value={{ analysis, start, startText, retry, restartWith, answerQuestion, clear }}
+      value={{ analysis, start, startText, retry, restartWith, answerQuestion, clear, hold, resume }}
     >
       {children}
     </AnalysisContext.Provider>

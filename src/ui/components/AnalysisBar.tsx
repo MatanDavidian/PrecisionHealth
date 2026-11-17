@@ -23,6 +23,8 @@ export function AnalysisBar() {
 
   if (!analysis || location.pathname === '/log') return null
   if (analysis.status === 'failed') return null
+  // Waiting for a sign-in: the sign-in page says so itself, and nothing is being read.
+  if (analysis.status === 'waiting') return null
 
   const kcal =
     analysis.result &&

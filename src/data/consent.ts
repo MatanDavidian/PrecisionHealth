@@ -99,6 +99,28 @@ export function outstanding(consents: ConsentRecord[]): PolicyDocument[] {
  * the second call failed — and the failure mode of a half-consented account is
  * that nobody can tell whether the person agreed.
  */
+/*
+  Told when consent has just been recorded.
+
+  A photo taken before signing in waits for the new account to agree to the
+  policies (features/first-photo.md): it may go to the model only after that,
+  and the consent dialog keeps its own state. This is how the waiting photo
+  hears the answer without the dialog knowing it exists.
+*/
+const grantedListeners = new Set<() => void>()
+export const onConsentGranted = (listener: () => void): (() => void) => {
+  grantedListeners.add(listener)
+  return () => {
+    grantedListeners.delete(listener)
+  }
+}
+
+/** True when nothing is left to agree to, or when consent cannot be read here at all. */
+export async function consentSettled(userId: UserId): Promise<boolean> {
+  const consents = await readConsents(userId)
+  return consents === undefined || outstanding(consents).length === 0
+}
+
 export async function grant(
   userId: UserId,
   documents: PolicyDocument[],
@@ -120,4 +142,5 @@ export async function grant(
   )
   const { error } = await client.from('consents').insert(rows)
   if (error) throw new Error(error.message)
+  for (const listener of grantedListeners) listener()
 }

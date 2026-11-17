@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { consentSettled, onConsentGranted } from '@/data/consent'
+import { TRIAL_ANALYSES } from '../../../supabase/functions/_shared/prompt'
 import { Link, useSearchParams } from 'react-router-dom'
 import { estimatorRequiresKey, getRepositories } from '@/data'
 import type { EstimateHints } from '@/ai/estimator'
@@ -36,7 +38,7 @@ import { inAndroidApp } from '@/data/playBilling'
 import { Card } from '../components/Card'
 import type { AppSettings } from '@/data/repositories'
 import { MEAL_SLOTS, type MealSlot } from '@/domain'
-import { useLang } from '../i18n'
+import { useLang, useT } from '../i18n'
 import type { StringKey } from '../i18n/strings'
 
 const field =
@@ -96,7 +98,7 @@ export function Log() {
   /** The meal just logged from a usual, kept so it can be taken back. */
   const [justLogged, setJustLogged] = useState<{ meals: Meal[]; label: string }>()
   const [logging, setLogging] = useState(false)
-  const { analysis, start, startText, retry, clear, answerQuestion } = useAnalysis()
+  const { analysis, start, startText, retry, clear, answerQuestion, hold, resume } = useAnalysis()
   const running = analysis?.status === 'running'
   const runningPhoto = running && analysis?.input.kind === 'photo'
   const elapsed = useElapsed(analysis?.startedAt, running)
@@ -194,8 +196,49 @@ export function Log() {
    */
   const [held, setHeld] = useState<File>()
 
+  /*
+    Signed out, with no key of their own, nobody can pay for an analysis yet.
+    The photo or sentence is held, and the visitor is asked to sign in at that
+    moment, rather than being sent on to "No API key configured"
+    (features/first-photo.md).
+  */
+  const mustSignIn = Boolean(settings && keyMissing(settings) && !session.authenticated)
+  const waiting = analysis?.status === 'waiting'
+
+  /*
+    Back from signing in with something waiting: it is sent by itself, with no
+    extra tap. But not before the account has agreed to the policies. A new
+    account meets the consent dialog first, and a photo of food must not reach
+    the model until that is done; the dialog's answer arrives through
+    `onConsentGranted`.
+  */
+  const [welcomed, setWelcomed] = useState<'first' | 'plain'>()
+  useEffect(() => {
+    if (!waiting || !session.authenticated || estimatorRequiresKey()) return
+    let cancelled = false
+    const tryResume = async () => {
+      if (!(await consentSettled(session.userId)) || cancelled) return
+      cancelled = true
+      setWelcomed(trial && trial.used === 0 ? 'first' : 'plain')
+      resume()
+    }
+    const stop = onConsentGranted(() => void tryResume())
+    void tryResume()
+    return () => {
+      cancelled = true
+      stop()
+    }
+  }, [waiting, session, trial, resume])
+  useEffect(() => {
+    if (!analysis) setWelcomed(undefined)
+  }, [analysis])
+
   async function onPhotoChosen(file: File) {
     setSaved(false)
+    if (mustSignIn) {
+      hold(file, hints(), slot, t(SLOT_LABEL(slot)))
+      return
+    }
     /*
       Settings are already loaded above and may still be in flight. Undefined
       means unknown, and unknown must HOLD rather than send: sending a photo
@@ -215,12 +258,20 @@ export function Log() {
     if (!held) return
     const file = held
     setHeld(undefined)
+    if (mustSignIn) {
+      hold(file, hints(), slot, t(SLOT_LABEL(slot)))
+      return
+    }
     await start(file, hints(), slot, t(SLOT_LABEL(slot)))
   }
 
   async function onDescribed() {
     setSaved(false)
     setRecent(rememberDescription(description))
+    if (mustSignIn) {
+      hold(description, hints(), slot, t(SLOT_LABEL(slot)))
+      return
+    }
     await startText(description, hints(), slot, t(SLOT_LABEL(slot)))
   }
 
@@ -333,6 +384,14 @@ export function Log() {
         </div>
       )}
 
+      {welcomed && analysis && !waiting && (
+        <p role="status" className="mb-4 rounded-card bg-leaf-soft px-4 py-3 text-sm">
+          {welcomed === 'first'
+            ? t('firstPhoto.signedIn', { count: TRIAL_ANALYSES })
+            : t('firstPhoto.signedInPlain')}
+        </p>
+      )}
+
       {/*
         The tabs step aside once something is being estimated: at that point
         there is one thing on screen and one decision to make about it.
@@ -356,6 +415,7 @@ export function Log() {
           busy={logging}
           onSeeAll={() => setMode('again')}
           onLogUsual={(usual) => logUsual(usual)}
+          underCamera={mustSignIn ? <SignInHint text={t('firstPhoto.hint')} /> : undefined}
         />
       )}
 
@@ -369,6 +429,7 @@ export function Log() {
           busy={logging}
         />
       )}
+      {mode === 'write' && mustSignIn && <SignInHint text={t('firstPhoto.hintWrite')} />}
 
       {/*
         The repeat is a mode rather than a card above the camera: most days are
@@ -424,6 +485,17 @@ export function Log() {
             setDescription(analysis.input.kind === 'text' ? analysis.input.description : '')
             clearInput()
             setMode('write')
+          }}
+        />
+      )}
+
+      {waiting && analysis && (
+        <WaitingForSignIn
+          kind={analysis.input.kind}
+          onDiscard={() => {
+            const wasText = analysis.input.kind === 'text'
+            clearInput()
+            if (wasText) setMode('write')
           }}
         />
       )}
@@ -547,7 +619,7 @@ export function Log() {
         </Card>
       )}
 
-      {needsKey && !trial?.remaining && !analysis && (
+      {needsKey && session.authenticated && !trial?.remaining && !analysis && (
         <Card label={t('log.setup.label')}>
           <p className="text-sm text-ink-muted">{t(inAndroidApp() ? 'log.setup.bodyApp' : 'log.setup.body')}</p>
           <div className="flex flex-wrap gap-3 pt-3">
@@ -589,7 +661,7 @@ export function Log() {
         </Card>
       )}
 
-      {analysis && !runningPhoto && !adjusting && !questionOpen && !revised && (
+      {analysis && !waiting && !runningPhoto && !adjusting && !questionOpen && !revised && (
         <div className="pt-4">
           <button
             type="button"
@@ -665,7 +737,7 @@ export function Log() {
         </div>
       )}
 
-      {analysis && !analysis.result && !analysis.error?.exhausted && !runningPhoto && (
+      {analysis && !waiting && !analysis.result && !analysis.error?.exhausted && !runningPhoto && (
         <div className="flex flex-wrap gap-3 pt-4">
           {!running && !analysis.error?.unreadable && (
             <button
@@ -801,4 +873,69 @@ export function Log() {
       })
       .finally(() => setLogging(false))
   }
+}
+
+/** One line under the camera (or the words) for a visitor who is not signed in. */
+function SignInHint({ text }: { text: string }) {
+  const t = useT()
+  return (
+    <div className="mt-3 rounded-card border border-hairline bg-surface px-4 py-3">
+      <p className="text-sm leading-relaxed text-ink-soft">{text}</p>
+      <p className="pt-1.5 text-xs text-ink-muted">
+        {t('firstPhoto.byHandFree')}{' '}
+        {/* For anyone who would rather sign in first, before taking anything. */}
+        <Link to="/signin?next=/log" className="font-medium text-ink underline">
+          {t('firstPhoto.signInNow')}
+        </Link>
+      </p>
+    </div>
+  )
+}
+
+/**
+ * A photo or sentence waiting for its owner to sign in (features/first-photo.md).
+ *
+ * The one decision left, said in the visitor's terms: the 10 free analyses,
+ * no card, no password. The own-key route stays on the website, small and
+ * last; the Android app leaves it out, as it does everywhere (Play's
+ * payment rules).
+ */
+function WaitingForSignIn({ kind, onDiscard }: { kind: 'photo' | 'text'; onDiscard: () => void }) {
+  const t = useT()
+  const photo = kind === 'photo'
+  return (
+    <section className="mt-4 rounded-card border border-hairline bg-surface p-5" aria-labelledby="waiting-title">
+      <h2 id="waiting-title" className="font-display text-2xl">
+        {t(photo ? 'firstPhoto.photoTitle' : 'firstPhoto.textTitle')}
+      </h2>
+      <p className="pt-2 text-sm leading-relaxed text-ink-soft">{t(photo ? 'firstPhoto.photoBody' : 'firstPhoto.textBody')}</p>
+      <p className="pt-2 text-xs leading-relaxed text-ink-muted">{t(photo ? 'firstPhoto.photoWaits' : 'firstPhoto.textWaits')}</p>
+      <Link
+        to="/signin?next=/log"
+        className="mt-4 flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-medium text-surface"
+      >
+        {t('firstPhoto.continue')}
+      </Link>
+      <div className="flex flex-wrap gap-2 pt-3">
+        <Link
+          to="/nutrition"
+          className="flex-1 rounded-full border border-hairline px-4 py-2.5 text-center text-sm transition-colors hover:bg-card-soft"
+        >
+          {t('firstPhoto.byHand')}
+        </Link>
+        <button
+          type="button"
+          onClick={onDiscard}
+          className="flex-1 rounded-full border border-hairline px-4 py-2.5 text-sm transition-colors hover:bg-card-soft"
+        >
+          {t(photo ? 'firstPhoto.discardPhoto' : 'firstPhoto.discardText')}
+        </button>
+      </div>
+      {!inAndroidApp() && (
+        <Link to="/settings?tab=ai" className="block pt-3 text-center text-xs text-ink-muted underline">
+          {t('firstPhoto.ownKey')}
+        </Link>
+      )}
+    </section>
+  )
 }

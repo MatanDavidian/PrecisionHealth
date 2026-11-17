@@ -7,9 +7,19 @@ import { AnalysisProvider } from './ui/AnalysisProvider'
 import { LanguageProvider } from './ui/i18n'
 import { ErrorBoundary } from './ui/components/ErrorBoundary'
 import { installErrorReporting } from './data/errorReporting'
+import { inAndroidApp } from './data/playBilling'
 import './styles.css'
 
 installErrorReporting()
+
+/*
+  Remembered before anything renders. The Android app opens at
+  `/?source=twa`, the first redirect drops the query, and the marker used to
+  be stored only if some screen happened to ask while it was still there. The
+  Log screen's setup card did; when it went (first-photo.md, 2026-11-17),
+  nothing asked, and Settings offered an own-key field inside the app.
+*/
+inAndroidApp()
 
 /*
   The service worker: lets the installed app open without a connection

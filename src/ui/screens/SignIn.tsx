@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { sendSignInCode, signInWithPassword, verifySignInCode } from '@/data/session'
 import { Card } from '../components/Card'
 import { useT } from '../i18n'
+import { photoUrlOf, useAnalysis } from '../AnalysisProvider'
 
 const field =
   'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm outline-none focus:border-accent'
@@ -37,6 +38,10 @@ export function SignIn() {
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
   const [stage, setStage] = useState<Stage>({ kind: 'email' })
+  // A photo or sentence taken before signing in, kept for when this is done (first-photo.md).
+  const { analysis } = useAnalysis()
+  const waiting = analysis?.status === 'waiting' ? analysis : undefined
+  const waitingPhoto = photoUrlOf(waiting)
   const [error, setError] = useState<string>()
 
   async function requestCode(event: FormEvent) {
@@ -88,6 +93,14 @@ export function SignIn() {
 
   return (
     <div className="mx-auto max-w-md">
+      {waiting && (
+        <div role="status" className="mb-5 flex items-center gap-3 rounded-card bg-leaf-soft p-3">
+          {waitingPhoto && <img src={waitingPhoto} alt="" className="size-14 shrink-0 rounded-xl object-cover" />}
+          <p className="text-sm leading-snug">
+            {t(waitingPhoto ? 'firstPhoto.waitingPhoto' : 'firstPhoto.waitingText')}
+          </p>
+        </div>
+      )}
       <header className="pb-6">
         <h1 className="font-display text-4xl">{t('signin.title')}</h1>
         <p className="pt-1 text-sm text-ink-muted">{t('signin.subtitle')}</p>

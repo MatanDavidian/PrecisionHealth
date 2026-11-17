@@ -25,7 +25,10 @@ export function PhotoPanel({
   onLogUsual,
   onSeeAll,
   busy,
+  underCamera,
 }: {
+  /** Said right under the camera, before any photo: what taking one will lead to. */
+  underCamera?: React.ReactNode
   note: string
   onNoteChange: (next: string) => void
   onPhoto: (file: File) => void
@@ -162,6 +165,8 @@ export function PhotoPanel({
           <span className="text-xs">{t('log.photo.orLibrary')}</span>
         </button>
       )}
+
+      {!held && underCamera}
 
       {cameraStuck && !held && (
         <div role="status" className="mt-3 rounded-card border border-hairline bg-card-soft p-4">

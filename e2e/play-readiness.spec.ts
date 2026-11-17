@@ -33,7 +33,9 @@ test('the week’s suggestions say they are not medical advice', async ({ page }
 
 test('in the Android app, signed out: sign in for the free analyses — no own-key setup', async ({ page }) => {
   await page.goto('/log?source=twa')
-  await expect(page.getByRole('link', { name: 'Sign in for 10 free analyses' })).toBeVisible({ timeout: 15_000 })
+  // Since 2026-11-17 (first-photo.md): said under the camera, with a way to sign in first.
+  await expect(page.getByText(/10 free analyses come with a free account/)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('link', { name: 'Sign in now' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Add API key' })).toHaveCount(0)
   await open(page, '/settings?tab=ai')
   await expect(page.locator('#apiKey')).toHaveCount(0)

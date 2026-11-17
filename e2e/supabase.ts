@@ -242,9 +242,16 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
         billing_anchor: 1,
         renews_at: new Date(NOW.getTime() + 20 * day).toISOString(),
         provider: subscription.provider ?? 'lemonsqueezy',
+        /*
+          From the real clock, not NOW. NOW is the most recent Wednesday, and
+          the app reads the real time: "ends in 5 days" counted from NOW was
+          already over from Monday noon to Wednesday, and the test that a
+          cancelled plan stays until its end failed on those days (seen in CI
+          on Tuesday 17 Nov 2026).
+        */
         ends_at: subscription.endsInDays === undefined
           ? null
-          : new Date(NOW.getTime() + subscription.endsInDays * day).toISOString(),
+          : new Date(Date.now() + subscription.endsInDays * day).toISOString(),
         refunded_at: null,
         last_payment_at: new Date(NOW.getTime() - 5 * day).toISOString(),
         source_created_at: new Date(NOW.getTime() - 60 * day).toISOString(),

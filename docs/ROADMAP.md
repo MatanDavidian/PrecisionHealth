@@ -190,7 +190,8 @@ first customers ask for.
 
 | Feature | Size | Notes |
 | --- | --- | --- |
-| 6.1 **Reminders:** "log your dinner", at hours the person chooses. The Android app already has notifications switched on | M | The cheapest thing here that brings people back |
+| 6.0 **Quick-set a day:** less (−15%), average, more (+15%), or a number, in the week view and on Today from 16:00. **Designed 2026-11-17, next to build** ([`features/quick-set-a-day.md`](features/quick-set-a-day.md), mock-ups with the owner) | S–M | The owner's choice of ±15% |
+| 6.1 **Reminders:** a daily "log today" reminder at an hour the person chooses (16:00–04:00, default 22:30), and a "sync your watch" reminder when days of calories burned are missing. **Documented for later, 2026-11-17** ([`features/reminders.md`](features/reminders.md)): the app has no notification machinery yet, which is most of the work | M–L | Two open questions are in the document |
 | 6.2 **Goals and streaks** (Slice 5 below): targets, adherence, weekly rollups, computed by rules and not by the model | L | |
 | 6.3 **Health scan** (Slice 6 below): the week across food, training, recovery and body, every claim linked to its records | L | |
 | 6.4 **WhatsApp intake** ([`features/whatsapp-intake.md`](features/whatsapp-intake.md)): send a photo to a number | L, plus Meta's verification | Needs a verified business with Meta |

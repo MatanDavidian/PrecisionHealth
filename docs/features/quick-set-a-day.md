@@ -4,7 +4,9 @@
 the usual, more than usual, or a number of calories, from the week view and
 from Today.
 
-Status: **designed, not built** (2026-11-17). Epic 6 in
+Status: **designed, not built** (2026-11-17). The canvas has ten screens:
+seven in English and three in Hebrew, right to left (mock-ups 8–10: the
+week, Today in the evening, Nutrition), in the app's own Hebrew wording. Epic 6 in
 [`../ROADMAP.md`](../ROADMAP.md). Mock-ups of the four screens below were made
 the same day as a clickable design canvas, kept with the owner.
 
@@ -53,7 +55,11 @@ each"), so nobody has to work out what "less" means.
    Earlier in the day an empty day is not a gap, only a day in progress.
    "Log meals instead" sits under the main button, because logging is
    always the better answer.
-4. **After setting** (mock-up 4): the day's totals are labelled
+4. **The Nutrition tab** (mock-up 7): a day with no meals keeps "Add a
+   meal" as the main button, and offers the four choices under "or set the
+   day", as a secondary action: the Nutrition tab is where meals are added,
+   so adding stays first.
+5. **After setting** (mock-up 4): the day's totals are labelled
    "Estimated", the meal reads "The day, from your average · an estimate:
    nobody logged it", with Undo for a few seconds, then "Change it" and
    "Remove the estimate".
@@ -84,8 +90,10 @@ each"), so nobody has to work out what "less" means.
 - **Data** (`useHealthData.ts`): `fillDayFromPattern` takes the choice; one
   write per day, as now.
 - **Screens:** `GapsCard` gains the four-way choice and the number field;
-  a new `SetTodayCard` on Today reuses the same choice component. Both
-  languages; the choice component is checked right to left.
+  a new `SetDayCard` on Today and in the Nutrition tab reuses the same
+  choice component. Hebrew wording as in mock-ups 8–10: פחות, ממוצע, יותר,
+  מספר; numbers and "−15%" are isolated left to right inside the Hebrew
+  text, as the app does elsewhere.
 - **Tests:** the arithmetic in unit tests (each choice, rounding, a number
   below zero refused); browser tests for each place, for Undo, and for a
   real meal replacing a set day; the accessibility scan on both cards.

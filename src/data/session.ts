@@ -109,7 +109,7 @@ export async function verifySignInCode(email: string, code: string): Promise<Ses
  * Signs in with a password — for app-store reviewers only.
  *
  * Google's and Apple's reviewers have to sign in, and cannot read a code we
- * email them. So one review account has a password (docs/ANDROID-APP.md,
+ * email them. So one review account has a password (docs/android/plan.md,
  * step 3). Everyone else's account has none, and this simply fails for them;
  * the email code stays the way in.
  */

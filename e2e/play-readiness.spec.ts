@@ -4,7 +4,7 @@ import { openSignedIn, signIn } from './supabase'
 
 /**
  * What Google Play's policies require of the app itself, checked where a
- * reviewer would look (docs/PHASE-1-FINISH.md, handover 2026-10-17):
+ * reviewer would look (docs/history/phase-1-finish.md, handover 2026-10-17):
  * - a privacy policy inside the app
  * - a not-a-medical-device disclaimer, with a consult-a-professional
  *   reminder, beside the AI's suggestions

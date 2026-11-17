@@ -91,7 +91,7 @@ stores none today).
 
 Every health table is protected today by one rule: a row is readable only by
 its owner (`user_id = auth.uid()` in each table's row-level policy).
-`PHASES.md` warned that this feature means replacing that rule.
+`history/phases.md` warned that this feature means replacing that rule.
 
 **The design here does not replace it. It leaves it exactly as it is.**
 
@@ -507,8 +507,8 @@ most are expensive after the pilot. Three were decided on 2026-11-16 and are
 marked; the other six are open.
 
 Mock-ups of the nine screens in section 6 were made the same day as a
-clickable design canvas (kept with the owner, outside the repository), to
-show in the conversations of section 8.
+clickable design canvas, to show in the conversations of section 8. They
+are in [`mockups/coaches/`](mockups/coaches/).
 
 | # | Decision | Recommendation, and why |
 | --- | --- | --- |

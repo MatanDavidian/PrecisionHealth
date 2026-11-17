@@ -14,7 +14,7 @@ That single sentence is what everything below serves.
 
 > **Status, 2026-10-02:** the epics below are largely done — legal floor,
 > accounts, the name and domain. What remains, re-prioritised after the
-> analysis outage of 25 Sep–2 Oct, is in **[PHASE-1-FINISH.md](PHASE-1-FINISH.md)**.
+> analysis outage of 25 Sep–2 Oct, is in **[phase-1-finish.md](phase-1-finish.md)**.
 > The table below is the starting point this document was written from.
 
 ## Where it stands
@@ -146,7 +146,7 @@ The app calls itself **Timeline** on screen. The repository is
 
 - ~~**S3.1** — Decide the product name.~~ ✅ **Vimetry**, renamed in the app. This gates the domain, the Store listing,
   the privacy policy and every email that will ever be sent. **Options and real
-  availability checks are in [`NAMING.md`](NAMING.md); the decision is still
+  availability checks are in [`history/naming.md`](naming.md); the decision is still
   open.** The code side is done and does not wait for it: the name lives in
   `src/brand.ts` and nowhere else, so renaming is one edit.
 - **S3.2** — Acquire a domain. `precisionhealth.com` is a generic two-word
@@ -200,7 +200,7 @@ watch and cannot be published.
 
 ### E5 — The legal floor
 
-*Detail in [`COMPLIANCE.md`](COMPLIANCE.md). The engineering consequences are
+*Detail in [`ops/compliance.md`](../ops/compliance.md). The engineering consequences are
 here.*
 
 - ~~**S5.1** — Privacy policy and terms, published, versioned, and linked from

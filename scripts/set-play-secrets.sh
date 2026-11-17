@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Connect the functions to Google Play Billing (docs/ANDROID-APP.md, step 4).
+# Connect the functions to Google Play Billing (docs/android/plan.md, step 4).
 #
 #   ./scripts/set-play-secrets.sh ~/Downloads/<service-account-key>.json
 #

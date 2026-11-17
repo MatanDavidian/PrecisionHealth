@@ -3,7 +3,7 @@ import { open, switchToHebrew } from './app'
 import { openSignedIn, signIn } from './supabase'
 
 /**
- * The first minute (docs/PHASE-1-FINISH.md, onboarding): a stranger is told
+ * The first minute (docs/history/phase-1-finish.md, onboarding): a stranger is told
  * what this is and where what they log is kept, and a new account is told
  * what to do first. Each is said once, and neither blocks the app.
  */

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { LEMON_PORTAL, openSignedIn, signIn } from './supabase'
 
 /**
- * Subscribing inside the Android app, through Google Play (docs/ANDROID-APP.md,
+ * Subscribing inside the Android app, through Google Play (docs/android/plan.md,
  * step 4).
  *
  * The Android app is this site in a Trusted Web Activity, starting at

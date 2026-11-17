@@ -12,8 +12,8 @@ in `src/ui/components/QuickSet.tsx`. Tests: `src/domain/__tests__/quickSet.test.
 `src/data/__tests__/patternFilledDay.test.ts` and `e2e/quick-set.spec.ts`
 (less, a number, average in the week; a past day set and taken back; today
 before 16:00 and in the evening; Nutrition; phone width; Hebrew). Epic 6 in
-[`../ROADMAP.md`](../ROADMAP.md). The design canvas (ten screens, three of
-them in Hebrew) is kept with the owner.
+[`../ROADMAP.md`](../ROADMAP.md). Mock-ups: ten screens, three of them in
+Hebrew, in [`mockups/quick-set-a-day/`](mockups/quick-set-a-day/).
 
 Found while building: on a phone the number field pushed the card wider
 than the screen (a fieldset's default minimum width), and in the Nutrition

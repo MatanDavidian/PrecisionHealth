@@ -3,7 +3,7 @@
 **One line:** the add-meal sheet gains a third mode, beside Manual and Describe,
 that repeats a meal you have logged before onto whichever day is on screen.
 
-Status: **built** (Sep 2026). Epic E1 in [`../PHASE-1.md`](../PHASE-1.md).
+Status: **built** (Sep 2026). Epic E1 in [`../history/phase-1.md`](../history/phase-1.md).
 
 ---
 

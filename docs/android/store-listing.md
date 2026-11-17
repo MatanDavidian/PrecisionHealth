@@ -1,6 +1,6 @@
 # Google Play: the store listing and Google's forms
 
-Drafts for step 5 of `docs/ANDROID-APP.md`, written 2026-10-10. Everything
+Drafts for step 5 of `docs/android/plan.md`, written 2026-10-10. Everything
 here is pasted into the Play Console by the owner, who should read it first:
 the forms are declarations made in the owner's name.
 

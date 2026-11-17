@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A meal with the coach's comment and a reply</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+a{color:#2b2721}a:hover{color:#504c45}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #f1ece1; color: #2b2721; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="flex: 1; min-height: 0; overflow: hidden; padding: 28px 22px 0; display: flex; flex-direction: column; gap: 14px">
+
+    <div>
+      <h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 36px; line-height: 1.1">Nutrition</h1>
+      <p style="margin: 4px 0 0; font-size: 14px; color: #656056">Thursday, 19 November</p>
+    </div>
+
+    <div style="background: #e8e1d1; border-radius: 20px; padding: 14px 18px; display: flex; justify-content: space-between; font-size: 15px">
+      <span style="color: #504c45">Breakfast · Eggs and oats</span><span style="font-weight: 500; font-variant-numeric: tabular-nums">420 kcal</span>
+    </div>
+
+    <div style="background: #e8e1d1; border-radius: 20px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #656056">Lunch · 13:10</p>
+        <span style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">690 kcal</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span>Grilled chicken breast <span style="color: #656056">180 g</span></span><span style="font-variant-numeric: tabular-nums">300</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span>White rice <span style="color: #656056">185 g</span></span><span style="font-variant-numeric: tabular-nums">240</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span>Tahini <span style="color: #656056">25 g</span></span><span style="font-variant-numeric: tabular-nums">150</span></div>
+
+      <div style="border-top: 1px solid #ddd4c2; padding-top: 12px; display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #656056">Comments</p>
+
+        <div style="background: #faf7f0; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+          <p style="margin: 0; font-size: 12px; color: #656056"><span style="font-weight: 600; color: #2b2721">Noa Levi</span> · today, 08:40</p>
+          <p style="margin: 0; font-size: 15px; line-height: 1.45">Good protein here. Try adding a vegetable next time, even a small salad.</p>
+        </div>
+
+        <sc-for list="{{ replies }}" as="reply" hint-placeholder-count="0">
+          <div style="background: #eaf1da; border-radius: 14px; padding: 12px 14px; margin-left: 28px; display: flex; flex-direction: column; gap: 4px">
+            <p style="margin: 0; font-size: 12px; color: #504c45"><span style="font-weight: 600; color: #2b2721">You</span> · just now</p>
+            <p style="margin: 0; font-size: 15px; line-height: 1.45">{{ reply.text }}</p>
+          </div>
+        </sc-for>
+
+        <div style="display: flex; gap: 8px; align-items: center">
+          <label for="reply" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Reply to Noa</label>
+          <input id="reply" type="text" placeholder="Reply to Noa" value="{{ text }}" onChange="{{ onType }}" style="flex: 1; min-width: 0; box-sizing: border-box; height: 46px; padding: 0 14px; border: 1px solid #ddd4c2; border-radius: 999px; background: #faf7f0; color: #2b2721; font-family: inherit; font-size: 15px">
+          <button type="button" onClick="{{ send }}" style="height: 46px; padding: 0 18px; border: 0; border-radius: 999px; background: #c2673e; color: #faf7f0; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Send</button>
+        </div>
+        <p style="margin: 0; font-size: 12px; line-height: 1.4; color: #656056">Only you and Noa see these. They are never sent to the AI.</p>
+      </div>
+    </div>
+
+    <div style="background: #e8e1d1; border-radius: 20px; padding: 14px 18px; display: flex; justify-content: space-between; font-size: 15px">
+      <span style="color: #504c45">Dinner · Pasta <span style="color: #656056">(estimate)</span></span><span style="font-weight: 500; font-variant-numeric: tabular-nums">730 kcal</span>
+    </div>
+
+  </div>
+
+  <nav aria-label="Main" style="height: 62px; box-sizing: border-box; border-top: 1px solid #ddd4c2; background: #faf7f0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center">
+    <a href="ClientToday.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+      Log
+    </a>
+    <a href="ClientToday.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg>
+      Today
+    </a>
+    <a href="ClientMeal.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: #a2512e; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a2512e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3.5"></circle></svg>
+      Nutrition
+    </a>
+    <a href="ClientSharing.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"></path></svg>
+      Settings
+    </a>
+  </nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { text: '', replies: [] };
+}
+renderVals() {
+return {
+text: this.state.text,
+replies: this.state.replies,
+onType: (event) => this.setState({ text: event.target.value }),
+send: () => {
+const text = this.state.text.trim();
+if (!text) return;
+this.setState({ replies: this.state.replies.concat([{ text: text }]), text: '' });
+}
+};
+}
+}
+</script>
+</body>
+</html>

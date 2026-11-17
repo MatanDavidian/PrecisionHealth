@@ -6,7 +6,7 @@ the database itself.
 
 Status: **complete** (Aug 2026). All seven steps built and verified; the app is
 live at [precisionhealth-9bn.pages.dev](https://precisionhealth-9bn.pages.dev).
-Decisions here implement D15 and D16 (see ARCHITECTURE.md).
+Decisions here implement D15 and D16 (see [`../engineering/architecture.md`](../engineering/architecture.md)).
 
 ---
 

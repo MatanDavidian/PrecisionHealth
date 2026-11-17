@@ -1,0 +1,24 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-17T20:05:00Z" },
+  "title": "Vimetry first photo",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "1 · Before: the camera says what it needs", "is_interactive": true },
+    "PhotoReady.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "2 · The photo is ready: sign in to analyse it", "is_interactive": true },
+    "SignIn.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "3 · Sign in, with the photo waiting", "is_interactive": true },
+    "Analysing.dc.html": { "x": 1410, "y": 0, "w": 390, "h": 844, "title": "4 · Back: it analyses by itself", "is_interactive": true },
+    "WriteReady.dc.html": { "x": 1880, "y": 0, "w": 390, "h": 844, "title": "5 · The same for a meal in words", "is_interactive": true },
+    "HePhotoReady.dc.html": { "x": 470, "y": 1264, "w": 390, "h": 844, "title": "6 · עברית: התמונה מוכנה", "is_interactive": true },
+    "HeSignIn.dc.html": { "x": 940, "y": 1264, "w": 390, "h": 844, "title": "7 · עברית: כניסה, התמונה מחכה", "is_interactive": true },
+    "HeAnalysing.dc.html": { "x": 1410, "y": 1264, "w": 390, "h": 844, "title": "8 · עברית: חזרה, הניתוח מתחיל", "is_interactive": true }
+  },
+  "order": ["Main.dc.html", "PhotoReady.dc.html", "SignIn.dc.html", "Analysing.dc.html", "WriteReady.dc.html", "HePhotoReady.dc.html", "HeSignIn.dc.html", "HeAnalysing.dc.html"],
+  "notes": {
+    "title": { "x": 0, "y": -300, "text": "A new visitor's first photo: ask at the right moment, keep the photo", "kind": "title1", "maxW": 2270 },
+    "hebrew": { "x": 470, "y": 964, "text": "בעברית, מימין לשמאל", "kind": "title1", "maxW": 1330 },
+    "android": { "x": 0, "y": 1264, "w": 390, "text": "In the Android app, screens 2 and 5 drop the \"use your own OpenAI key\" link: Google Play's payment rules do not allow a way around the subscription inside the app. Everything else is the same.", "fill": "yellow" }
+  },
+  "designSystems": []
+}

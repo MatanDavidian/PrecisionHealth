@@ -1,6 +1,6 @@
 # Connect IQ Store: publishing the watch app
 
-Drafts and steps for "Publish the Garmin app" (`docs/PHASE-1-FINISH.md`),
+Drafts and steps for "Publish the Garmin app" (`docs/history/phase-1-finish.md`),
 written 2026-10-10. The owner submits; review takes calendar time nobody
 controls, so start early.
 

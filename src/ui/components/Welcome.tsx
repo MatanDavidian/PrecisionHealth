@@ -10,7 +10,7 @@ import { hasSeenNotice, OneTimeNotice } from './OneTimeNotice'
 const QUIET_DAYS = 30
 
 /**
- * The first minute, said once (docs/PHASE-1-FINISH.md, onboarding).
+ * The first minute, said once (docs/history/phase-1-finish.md, onboarding).
  *
  * A stranger used to land on a sample day with no explanation, and a new
  * account on a page of dashes. Two notices, each shown until dismissed on

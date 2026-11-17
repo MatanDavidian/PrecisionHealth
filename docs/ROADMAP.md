@@ -66,7 +66,7 @@ chosen, and a stranger has installed it and subscribed.
 
 Built and verified on 2026-11-15: Play Billing end to end (purchase, renewal,
 cancellation, expiry), the daily check that the server can still read
-purchases, and the first-visit welcome (`ANDROID-APP.md`, `PHASE-1-FINISH.md`).
+purchases, and the first-visit welcome (`android/plan.md`, `history/phase-1-finish.md`).
 
 ## Epic 2 — AI models and cost
 
@@ -135,7 +135,7 @@ Why it is high on the list: it is the only feature here that brings
 customers. One nutritionist with thirty clients is thirty installs that no
 advertising bought. Why it is not first: it changes the rule every row in the
 database is protected by (`auth.uid() = user_id`), and delegated access is
-exactly where health products are breached (`PHASES.md`, Phase 3). So it
+exactly where health products are breached (`history/phases.md`, Phase 3). So it
 starts with design, not code.
 
 **Set aside on 2026-11-16** (the owner's decision), after the design and the
@@ -174,7 +174,7 @@ Watch and every scale that writes there), and sells the plan through Apple.
 The website already works on iPhones for logging by photo, words and hand.
 What an iPhone cannot do from a website is read Apple Health, so this epic is
 about the watch and the store, and it is the largest item on this page
-(`PHASES.md`, Phase 2): an Apple developer account (US$99 a year), an app
+(`history/phases.md`, Phase 2): an Apple developer account (US$99 a year), an app
 shell around the web app that earns its place with real Apple Health
 integration (Apple rejects thin wrappers), Apple's in-app purchase as a third
 seller beside Lemon Squeezy and Google Play, and Apple's review.
@@ -217,7 +217,7 @@ first customers ask for.
 
 What follows is the roadmap as it was written while the app was built, kept
 for its reasoning. It reworks the phase plan in
-[`requirements/AI_Driven_Health_App_Product_Roadmap.docx`](requirements/AI_Driven_Health_App_Product_Roadmap.docx).
+[`history/AI_Driven_Health_App_Product_Roadmap.docx`](history/AI_Driven_Health_App_Product_Roadmap.docx).
 The product thinking there is kept; the *sequencing* is changed, for one reason
 given below.
 
@@ -264,7 +264,7 @@ not filtering superseded records. Live in `liveRecords()` now, with a test.
 **Ships:** a usable protein tracker.
 
 Assumptions taken along the way are in
-[`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) — Q3 has since been settled as D15
+[`engineering/open-questions.md`](engineering/open-questions.md) — Q3 has since been settled as D15
 (meal versioning, opening slice 3); Q7 (nothing can be deleted) is still open
 and worth reading before the cloud slice.
 
@@ -504,12 +504,12 @@ linked to the records it came from, refusing to conclude where data is thin.
 ## Phase 1 — a product rather than a tool
 
 Everything above assumes one user, one watch, and a developer on hand.
-**[`PHASE-1.md`](PHASE-1.md)** is the plan that stops that being true: repeat a
+**[`history/phase-1.md`](history/phase-1.md)** is the plan that stops that being true: repeat a
 meal onto another day, cover what exists with tests, a name and a domain,
 per-device authentication and the Connect IQ Store, the legal floor, and
 payments.
 
-Its companion **[`COMPLIANCE.md`](COMPLIANCE.md)** works out which parts of
+Its companion **[`ops/compliance.md`](ops/compliance.md)** works out which parts of
 Israeli, EU and US law fall on the architecture — the parts that are nearly free
 to build now and expensive to retrofit.
 
@@ -525,7 +525,7 @@ have to cover.
 ## The three phases
 
 The owner's phase plan, and what I would change about it, is in
-[`PHASES.md`](PHASES.md). The short version: the shape is right, and it wants
+[`history/phases.md`](history/phases.md). The short version: the shape is right, and it wants
 three reorderings — the legal entity first because it blocks four other things,
 payment last because there is nothing to sell until the rest works, and
 WhatsApp out of Phase 1 because Meta verification is calendar time nobody

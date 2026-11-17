@@ -1,6 +1,6 @@
 # Operations setup — the one-time steps only the owner can do
 
-The code for P0 in `docs/PHASE-1-FINISH.md` is in the repository. These steps
+The code for P0 in `docs/history/phase-1-finish.md` is in the repository. These steps
 connect it to the accounts it runs in. **Do them in this order** — each one
 depends on the one before.
 

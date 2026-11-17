@@ -20,7 +20,7 @@ type on an application is a support ticket rather than an edit.
 So the agent does the part that is reversible and tedious, and stops at the
 part that is neither.
 
-**S6.1/S6.2 in `PHASE-1.md` — and it is gated on the legal entity, which is
+**S6.1/S6.2 in `history/phase-1.md` — and it is gated on the legal entity, which is
 the thing this brief exists to specify.**
 
 ---
@@ -83,7 +83,7 @@ turnover, and that same registration also fills the privacy policy's
 company is required, that is a different decision with an accountant in it.
 
 Either way the answer feeds four blocked things at once — see
-`vimetry-owner-todo` and `PHASES.md`.
+`vimetry-owner-todo` and `history/phases.md`.
 
 ## The alternatives
 

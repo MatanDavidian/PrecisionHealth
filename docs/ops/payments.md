@@ -49,7 +49,7 @@ their price unless moved, with 30 days' notice (Terms of Use).
 
 On the website the plan is sold by **Lemon Squeezy**. Inside the Android app
 it is sold by **Google Play**, because Play's payments policy requires Play
-Billing there (`docs/ANDROID-APP.md`).
+Billing there (`docs/android/plan.md`).
 
 - **Same plan everywhere:** the allowances and the rules (cancel, refund,
   account deletion) are identical, read from one `subscriptions` table with

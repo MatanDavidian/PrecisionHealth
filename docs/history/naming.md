@@ -3,7 +3,7 @@
 **Status: research and options. The decision is yours; nothing here has been acted on.**
 
 The code side is already done and does not depend on the answer: the product
-name now lives in [`src/brand.ts`](../src/brand.ts) and nowhere else, and
+name now lives in [`src/brand.ts`](../../src/brand.ts) and nowhere else, and
 `vite.config.ts` fills the `<title>` from it. **Renaming is one edit.**
 
 ---
@@ -219,7 +219,7 @@ and `Selfknown` all have live sites on the `.com`.
 
 ## What this blocks
 
-`docs/PHASE-1.md` has E3 gating **E4** (the Connect IQ Store listing) and
+`docs/history/phase-1.md` has E3 gating **E4** (the Connect IQ Store listing) and
 **E5** (the privacy policy, which must name a legal entity and a contact).
 Both are otherwise ready. The privacy policy is drafted and shipping with
 `[UNDECIDED: …]` markers exactly where this decision belongs.

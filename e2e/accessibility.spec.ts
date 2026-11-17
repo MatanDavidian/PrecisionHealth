@@ -4,12 +4,12 @@ import { open } from './app'
 
 /**
  * An automated accessibility scan of the screens a stranger meets
- * (docs/PHASE-1-FINISH.md, P3), against WCAG 2.1 A and AA.
+ * (docs/history/phase-1-finish.md, P3), against WCAG 2.1 A and AA.
  *
  * One exception, written down rather than hidden: the brand's orange and
  * green — as text, and as the fill behind white button text — measure 2.7–4.1
  * against the 4.5 AA asks. The owner compared the passing shades and kept the
- * brand (2026-10-17, docs/PHASE-1-FINISH.md, P3). Everything else, the greys
+ * brand (2026-10-17, docs/history/phase-1-finish.md, P3). Everything else, the greys
  * included, must pass.
  */
 const PENDING_BRAND_COLOURS = ['#c2673e', '#6f7f53']

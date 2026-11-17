@@ -1,5 +1,5 @@
 /**
- * Google Play Billing, from inside the Android app (docs/ANDROID-APP.md, step 4).
+ * Google Play Billing, from inside the Android app (docs/android/plan.md, step 4).
  *
  * The Android app is this website in a Trusted Web Activity. There, Play's
  * rules apply: the plan is sold through Google Play, never Lemon Squeezy.

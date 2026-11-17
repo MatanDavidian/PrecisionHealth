@@ -24,7 +24,7 @@ export type AttachmentId = Id<'Attachment'>
  *
  * Note this is about LABELLING, not about which day the meal counts toward:
  * that is the day boundary in `time.ts` (currently local midnight, see
- * OPEN_QUESTIONS Q4).
+ * docs/engineering/open-questions.md, Q4).
  */
 export type MealSlot = 'NIGHT' | 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'
 

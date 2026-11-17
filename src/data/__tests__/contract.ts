@@ -88,7 +88,7 @@ const ZONE = 'Asia/Jerusalem'
  * test account holds every previous run's — thousands, and growing. At the
  * default five seconds that read timed out whenever the network or the
  * machine was slow. Moving these tests to a throwaway local Supabase is the
- * real fix (docs/PHASE-1-FINISH.md); until then, room to finish.
+ * real fix (docs/history/phase-1-finish.md); until then, room to finish.
  */
 const WHOLE_ACCOUNT = 60_000
 

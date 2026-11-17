@@ -10,9 +10,8 @@ nothing sent before consent, read by itself after, words as well as photos,
 the Android app without the own-key link, Hebrew). Found while building:
 the Android app was remembered only if a screen asked while `?source=twa`
 was still in the address; it is now stored at start-up (`main.tsx`).
-Epic 1 in [`../ROADMAP.md`](../ROADMAP.md). Mock-ups: a clickable design
-canvas of eight screens, five in English and three in Hebrew, kept with the
-owner.
+Epic 1 in [`../ROADMAP.md`](../ROADMAP.md). Mock-ups: eight screens, five in
+English and three in Hebrew, in [`mockups/first-photo/`](mockups/first-photo/).
 
 ---
 

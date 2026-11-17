@@ -291,7 +291,7 @@ that are mergeable in principle. Accepted: the simplicity is worth more than
 the false-conflict rate for a family-sized app.
 
 **Must precede sync** (D16). Afterwards it is a live data-loss bug rather than a
-latent one. **Planned in** `docs/OPEN_QUESTIONS.md` Q3.
+latent one. **Planned in** `docs/engineering/open-questions.md` Q3.
 
 **Cashed in** (Aug 2026). For a year this bought only Confirm and Undo — the
 edit path it was designed for did not exist in the UI. It does now:

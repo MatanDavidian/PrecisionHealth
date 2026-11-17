@@ -5,7 +5,7 @@
  *   npx vite-node scripts/seed-review-account.ts
  *
  * Signs in as REVIEW_EMAIL / REVIEW_PASSWORD from .env.local (the review
- * account the owner created; docs/ANDROID-APP.md, step 3) and writes through
+ * account the owner created; docs/android/plan.md, step 3) and writes through
  * the app's own Supabase repositories, under row-level security — so it can
  * write into that account and no other. It refuses:
  * - if the signed-in user is not the review account

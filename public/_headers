@@ -31,7 +31,7 @@
 # Security, on every response.
 #
 # payment=(self): Google Play Billing in the Android app runs through the
-# Payment Request API, on this origin only (docs/ANDROID-APP.md, step 4).
+# Payment Request API, on this origin only (docs/android/plan.md, step 4).
 #
 # The CSP is ENFORCED (since 2026-10-09), after six days in report-only mode
 # with no violations: the browser suite walks the app under this exact policy

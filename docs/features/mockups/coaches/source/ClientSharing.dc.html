@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, Sharing: who can see your log</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+a{color:#2b2721}a:hover{color:#504c45}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #f1ece1; color: #2b2721; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="flex: 1; min-height: 0; padding: 28px 22px 0; display: flex; flex-direction: column; gap: 16px">
+
+    <div>
+      <h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 36px; line-height: 1.1">Settings</h1>
+      <p style="margin: 4px 0 0; font-size: 14px; color: #656056">Who can see your log, and since when.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #e8e1d1; border-radius: 999px">
+      <span style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px; color: #504c45">You</span>
+      <span style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px; color: #504c45">Analysis</span>
+      <span style="display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 999px; background: #2b2721; color: #f1ece1; font-size: 13px; font-weight: 600">Sharing</span>
+      <span style="display: flex; align-items: center; justify-content: center; height: 40px; font-size: 13px; color: #504c45">Account</span>
+    </div>
+
+    <sc-if value="{{ sharing }}" hint-placeholder-val="{{ true }}">
+      <div style="background: #e8e1d1; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+        <p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #656056">Sharing with</p>
+        <p style="margin: 0; font-size: 17px; font-weight: 600">Noa Levi</p>
+        <p style="margin: 0; font-size: 14px; color: #504c45">Clinical dietitian · noa@example.com</p>
+        <div style="border-top: 1px solid #ddd4c2; margin-top: 6px; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 14px">
+          <div style="display: flex; justify-content: space-between; gap: 12px"><span style="color: #504c45">Sees</span><span style="font-weight: 500; text-align: right">Meals and goals, weight</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px"><span style="color: #504c45">From</span><span style="font-weight: 500">13 October</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px"><span style="color: #504c45">Sharing since</span><span style="font-weight: 500">12 November</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px"><span style="color: #504c45">Last looked</span><span style="font-weight: 500">Yesterday, 14:02</span></div>
+        </div>
+        <div style="display: flex; gap: 10px; padding-top: 8px">
+          <a href="Main.dc.html" style="display: flex; align-items: center; justify-content: center; height: 46px; padding: 0 20px; border: 1px solid #ddd4c2; border-radius: 999px; background: #faf7f0; font-size: 14px; text-decoration: none">Change</a>
+          <button type="button" onClick="{{ ask }}" style="height: 46px; padding: 0 20px; border: 1px solid #2b2721; border-radius: 999px; background: transparent; color: #2b2721; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Stop sharing</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ stopped }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="background: #eaf1da; border-radius: 20px; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+        <p style="margin: 0; font-size: 15px; font-weight: 600">You stopped sharing with Noa.</p>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45; color: #504c45">She can no longer see your log. Her comments stay with you.</p>
+      </div>
+    </sc-if>
+
+    <div style="background: #faf7f0; border: 1px solid #ddd4c2; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+      <p style="margin: 0; font-size: 15px; font-weight: 600">Have a link from your coach?</p>
+      <p style="margin: 0; font-size: 14px; line-height: 1.45; color: #504c45">Open it on this phone, or paste it here. You will see who is asking and what they would see before anything is shared.</p>
+      <label for="coach-link" style="font-size: 13px; color: #504c45">Your coach's link</label>
+      <div style="display: flex; gap: 8px">
+        <input id="coach-link" type="text" placeholder="vimetry.app/c/…" style="flex: 1; min-width: 0; box-sizing: border-box; height: 46px; padding: 0 14px; border: 1px solid #ddd4c2; border-radius: 12px; background: #f1ece1; color: #2b2721; font-family: inherit; font-size: 15px">
+        <a href="Main.dc.html" style="display: flex; align-items: center; justify-content: center; height: 46px; padding: 0 18px; border-radius: 999px; background: #c2673e; color: #faf7f0; font-size: 14px; font-weight: 600; text-decoration: none">Open</a>
+      </div>
+    </div>
+
+  </div>
+
+  <nav aria-label="Main" style="height: 62px; box-sizing: border-box; border-top: 1px solid #ddd4c2; background: #faf7f0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center">
+    <a href="ClientToday.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+      Log
+    </a>
+    <a href="ClientToday.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg>
+      Today
+    </a>
+    <a href="ClientMeal.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3.5"></circle></svg>
+      Nutrition
+    </a>
+    <a href="ClientSharing.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: #a2512e; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a2512e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"></path></svg>
+      Settings
+    </a>
+  </nav>
+
+  <sc-if value="{{ asking }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(43, 39, 33, 0.45); display: flex; align-items: flex-end">
+      <div role="dialog" aria-modal="true" aria-labelledby="stop-title" style="width: 100%; box-sizing: border-box; background: #faf7f0; border-radius: 24px 24px 0 0; padding: 24px 22px 28px; display: flex; flex-direction: column; gap: 10px">
+        <h2 id="stop-title" style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 26px">Stop sharing with Noa?</h2>
+        <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #504c45">Noa will stop seeing your log from this moment. What she has already seen stays seen. Her comments stay with you.</p>
+        <button type="button" onClick="{{ stop }}" style="margin-top: 8px; height: 52px; border: 0; border-radius: 999px; background: #2b2721; color: #faf7f0; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Stop sharing</button>
+        <button type="button" onClick="{{ cancel }}" style="height: 46px; border: 0; background: transparent; color: #504c45; font-family: inherit; font-size: 15px; text-decoration: underline; cursor: pointer">Keep sharing</button>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { sharing: true, asking: false };
+}
+renderVals() {
+return {
+sharing: this.state.sharing,
+stopped: !this.state.sharing,
+asking: this.state.asking,
+ask: () => this.setState({ asking: true }),
+cancel: () => this.setState({ asking: false }),
+stop: () => this.setState({ sharing: false, asking: false })
+};
+}
+}
+</script>
+</body>
+</html>

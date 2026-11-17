@@ -7,7 +7,7 @@ import type { SettingsRepository } from '../repositories'
 import type { Meal, UserId } from '@/domain'
 
 /**
- * Years of history, exported (docs/PHASE-1-FINISH.md, edge scenarios).
+ * Years of history, exported (docs/history/phase-1-finish.md, edge scenarios).
  *
  * Five meals a day for 25 years is about 50,000 rows, past fifty of the
  * thousand-row pages PostgREST will return. The export must read every one

@@ -1,8 +1,8 @@
 # Finishing Phase 1
 
 > **Closed as a plan on 2026-11-15** (the owner's decision). What Phase 1
-> still needs to launch is **Epic 1** in [`ROADMAP.md`](ROADMAP.md); the
-> rest of what is open below moved to the pool, [`BACKLOG.md`](BACKLOG.md).
+> still needs to launch is **Epic 1** in [`ROADMAP.md`](../ROADMAP.md); the
+> rest of what is open below moved to the pool, [`BACKLOG.md`](../BACKLOG.md).
 > This page stays as the record of what was done and why. New work is
 > planned in the roadmap, not here.
 
@@ -11,7 +11,7 @@ production for every signed-in user and nobody knew. That week is the best
 summary of what is left: the product works; the machinery that keeps it
 working, and tells someone when it stops, does not exist yet.
 
-**Done means** (unchanged from `PHASE-1.md`): someone who has never met you can
+**Done means** (unchanged from `history/phase-1.md`): someone who has never met you can
 sign up, understand what happens to their data, connect their Garmin, pay, and
 use it — and when something breaks, you hear about it before they do.
 
@@ -30,7 +30,7 @@ Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
 | Payments | **Lemon Squeezy LIVE since 2026-11-12** (`docs/ops/payments.md`); **US$4.99 a month since 2026-11-14** (was $8.99), the same on Google Play; **Play Billing connected 2026-11-15**. Before that, in **test mode**, every flow passed end to end on 2026-10-10 (purchase, both allowances, cancel, refund, account deletion). **Live mode deliberately not yet** — owner's decision |
 | Tests | 525 unit, 318 browser, 11 server handler suites (every function), DB invariants on Postgres, a race test, a live-site check |
 | Operations | CI deploys; migrations tracked (0001–0017); one deploy script; daily health check with email — schema, versions, both spend ceilings, every OpenAI key against every model, browser errors, reported AI answers, payment disputes, payments key expiry, and (2026-11-15) whether the server can still read purchases from Google Play |
-| Android | Play Billing (server and app), the TWA configuration, listing drafts, screenshots, a reviewer sign-in and sample data — built. **Closed test live since 2026-11-14** (Alpha, v2 1.0.1, Israel only); Play Billing connected 2026-11-15; waiting on 12+ testers for 14 days (`docs/ANDROID-APP.md`) |
+| Android | Play Billing (server and app), the TWA configuration, listing drafts, screenshots, a reviewer sign-in and sample data — built. **Closed test live since 2026-11-14** (Alpha, v2 1.0.1, Israel only); Play Billing connected 2026-11-15; waiting on 12+ testers for 14 days (`docs/android/plan.md`) |
 | Garmin | renamed Vimetry; a Store build with no token; listing and checklist (`docs/garmin/store-listing.md`) — waiting on the owner's developer account |
 
 ---
@@ -45,7 +45,7 @@ handler tests for every function.
 
 | # | What | Who | Note |
 | --- | --- | --- | --- |
-| 1 | **Android app on the Play Store**, selling through Google Play Billing | M + C | **Code done 2026-10-10** (steps 1–4 and 5's drafts of `docs/ANDROID-APP.md`). Console setup, package and billing done; the closed test is live since 2026-11-14. **Left: 12+ testers for 14 days, then apply for production** (handover, update 2026-11-15) |
+| 1 | **Android app on the Play Store**, selling through Google Play Billing | M + C | **Code done 2026-10-10** (steps 1–4 and 5's drafts of `docs/android/plan.md`). Console setup, package and billing done; the closed test is live since 2026-11-14. **Left: 12+ testers for 14 days, then apply for production** (handover, update 2026-11-15) |
 | 2 | **Publish the Garmin app** | M + C | **Ready to submit 2026-10-10.** Owner: developer account, upload, simulator screenshots, submit (`docs/garmin/store-listing.md`) |
 | 3 | **Chargebacks** — handle `dispute_created` / `dispute_resolved` | M + C | **Visible since 2026-10-10:** the webhook logs them and the daily check turns red on any in 30 days. Lemon Squeezy's docs do not describe their contents, so automatic handling waits for a real one. Owner: tick both events on the webhook. Then decide the rule — end access while disputed, as a refund does? |
 | 4 | **Logo and home-screen icon** | M + C | Moved up: the Android app and the installable website need icons. A temporary mark will do for the closed test; motion and the accessibility scan stay P3 |
@@ -487,7 +487,7 @@ Later
 - **Google account type: settled 2026-10-18.** Google Play Developer
   Support answered the ticket: the Personal account is fine — organisation
   accounts are required only for medical and human-subjects-research apps
-  (`docs/ANDROID-APP.md`, step 0). Uploading may start.
+  (`docs/android/plan.md`, step 0). Uploading may start.
 
 **Done — before the first Play upload** (Google's own requirements,
 confirmed by its support assistant; built 2026-10-17, tested in
@@ -526,14 +526,14 @@ confirmed by its support assistant; built 2026-10-17, tested in
 - Google approved the closed test (Alpha shows "available to testers on
   Google Play", 1 country). `testers1` has 4 addresses so far.
 - Play Billing set up end to end, and the test notification reached
-  `play-rtdn` (the full record is in `docs/ANDROID-APP.md`, "Done
+  `play-rtdn` (the full record is in `docs/android/plan.md`, "Done
   2026-11-15"). License testing covers `testers1`.
 - Price lowered to **US$4.99** on the website, Lemon Squeezy and Play
   (the owner's decision; arithmetic in `docs/ops/payments.md`). Terms
   version 2026-11-14, one re-consent.
 - ~~Not yet verified: a real purchase inside the Android app~~ **Verified
   the same day:** purchase, acknowledgement and a 5-minute renewal, end to
-  end (`docs/ANDROID-APP.md`, "Done 2026-11-15"). Still to try: cancelling
+  end (`docs/android/plan.md`, "Done 2026-11-15"). Still to try: cancelling
   in Play, and a refund from Play Console.
 
 **Next, in order (2026-11-15):**
@@ -595,7 +595,7 @@ documents (then the contact-phone check).
    - product `vimetry_monthly`
    - service account (`GOOGLE_PLAY_SERVICE_ACCOUNT`)
    - Pub/Sub push to `play-rtdn?token=…` (`GOOGLE_PLAY_RTDN_TOKEN`)
-   - (`docs/ANDROID-APP.md`, step 4)
+   - (`docs/android/plan.md`, step 4)
 5. ~~**Build the Android package**~~ **done** (`android/README.md`): internal
    testing, then the 14-day closed test (live since 2026-11-14).
 6. **Read and approve the drafts** in `docs/android/store-listing.md`.

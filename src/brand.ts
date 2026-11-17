@@ -22,7 +22,7 @@
  * the older name's stress ambiguous. This one also happens to rhyme with
  * symmetry, which is free help with spelling.
  *
- * See `docs/NAMING.md` for what was screened and what is still outstanding —
+ * See `docs/history/naming.md` for what was screened and what is still outstanding —
  * the trademark search in particular, which has not been done.
  */
 export const PRODUCT_NAME = 'Vimetry'

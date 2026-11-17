@@ -107,7 +107,7 @@ metadata, not pixels), mobile bottom nav, default-route change.
 
 ## 4. Architecture
 
-### The BYOK model (new decision D14 — recorded in ARCHITECTURE.md)
+### The BYOK model (new decision D14 — recorded in engineering/architecture.md)
 
 The user supplies their own OpenAI API key in Settings. It is stored
 **on-device only** and sent to exactly one place: the provider's API endpoint,

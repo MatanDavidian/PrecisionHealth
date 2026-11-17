@@ -4,7 +4,7 @@ import { PRODUCT_NAME } from '../brand'
 
 /**
  * What makes vimetry.app installable — and what the Android app is built
- * from (docs/ANDROID-APP.md, step 1). Checked here because a broken manifest
+ * from (docs/android/plan.md, step 1). Checked here because a broken manifest
  * fails silently: the browser just stops offering "Install".
  */
 

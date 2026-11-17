@@ -1,0 +1,34 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-16T17:19:57Z" },
+  "title": "Vimetry coaches mockup",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 1000, "title": "1 · Client: agree to share", "is_interactive": true },
+    "ClientToday.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "2 · Client: Today, with a new comment", "is_interactive": true },
+    "ClientMeal.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "3 · Client: the comment on the meal", "is_interactive": true },
+    "ClientSharing.dc.html": { "x": 1410, "y": 0, "w": 390, "h": 844, "title": "4 · Client: Settings, Sharing", "is_interactive": true },
+    "CoachSetup.dc.html": { "x": 0, "y": 1420, "w": 390, "h": 900, "title": "5 · Coach: becoming a coach", "is_interactive": true },
+    "CoachLink.dc.html": { "x": 470, "y": 1420, "w": 390, "h": 844, "title": "6 · Coach: the link to send", "is_interactive": true },
+    "CoachClients.dc.html": { "x": 940, "y": 1420, "w": 390, "h": 844, "title": "7 · Coach: the client list", "is_interactive": true },
+    "CoachClientDay.dc.html": { "x": 1410, "y": 1420, "w": 390, "h": 1000, "title": "8 · Coach: a client's day, read-only", "is_interactive": true },
+    "CoachComment.dc.html": { "x": 1880, "y": 1420, "w": 390, "h": 844, "title": "9 · Coach: writing a comment", "is_interactive": true }
+  },
+  "order": [
+    "Main.dc.html",
+    "ClientToday.dc.html",
+    "ClientMeal.dc.html",
+    "ClientSharing.dc.html",
+    "CoachSetup.dc.html",
+    "CoachLink.dc.html",
+    "CoachClients.dc.html",
+    "CoachClientDay.dc.html",
+    "CoachComment.dc.html"
+  ],
+  "notes": {
+    "client": { "x": 0, "y": -300, "text": "The client", "kind": "title1", "maxW": 1800 },
+    "coach": { "x": 0, "y": 1120, "text": "The coach", "kind": "title1", "maxW": 2270 }
+  },
+  "designSystems": []
+}

@@ -1,0 +1,25 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-17T19:15:52Z" },
+  "title": "Vimetry quick-set a day",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "1 · Week: fill missed days, with a choice", "is_interactive": true },
+    "WeekNumber.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "2 · Week: a number of your own", "is_interactive": true },
+    "TodayEvening.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "3 · Today, evening, nothing logged", "is_interactive": true },
+    "TodayFilled.dc.html": { "x": 1410, "y": 0, "w": 390, "h": 844, "title": "4 · Today, after setting it", "is_interactive": true },
+    "DayPast.dc.html": { "x": 0, "y": 964, "w": 390, "h": 844, "title": "5 · Day tab, a past day with nothing logged", "is_interactive": true },
+    "NumberOnly.dc.html": { "x": 470, "y": 964, "w": 390, "h": 844, "title": "6 · Too little history: a number only", "is_interactive": true },
+    "NutritionEmpty.dc.html": { "x": 940, "y": 964, "w": 390, "h": 844, "title": "7 · Nutrition tab, a day with nothing logged", "is_interactive": true },
+    "HeWeek.dc.html": { "x": 0, "y": 2228, "w": 390, "h": 844, "title": "8 · עברית: השבוע, ימים חסרים", "is_interactive": true },
+    "HeToday.dc.html": { "x": 470, "y": 2228, "w": 390, "h": 844, "title": "9 · עברית: היום, בערב", "is_interactive": true },
+    "HeNutrition.dc.html": { "x": 940, "y": 2228, "w": 390, "h": 844, "title": "10 · עברית: תזונה, יום ריק", "is_interactive": true }
+  },
+  "order": ["Main.dc.html", "WeekNumber.dc.html", "TodayEvening.dc.html", "TodayFilled.dc.html", "DayPast.dc.html", "NumberOnly.dc.html", "NutritionEmpty.dc.html", "HeWeek.dc.html", "HeToday.dc.html", "HeNutrition.dc.html"],
+  "notes": {
+    "title": { "x": 0, "y": -300, "text": "Quick-set a day: less, average, more, or a number", "kind": "title1", "maxW": 1800 },
+    "hebrew": { "x": 0, "y": 1928, "text": "בעברית, מימין לשמאל", "kind": "title1", "maxW": 1330 }
+  },
+  "designSystems": []
+}

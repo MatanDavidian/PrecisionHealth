@@ -4,7 +4,7 @@ Vimetry on Android is vimetry.app in a **Trusted Web Activity** (TWA): Chrome
 showing the site full-screen, under the app's own name and icon. This folder
 holds only its configuration. The Android project is generated from it by
 Google's **Bubblewrap**, and nothing generated is committed. The plan is in
-`docs/ANDROID-APP.md`.
+`docs/android/plan.md`.
 
 `twa-manifest.json` holds the choices, already made:
 

@@ -4,7 +4,7 @@ A longitudinal personal health platform: nutrition, training, recovery, body
 measurements, wearable data and clinical information in one timeline — with AI
 layered on top of a structured model rather than replacing it.
 
-Built from [`docs/requirements/AI_Driven_Health_App_Product_Roadmap.docx`](docs/requirements/AI_Driven_Health_App_Product_Roadmap.docx).
+Built from [`docs/history/AI_Driven_Health_App_Product_Roadmap.docx`](docs/history/AI_Driven_Health_App_Product_Roadmap.docx).
 UI direction comes from the Timeline mockups in Claude Design (links in
 [`docs/design/claude_design.txt`](docs/design/claude_design.txt)); what the app
 actually looks like today is
@@ -26,16 +26,16 @@ npm run db:verify        # prove the schema enforces its invariants
 Copy [`.env.example`](.env.example) to `.env.local` for Supabase; without it
 the app runs local-only. Backend setup is in
 [`supabase/README.md`](supabase/README.md), hosting in
-[`docs/DEPLOY.md`](docs/DEPLOY.md).
+[`docs/engineering/deploy.md`](docs/engineering/deploy.md).
 
 Node 20+.
 
 ## High-level decisions
 
-Full reasoning in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); the plan they
+Full reasoning in [`docs/engineering/architecture.md`](docs/engineering/architecture.md); the plan they
 serve is in [`docs/ROADMAP.md`](docs/ROADMAP.md). What finishes Phase 1 is in
-[`docs/PHASE-1-FINISH.md`](docs/PHASE-1-FINISH.md); the Android app and Google
-Play Billing in [`docs/ANDROID-APP.md`](docs/ANDROID-APP.md).
+[`docs/history/phase-1-finish.md`](docs/history/phase-1-finish.md); the Android app and Google
+Play Billing in [`docs/android/plan.md`](docs/android/plan.md).
 
 | # | Decision | In short |
 |---|---|---|
@@ -79,7 +79,7 @@ data sources → normalized health model → analytics/goal engine → AI tools 
 
 **Live at [vimetry.app](https://vimetry.app).** Phase 1 is nearly done; what
 is left, and in what order, is in
-[`docs/PHASE-1-FINISH.md`](docs/PHASE-1-FINISH.md).
+[`docs/history/phase-1-finish.md`](docs/history/phase-1-finish.md).
 
 - **Logging:** photo, words, manual entry, "Again" (repeat a past meal), adjust
   an estimate, fill a missed day from your average. Estimates come from
@@ -98,7 +98,7 @@ is left, and in what order, is in
   - or your own OpenAI key
 - **Installable:** add it to the Home Screen. It opens offline.
 - **Android:** a Play Store app with Google Play Billing is built and
-  waiting on Google's account checks (`docs/ANDROID-APP.md`).
+  waiting on Google's account checks (`docs/android/plan.md`).
 - **In English and Hebrew.**
 - **Operations:**
   - deploys go only through CI
@@ -107,4 +107,4 @@ is left, and in what order, is in
   - browser errors are reported (`docs/ops/`)
 
 How it got here, slice by slice: [`docs/ROADMAP.md`](docs/ROADMAP.md).
-Assumptions and open questions: [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md).
+Assumptions and open questions: [`docs/engineering/open-questions.md`](docs/engineering/open-questions.md).

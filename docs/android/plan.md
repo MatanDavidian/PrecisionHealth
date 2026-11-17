@@ -5,7 +5,7 @@ Decided 2026-10-10:
 - Inside that app, it sells the subscription through **Google Play Billing**:
   a second payment system beside Lemon Squeezy, kept in sync on one account.
 - The Play Store and the Garmin app are the **next two Phase 1 steps**
-  (`docs/PHASE-1-FINISH.md`).
+  (`docs/history/phase-1-finish.md`).
 
 Sizes: **S** under half a day · **M** one to two days · **L** three to five.
 Owner: **C** = Claude in the repo · **M** = Matan, in an account only he holds.
@@ -356,7 +356,7 @@ Reviewers need a working login, and they cannot read our email codes.
 
 About **two weeks of code**, and **four to six weeks of calendar** before
 the first public release, most of it Google's clocks. The Garmin submission
-(`docs/PHASE-1-FINISH.md`) runs in parallel: its review clock is also
+(`docs/history/phase-1-finish.md`) runs in parallel: its review clock is also
 measured in weeks, so start its owner steps in week 1 too.
 
 ## Risks

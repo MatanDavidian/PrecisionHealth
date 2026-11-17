@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { STUB_ACCOUNT, stubSupabase } from './supabase'
 
 /**
- * The app-store reviewer's way in (docs/ANDROID-APP.md, step 3).
+ * The app-store reviewer's way in (docs/android/plan.md, step 3).
  *
  * Google's reviewers must sign in, and cannot read a code we email. One
  * review account has a password; everyone else signs in by email code, and

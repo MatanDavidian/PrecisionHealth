@@ -3,7 +3,7 @@
 //   node scripts/make-icons.mjs
 //
 // The mark is the favicon's orange dot on cream — a stand-in until the logo
-// exists (PHASE-1-FINISH, "Logo and home-screen icon"). Replace MARK and run
+// exists (docs/history/phase-1-finish.md, "Logo and home-screen icon"). Replace MARK and run
 // this again; every size follows. Rendered by Playwright's Chromium, which is
 // already installed for the browser tests, so there is no image tool to add.
 import { chromium } from '@playwright/test'

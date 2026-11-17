@@ -1,7 +1,7 @@
 /**
  * Builders for records created by the user, in the browser.
  *
- * ASSUMPTION (see docs/OPEN_QUESTIONS.md, Q1): new records are stamped with the
+ * ASSUMPTION (see docs/engineering/open-questions.md, Q1): new records are stamped with the
  * DEVICE's current IANA timezone, not the profile's. Where you physically are
  * when you eat is what decides which day the meal belongs to, and the device
  * knows that; the profile setting can be stale after travel.

@@ -16,7 +16,7 @@
  * Structured rather than Markdown because the project declines dependencies
  * for small jobs, and because sections are what the consent record points at.
  *
- * ⚠️ Drafted from the code, not by a lawyer. `docs/COMPLIANCE.md` sets out
+ * ⚠️ Drafted from the code, not by a lawyer. `docs/ops/compliance.md` sets out
  * what still needs professional review before anyone is charged.
  */
 

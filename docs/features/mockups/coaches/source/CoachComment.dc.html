@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The coach writes a comment on a meal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+a{color:#2b2721}a:hover{color:#504c45}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #5a564f; color: #2b2721; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="background: #2f4858; color: #faf7f0; padding: 16px 22px; display: flex; flex-direction: column; gap: 4px">
+    <p style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 22px; line-height: 1.15">Dana K.'s log</p>
+    <p style="margin: 0; font-size: 13px">Read-only · Thursday, 19 November</p>
+  </div>
+
+  <div style="flex: 1; min-height: 0"></div>
+
+  <div role="dialog" aria-modal="true" aria-labelledby="comment-title" style="box-sizing: border-box; background: #faf7f0; border-radius: 24px 24px 0 0; padding: 20px 22px 24px; display: flex; flex-direction: column; gap: 12px">
+
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+      <div>
+        <h2 id="comment-title" style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 26px; line-height: 1.15">Lunch</h2>
+        <p style="margin: 4px 0 0; font-size: 14px; color: #504c45">Grilled chicken breast, white rice, tahini · 690 kcal</p>
+      </div>
+      <a href="CoachClientDay.dc.html" aria-label="Close" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; border: 1px solid #ddd4c2; border-radius: 999px">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2b2721" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </a>
+    </div>
+
+    <div style="background: #e8e1d1; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+      <p style="margin: 0; font-size: 12px; color: #504c45"><span style="font-weight: 600; color: #2b2721">You</span> · today, 08:40</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.45">Good protein here. Try adding a vegetable next time, even a small salad.</p>
+    </div>
+
+    <div style="background: #eaf1da; border-radius: 14px; padding: 12px 14px; margin-left: 28px; display: flex; flex-direction: column; gap: 4px">
+      <p style="margin: 0; font-size: 12px; color: #504c45"><span style="font-weight: 600; color: #2b2721">Dana</span> · today, 09:15</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.45">Thanks! Would cucumber and tomato on the side count?</p>
+    </div>
+
+    <sc-for list="{{ sent }}" as="note" hint-placeholder-count="0">
+      <div style="background: #e8e1d1; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+        <p style="margin: 0; font-size: 12px; color: #504c45"><span style="font-weight: 600; color: #2b2721">You</span> · just now</p>
+        <p style="margin: 0; font-size: 15px; line-height: 1.45; white-space: pre-line">{{ note.text }}</p>
+      </div>
+    </sc-for>
+
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <label for="comment" style="font-size: 13px; color: #504c45">Your comment to Dana</label>
+      <textarea id="comment" rows="3" placeholder="Write a comment" value="{{ text }}" onChange="{{ onType }}" style="box-sizing: border-box; width: 100%; padding: 12px 14px; border: 1px solid #ddd4c2; border-radius: 14px; background: #f1ece1; color: #2b2721; font-family: inherit; font-size: 15px; line-height: 1.45; resize: none"></textarea>
+    </div>
+
+    <button type="button" onClick="{{ send }}" style="height: 52px; border: 0; border-radius: 999px; background: #c2673e; color: #faf7f0; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Send to Dana</button>
+    <p style="margin: 0; font-size: 12px; line-height: 1.4; color: #656056">Dana sees it next to this meal. It is your own professional word, not Vimetry's advice.</p>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { text: '', sent: [] };
+}
+renderVals() {
+return {
+text: this.state.text,
+sent: this.state.sent,
+onType: (event) => this.setState({ text: event.target.value }),
+send: () => {
+const text = this.state.text.trim();
+if (!text) return;
+this.setState({ sent: this.state.sent.concat([{ text: text }]), text: '' });
+}
+};
+}
+}
+</script>
+</body>
+</html>

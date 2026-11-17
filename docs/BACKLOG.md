@@ -28,14 +28,20 @@ picker).
 
 | Item | Size | Why, and where it came from |
 | --- | --- | --- |
-| Contract tests on a local Supabase | M | They run against production today and grow the test account (2,066 meals). Needs a 2 GB download, so with the owner around (`PHASE-1-FINISH.md`, open item 6) |
-| Motion | M | Totals counting up after a save, rows arriving in turn, all off under reduced motion (`PHASE-1-FINISH.md`, P3) |
+| Contract tests on a local Supabase | M | They run against production today and grow the test account (2,066 meals). Needs a 2 GB download, so with the owner around (`history/phase-1-finish.md`, open item 6) |
+| Motion | M | Totals counting up after a save, rows arriving in turn, all off under reduced motion (`history/phase-1-finish.md`, P3) |
 | Chargebacks handled automatically | M | They are only logged and flagged today. Waits for a real one, because Lemon Squeezy's documents do not describe what a dispute event carries |
 | The onboarding's "has logged recently" case under test | S | The new-account notice is tested for an empty account, not for one with a meal in the last month (`e2e/onboarding.spec.ts`) |
 | Refund on Google Play, tried once | S | Purchase, renewal, cancel and expiry were verified on 2026-11-15; a refund from Play Console's order management was not |
 | Watch sync logic under test, beyond the simulator probe | M | Low priority; the watch app changes rarely |
 | Export written without indentation | S | Only if real export files grow large (50,000 meals is about 70 MB today) |
 | An admin screen | L | When answering questions from the SQL Editor becomes annoying, and never one that shows a person's meals (D19) |
+| Upgrade the test tools (`vitest` 2 → 4, `vite` 6 patch) | S | Clears all 7 high and critical `npm audit` findings, all in tooling that never ships (`engineering/security.md`, #2) |
+| Upgrade `react-router` to the fixed version | S–M | Clears the 2 moderate findings in shipped code; neither applies as the app is written (`engineering/security.md`, #3) |
+| Dependabot, weekly | S | Advisories arrive as pull requests (`engineering/security.md`, #4) |
+| HSTS for subdomains | S | After the `www` redirect (`engineering/security.md`, #6) |
+| Split the app script | S–M | One 551 KB script (164 KB compressed); loading the screens a first visit does not need later takes about a third off (`engineering/performance.md`) |
+| A load test on a staging project | M | Before a public launch; never against production, where every analysis costs money (`engineering/performance.md`) |
 
 ## Tasks for the owner
 
@@ -51,6 +57,9 @@ picker).
 | Google Play's 15% service fee enrolment | S | A free form in the payments profile; subscriptions are at 15% already, one-time purchases would be at 30% without it |
 | A Gmail filter on `to:support@vimetry.app`, never spam | S | One support message has already landed out of sight |
 | The leftover test subscription on `davidianmatan+phtest` | S | Refund it, or keep it for testing as a subscriber |
+| Two-factor sign-in on GitHub, Supabase, Cloudflare, Play Console, Google Cloud and OpenAI | S | The likeliest breach is a stolen password, not the code; GitHub alone can deploy (`engineering/security.md`, #1) |
+| Check the sign-in rate limits in the Supabase dashboard | S | Set outside the repository, not checked in the review (`engineering/security.md`, #5) |
+| Raise the trial spend ceiling on a launch day | S | $10 a day is about 90 free analyses, 9–10 new people; `DAILY_BUDGET_MICROS` in the function secrets (`engineering/performance.md`) |
 
 ## Decisions waiting
 

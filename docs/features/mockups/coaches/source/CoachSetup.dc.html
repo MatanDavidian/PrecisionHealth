@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Becoming a coach</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+a{color:#2b2721}a:hover{color:#504c45}
+</style>
+</helmet>
+<div style="width: 390px; height: 900px; box-sizing: border-box; padding: 28px 22px 24px; background: #f1ece1; color: #2b2721; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; gap: 18px">
+
+  <div>
+    <h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 36px; line-height: 1.1">Follow your clients</h1>
+    <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: #504c45">See the food logs your clients choose to share with you, and comment where the meal is. You read; you never change their log.</p>
+  </div>
+
+  <div style="background: #e8e1d1; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <label for="coach-name" style="font-size: 13px; color: #504c45">Your name, as clients will see it</label>
+      <input id="coach-name" type="text" value="Noa Levi" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 14px; border: 1px solid #ddd4c2; border-radius: 12px; background: #faf7f0; color: #2b2721; font-family: inherit; font-size: 15px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <label for="coach-work" style="font-size: 13px; color: #504c45">What you do, in your own words</label>
+      <input id="coach-work" type="text" value="Clinical dietitian" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 14px; border: 1px solid #ddd4c2; border-radius: 12px; background: #faf7f0; color: #2b2721; font-family: inherit; font-size: 15px">
+      <p style="margin: 0; font-size: 12px; line-height: 1.4; color: #656056">Shown to clients as your own description. Vimetry does not check it.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <label for="coach-invite" style="font-size: 13px; color: #504c45">Invitation code</label>
+      <input id="coach-invite" type="text" value="PILOT-7K2M" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 14px; border: 1px solid #ddd4c2; border-radius: 12px; background: #faf7f0; color: #2b2721; font-family: inherit; font-size: 15px; letter-spacing: 0.06em">
+      <p style="margin: 0; font-size: 12px; line-height: 1.4; color: #656056">During the pilot, coaching is by invitation.</p>
+    </div>
+  </div>
+
+  <div style="background: #faf7f0; border: 1px solid #ddd4c2; border-radius: 20px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #504c45">Clients who open your link will see your name, what you do, and your email address, <span style="font-weight: 600; color: #2b2721">noa@example.com</span>, so they can check it is you.</p>
+    <div style="display: flex; gap: 12px; align-items: flex-start">
+      <input id="coach-terms" type="checkbox" checked style="width: 20px; height: 20px; margin: 1px 0 0; accent-color: #2b2721">
+      <label for="coach-terms" style="font-size: 14px; line-height: 1.45">I agree to the <a href="#coach-terms">coach terms</a>: what clients share with me is confidential, and I will not keep or pass it on.</label>
+    </div>
+  </div>
+
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
+    <a href="CoachLink.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: #c2673e; color: #faf7f0; font-size: 16px; font-weight: 600; text-decoration: none">Create my coach profile</a>
+    <p style="margin: 0; text-align: center; font-size: 13px; color: #656056">Your own food log stays yours and separate.</p>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

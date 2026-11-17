@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fill missed days with a number of your own</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+a{color:#2b2721}a:hover{color:#504c45}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #f1ece1; color: #2b2721; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="flex: 1; min-height: 0; overflow: hidden; padding: 28px 22px 0; display: flex; flex-direction: column; gap: 14px">
+
+    <div>
+      <h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 36px; line-height: 1.1">This week</h1>
+      <p style="margin: 4px 0 0; font-size: 14px; color: #656056">16 – 22 November</p>
+    </div>
+
+    <section style="border: 1px dashed #c9bea8; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+      <div>
+        <p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #656056">Gaps</p>
+        <h2 style="margin: 8px 0 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 22px; line-height: 1.25">2 days have no meals on them</h2>
+        <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: #504c45">Tuesday and Wednesday sit at zero, which is not the same as eating nothing.</p>
+      </div>
+
+      <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+        <legend style="padding: 0 0 8px; font-size: 13px; font-weight: 600">How much did you eat on those days?</legend>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+          <a href="Main.dc.html" style="box-sizing: border-box; min-height: 60px; padding: 8px 12px; border: 1px solid #ddd4c2; border-radius: 16px; background: #faf7f0; text-decoration: none"><span style="display: block; font-size: 14px; font-weight: 600">Less</span><span style="display: block; padding-top: 2px; font-size: 12px">−15% · 1,630 kcal</span></a>
+          <a href="Main.dc.html" style="box-sizing: border-box; min-height: 60px; padding: 8px 12px; border: 1px solid #ddd4c2; border-radius: 16px; background: #faf7f0; text-decoration: none"><span style="display: block; font-size: 14px; font-weight: 600">Average</span><span style="display: block; padding-top: 2px; font-size: 12px">1,920 kcal</span></a>
+          <a href="Main.dc.html" style="box-sizing: border-box; min-height: 60px; padding: 8px 12px; border: 1px solid #ddd4c2; border-radius: 16px; background: #faf7f0; text-decoration: none"><span style="display: block; font-size: 14px; font-weight: 600">More</span><span style="display: block; padding-top: 2px; font-size: 12px">+15% · 2,210 kcal</span></a>
+          <span aria-current="true" style="box-sizing: border-box; min-height: 60px; padding: 8px 12px; border: 1px solid #2b2721; border-radius: 16px; background: #2b2721; color: #faf7f0"><span style="display: block; font-size: 14px; font-weight: 600">A number</span><span style="display: block; padding-top: 2px; font-size: 12px">You choose</span></span>
+        </div>
+      </fieldset>
+
+      <div style="background: #faf7f0; border: 1px solid #ddd4c2; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+        <label for="kcal" style="font-size: 13px; color: #504c45">Calories for each day</label>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <button type="button" aria-label="100 kcal less" onClick="{{ down }}" style="width: 44px; height: 44px; flex: none; border: 1px solid #ddd4c2; border-radius: 999px; background: #f1ece1; color: #2b2721; font-family: inherit; font-size: 20px; cursor: pointer">−</button>
+          <input id="kcal" type="number" inputmode="numeric" value="{{ kcal }}" onChange="{{ onType }}" style="flex: 1; min-width: 0; box-sizing: border-box; height: 48px; padding: 0 12px; border: 1px solid #ddd4c2; border-radius: 12px; background: #f1ece1; color: #2b2721; font-family: inherit; font-size: 20px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums">
+          <button type="button" aria-label="100 kcal more" onClick="{{ up }}" style="width: 44px; height: 44px; flex: none; border: 1px solid #ddd4c2; border-radius: 999px; background: #f1ece1; color: #2b2721; font-family: inherit; font-size: 20px; cursor: pointer">+</button>
+        </div>
+        <p style="margin: 0; font-size: 12px; line-height: 1.45; color: #656056">{{ split }}</p>
+      </div>
+
+      <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 48px; border: 0; border-radius: 999px; background: #c2673e; color: #faf7f0; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">{{ fillLabel }}</button>
+      <p style="margin: 0; font-size: 12px; line-height: 1.45; color: #656056">Marked as an estimate, and left out of your average. Logging a real meal on those days replaces it.</p>
+    </section>
+
+  </div>
+
+  <nav aria-label="Main" style="height: 62px; box-sizing: border-box; border-top: 1px solid #ddd4c2; background: #faf7f0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center">
+    <a href="TodayEvening.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+      Log
+    </a>
+    <a href="TodayEvening.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: #a2512e; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a2512e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg>
+      Today
+    </a>
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3.5"></circle></svg>
+      Nutrition
+    </a>
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"></path></svg>
+      Settings
+    </a>
+  </nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { kcal: 1800 };
+}
+renderVals() {
+const kcal = Math.max(0, Math.round(Number(this.state.kcal) || 0));
+const ratio = kcal / 1920;
+const shown = kcal.toLocaleString('en-US');
+return {
+kcal: kcal,
+fillLabel: 'Fill both: ' + shown + ' kcal each',
+split: 'Protein, carbs and fat follow your usual mix: about ' + Math.round(96 * ratio) + ' g protein, ' + Math.round(215 * ratio) + ' g carbs, ' + Math.round(68 * ratio) + ' g fat.',
+onType: (event) => this.setState({ kcal: event.target.value }),
+down: () => this.setState({ kcal: Math.max(0, kcal - 100) }),
+up: () => this.setState({ kcal: kcal + 100 })
+};
+}
+}
+</script>
+</body>
+</html>

@@ -74,7 +74,7 @@ export interface GoalRepository {
   add(goal: Goal): Promise<void>
 }
 
-/** Clinical reads exist as interfaces before any screen uses them — see docs/ARCHITECTURE.md. */
+/** Clinical reads exist as interfaces before any screen uses them — see docs/engineering/architecture.md. */
 export interface ClinicalRepository {
   listPanels(userId: UserId): Promise<LabPanel[]>
   listConditions(userId: UserId): Promise<Condition[]>

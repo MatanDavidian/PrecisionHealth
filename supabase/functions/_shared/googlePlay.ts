@@ -1,7 +1,7 @@
 /**
  * The little of the Google Play Developer API this app uses.
  *
- * Configured by function secrets (docs/ANDROID-APP.md, step 4):
+ * Configured by function secrets (docs/android/plan.md, step 4):
  * - GOOGLE_PLAY_SERVICE_ACCOUNT: the service account's JSON key, as one
  *   string. Invited in Play Console → Users and permissions, with access to
  *   orders and subscriptions.

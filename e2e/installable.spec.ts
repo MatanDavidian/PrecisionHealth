@@ -3,7 +3,7 @@ import { open } from './app'
 import { openSignedIn, signIn } from './supabase'
 
 /**
- * vimetry.app as an installed app (docs/ANDROID-APP.md, step 1): the service
+ * vimetry.app as an installed app (docs/android/plan.md, step 1): the service
  * worker registers, the app opens offline, and it keeps its hands off other
  * origins — which is where people's data travels.
  *

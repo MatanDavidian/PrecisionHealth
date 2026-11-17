@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Too little history: set a day with a number only</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+a{color:#2b2721}a:hover{color:#504c45}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #f1ece1; color: #2b2721; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="flex: 1; min-height: 0; overflow: hidden; padding: 28px 22px 0; display: flex; flex-direction: column; gap: 14px">
+
+    <div>
+      <h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 36px; line-height: 1.1">Today</h1>
+      <p style="margin: 4px 0 0; font-size: 14px; color: #656056">Tuesday, 17 November · 22:30</p>
+    </div>
+
+    <section style="border: 1px dashed #c9bea8; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+      <div>
+        <h2 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-weight: 400; font-size: 22px; line-height: 1.25">Nothing logged today</h2>
+        <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: #504c45">Ate, but didn't log it? You can set the day's calories.</p>
+      </div>
+
+      <div style="background: #faf7f0; border: 1px solid #ddd4c2; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+        <label for="kcal-only" style="font-size: 13px; color: #504c45">Calories eaten today, roughly</label>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <button type="button" aria-label="100 kcal less" onClick="{{ down }}" style="width: 44px; height: 44px; flex: none; border: 1px solid #ddd4c2; border-radius: 999px; background: #f1ece1; color: #2b2721; font-family: inherit; font-size: 20px; cursor: pointer">−</button>
+          <input id="kcal-only" type="number" inputmode="numeric" value="{{ kcal }}" onChange="{{ onType }}" style="flex: 1; min-width: 0; box-sizing: border-box; height: 48px; padding: 0 12px; border: 1px solid #ddd4c2; border-radius: 12px; background: #f1ece1; color: #2b2721; font-family: inherit; font-size: 20px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums">
+          <button type="button" aria-label="100 kcal more" onClick="{{ up }}" style="width: 44px; height: 44px; flex: none; border: 1px solid #ddd4c2; border-radius: 999px; background: #f1ece1; color: #2b2721; font-family: inherit; font-size: 20px; cursor: pointer">+</button>
+        </div>
+        <p style="margin: 0; font-size: 12px; line-height: 1.45; color: #656056">Calories only: protein, carbs and fat stay blank, because there is no usual mix to go by yet.</p>
+      </div>
+
+      <a href="TodayFilled.dc.html" style="display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 999px; background: #c2673e; color: #faf7f0; font-size: 15px; font-weight: 600; text-decoration: none">{{ setLabel }}</a>
+      <a href="NumberOnly.dc.html" style="display: flex; align-items: center; justify-content: center; height: 44px; font-size: 14px; color: #504c45">Log meals instead</a>
+
+      <div style="border-top: 1px solid #ddd4c2; padding-top: 12px; display: flex; gap: 10px; align-items: flex-start">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16.5v.5"></path></svg>
+        <p style="margin: 0; font-size: 12px; line-height: 1.45; color: #656056">Less, average and more appear once you have logged 3 days: there is no average to go by before that. 1 day logged so far.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <nav aria-label="Main" style="height: 62px; box-sizing: border-box; border-top: 1px solid #ddd4c2; background: #faf7f0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center">
+    <a href="TodayEvening.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+      Log
+    </a>
+    <a href="NumberOnly.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: #a2512e; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a2512e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path></svg>
+      Today
+    </a>
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3.5"></circle></svg>
+      Nutrition
+    </a>
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: #656056; text-decoration: none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#656056" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"></path></svg>
+      Settings
+    </a>
+  </nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { kcal: 1800 };
+}
+renderVals() {
+const kcal = Math.max(0, Math.round(Number(this.state.kcal) || 0));
+return {
+kcal: kcal,
+setLabel: 'Set today: ' + kcal.toLocaleString('en-US') + ' kcal',
+onType: (event) => this.setState({ kcal: event.target.value }),
+down: () => this.setState({ kcal: Math.max(0, kcal - 100) }),
+up: () => this.setState({ kcal: kcal + 100 })
+};
+}
+}
+</script>
+</body>
+</html>

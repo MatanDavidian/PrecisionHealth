@@ -3,7 +3,7 @@ import { PRODUCT_NAME } from '@/brand'
 /**
  * The name, with the app icon's orange dot as the dot of its i.
  *
- * The owner's choice for now (2026-10-17, docs/PHASE-1-FINISH.md, P3): the
+ * The owner's choice for now (2026-10-17, docs/history/phase-1-finish.md, P3): the
  * icon stays the plain dot, and the name carries the same dot, so the two read
  * as one brand. A distinctive mark — the Dial — is to come before the public
  * launch.

@@ -21,7 +21,7 @@ const field =
   'w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm outline-none focus:border-accent'
 
 /**
- * ASSUMPTION (docs/OPEN_QUESTIONS.md, Q2): macros are typed by hand. There is no
+ * ASSUMPTION (docs/engineering/open-questions.md, Q2): macros are typed by hand. There is no
  * food database yet, so this form is honest about being the manual path — the
  * photo flow in slice 3 is what makes logging fast.
  */

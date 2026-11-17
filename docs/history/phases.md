@@ -2,7 +2,7 @@
 
 > **Reordered on 2026-11-15.** The reasoning below still holds, but the
 > order does not: watches and scales, and coaches, moved ahead of the rest,
-> and the plan is now kept as epics in [`ROADMAP.md`](ROADMAP.md). The
+> and the plan is now kept as epics in [`ROADMAP.md`](../ROADMAP.md). The
 > warnings here about the trainer feature (design first, the client invites)
 > and about Apple (the watch and the App Store are one project) were carried
 > into Epics 4 and 5.
@@ -40,7 +40,7 @@ published yet, and taking money before the security review raises the stakes on
 every finding it turns up. Order: entity → security → Garmin published →
 payment.
 
-Lemon Squeezy itself is the right call and matches `COMPLIANCE.md`: a merchant
+Lemon Squeezy itself is the right call and matches `ops/compliance.md`: a merchant
 of record absorbs VAT and US sales-tax registration in places you have never
 been, which for one person selling from Israel is worth the larger cut.
 
@@ -159,7 +159,7 @@ review. Two further things to decide before starting:
   the client? Only the first is defensible.
 - **Regulatory drift.** Dietitians giving advice *through* the product moves it
   closer to being a health service rather than a logging tool. Worth an hour of
-  the same counsel `COMPLIANCE.md` already recommends.
+  the same counsel `ops/compliance.md` already recommends.
 
 **Personal suggestions** are the natural end of the existing architecture —
 append-only history, provenance, conflicts surfaced — and the D13 audit trail

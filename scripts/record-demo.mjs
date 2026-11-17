@@ -50,7 +50,7 @@ function overlay() {
     trial-model notice sat at the top of every Log frame talking about the
     test account's own trial.
   */
-  for (const id of ['model-tradeoff', 'switched-to-terra']) {
+  for (const id of ['model-tradeoff', 'switched-to-terra', 'welcome', 'first-steps']) {
     try { localStorage.setItem(`notice-seen:${id}`, '2026-10-01T00:00:00.000Z') } catch {}
   }
   const css = `
@@ -145,6 +145,18 @@ const signIn = (context) =>
   await signIn(context)
   const page = await context.newPage()
   await page.goto(`${SITE}/nutrition`)
+  /*
+    When the Terms or the Privacy Policy have a new version, the account is
+    asked to agree again before anything else (14 Nov 2026: the price). Done
+    here, off camera, the way a person does it: tick each box, then agree.
+  */
+  const agree = page.getByRole('button', { name: 'Agree and continue' })
+  // isVisible() does not wait; the dialog appears only once the account's consents are read.
+  if (await agree.waitFor({ timeout: 10_000 }).then(() => true, () => false)) {
+    for (const box of await page.locator('[aria-labelledby="consent-title"] input[type=checkbox]').all()) await box.check()
+    await agree.click()
+    await agree.waitFor({ state: 'hidden' })
+  }
   await page.getByRole('button', { name: 'Add meal' }).waitFor({ timeout: 30_000 })
   await page.waitForTimeout(2500)
   for (let i = 0; i < 20; i += 1) {
@@ -185,16 +197,16 @@ async function untilEstimate() {
   }
 }
 
-await page.goto(`${SITE}/today`)
-await page.getByRole('heading', { name: 'Today' }).waitFor({ timeout: 30_000 })
+/*
+  Opens on the Log screen, not Today: the test account has logged nothing
+  lately, and a first frame of dashes says nothing about the app. Today comes
+  after the two meals, when it has numbers of its own.
+*/
+await page.goto(`${SITE}/log`)
+await page.locator('input[type=file]').waitFor({ state: 'attached', timeout: 30_000 })
 // The title card is already up (drawn from the first paint); hold it, then reveal the app.
 await pause(1800)
 await card('')
-await caption("Today: what you've eaten, burned and slept, from what you log", 3600)
-
-// 1 — a photograph
-await nav('Log')
-await page.locator('input[type=file]').waitFor({ state: 'attached' })
 await caption('Photograph a meal', 2600)
 await page.locator('input[type=file]').setInputFiles(PHOTO)
 /*
@@ -243,15 +255,16 @@ await caption('The day: every meal, and the totals', 3400)
 await scroll(450)
 await pause(2600)
 
-// 4 — the week
+// 4 — today
+/*
+  The week view is left out: it needs a week of meals and a burn figure the
+  test account does not have, and a caption about a chart that is not on
+  screen would misdescribe the app.
+*/
 await nav('Today')
-await page.getByRole('button', { name: 'Week', exact: true }).click()
-// The gaps card sits at the top of the week, so it is captioned while it is on screen.
-await caption('Missed a day? Fill it from your average — always marked as an estimate', 4400)
-await scroll(560)
-await caption('The week: eaten against burned, against your goal', 4000)
-await scroll(420)
-await pause(2000)
+await page.getByRole('heading', { name: 'Today' }).waitFor({ timeout: 30_000 })
+// Not scrolled: below the totals sit activity and recovery, empty without a watch.
+await caption("Today: the day's totals in one place", 4600)
 
 // 5 — your data
 await nav('Settings')

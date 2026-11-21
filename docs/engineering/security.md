@@ -157,14 +157,11 @@ removing it from history comes last and does not undo the exposure.
 The owner has no time for these now. None is urgent; each is a loose end of
 the 2026-11-17 review.
 
-1. **Confirm the first run of the scans.** The `Security` workflow has not
-   run yet: it starts with the next push. Gitleaks may raise a false alarm
-   on that first run. One test file that builds a throwaway key
-   (`supabase/test/_stub.ts`) is allowed in `.gitleaks.toml` in advance, but
-   that could not be checked locally. If something else is flagged, read
-   the redacted log: a test value goes into `.gitleaks.toml` by its exact
-   path; a real key is rotated first, then removed. CodeQL's findings, if
-   any, are under the repository's Security tab. (Claude, after the push.)
+1. ~~**Confirm the first run of the scans.**~~ **Done 2026-11-21:** the
+   `Security` workflow's first run, on `45e9f66`, passed: the library
+   audits, CodeQL, and Gitleaks over the whole history, with no false alarm.
+   CodeQL's findings, if it reports any later, are under the repository's
+   Security tab.
 2. **The two GitHub settings** (#4 above): repository → Settings → Code
    security → **Dependabot alerts** and **Secret scanning with push
    protection**. Free for a public repository. With them on, a security fix

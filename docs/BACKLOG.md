@@ -39,7 +39,6 @@ picker).
 | HSTS for subdomains | S | After the `www` redirect (`engineering/security.md`, #6) |
 | Split the app script | S–M | One 567 KB script (170 KB compressed); loading the screens a first visit does not need later takes about a third off (`engineering/performance.md`) |
 | A load test on a staging project | M | Before a public launch; never against production, where every analysis costs money (`engineering/performance.md`) |
-| Check the first run of the `Security` workflow | S | After the next push: Gitleaks may flag a test value on its first run, and CodeQL may report findings under the Security tab (`engineering/security.md`, "Still open") |
 
 ## Tasks for the owner
 

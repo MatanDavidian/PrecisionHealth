@@ -76,7 +76,7 @@ const OPERATOR = 'Matan Davidian, an individual based in Israel'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-11-21',
+  version: '2026-11-21.2',
   sections: [
     {
       heading: 'Who we are',
@@ -98,6 +98,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'Your email address, if you create an account.',
         'Whether you subscribe: your plan and when it renews. Card and billing details are held by Lemon Squeezy, or by Google Play if you subscribed in the Android app. We never hold them.',
         'The language you chose to read the app in.',
+        'Reminders, if you turn them on: the time you chose, your time zone, and, for each device you turned them on, the address your browser’s push service gave it.',
       ],
     },
     {
@@ -146,6 +147,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'Supabase hosts the database and handles sign-in. Everything in your account is stored there, in Frankfurt, Germany.',
         'OpenAI receives the meal photograph or description you ask us to analyse, and the weekly summary when you ask for an insight. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
         'Cloudflare serves the app itself, and forwards mail sent to our @vimetry.app addresses.',
+        'Your browser’s push service (Google’s on Android and in Chrome, Apple’s on iPhone, Mozilla’s in Firefox) delivers reminders, if you turn them on. It receives the device’s address and an encrypted message it cannot read, which says only that it is time to log.',
         'Brevo, in France, sends the sign-in emails. It receives your email address and the one-time code and link it delivers, and records whether the email was opened and the link clicked. It receives no health data.',
         'Lemon Squeezy sells the subscription as our merchant of record. It takes the payment, handles sales tax, and sends receipts, so it holds your name, email, country and payment details. We receive a record that you subscribed, never your card. It receives no health data.',
         'Google: if you subscribe inside the Android app, Google Play sells the subscription. It takes the payment, holds your payment details, and tells us whether you subscribed and when it renews. It receives no health data. If you installed the Android app from Google Play, Google also knows that, under its own privacy policy.',

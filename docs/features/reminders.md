@@ -4,10 +4,10 @@
 hour the person chooses, and a reminder to sync the watch when it has gone
 quiet.
 
-Status: **built 2026-11-21, not yet live.** The code is merged and tested;
-it goes live when the owner deploys the server side (see "Going live"),
-after the Privacy Policy line below is decided. Until then the Settings card
-does not appear: it shows only once the server answers. Epic 6 in
+Status: **built and live 2026-11-21.** The Privacy Policy gained the two
+lines below the same day (version 2026-11-21.2, so everyone signed in was
+asked to agree again), and the server side was deployed with
+`REMINDERS=1`. The Settings card shows only while the server answers. Epic 6 in
 [`../ROADMAP.md`](../ROADMAP.md).
 
 ---
@@ -123,7 +123,7 @@ service worker ── shows the notification, opens the page on a tap
    push address of each device), collected, optional, for app
    functionality. The answers are in `../android/store-listing.md`.
 
-### The Privacy Policy line, proposed
+### The Privacy Policy lines (in force from version 2026-11-21.2)
 
 Under "What this app holds about you":
 

@@ -198,10 +198,10 @@ Privacy Policy names each one.
 | App info and performance → Crash logs (error reports: message, page path, app version, browser; no account, no health data) | yes | not optional | no | Analytics |
 | App activity → Other user-generated content (a report about an AI answer: the reason, an optional note, the model; no account, no meal, no answer) | yes | optional (only if you report) | no | App functionality; Fraud prevention, security, and compliance |
 
-**To add when reminders go live** (`features/reminders.md`): Device or
-other IDs (each device's push address, from its browser's push service),
-collected, optional (only if reminders are turned on), not shared, App
-functionality.
+**Added with reminders, 2026-11-21** (`features/reminders.md`), to enter
+in the Play Console: Device or other IDs (each device's push address, from
+its browser's push service), collected, optional (only if reminders are
+turned on), not shared, App functionality.
 
 **Not collected:**
 - location

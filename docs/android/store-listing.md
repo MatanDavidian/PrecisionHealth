@@ -190,7 +190,8 @@ Privacy Policy names each one.
 | --- | --- | --- | --- | --- |
 | Personal info → Email address | yes | optional (only with an account) | no | Account management, App functionality |
 | Personal info → User IDs (the account's internal id, which every record is stored under; Google's own example is "an account ID") | yes | optional (only with an account) | no | Account management, App functionality |
-| Health and fitness → Health info (meals and their nutrients, weight, body measurements, goals) | yes | optional (only with an account; without one it stays on the phone) | no | App functionality |
+| Personal info → Other info (year of birth and sex, given in Settings → About you for the daily targets; added 2026-11-21) | yes | optional | no | App functionality |
+| Health and fitness → Health info (meals and their nutrients, weight, height, body measurements, how active a usual day is, goals) | yes | optional (only with an account; without one it stays on the phone) | no | App functionality |
 | Health and fitness → Fitness info (calories burned, steps, distance, resting heart rate, stress, respiration, VO₂ max — from a Garmin watch) | yes | optional | no | App functionality |
 | Photos and videos → Photos (a meal photo, for analysis) | yes | optional | **no**: we discard it at once, but OpenAI keeps API inputs up to 30 days for abuse monitoring (the Privacy Policy says so), which is more than Google's "in memory, for the request only" | App functionality |
 | Financial info → Purchase history (whether you subscribe, and when it renews) | yes | optional | no | App functionality, Account management |

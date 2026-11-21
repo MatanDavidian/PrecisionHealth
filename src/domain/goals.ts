@@ -10,8 +10,23 @@ export type GoalId = Id<'Goal'>
 export type NutritionPlanId = Id<'NutritionPlan'>
 export type WorkoutPlanId = Id<'WorkoutPlan'>
 
-/** Nutrition targets are not ObservationCodes — they are derived from meals. */
-export type GoalMetric = ObservationCode | 'PROTEIN' | 'ENERGY' | 'CARBS' | 'FAT' | 'SLEEP_DURATION'
+/**
+ * Nutrition targets are not ObservationCodes — they are derived from meals.
+ *
+ * ENERGY is the objective's daily BALANCE (−350 for losing fat), not an
+ * amount to eat; ENERGY_INTAKE is a calorie target the person typed in for
+ * themselves (docs/features/daily-targets.md). A target of 0 on either
+ * ENERGY_INTAKE or PROTEIN means "back to automatic": goals are append-only
+ * (D4), so going back is a newer goal saying so, not a deleted one.
+ */
+export type GoalMetric =
+  | ObservationCode
+  | 'PROTEIN'
+  | 'ENERGY'
+  | 'ENERGY_INTAKE'
+  | 'CARBS'
+  | 'FAT'
+  | 'SLEEP_DURATION'
 
 export type GoalDirection = 'AT_LEAST' | 'AT_MOST' | 'REACH'
 
@@ -104,3 +119,11 @@ export const goalFor = (goals: readonly Goal[], metric: GoalMetric): Goal | unde
 export const directionToward = (current: number, target: number): GoalDirection =>
   target < current ? 'AT_MOST' : 'AT_LEAST'
 
+/**
+ * A nutrition goal the person set and still holds: the newest for the metric,
+ * unless that newest one is a 0, which is how "back to automatic" is recorded.
+ */
+export function ownGoal(goals: readonly Goal[], metric: 'PROTEIN' | 'ENERGY_INTAKE'): Goal | undefined {
+  const goal = goalFor(goals, metric)
+  return goal && goal.target.value > 0 ? goal : undefined
+}

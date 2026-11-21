@@ -13,6 +13,11 @@ export interface User {
 
 export type Sex = 'MALE' | 'FEMALE' | 'OTHER' | 'UNDISCLOSED'
 
+/** The profile details the daily targets use, and that sign-in carries into an account. */
+export type ProfileDetail = 'height' | 'birthYear' | 'sex' | 'activity'
+
+export const PROFILE_DETAILS: readonly ProfileDetail[] = ['height', 'birthYear', 'sex', 'activity']
+
 export interface UserProfile {
   userId: UserId
   displayName: string
@@ -27,6 +32,15 @@ export interface UserProfile {
   birthYear?: number
   /** How active a day usually is. Used only when no watch reports a burn. */
   activity?: ActivityLevel
+  /**
+   * The details the person gave themselves, as opposed to the sample's.
+   *
+   * Signed out, the profile starts as the sample person's (178 cm, 36), and
+   * one record per person has no id to tell the two apart the way meals do
+   * (adoption.ts). This list is what sign-in carries into an account, so the
+   * sample's details never travel and the person's own always do.
+   */
+  youSet?: ProfileDetail[]
   /**
    * The zone stamped onto new records. Historical records keep the zone they
    * were created with, so changing this never rewrites the past.

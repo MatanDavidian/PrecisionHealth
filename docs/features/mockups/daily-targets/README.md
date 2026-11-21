@@ -43,3 +43,19 @@ the past-day screen as "under".
 ## 9 · עברית: רשימת הפרטים החסרים
 
 <img src="09-he-setup-checklist.png" alt="The setup checklist in Hebrew" width="300">
+
+## 10 · Today: a streak
+
+<img src="10-today-streak.png" alt="Today's targets with a three-day streak" width="300">
+
+## 11 · The week view: targets this week
+
+<img src="11-week-targets.png" alt="Seven marks, one per day, and the week's summary" width="300">
+
+## 12 · Settings: your own numbers
+
+<img src="12-settings-own-numbers.png" alt="Calories and protein, automatic or your own" width="300">
+
+## 13 · עברית: היעדים השבוע
+
+<img src="13-he-week-targets.png" alt="The week's marks in Hebrew, right to left" width="300">

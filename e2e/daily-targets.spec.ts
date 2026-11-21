@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { dayKey, open, switchToHebrew } from './app'
+import { openSignedIn, signIn } from './supabase'
 
 /**
  * Daily targets (docs/features/daily-targets.md).
@@ -171,4 +172,87 @@ test('in Hebrew, the card reads right to left', async ({ page }) => {
   await expect(card(page).getByText('מתוך 2,150 קלוריות')).toBeVisible()
   await expect(card(page).getByRole('link', { name: 'איך?' })).toBeVisible()
   await expect(page.locator('html[dir="rtl"]')).toHaveCount(1)
+})
+
+test('a calorie target of your own, and back to automatic', async ({ page }) => {
+  await open(page, '/settings')
+  const own = page.getByTestId('own-numbers')
+  const calories = own.getByRole('group', { name: 'Calories' })
+  // "Automatic" says what it comes to, so the choice is between two numbers.
+  await expect(calories.getByRole('button', { name: 'Automatic · 2,150 kcal' })).toHaveAttribute('aria-pressed', 'true', {
+    timeout: 15_000,
+  })
+  await calories.getByRole('button', { name: 'My own' }).click()
+  const field = own.getByRole('spinbutton', { name: 'Calories' })
+  await expect(field).toHaveValue('2150', { timeout: 15_000 })
+  await field.fill('')
+  await field.pressSequentially('2000')
+  await field.press('Enter')
+
+  await expect(page.getByTestId('targets-tiles').getByText('2,000')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('Calories: the 2,000 kcal you set yourself.')).toBeVisible()
+  await open(page, '/today')
+  await expect(card(page).getByText('of 2,000 kcal')).toBeVisible({ timeout: 15_000 })
+  await expect(card(page).getByText('Your own target: 2,000 kcal.')).toBeVisible()
+
+  await open(page, '/settings')
+  await page.getByTestId('own-numbers').getByRole('group', { name: 'Calories' }).getByRole('button', { name: /^Automatic/ }).click()
+  await expect(page.getByTestId('targets-tiles').getByText('2,150')).toBeVisible({ timeout: 15_000 })
+})
+
+test('the week shows each day against its target', async ({ page }) => {
+  await open(page, '/today?view=week')
+  const week = page.getByTestId('targets-week')
+  await expect(week).toBeVisible({ timeout: 15_000 })
+  await expect(week.getByRole('listitem')).toHaveCount(7)
+  await expect(page.getByTestId('targets-week-summary')).toHaveText(
+    /^\d+ of \d+ days? on target · protein reached on \d+ of \d+$/,
+  )
+  // Today, 2,130 of 2,150, is on target, and says so to a screen reader.
+  await expect(week.getByRole('listitem', { name: /: on target, 2,130 of 2,150 kcal$/ })).toBeVisible()
+})
+
+test('logging yesterday on target makes a streak with today', async ({ page }) => {
+  await open(page, '/today')
+  await expect(card(page)).toBeVisible({ timeout: 15_000 })
+  // Yesterday is empty in the sample: today alone is a run of one, which is not worth saying.
+  await expect(page.getByTestId('targets-streak')).toHaveCount(0)
+
+  await open(page, `/nutrition?d=${dayKey(-1)}`)
+  await page.getByRole('button', { name: 'Add meal', exact: true }).click()
+  const form = page.locator('form')
+  await form.getByLabel('Time').fill('13:00')
+  await form.getByLabel('Food').fill('A whole day, in one')
+  await form.getByLabel('Grams').fill('900')
+  await form.getByLabel('kcal').fill('2100')
+  await form.getByRole('button', { name: 'Save meal' }).click()
+  await expect(page.getByText('A whole day, in one')).toBeVisible()
+
+  await open(page, '/today')
+  await expect(page.getByTestId('targets-streak')).toHaveText(/^\d+ days on target in a row$/, { timeout: 15_000 })
+})
+
+test('details and a goal set before signing in come into the account; the sample’s do not', async ({ page }) => {
+  await open(page, '/settings')
+  const height = page.getByRole('spinbutton', { name: 'Height' })
+  await expect(height).toBeVisible({ timeout: 15_000 })
+  await height.fill('')
+  await height.pressSequentially('165')
+  await height.press('Enter')
+  await page.getByRole('button', { name: 'Female', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Female', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: /^Build muscle/ }).click()
+
+  const tables = await signIn(page, { keep: true })
+  await openSignedIn(page, '/today')
+  await expect(page.getByRole('heading', { name: 'Bring your data with you' })).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: 'Move my data' }).click()
+  await expect(page.getByText('Moved your goal and body details into your account.')).toBeVisible({ timeout: 15_000 })
+
+  const profile = tables.profiles[0] as { data: Record<string, unknown> }
+  expect(profile.data).toMatchObject({ height: { value: 165, unit: 'cm' }, sex: 'FEMALE' })
+  // The sample person's year of birth and activity stayed behind.
+  expect(profile.data.birthYear).toBeUndefined()
+  expect(profile.data.activity).toBeUndefined()
+  expect((tables.goals as { data: { objective?: string } }[]).map((row) => row.data.objective)).toContain('BUILD_MUSCLE')
 })

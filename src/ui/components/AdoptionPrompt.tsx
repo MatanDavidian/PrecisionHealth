@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getRepositories, localRepositories } from '@/data'
 import {
+  adoptableCount,
   adoptInto,
   findAdoptableRecords,
   hasAdopted,
@@ -42,8 +43,7 @@ export function AdoptionPrompt() {
     void findAdoptableRecords(localRepositories, LOCAL_USER_ID)
       .then((records) => {
         if (cancelled) return
-        const total = records.meals.length + records.observations.length
-        setState(total > 0 ? { kind: 'offer', records } : { kind: 'nothing' })
+        setState(adoptableCount(records) > 0 ? { kind: 'offer', records } : { kind: 'nothing' })
       })
       .catch(() => setState({ kind: 'nothing' }))
     return () => {
@@ -75,15 +75,22 @@ export function AdoptionPrompt() {
       <div className="pb-4">
         <Card>
           <p className="text-sm text-leaf">
-            {t('adopt.moved', {
-              what:
-                observations > 0
-                  ? t('adopt.and', {
-                      meals: t('adopt.mealCount', { count: meals }),
-                      measurements: t('adopt.measurementCount', { count: observations }),
-                    })
-                  : t('adopt.mealCount', { count: meals }),
-            })}
+            {meals === 0 && observations === 0 ? (
+              t('adopt.detailsOnly')
+            ) : (
+              <>
+                {t('adopt.moved', {
+                  what:
+                    observations > 0
+                      ? t('adopt.and', {
+                          meals: t('adopt.mealCount', { count: meals }),
+                          measurements: t('adopt.measurementCount', { count: observations }),
+                        })
+                      : t('adopt.mealCount', { count: meals }),
+                })}
+                {(state.result.goals > 0 || state.result.details > 0) && ` ${t('adopt.detailsToo')}`}
+              </>
+            )}
             {skipped > 0 && ` ${t('adopt.alreadyThere', { count: skipped })}`}
           </p>
           <p className="pt-1 text-xs text-ink-muted">{t('adopt.untouched')}</p>
@@ -93,7 +100,7 @@ export function AdoptionPrompt() {
   }
 
   const records = state.kind === 'moving' ? undefined : state.records
-  const count = records ? records.meals.length + records.observations.length : 0
+  const count = records ? adoptableCount(records) : 0
 
   return (
     <div className="pb-4">

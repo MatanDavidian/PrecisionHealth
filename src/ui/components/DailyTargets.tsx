@@ -4,6 +4,12 @@ import {
   ACTIVITY_FACTOR,
   ACTIVITY_LEVELS,
   dayProgress,
+  minIntakeKcal,
+  ruleTargets,
+  summariseTargets,
+  type CalendarDate,
+  type DayOutcome,
+  type Streak,
   type ActivityLevel,
   type DailyTargets,
   type Objective,
@@ -11,7 +17,7 @@ import {
   type TargetsInput,
   type TargetsResult,
 } from '@/domain'
-import type { TargetsReading } from '@/data/targets'
+import type { DayAgainstTargets, TargetsReading } from '@/data/targets'
 import { Card } from './Card'
 import { Stepper } from './Stepper'
 import { useLang } from '../i18n'
@@ -113,6 +119,9 @@ function useWhy() {
   const { t } = useLang()
   const fmt = useFormat()
   return (targets: DailyTargets): string => {
+    if (targets.energy.from === 'GOAL' || !targets.burn || !targets.objective) {
+      return t('targets.why.own', { kcal: fmt(targets.energyKcal) })
+    }
     const goal = t(objectiveName(targets.objective))
     const burn = fmt(Math.round(targets.burn.kcal / 10) * 10)
     const head =
@@ -147,12 +156,15 @@ export function TargetsCard({
   eaten,
   isToday,
   dayName,
+  streak,
   extra,
 }: {
   targets: DailyTargets
   eaten: Eaten
   isToday: boolean
   dayName: string
+  /** Days on target in a row; said from two upward, and never as a reproach. */
+  streak?: Streak
   extra?: ReactNode
 }) {
   const { t } = useLang()
@@ -211,7 +223,18 @@ export function TargetsCard({
         <MacroRow name={t('estimate.fat')} eaten={eaten.fatG} target={targets.fatG} tone="muted" />
       </div>
 
+      {streak && streak.days >= 2 && (
+        <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-leaf-soft px-3 py-1 text-xs font-semibold text-ink" data-testid="targets-streak">
+          <StreakIcon />
+          {t('targets.streak', { count: streak.days })}
+        </p>
+      )}
       <p className="max-w-[60ch] pt-4 text-xs leading-relaxed text-ink-muted">{why(targets)}</p>
+      {targets.belowFloor && (
+        <p className="max-w-[60ch] pt-1.5 text-xs leading-relaxed text-ink-muted">
+          {t('targets.belowFloor', { kcal: fmt(minIntakeKcal(undefined)) })}
+        </p>
+      )}
       {targets.floored && (
         <p className="max-w-[60ch] pt-1.5 text-xs leading-relaxed text-ink-muted">
           {t('targets.floored', { kcal: fmt(targets.energyKcal) })}
@@ -219,6 +242,15 @@ export function TargetsCard({
       )}
       {extra}
     </section>
+  )
+}
+
+function StreakIcon() {
+  return (
+    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 17l5-5 4 4 7-8" />
+      <path d="M15 8h5v5" />
+    </svg>
   )
 }
 
@@ -299,7 +331,14 @@ function useScrollIntoViewOnHash(id: string, ready: boolean) {
 }
 
 /** Settings: the four numbers and every step of how they were reached. */
-export function TargetsWorking({ reading }: { reading: TargetsReading }) {
+export function TargetsWorking({
+  reading,
+  onOwn,
+}: {
+  reading: TargetsReading
+  /** A number of the person's own, or 0 for "back to automatic". */
+  onOwn: (metric: 'ENERGY_INTAKE' | 'PROTEIN', value: number) => void
+}) {
   const { t } = useLang()
   const fmt = useFormat()
   useScrollIntoViewOnHash('daily-targets', true)
@@ -316,6 +355,7 @@ export function TargetsWorking({ reading }: { reading: TargetsReading }) {
             <Checklist input={reading.input} result={result} />
           </>
         )}
+        <OwnNumbers reading={reading} onOwn={onOwn} />
       </Card>
     </div>
   )
@@ -331,7 +371,6 @@ function TargetsWorkingBody({
   fmt: (n: number) => string
 }) {
   const { t } = useLang()
-  const goal = t(objectiveName(targets.objective))
   const target = fmt(targets.energyKcal)
   const burn = targets.burn
   const tiles: { value: string; unit: string; name: string }[] = [
@@ -340,23 +379,29 @@ function TargetsWorkingBody({
     { value: fmt(targets.carbsG), unit: 'g', name: t('estimate.carbs') },
     { value: fmt(targets.fatG), unit: 'g', name: t('estimate.fat') },
   ]
-  const lines = [
-    burn.kind === 'MEASURED'
+  const burnLine = burn
+    ? burn.kind === 'MEASURED'
       ? t('targets.work.measured', { kcal: fmt(Math.round(burn.kcal / 10) * 10), count: burn.days })
       : t('targets.work.estimated', {
           kcal: fmt(Math.round(burn.kcal / 10) * 10),
           resting: fmt(burn.restingKcal),
           factor: ACTIVITY_FACTOR[burn.activity].toString(),
           activity: t(`settings.activity.${burn.activity}` as StringKey),
-        }),
-    targets.objective === 'FITNESS'
-      ? t('targets.work.fitness', { target })
-      : targets.balanceKcal < 0
-        ? t('targets.work.deficit', { goal, n: fmt(-targets.balanceKcal), target })
-        : targets.balanceKcal > 0
-          ? t('targets.work.surplus', { goal, n: fmt(targets.balanceKcal), target })
-          : t('targets.work.level', { goal, target }),
+        })
+    : undefined
+  const balanceLine = (): string => {
+    const goal = targets.objective ? t(objectiveName(targets.objective)) : ''
+    if (targets.objective === 'FITNESS') return t('targets.work.fitness', { target })
+    if (targets.balanceKcal < 0) return t('targets.work.deficit', { goal, n: fmt(-targets.balanceKcal), target })
+    if (targets.balanceKcal > 0) return t('targets.work.surplus', { goal, n: fmt(targets.balanceKcal), target })
+    return t('targets.work.level', { goal, target })
+  }
+  const lines = [
+    ...(targets.energy.from === 'GOAL'
+      ? [t('targets.work.ownEnergy', { kcal: target })]
+      : [burnLine!, balanceLine()]),
     ...(targets.floored ? [t('targets.floored', { kcal: target })] : []),
+    ...(targets.belowFloor ? [t('targets.belowFloor', { kcal: fmt(minIntakeKcal(undefined)) })] : []),
     targets.protein.from === 'GOAL'
       ? t('targets.work.proteinGoal', { g: fmt(targets.proteinG) })
       : t(
@@ -488,5 +533,188 @@ export function AboutYou({
         <p className="max-w-[60ch] pt-4 text-[0.81rem] leading-relaxed text-ink-muted">{t('settings.aboutYouNote')}</p>
       </Card>
     </div>
+  )
+}
+
+/**
+ * Settings: a calorie target and a protein goal of the person's own, or the
+ * calculation's. Each shows what "Automatic" comes to, so the choice is
+ * between two numbers, and "Automatic" is always one tap away: going back is a
+ * newer goal of 0, since goals are never deleted (D4).
+ */
+function OwnNumbers({
+  reading,
+  onOwn,
+}: {
+  reading: TargetsReading
+  onOwn: (metric: 'ENERGY_INTAKE' | 'PROTEIN', value: number) => void
+}) {
+  const { t } = useLang()
+  const fmt = useFormat()
+  const rule = ruleTargets(reading.input)
+  const ruled = rule.ok ? rule.targets : undefined
+  const rows = [
+    {
+      metric: 'ENERGY_INTAKE' as const,
+      name: t('targets.own.calories'),
+      own: reading.input.energyGoalKcal,
+      automatic: ruled ? `${fmt(ruled.energyKcal)} kcal` : undefined,
+      start: ruled?.energyKcal ?? 2000,
+      unit: 'kcal',
+      step: 50,
+      min: 800,
+      max: 6000,
+    },
+    {
+      metric: 'PROTEIN' as const,
+      name: t('targets.own.protein'),
+      own: reading.input.proteinGoalG,
+      automatic: ruled ? `${fmt(ruled.proteinG)} g` : undefined,
+      start: ruled?.proteinG ?? 100,
+      unit: 'g',
+      step: 5,
+      min: 20,
+      max: 400,
+    },
+  ]
+  const segment = (on: boolean) =>
+    `rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${on ? 'bg-ink font-medium text-canvas' : 'text-ink-soft hover:bg-card-soft'}`
+
+  return (
+    <div className="mt-5 border-t border-hairline pt-4" data-testid="own-numbers">
+      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">{t('targets.own.title')}</p>
+      <div className="grid gap-4 pt-3">
+        {rows.map((row) => {
+          const mine = row.own !== undefined
+          return (
+            <div key={row.metric}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-medium">{row.name}</span>
+                <div role="group" aria-label={row.name} className="flex gap-1 rounded-full border border-hairline bg-surface p-0.5">
+                  <button type="button" aria-pressed={!mine} onClick={() => mine && onOwn(row.metric, 0)} className={segment(!mine)}>
+                    {row.automatic ? t('targets.own.automaticWith', { value: row.automatic }) : t('targets.own.automatic')}
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={mine}
+                    onClick={() => !mine && onOwn(row.metric, row.start)}
+                    className={segment(mine)}
+                  >
+                    {t('targets.own.mine')}
+                  </button>
+                </div>
+              </div>
+              {mine && (
+                <div className="pt-3">
+                  <Stepper
+                    label={row.name}
+                    value={Math.round(row.own!)}
+                    unit={row.unit}
+                    step={row.step}
+                    min={row.min}
+                    max={row.max}
+                    labelHidden
+                    onChange={(next) => onOwn(row.metric, next)}
+                  />
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <p className="max-w-[60ch] pt-3 text-xs leading-relaxed text-ink-muted">{t('targets.own.note')}</p>
+    </div>
+  )
+}
+
+/**
+ * The week view: each day against its targets, at a glance, and the run so far.
+ *
+ * A row of seven marks rather than a chart, because the chart above it already
+ * carries the calories: this one answers a yes-or-no question per day.
+ */
+export function TargetsWeekCard({
+  days,
+  weekDays,
+  today,
+  streak,
+}: {
+  days: readonly DayAgainstTargets[]
+  /** All seven days, so the days still to come keep their place. */
+  weekDays: readonly CalendarDate[]
+  today: CalendarDate
+  streak?: Streak
+}) {
+  const { t, lang } = useLang()
+  const fmt = useFormat()
+  const byDay = new Map(days.map((d) => [d.day, d]))
+  const past = days.filter((d) => d.day <= today)
+  const summary = summariseTargets(past)
+  if (summary.counted === 0) return null
+
+  const letter = (day: string) =>
+    new Date(`${day}T12:00:00Z`).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { weekday: 'narrow', timeZone: 'UTC' })
+  const fullName = (day: string) =>
+    new Date(`${day}T12:00:00Z`).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { weekday: 'long', timeZone: 'UTC' })
+
+  const mark = (outcome?: DayOutcome, future?: boolean) => {
+    if (future || !outcome) return 'border border-dashed border-hairline'
+    return {
+      HIT: 'bg-leaf text-surface',
+      OVER: 'bg-ink text-canvas',
+      UNDER: 'border-2 border-accent text-accent',
+      NOT_LOGGED: 'border border-hairline bg-surface',
+    }[outcome]
+  }
+  const stateName = (outcome?: DayOutcome) =>
+    outcome ? t(`targets.week.state.${outcome}` as StringKey) : t('targets.week.state.FUTURE')
+
+  return (
+    <section aria-labelledby="targets-week-title" className="rounded-card bg-card p-5" data-testid="targets-week">
+      <h2 id="targets-week-title" className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+        {t('targets.week.title')}
+      </h2>
+      <ol className="grid grid-cols-7 gap-1 pt-4">
+        {weekDays.map((day) => {
+          const record = byDay.get(day)
+          const future = day > today
+          const outcome = future ? undefined : record?.outcome
+          const label = record?.targets && !future
+            ? t('targets.week.dayLabel', {
+                day: fullName(day),
+                state: stateName(outcome),
+                eaten: fmt(record.eaten.energyKcal),
+                target: fmt(record.targets.energyKcal),
+              })
+            : `${fullName(day)}: ${stateName(undefined)}`
+          return (
+            <li key={day} className="flex flex-col items-center gap-1.5" aria-label={label}>
+              <span aria-hidden className={`flex size-8 items-center justify-center rounded-full text-[11px] font-semibold ${mark(outcome, future)} ${day === today ? 'ring-2 ring-ink/25 ring-offset-2 ring-offset-card' : ''}`}>
+                {outcome === 'HIT' && <CheckIcon />}
+                {outcome === 'OVER' && '+'}
+                {outcome === 'UNDER' && '−'}
+              </span>
+              <span aria-hidden className={`text-xs ${day === today ? 'font-semibold text-ink' : 'text-ink-muted'}`}>
+                {letter(day)}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+      <p className="pt-4 text-sm font-medium" data-testid="targets-week-summary">
+        {t('targets.week.hit', { hit: summary.hit, count: summary.counted })}
+        <span className="font-normal text-ink-soft">
+          {' · '}
+          {t('targets.week.protein', { reached: summary.proteinReached, count: summary.counted })}
+        </span>
+      </p>
+      {streak && streak.days >= 2 && (
+        <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-leaf-soft px-3 py-1 text-xs font-semibold text-ink">
+          <StreakIcon />
+          {t('targets.streak', { count: streak.days })}
+        </p>
+      )}
+      <p className="pt-3 text-xs leading-relaxed text-ink-muted">{t('targets.week.rule')}</p>
+    </section>
   )
 }

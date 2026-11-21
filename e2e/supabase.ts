@@ -145,6 +145,9 @@ export interface StubOptions {
 export interface StubTables {
   meals: Record<string, unknown>[]
   observations: Record<string, unknown>[]
+  goals: Record<string, unknown>[]
+  /** One row per account; a save replaces it (the app upserts). */
+  profiles: Record<string, unknown>[]
   /** Every action asked of the billing function, in order. */
   billing: string[]
 }
@@ -159,7 +162,12 @@ export const LEMON_PORTAL = 'https://vimetry-test.lemonsqueezy.com/billing?e2e=p
  * A meal is keyed by its VERSION's record id (D15), so the same meal id may
  * appear several times; an observation by its own id.
  */
-const PRIMARY_KEY: Record<'meals' | 'observations', string> = { meals: 'record_id', observations: 'id' }
+const PRIMARY_KEY: Record<'meals' | 'observations' | 'goals' | 'profiles', string> = {
+  meals: 'record_id',
+  observations: 'id',
+  goals: 'id',
+  profiles: 'user_id',
+}
 
 /**
  * The small part of PostgREST's filter language the app uses: `eq`, `gte`,
@@ -195,7 +203,7 @@ const json = (route: Route, body: unknown, status = 200, headers: Record<string,
  */
 export async function stubSupabase(page: Page, options: StubOptions = {}): Promise<StubTables> {
   const { trialUsed = 0 } = options
-  const tables: StubTables = { meals: [], observations: [], billing: [] }
+  const tables: StubTables = { meals: [], observations: [], goals: [], profiles: [], billing: [] }
   /** Set once play-billing accepts a purchase: the account then holds a Google Play subscription. */
   let boughtOnPlay = false
 
@@ -229,7 +237,7 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
         body: route.request().method() === 'HEAD' ? '' : '[]',
       })
     }
-    const table = url.pathname.split('/').pop() as 'meals' | 'observations'
+    const table = url.pathname.split('/').pop() as 'meals' | 'observations' | 'goals' | 'profiles'
     if (url.pathname.endsWith('/subscriptions')) {
       const subscription = options.subscription ?? (boughtOnPlay ? { provider: 'google_play' as const } : undefined)
       if (!subscription) return json(route, [])
@@ -257,12 +265,19 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
         source_created_at: new Date(NOW.getTime() - 60 * day).toISOString(),
       }])
     }
-    if (options.keep && (table === 'meals' || table === 'observations')) {
+    if (options.keep && (table === 'meals' || table === 'observations' || table === 'goals' || table === 'profiles')) {
       const request = route.request()
       if (request.method() === 'POST') {
         const posted = request.postDataJSON() as Record<string, unknown> | Record<string, unknown>[]
         const key = PRIMARY_KEY[table]
+        // An upsert (the profile) replaces the row it collides with, as Postgres would.
+        const upsert = (request.headers()['prefer'] ?? '').includes('resolution=merge-duplicates')
         for (const row of Array.isArray(posted) ? posted : [posted]) {
+          if (upsert) {
+            tables[table] = tables[table].filter((held) => held[key] !== row[key])
+            tables[table].push(row)
+            continue
+          }
           if (tables[table].some((held) => held[key] === row[key])) {
             // Postgres's unique_violation, which the app reads to tell "already
             // there" from a real failure.

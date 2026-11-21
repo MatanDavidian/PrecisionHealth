@@ -4,7 +4,7 @@ import { deleteDB, type IDBPDatabase } from 'idb'
 import { createIndexedDbRepositories, seedOnce } from '../idb/indexedDbRepositories'
 import { DB_NAME, openHealthDB, type HealthDB } from '../idb/schema'
 import { adoptInto, findAdoptableRecords, isGeneratedId } from '../adoption'
-import { buildMeal, deviceZone, newId } from '../newRecords'
+import { buildMeal, buildObjectiveGoal, deviceZone, newId } from '../newRecords'
 import { buildSeed } from '../mock/seed'
 import { LOCAL_USER_ID } from '../session'
 import { canonical, dayKey, deviceReading, nextVersion, type Observation, type UserId } from '@/domain'
@@ -220,5 +220,69 @@ describe('moving records into the account', () => {
     // Adoption copies; it does not move. Signing out must not lose anything.
     const stillLocal = await local.meals.listByDay(LOCAL_USER_ID, today())
     expect(stillLocal.some((meal) => meal.items[0]?.name === 'Mine')).toBe(true)
+  })
+})
+
+describe('goals and body details at sign-in (daily-targets.md)', () => {
+  /** An account that also keeps goals and a profile. */
+  const accountWith = (profile?: Record<string, unknown>) => {
+    const goals: any[] = []
+    let saved: any = profile
+    const repositories = {
+      meals: { add: async () => undefined },
+      observations: { add: async () => undefined },
+      goals: {
+        add: async (goal: any) => {
+          if (goals.some((g) => g.id === goal.id)) throw new Error('duplicate')
+          goals.push(goal)
+        },
+        listActive: async () => goals,
+      },
+      profiles: {
+        get: async () => saved,
+        save: async (next: any) => {
+          saved = next
+        },
+      },
+    } as unknown as HealthRepositories
+    return { repositories, goals, profile: () => saved }
+  }
+
+  it('the sample’s goals and details stay behind', async () => {
+    const local = await localStore()
+    const found = await findAdoptableRecords(local, LOCAL_USER_ID)
+    expect(found.goals).toEqual([])
+    // The sample person is 178 cm and 36, and none of it is the user's.
+    expect(found.details).toEqual({})
+  })
+
+  it('a goal chosen here and the details set here travel; nothing else of the profile does', async () => {
+    const local = await localStore()
+    await local.goals.add(buildObjectiveGoal(LOCAL_USER_ID, 'BUILD_MUSCLE', ZONE))
+    const sample = (await local.profiles.get(LOCAL_USER_ID))!
+    await local.profiles.save({ ...sample, height: { value: 165, unit: 'cm' }, youSet: ['height'] })
+
+    const found = await findAdoptableRecords(local, LOCAL_USER_ID)
+    expect(found.goals.map((g) => g.objective)).toEqual(['BUILD_MUSCLE'])
+    expect(found.details).toEqual({ height: { value: 165, unit: 'cm' } })
+
+    const account = accountWith({ userId: ACCOUNT, displayName: '', timezone: ZONE, preferredMassUnit: 'kg', preferredLengthUnit: 'cm', sex: 'FEMALE' })
+    const result = await adoptInto(account.repositories, found, ACCOUNT)
+    expect(result).toMatchObject({ goals: 1, details: 1 })
+    expect(account.goals[0].userId).toBe(ACCOUNT)
+    // Filled the gap, kept what the account already said.
+    expect(account.profile()).toMatchObject({ userId: ACCOUNT, height: { value: 165, unit: 'cm' }, sex: 'FEMALE', youSet: ['height'] })
+  })
+
+  it('never overwrites a detail the account already holds', async () => {
+    const local = await localStore()
+    const sample = (await local.profiles.get(LOCAL_USER_ID))!
+    await local.profiles.save({ ...sample, height: { value: 165, unit: 'cm' }, youSet: ['height'] })
+    const found = await findAdoptableRecords(local, LOCAL_USER_ID)
+
+    const account = accountWith({ userId: ACCOUNT, displayName: '', timezone: ZONE, preferredMassUnit: 'kg', preferredLengthUnit: 'cm', height: { value: 180, unit: 'cm' } })
+    const result = await adoptInto(account.repositories, found, ACCOUNT)
+    expect(result.details).toBe(0)
+    expect(account.profile().height).toEqual({ value: 180, unit: 'cm' })
   })
 })

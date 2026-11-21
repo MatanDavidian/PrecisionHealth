@@ -22,6 +22,7 @@ export function Stepper({
   decimals = 0,
   note,
   saved = true,
+  labelHidden = false,
   onChange,
 }: {
   label: string
@@ -38,6 +39,8 @@ export function Stepper({
    * who is 170 cm must be able to say so.
    */
   saved?: boolean
+  /** When the row it sits in already names it: kept for screen readers, not shown twice. */
+  labelHidden?: boolean
   onChange: (next: number) => void
 }) {
   const t = useT()
@@ -83,7 +86,11 @@ export function Stepper({
 
   return (
     <div>
-      <p className="pb-2.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+      <p
+        className={
+          labelHidden ? 'sr-only' : 'pb-2.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted'
+        }
+      >
         {label}
       </p>
       <div className="flex items-center gap-2.5">

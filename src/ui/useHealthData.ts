@@ -46,6 +46,7 @@ import {
   type Nutrients,
   type Objective,
   type UserProfile,
+  PROFILE_DETAILS,
   type Observation,
   type Sleep,
   type Workout,
@@ -304,6 +305,14 @@ export function useActions() {
             preferredLengthUnit: 'cm',
           }),
           ...patch,
+          // What the person set, as opposed to what the sample came with: only
+          // these travel into an account at sign-in (adoption.ts).
+          youSet: [
+            ...new Set([
+              ...(stored?.youSet ?? []),
+              ...PROFILE_DETAILS.filter((detail) => patch[detail] !== undefined),
+            ]),
+          ],
           userId,
         })
       }))

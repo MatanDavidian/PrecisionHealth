@@ -16,7 +16,7 @@ const numbers = (text: string) => (text.match(/[\d,]+/g) ?? []).map((n) => Numbe
 test('eaten, burned and the net are all over the same days', async ({ page }) => {
   await open(page, '/today?view=week')
 
-  const card = page.locator('section').filter({ hasText: 'This week' }).first()
+  const card = page.locator('section:not([data-testid="targets-week"])').filter({ hasText: 'This week' }).first()
   await expect(card).toBeVisible()
 
   // The headline net, and the two rows beneath it.
@@ -45,7 +45,7 @@ test('eaten, burned and the net are all over the same days', async ({ page }) =>
 
 test('says what the comparison is over when the week is incomplete', async ({ page }) => {
   await open(page, '/today?view=week')
-  const card = page.locator('section').filter({ hasText: 'This week' }).first()
+  const card = page.locator('section:not([data-testid="targets-week"])').filter({ hasText: 'This week' }).first()
 
   // The fixture week is not fully covered, so the card must say so rather than
   // presenting part of a week as the whole of one.

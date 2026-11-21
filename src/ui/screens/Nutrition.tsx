@@ -25,6 +25,7 @@ import {
   type MealConflict,
   type MealEdit,
   type MealId,
+  ownGoal,
 } from '@/domain'
 import { MealConflictNotice } from '../components/MealConflictNotice'
 import { useDataRevision } from '../DataProvider'
@@ -108,7 +109,7 @@ export function Nutrition() {
     "estimated", at two thirds of the number.
   */
   const estimates = meals.filter(isPatternFilled)
-  const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
+  const proteinGoal = ownGoal(goals, 'PROTEIN')
   const progress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
   /*
     With targets, every total carries its own; without, protein still shows a

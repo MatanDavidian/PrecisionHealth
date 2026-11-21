@@ -58,6 +58,7 @@ picker).
 | Turn on Dependabot alerts, and secret scanning with push protection | S | GitHub → the repository → Settings → Code security. Free for a public repository: a security fix opens a pull request at once, and a key is refused before it is pushed (`engineering/security.md`, #4 and "Still open"). Set aside by the owner 2026-11-21, for later |
 | Check the sign-in rate limits in the Supabase dashboard | S | Set outside the repository, not checked in the review (`engineering/security.md`, #5) |
 | Raise the trial spend ceiling on a launch day | S | $10 a day is about 90 free analyses, 9–10 new people; `DAILY_BUDGET_MICROS` in the function secrets (`engineering/performance.md`) |
+| Update Google Play's Data safety form | S | Year of birth and sex (Personal info → Other info), height and activity (Health info) are collected since 2026-11-21; the answers are in `android/store-listing.md` |
 
 ## Decisions waiting
 
@@ -66,6 +67,7 @@ picker).
 | Decode iPhone (HEIC) photos in the browser, or keep naming the format | A 3 MB decoder under the LGPL, and `worker-src blob:` in the security policy |
 | Logging offline: accept online-first (D16), or build a queue | Epic 6.6 in the roadmap |
 | What to do with a real chargeback | The automatic handling above |
+| A "Not now" on the daily-targets checklist | Today shows "A few details, and your targets are ready" every day until the details are given, with no way to hide it. Hiding it (and a way back in Settings) is for people who only want to log food (`features/daily-targets.md`) |
 | An age gate for under-16s | The Terms say no; nothing enforces it |
 | A limit on free accounts per person | Only if the daily counts show it happening; the daily ceiling caps the cost meanwhile |
 

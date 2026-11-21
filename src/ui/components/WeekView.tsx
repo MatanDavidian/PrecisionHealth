@@ -121,6 +121,7 @@ export function WeekView({
   objective,
   insights,
   gaps,
+  targets,
 }: {
   week: WeekEnergy
   objective?: Objective
@@ -134,6 +135,8 @@ export function WeekView({
    * already been misread is worth much less.
    */
   gaps?: React.ReactNode
+  /** Each day against its targets (daily-targets.md), under the offer and above the chart. */
+  targets?: React.ReactNode
 }) {
   const t = useT()
   const zone = deviceZone()
@@ -149,6 +152,7 @@ export function WeekView({
   return (
     <div className="grid gap-4">
       {gaps}
+      {targets}
       <section className="rounded-card bg-card p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">

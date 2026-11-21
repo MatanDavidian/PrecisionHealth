@@ -23,6 +23,10 @@ import {
   findGaps,
   FILL_LOOKBACK_DAYS,
   goalFor,
+  ownGoal,
+  weekContaining,
+  streakOf,
+  STREAK_LOOKBACK_DAYS,
   isObjective,
   latestVersions,
   typicalIntake,
@@ -56,7 +60,8 @@ import { useSearchParams } from 'react-router-dom'
 import { SampleDayLabel } from '../components/SampleDayLabel'
 import { SetDayCard } from '../components/QuickSet'
 import { Welcome } from '../components/Welcome'
-import { TargetsCard, TargetsSetupCard } from '../components/DailyTargets'
+import { TargetsCard, TargetsSetupCard, TargetsWeekCard } from '../components/DailyTargets'
+import { useTargetsHistory } from '../useTargetsHistory'
 import { useDailyTargets } from '../useDailyTargets'
 import type { StringKey } from '../i18n/strings'
 
@@ -81,6 +86,23 @@ export function Today() {
   const { session, revision } = useDataRevision()
   /** Daily targets (daily-targets.md): read beside the day, never in its way. */
   const targetsReading = useDailyTargets(day)
+  /*
+    The streak (on Today's card and on this week's) and the week's marks:
+    read only when shown, and only once there are targets to count against.
+  */
+  const targetsReady = targetsReading?.result.ok === true
+  const weekDays = weekContaining(day)
+  const streakHistory = useTargetsHistory(
+    addDays(today, -(STREAK_LOOKBACK_DAYS - 1)),
+    today,
+    targetsReady && (isToday || view === 'week'),
+  )
+  const streak = streakHistory ? streakOf(streakHistory, today) : undefined
+  const weekHistory = useTargetsHistory(
+    weekDays[0],
+    weekDays[6] < today ? weekDays[6] : today,
+    targetsReady && view === 'week',
+  )
 
   /*
     Everything the plan card needs, derived BEFORE the early returns below.
@@ -247,7 +269,7 @@ export function Today() {
 
   const { nutrients, workouts, sleep, conflicts, unconfirmed, effective } = data
   const workout = workouts[0]
-  const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
+  const proteinGoal = ownGoal(goals, 'PROTEIN')
   const proteinProgress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
   const weightConflict = conflicts.find((c) => c.effective.code === 'WEIGHT')
   // A filled day's estimate is in the totals, never in the list of meals:
@@ -424,6 +446,16 @@ export function Today() {
             <WeekView
               week={week}
               objective={objective}
+              targets={
+                weekHistory && (
+                  <TargetsWeekCard
+                    days={weekHistory}
+                    weekDays={weekDays}
+                    today={today}
+                    streak={weekDays.includes(today) ? streak : undefined}
+                  />
+                )
+              }
               gaps={
                 <>
                   <GapsCard
@@ -491,6 +523,7 @@ export function Today() {
             }}
             isToday={isToday}
             dayName={dayLabel(day, today, t)}
+            streak={isToday ? streak : undefined}
             extra={nutritionNotes}
           />
         </div>

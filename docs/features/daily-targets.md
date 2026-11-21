@@ -4,8 +4,9 @@
 app works out how much to eat each day (calories, protein, carbs, fat) and
 shows the day filling up against it.
 
-Status: **built 2026-11-21.** Epic 6 in [`../ROADMAP.md`](../ROADMAP.md)
-(6.2, goals and adherence, its first part). Screens as built, in English and
+Status: **built 2026-11-21**, with three additions the same day: numbers of
+your own, the week and streaks, and the details carried into an account at
+sign-in. Epic 6 in [`../ROADMAP.md`](../ROADMAP.md) (6.2, goals and adherence). Screens as built, in English and
 Hebrew: [`mockups/daily-targets/`](mockups/daily-targets/).
 
 ---
@@ -80,6 +81,39 @@ Rounded to 10 kcal: precision past that would be pretending.
 
 Grams are rounded to 5.
 
+### Numbers of your own
+
+A calorie target and a protein goal can each be the person's own, typed in
+Settings → "Your own numbers", instead of the calculation's. Carbs and fat
+then follow from them in the usual way.
+
+- **It wins, and removes what only the rule needed.** A calorie target of
+  your own needs no burn (no watch, no height or age); a protein goal of your
+  own needs no weight. With both your own, not even a goal is needed.
+- **The floor is said, not imposed.** A calorie target of your own below
+  1,200 is kept as typed, with the floor's sentence under it: it is their
+  decision, and perhaps their dietitian's.
+- **"Automatic" shows what it comes to** ("Automatic · 2,150 kcal"), so the
+  choice is between two numbers. Going back to it is one tap.
+- **Stored as goals,** `ENERGY_INTAKE` (new) and `PROTEIN`. Goals are
+  append-only (D4), so "back to automatic" is a newer goal of 0, never a
+  deleted one; `ownGoal` reads a 0 as "none".
+
+### Streaks and the week
+
+- **A day is on target** when it was logged and its calories landed within
+  **10%** of that day's target: wider than the card's 5%, because a streak is
+  about the habit across days, and a rule a snack could break would teach
+  people to stop logging the snack.
+- **A day filled in from the average does not count,** and breaks a streak:
+  it is an estimate standing in for logging. Neither does a day nobody logged.
+- **The streak** is the run of days on target ending today or yesterday:
+  today counts once it is on target, and while it is not, it breaks nothing
+  (at breakfast nobody has missed today yet). Looked for over 60 days.
+- **Each past day keeps its own target:** its burn average is its own four
+  weeks before it. In `src/domain/streaks.ts`, read by
+  `readTargetsHistory` in one pass (two range reads, whatever the length).
+
 ### Progress
 
 For each nutrient: eaten, target, what is left or how far over, and a state.
@@ -127,6 +161,23 @@ For each nutrient: eaten, target, what is left or how far over, and a state.
   its four numbers beside it. Until then the Nutrition card stays, under the
   checklist.
 
+### The streak
+
+From two days in a row, a quiet green pill on Today's card: "3 days on
+target in a row". Never a broken-streak message: losing one is not news
+worth a reproach, and the week shows it anyway.
+
+### The week view: targets this week
+
+A card above the week's chart: seven marks, Sunday to Saturday (right to
+left in Hebrew). A green tick for on target, ink "+" for over, an orange
+"−" ring for under, an empty ring for not logged, dashed for days still to
+come; today ringed. Under them: "3 of 4 days on target · protein reached on
+2 of 4", the streak when the week holds today, and the rule in one line.
+Each mark is read out in full to a screen reader ("Monday: on target, 2,130
+of 2,150 kcal"). A row of marks rather than a second chart: the chart above
+already carries the calories, this answers a yes-or-no per day.
+
 ### Today, when something is missing
 
 ```
@@ -158,6 +209,9 @@ what is already done ticked.
   protein rule, and the floor if it applied. Ends with: "A starting point, not
   medical advice."
 
+- **Your own numbers** (in the same card): calories and protein, each
+  "Automatic · 2,150 kcal" or "My own", with a stepper when it is your own.
+
 ### Nutrition tab
 
 The day's totals show "/ target" under each of the four figures, and protein
@@ -167,6 +221,23 @@ turns green when reached, as it already did for a protein goal.
 
 Every string in both languages; numbers isolated left to right inside
 Hebrew text; the bars fill from the right.
+
+## Signing in: the details come too
+
+Signed out, everything lives in the browser, and signing in offers to move
+it into the account ("Bring your data with you"). That move now carries the
+goals the person chose and the details they gave, as well as meals and
+measurements.
+
+- **Only the person's own.** Signed out, the profile starts as the sample
+  person's (178 cm, 36), and a single profile record has no id to tell the
+  two apart the way meals do. So each save records which details the person
+  set (`youSet`), and only those travel. Goals use the meals' rule: the
+  sample's have hand-written ids, the person's are generated.
+- **The account wins.** A detail the account already holds (from another
+  device) is kept; only the gaps are filled. Goals are append-only, so a
+  goal from before signing in takes its place in the account's history, and
+  the newest still decides.
 
 ## Architecture
 
@@ -184,6 +255,11 @@ ui/useDailyTargets.ts       the hook: re-reads on day change and after any
                             write (the data revision).
 ui/components/TargetsCard   the Today card, both states.
 ui/components/AboutYou      the Settings cards.
+domain/streaks.ts           pure: dayOutcome, streakOf, summariseTargets.
+data/targets.ts             also readTargetsHistory(user, from, to): each day
+                            against its own targets, for the week and streak.
+data/adoption.ts            sign-in also carries goals and the details the
+                            person set (youSet).
 ```
 
 - **Why the profile, not observations, for height, age and sex.** They are
@@ -201,12 +277,18 @@ ui/components/AboutYou      the Settings cards.
 
 ## Tests
 
-- **Unit** (`src/domain/__tests__/targets.test.ts`): Mifflin–St Jeor against
-  worked examples; measured burn needs 5 days and ignores the day itself; each
-  objective's balance; the floor; protein by objective and by target weight; a
-  protein goal wins; macros add up to the calories; progress states.
-- **Data** (`src/data/__tests__/dailyTargets.test.ts`): measured burn read
-  from the store wins over the formula; missing pieces reported.
+- **Unit** (`src/domain/__tests__/targets.test.ts`, `streaks.test.ts`):
+  Mifflin–St Jeor against worked examples; measured burn needs 5 days; each
+  objective's balance; the floor; protein by objective and by target weight;
+  numbers of your own (win, need no burn or weight, never raised to the
+  floor, 0 means automatic); macros add up; progress states; a day on target
+  within 10%; the streak (today in progress breaks nothing, a missed, unlogged
+  or target-less day does); "back to automatic" read as no goal.
+- **Data** (`src/data/__tests__/dailyTargets.test.ts`, `adoption.test.ts`):
+  the watch's burn read from the store wins over the formula; each day
+  against its own target, a filled day not counted, the streak; at sign-in,
+  the sample's goals and details stay behind, the person's travel, and a
+  detail the account holds is never overwritten.
 - **Contract:** the profile round-trips; `listByRange` returns a code's
   readings across days and nothing outside the range.
 - **Browser** (`e2e/daily-targets.spec.ts`, desktop, phone and iPhone): the
@@ -214,18 +296,17 @@ ui/components/AboutYou      the Settings cards.
   "under" or "over"; "How?" opens the working; a different activity moves the
   target at once; with no profile, the checklist, its accessibility scan, and
   setting the details up from it; a starting value (170 cm) can be saved as
-  it is; the Nutrition totals; Hebrew. Protein "reached" and the floor are
-  pinned by the unit tests, where any number can be set up.
+  it is; the Nutrition totals; Hebrew; a calorie target of your own and back
+  to automatic; the week's marks; logging yesterday on target makes a
+  streak; details and a goal set before signing in arrive in the account,
+  the sample's do not.
 
 ## Not in this version
 
-- A calorie target typed in by hand (a protein one already exists). Next, if
-  people ask: it needs a way to go back to automatic, which append-only goals
-  do not have yet.
-- Targets on the week view, and streaks (the rest of 6.2).
 - Fibre, sugar, sodium: the meals do not record them yet.
-- Details given while signed out (height, year of birth, sex, activity) are
-  not carried into an account at sign-in, as meals are. Worth adding with the
-  next change to sign-in.
 - The setup checklist cannot be dismissed. If people who do not want targets
-  find it in the way, a "not for me" belongs on it.
+  find it in the way, a "Not now" belongs on it, with a way back in
+  Settings.
+- A past day's targets use the goal and weight as they are now, not as they
+  were then (its burn is its own). Goals keep their history, so this can
+  change if it ever matters.

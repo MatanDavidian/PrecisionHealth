@@ -113,22 +113,30 @@ export interface TargetsInput {
   burnHistory: readonly number[]
   /** A protein goal the person set themselves, in grams. It wins over the rule. */
   proteinGoalG?: number
+  /** A calorie target the person typed in. It wins over the rule, and needs no burn. */
+  energyGoalKcal?: number
 }
 
 /** What stands between the person and their targets, in the order to fix it. */
 export type TargetsMissing = 'OBJECTIVE' | 'WEIGHT' | 'BURN'
 
 export interface DailyTargets {
-  objective: Objective
+  /** Undefined only when both calories and protein are the person's own numbers. */
+  objective?: Objective
   energyKcal: number
   proteinG: number
   carbsG: number
   fatG: number
-  burn: BurnBasis
+  /** What the body burns. Undefined when the calories are the person's own and nothing reports a burn. */
+  burn?: BurnBasis
   /** The objective's daily balance: −350 for losing fat; 0 for fitness, which sets none. */
   balanceKcal: number
-  /** True when the floor raised the calories. */
+  /** Where the calories came from: the rule, or a number the person typed in. */
+  energy: { from: 'RULE' } | { from: 'GOAL' }
+  /** True when the floor raised the rule's calories. */
   floored: boolean
+  /** True when the person's own calorie target is below the floor: said, never overridden. */
+  belowFloor: boolean
   /** Where protein came from: the rule (with the weight it multiplied) or the person's own goal. */
   protein: { from: 'RULE'; perKg: number; weightKg: number } | { from: 'GOAL' }
 }
@@ -157,26 +165,55 @@ export function proteinWeightKg(objective: Objective, weightKg: number, targetKg
   return losing && targetKg !== undefined && targetKg < weightKg ? targetKg : weightKg
 }
 
+/** A positive number, or undefined: a goal of 0 is how "back to automatic" is recorded (goals are append-only, D4). */
+const own = (value: number | undefined): number | undefined =>
+  value !== undefined && Number.isFinite(value) && value > 0 ? value : undefined
+
+/**
+ * The day's targets, or what stands in their way.
+ *
+ * A number the person typed in wins over the rule, for calories and for
+ * protein alike, and removes what only the rule needed: a calorie target of
+ * their own needs no burn; a protein goal of their own needs no weight.
+ */
 export function dailyTargets(input: TargetsInput): TargetsResult {
+  const ownEnergy = own(input.energyGoalKcal)
+  const ownProtein = own(input.proteinGoalG)
   const burn = burnBasis(input)
+
   const missing: TargetsMissing[] = []
-  if (!input.objective) missing.push('OBJECTIVE')
-  if (input.weightKg === undefined) missing.push('WEIGHT')
-  if (!burn) missing.push('BURN')
-  if (!input.objective || input.weightKg === undefined || !burn) return { ok: false, missing }
+  const needsObjective = ownEnergy === undefined || ownProtein === undefined
+  if (needsObjective && !input.objective) missing.push('OBJECTIVE')
+  if (ownProtein === undefined && input.weightKg === undefined) missing.push('WEIGHT')
+  if (ownEnergy === undefined && !burn) missing.push('BURN')
+  if (missing.length > 0) return { ok: false, missing }
 
   const objective = input.objective
-  const balanceKcal = OBJECTIVE_SHAPE[objective].dailyKcal ?? 0
+  const balanceKcal = objective ? OBJECTIVE_SHAPE[objective].dailyKcal ?? 0 : 0
   const floor = minIntakeKcal(input.sex)
-  const wanted = round(burn.kcal + balanceKcal, 10)
-  const energyKcal = Math.max(wanted, floor)
 
-  const perKg = PROTEIN_G_PER_KG[objective]
-  const basisKg = proteinWeightKg(objective, input.weightKg, input.targetKg)
-  const proteinG =
-    input.proteinGoalG !== undefined && input.proteinGoalG > 0
-      ? Math.round(input.proteinGoalG)
-      : round(perKg * basisKg, 5)
+  let energyKcal: number
+  let floored = false
+  if (ownEnergy !== undefined) {
+    energyKcal = Math.round(ownEnergy)
+  } else {
+    const wanted = round(burn!.kcal + balanceKcal, 10)
+    energyKcal = Math.max(wanted, floor)
+    floored = energyKcal > wanted
+  }
+
+  let proteinG: number
+  let protein: DailyTargets['protein']
+  if (ownProtein !== undefined) {
+    proteinG = Math.round(ownProtein)
+    protein = { from: 'GOAL' }
+  } else {
+    const perKg = PROTEIN_G_PER_KG[objective!]
+    const basisKg = proteinWeightKg(objective!, input.weightKg!, input.targetKg)
+    proteinG = round(perKg * basisKg, 5)
+    protein = { from: 'RULE', perKg, weightKg: basisKg }
+  }
+
   const fatG = round((energyKcal * FAT_SHARE) / 9, 5)
   const carbsG = Math.max(0, round((energyKcal - proteinG * 4 - fatG * 9) / 4, 5))
 
@@ -190,14 +227,21 @@ export function dailyTargets(input: TargetsInput): TargetsResult {
       fatG,
       burn,
       balanceKcal,
-      floored: energyKcal > wanted,
-      protein:
-        input.proteinGoalG !== undefined && input.proteinGoalG > 0
-          ? { from: 'GOAL' }
-          : { from: 'RULE', perKg, weightKg: basisKg },
+      energy: ownEnergy !== undefined ? { from: 'GOAL' } : { from: 'RULE' },
+      floored,
+      belowFloor: ownEnergy !== undefined && energyKcal < floor,
+      protein,
     },
   }
 }
+
+/**
+ * What the rule alone would give, ignoring the person's own numbers: what
+ * "Automatic" means in Settings, shown beside "My own" so the choice is
+ * between two numbers rather than a number and a mystery.
+ */
+export const ruleTargets = (input: TargetsInput): TargetsResult =>
+  dailyTargets({ ...input, energyGoalKcal: undefined, proteinGoalG: undefined })
 
 /** Within this share of the calorie target, either way, the day is on target. */
 export const ON_TARGET_SHARE = 0.05

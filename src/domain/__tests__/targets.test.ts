@@ -8,6 +8,7 @@ import {
   MIN_MEASURED_DAYS,
   proteinWeightKg,
   restingKcal,
+  ruleTargets,
   type TargetsInput,
 } from '../targets'
 
@@ -88,7 +89,7 @@ describe('calories', () => {
   })
 
   it('falls back to the formula while the watch has too few days', () => {
-    expect(targetsOf({ ...person, burnHistory: [2800, 2800] }).burn.kind).toBe('ESTIMATED')
+    expect(targetsOf({ ...person, burnHistory: [2800, 2800] }).burn?.kind).toBe('ESTIMATED')
   })
 
   it('never goes below the floor, and says it was raised', () => {
@@ -203,4 +204,43 @@ describe('the day against its targets', () => {
 
 it('age comes from the year of birth', () => {
   expect(ageOn('2026-11-21', 1990)).toBe(36)
+})
+
+describe('numbers of your own', () => {
+  it('a calorie target of your own wins, and needs no burn', () => {
+    const t = targetsOf({ ...person, heightCm: undefined, energyGoalKcal: 2000 })
+    expect(t.energyKcal).toBe(2000)
+    expect(t.energy).toEqual({ from: 'GOAL' })
+    expect(t.burn).toBeUndefined()
+    // Carbs and fat follow from it: 30% fat of 2,000 is 66.7 g, to 65.
+    expect(t.fatG).toBe(65)
+  })
+
+  it('is never raised to the floor, only said to be under it', () => {
+    const t = targetsOf({ ...person, energyGoalKcal: 1100 })
+    expect(t.energyKcal).toBe(1100)
+    expect(t.floored).toBe(false)
+    expect(t.belowFloor).toBe(true)
+  })
+
+  it('with both numbers your own, needs no goal and no weight', () => {
+    const result = dailyTargets({ burnHistory: [], energyGoalKcal: 1900, proteinGoalG: 120 })
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.targets.objective).toBeUndefined()
+  })
+
+  it('a calorie target of your own still needs a goal and weight for the protein rule', () => {
+    expect(dailyTargets({ burnHistory: [], energyGoalKcal: 1900 })).toEqual({ ok: false, missing: ['OBJECTIVE', 'WEIGHT'] })
+  })
+
+  it('0 means back to automatic', () => {
+    expect(targetsOf({ ...person, energyGoalKcal: 0 }).energy).toEqual({ from: 'RULE' })
+    expect(targetsOf({ ...person, proteinGoalG: 0 }).protein.from).toBe('RULE')
+  })
+
+  it('what "Automatic" would give ignores your own numbers', () => {
+    const rule = ruleTargets({ ...person, energyGoalKcal: 1800, proteinGoalG: 200 })
+    expect(rule.ok && rule.targets.energyKcal).toBe(2500)
+    expect(rule.ok && rule.targets.proteinG).toBe(100)
+  })
 })

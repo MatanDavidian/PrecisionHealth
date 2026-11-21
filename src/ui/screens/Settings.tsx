@@ -285,7 +285,18 @@ export function Settings() {
                     thisYear={Number(today.slice(0, 4))}
                     onSave={(patch) => void saveProfile(patch)}
                   />
-                  <TargetsWorking reading={targetsReading} />
+                  <TargetsWorking
+                    reading={targetsReading}
+                    onOwn={(metric, value) =>
+                      void setGoal({
+                        metric,
+                        target: value,
+                        unit: metric === 'PROTEIN' ? 'g' : 'kcal',
+                        // A protein goal is a floor; a calorie target is aimed at.
+                        direction: metric === 'PROTEIN' ? 'AT_LEAST' : 'REACH',
+                      })
+                    }
+                  />
                 </>
               )}
               <Card label={t('settings.language')}>

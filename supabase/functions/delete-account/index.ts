@@ -63,6 +63,8 @@ const TABLES = [
   'subscriptions',
   'user_preferences',
   'profiles',
+  'push_subscriptions',
+  'reminder_log',
 ] as const
 
 /** Postgres: relation does not exist. Tables still to come are not leftovers. */

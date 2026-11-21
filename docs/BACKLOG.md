@@ -59,6 +59,7 @@ picker).
 | Check the sign-in rate limits in the Supabase dashboard | S | Set outside the repository, not checked in the review (`engineering/security.md`, #5) |
 | Raise the trial spend ceiling on a launch day | S | $10 a day is about 90 free analyses, 9–10 new people; `DAILY_BUDGET_MICROS` in the function secrets (`engineering/performance.md`) |
 | Update Google Play's Data safety form | S | Year of birth and sex (Personal info → Other info), height and activity (Health info) are collected since 2026-11-21; the answers are in `android/store-listing.md` |
+| Put reminders live | S | Decide the Privacy Policy line, run `REMINDERS=1 ./scripts/deploy-functions.sh`, send yourself a test, add "Device or other IDs" to the Data safety form (`features/reminders.md`, "Going live") |
 
 ## Decisions waiting
 

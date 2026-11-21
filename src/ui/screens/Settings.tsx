@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Reminders } from '../components/Reminders'
 import { AboutYou, TargetsWorking } from '../components/DailyTargets'
 import { useDailyTargets } from '../useDailyTargets'
 import { askToKeep, storagePersistence, type Persistence } from '@/data/persistence'
@@ -299,6 +300,7 @@ export function Settings() {
                   />
                 </>
               )}
+              <Reminders session={session} />
               <Card label={t('settings.language')}>
                 <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map((option) => (

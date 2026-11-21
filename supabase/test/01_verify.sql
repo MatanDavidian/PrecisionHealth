@@ -793,3 +793,100 @@ exception
 end
 $$;
 reset role;
+
+\echo '== 0018: reminders are sent once, by the server only =='
+set role postgres;
+select case when public.claim_reminder('11111111-1111-1111-1111-111111111111', 'MEAL', '2026-11-20', 1) = true
+             and public.claim_reminder('11111111-1111-1111-1111-111111111111', 'MEAL', '2026-11-20', 1) = false
+             and public.claim_reminder('11111111-1111-1111-1111-111111111111', 'MEAL', '2026-11-21', 1) = true
+  then 'PASS: a meal reminder goes once a day'
+  else 'FAIL: a meal reminder was claimed twice for one day, or not again the next' end;
+
+select case when public.claim_reminder('11111111-1111-1111-1111-111111111111', 'WATCH', '2026-11-10', 3) = true
+             and public.claim_reminder('11111111-1111-1111-1111-111111111111', 'WATCH', '2026-11-12', 3) = false
+             and public.claim_reminder('11111111-1111-1111-1111-111111111111', 'WATCH', '2026-11-13', 3) = true
+  then 'PASS: a watch reminder waits three days before the next'
+  else 'FAIL: the watch reminder gap did not hold' end;
+
+select case when public.reminders_token_ok((select value #>> '{}' from private.settings where key = 'reminders_token'))
+             and not public.reminders_token_ok('not-the-token-not-the-token-not-the-token')
+             and not public.reminders_token_ok('')
+             and length((select value #>> '{}' from private.settings where key = 'reminders_token')) = 64
+  then 'PASS: the schedule''s token is made in the database, and only it passes'
+  else 'FAIL: the reminders token check' end;
+
+select case when public.push_keys() is null
+             and public.push_keys_init('{"publicKey":"first"}'::jsonb) ->> 'publicKey' = 'first'
+             and public.push_keys_init('{"publicKey":"second"}'::jsonb) ->> 'publicKey' = 'first'
+  then 'PASS: the push keys are made once and never replaced'
+  else 'FAIL: the push keys were replaced' end;
+
+select case when public.reminders_scheduled() = false
+  then 'PASS: with no scheduler (plain Postgres), the schedule reports missing rather than failing'
+  else 'FAIL: reminders_scheduled' end;
+
+do $$
+begin
+  update public.user_preferences set reminder_time = '12:00' where false;
+  insert into public.user_preferences (user_id, reminder_time) values ('11111111-1111-1111-1111-111111111111', '12:00')
+  on conflict (user_id) do update set reminder_time = excluded.reminder_time;
+  raise exception 'FAIL: a noon reminder was accepted';
+exception
+  when check_violation then raise notice 'PASS: a reminder is between 16:00 and 04:00, on the quarter hour';
+end
+$$;
+insert into public.user_preferences (user_id, reminder_time, meal_reminder) values ('11111111-1111-1111-1111-111111111111', '01:30', true)
+on conflict (user_id) do update set reminder_time = excluded.reminder_time, meal_reminder = excluded.meal_reminder;
+select case when (select reminder_time from public.user_preferences where user_id = '11111111-1111-1111-1111-111111111111') = '01:30'
+  then 'PASS: a reminder after midnight is allowed'
+  else 'FAIL: 01:30 was refused' end;
+
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+begin
+  perform count(*) from public.push_subscriptions;
+  raise exception 'FAIL: a user could read push subscriptions';
+exception
+  when insufficient_privilege then raise notice 'PASS: push subscriptions are server-only';
+end
+$$;
+do $$
+begin
+  perform count(*) from public.reminder_log;
+  raise exception 'FAIL: a user could read the reminder log';
+exception
+  when insufficient_privilege then raise notice 'PASS: the reminder log is server-only';
+end
+$$;
+do $$
+begin
+  perform public.claim_reminder('11111111-1111-1111-1111-111111111111', 'MEAL', '2026-12-01', 1);
+  raise exception 'FAIL: a user could claim a reminder';
+exception
+  when insufficient_privilege then raise notice 'PASS: claiming a reminder is server-only';
+end
+$$;
+do $$
+begin
+  perform public.push_keys();
+  raise exception 'FAIL: a user could read the push keys';
+exception
+  when insufficient_privilege then raise notice 'PASS: the push keys are server-only';
+end
+$$;
+do $$
+begin
+  perform count(*) from private.settings;
+  raise exception 'FAIL: a user could read the private settings';
+exception
+  when insufficient_privilege then raise notice 'PASS: the private settings are unreachable';
+end
+$$;
+-- A person may still turn their own reminders on and off.
+update public.user_preferences set meal_reminder = false, reminder_time = '22:30', reminder_zone = 'Asia/Jerusalem'
+where user_id = auth.uid();
+select case when (select meal_reminder = false and reminder_zone = 'Asia/Jerusalem' from public.user_preferences where user_id = auth.uid())
+  then 'PASS: a person changes their own reminder choices'
+  else 'FAIL: own reminder choices could not be changed' end;
+reset role;

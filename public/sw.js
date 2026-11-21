@@ -117,3 +117,49 @@ self.addEventListener('fetch', (event) => {
     })(),
   )
 })
+
+/*
+  Reminders (docs/features/reminders.md). The server sends a message,
+  encrypted to this browser, saying only what to show and where tapping it
+  should lead. Anything malformed falls back to a plain "Vimetry" that opens
+  Today, rather than to nothing: browsers punish a push that shows no
+  notification.
+*/
+self.addEventListener('push', (event) => {
+  let message = {}
+  try {
+    message = event.data ? event.data.json() : {}
+  } catch {
+    message = {}
+  }
+  const text = (value, fallback) => (typeof value === 'string' && value.length < 300 ? value : fallback)
+  const url = text(message.url, '/today')
+  event.waitUntil(
+    self.registration.showNotification(text(message.title, 'Vimetry'), {
+      body: text(message.body, ''),
+      // One per kind: tonight's reminder replaces an unread one from last night.
+      tag: text(message.tag, 'vimetry'),
+      icon: '/icons/icon-192.png',
+      // Only paths on this site: a message cannot send anyone elsewhere.
+      data: { url: url.startsWith('/') && !url.startsWith('//') ? url : '/today' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = new URL(event.notification.data?.url ?? '/today', self.location.origin).href
+  event.waitUntil(
+    (async () => {
+      // An open window of the app is brought forward and taken there; otherwise a new one opens.
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      for (const client of windows) {
+        if (new URL(client.url).origin !== self.location.origin) continue
+        await client.focus()
+        if ('navigate' in client) await client.navigate(target).catch(() => undefined)
+        return
+      }
+      await self.clients.openWindow(target)
+    })(),
+  )
+})

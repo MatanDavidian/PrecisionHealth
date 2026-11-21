@@ -36,6 +36,12 @@ const FUNCTIONS = [
   'play-rtdn',
   'report-ai',
 ]
+/**
+ * Deployed only once reminders go live (`REMINDERS=1 ./scripts/deploy-functions.sh`,
+ * docs/features/reminders.md). Not there yet is said, not failed; there
+ * but out of date fails like any other.
+ */
+const OPTIONAL_FUNCTIONS = ['reminders', 'send-reminders']
 /** Alert before the ceiling refuses people, not after. */
 const SPEND_WARNING = 0.8
 /** Browser errors since yesterday at which the daily check turns red and emails. */
@@ -83,7 +89,8 @@ try {
 } catch {
   fail('cannot read the expected version from git')
 }
-for (const name of FUNCTIONS) {
+for (const name of [...FUNCTIONS, ...OPTIONAL_FUNCTIONS]) {
+  const optional = OPTIONAL_FUNCTIONS.includes(name)
   try {
     // The CORS preflight needs no credentials, and every function stamps it.
     const response = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
@@ -91,7 +98,8 @@ for (const name of FUNCTIONS) {
       headers: { Origin: 'https://vimetry.app', 'Access-Control-Request-Method': 'POST' },
     })
     const version = response.headers.get('x-vimetry-version')
-    if (!version) fail(`${name}: no version header — deployed before version stamps, or not deployed`)
+    if (!version && optional) console.log(`  · ${name}: not deployed (reminders not live yet)`)
+    else if (!version) fail(`${name}: no version header — deployed before version stamps, or not deployed`)
     else if (expected && version !== expected) {
       fail(`${name}: serves ${version.slice(0, 7)}, main is ${expected.slice(0, 7)} — a deploy is owed`)
     } else pass(`${name} ${version.slice(0, 7)}`)

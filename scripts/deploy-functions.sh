@@ -12,11 +12,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-FUNCTIONS_WITH_USER_JWT=(estimate-food delete-account issue-device-token billing play-billing)
+FUNCTIONS_WITH_USER_JWT=(estimate-food delete-account issue-device-token billing play-billing reminders)
 # No user JWT: the watch carries a device token, the health check a health
 # token, Lemon Squeezy a signature, Google's Pub/Sub a secret on its URL — and
 # error reports come from signed-out visitors too.
-FUNCTIONS_WITHOUT_JWT=(device-sync health lemonsqueezy-webhook report-error play-rtdn report-ai)
+FUNCTIONS_WITHOUT_JWT=(device-sync health lemonsqueezy-webhook report-error play-rtdn report-ai send-reminders)
 
 # 1. Only committed code, so the version stamp means something.
 if ! git diff --quiet HEAD -- supabase/; then
@@ -61,8 +61,21 @@ echo "→ deploying ${VERSION:0:7}"
 # --yes: Supabase CLI 3 asks before every change to production. Running this
 # script IS that decision, made once, rather than eleven times over.
 # (Migrations above still ask: what they change is worth reading.)
-for fn in "${FUNCTIONS_WITH_USER_JWT[@]}"; do npx supabase functions deploy "$fn" --yes; done
-for fn in "${FUNCTIONS_WITHOUT_JWT[@]}"; do npx supabase functions deploy "$fn" --no-verify-jwt --yes; done
+# Reminders go live only when asked (docs/features/reminders.md, "Going live"):
+# the Privacy Policy line comes first. Without REMINDERS=1 the two functions
+# are left out, and the Settings card stays hidden; the migration still
+# applies, and its schedule finds no function to call, which is harmless.
+if [ "${REMINDERS:-0}" != "1" ]; then
+  FUNCTIONS_WITH_USER_JWT=("${FUNCTIONS_WITH_USER_JWT[@]/reminders}")
+  FUNCTIONS_WITHOUT_JWT=("${FUNCTIONS_WITHOUT_JWT[@]/send-reminders}")
+  echo "  (reminders not deployed: REMINDERS=1 ./scripts/deploy-functions.sh puts them live)"
+fi
+for fn in "${FUNCTIONS_WITH_USER_JWT[@]}"; do
+  if [ -n "$fn" ]; then npx supabase functions deploy "$fn" --yes; fi
+done
+for fn in "${FUNCTIONS_WITHOUT_JWT[@]}"; do
+  if [ -n "$fn" ]; then npx supabase functions deploy "$fn" --no-verify-jwt --yes; fi
+done
 
 # 5. Prove it: every function answers with this version, and health is green.
 echo "→ checking"

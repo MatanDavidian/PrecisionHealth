@@ -16,6 +16,7 @@ Deno.env.set('SUPABASE_ANON_KEY', 'stub-anon-key')
 Deno.env.set('OPENAI_TRIAL_KEY', 'sk-stub-never-echoed')
 
 let schemaMissing: string[] = []
+let remindersScheduled = true
 let errorsDown = false
 let disputes: Record<string, string>[] = []
 let playEvents: Record<string, string>[] = []
@@ -23,6 +24,7 @@ let playEvents: Record<string, string>[] = []
 const stub = Deno.serve({ port: 8998, onListen: () => {} }, (req) => {
   const url = new URL(req.url)
   if (url.pathname === '/rest/v1/rpc/health_missing') return Response.json(schemaMissing)
+  if (url.pathname === '/rest/v1/rpc/reminders_scheduled') return Response.json(remindersScheduled)
   if (url.pathname === '/rest/v1/usage') {
     // Two reads: the day's spend (cost_micros) and the last 24h (outcome).
     return url.searchParams.get('select')?.startsWith('cost_micros')
@@ -131,6 +133,15 @@ const call = (token?: string) =>
   check('and names what is missing', JSON.stringify(body.schema.missing) === JSON.stringify(schemaMissing),
     JSON.stringify(body.schema.missing))
   schemaMissing = []
+}
+{
+  remindersScheduled = false
+  const res = await call(TOKEN)
+  const body = await res.json()
+  check('a reminders schedule that was never created is said, as a missing piece', res.status === 503 &&
+    JSON.stringify(body.schema.missing) === JSON.stringify(['reminders schedule (cron job send-reminders)']),
+    JSON.stringify(body.schema.missing))
+  remindersScheduled = true
 }
 {
   Deno.env.delete('OPENAI_TRIAL_KEY')

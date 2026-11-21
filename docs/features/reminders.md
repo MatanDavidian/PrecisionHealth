@@ -1,108 +1,173 @@
 # Feature spec — reminders
 
 **One line:** a daily reminder to log meals when nothing is logged by an
-hour the person chooses, and a reminder to sync the watch when days of
-calories burned are missing.
+hour the person chooses, and a reminder to sync the watch when it has gone
+quiet.
 
-Status: **documented for later, nothing built** (2026-11-17, the owner's
-decision). Epic 6 in [`../ROADMAP.md`](../ROADMAP.md). Analysed the same day;
-the findings are kept here so the work can start from them.
+Status: **built 2026-11-21, not yet live.** The code is merged and tested;
+it goes live when the owner deploys the server side (see "Going live"),
+after the Privacy Policy line below is decided. Until then the Settings card
+does not appear: it shows only once the server answers. Epic 6 in
+[`../ROADMAP.md`](../ROADMAP.md).
 
 ---
 
-## 1. The daily meal reminder
+## What it does
 
-**What the owner asked for:** a notification every day at a time set in
-Settings, between 16:00 and 04:00, default 22:30, sent only if no meal has
-been logged by then. Tapping it opens Today, where the day can be logged or
-set in one tap (`quick-set-a-day.md`).
+- **"Remind me to log"**: at a time the person picks, from 16:00 to 04:00
+  in quarter hours (default 22:30), a notification, **only if nothing at
+  all is logged that day**. A day set in one tap (quick-set) counts as
+  logged. Tapping it opens Today.
+- **"Remind me to sync my watch"**: when a connected watch has sent nothing
+  for **3 days**, at the same time, and then not again for 3 days. Tapping
+  it opens Settings → Account, where the watch connection is.
+- **Off until switched on.** Turning one on asks this device for permission
+  and subscribes it; turning both off stops this device. Other devices keep
+  their own subscription, and hear nothing once both are off.
+- **"Send a test"**, to see what a reminder looks like.
+- **The words say nothing about food or the body:** "Time to log today. Add
+  your meals, or set the day in one tap." The text passes through the push
+  service and sits on a lock screen.
+- English and Hebrew; the notification is in the account's language.
 
-### Why it is the largest of the three
+### The two decisions (owner, 2026-11-21)
 
-The app has **no notification machinery** today: the service worker
-(`public/sw.js`) only caches files. And a web app cannot reliably set an
-alarm on the phone for itself (the browser feature that would have allowed
-it was abandoned). So the reminder has to be **sent from the server** at the
-right moment, as a web push:
+1. **"Nothing logged" means no meal at all that day**, not "nothing since the
+   afternoon". Simplest, and someone who logged breakfast and lunch is not
+   the person the reminder is for.
+2. **The watch reminder comes after 3 days without a sync,** checked daily,
+   not after 5 missing days at the week's end: the watch keeps only the last
+   7 days of activity, so by the week's end some days could no longer be
+   recovered. The message says to open the watch app and check the phone
+   and watch are connected, since the watch app already syncs by itself
+   each morning and a silence usually means one of those two.
 
-- **Permission and subscriptions:** a Settings switch that asks the device
-  for permission and stores where to send (a new table, one row per device,
-  removable).
-- **Keys:** a key pair for web push, the private half as a Supabase secret.
-- **A scheduler:** a job every 15 minutes (Supabase's scheduled jobs, or the
-  existing GitHub Actions schedule) that calls a new function: whose
-  reminder time fell in the last 15 minutes, in their own time zone, and
-  who has logged nothing that day.
-- **The service worker** gains a push handler that shows the notification,
-  and a click handler that opens Today.
-- **Settings:** the switch, the time (16:00–04:00), and "Send a test".
+## The rules
 
-### Things that are easy to get wrong
+In `supabase/functions/_shared/reminderRules.ts`, pure and unit-tested:
 
-- **Times after midnight.** A reminder at 01:00 is about the evening that
-  just ended, not the new day. The day it checks is the one that started
-  before the reminder window opened (16:00).
-- **Time zones and travel.** The person's zone is stored with the setting
-  and updated when the app opens somewhere new (D7).
-- **What "no meal yet" means.** Open: no meal at all that day (simplest),
-  or nothing since the afternoon (fits 22:30 better). To decide when this
-  is picked up.
-- **Privacy.** The notification says nothing about health or food ("Time to
-  log today"). The text passes through Google's and Apple's push services,
-  so the Privacy Policy needs a line about notifications.
-- **Off until switched on.** The permission prompt needs a tap anyway, and
-  a reminder nobody asked for is the fastest way to be uninstalled.
+- **A reminder belongs to an evening.** At 22:30 it is about that day; at
+  01:00 it is about the day before, whose night it is.
+- **Due from its time, for two hours.** The schedule runs every 15 minutes;
+  if it runs late, the reminder still goes; if it was down all night, nobody
+  is woken at seven by yesterday's reminder.
+- **In the person's own zone,** stored with the choice and updated when the
+  app opens somewhere new.
+- **Once.** The database refuses a second claim for the same person, kind
+  and day (`claim_reminder`), and for the watch, within 3 days.
+- **A deleted meal is not a meal:** a meal whose newest version deletes it
+  does not count as logged.
 
-### Where it works
+## How it works
 
-- **The Android app:** yes. Notifications are already switched on in the
-  app package (`enableNotifications`, needed for Play Billing), so it
-  should need no new version; to be confirmed on the emulator.
-- **Android Chrome, desktop browsers:** yes.
-- **iPhone:** only when the site has been added to the Home Screen (iOS 16.4
-  and later). A Safari tab cannot receive pushes.
+```
+Settings card ── user_preferences (own row: on/off, time, zone)
+      │
+      └─ reminders function ── push_subscriptions (one row per device)
+            available | key | subscribe | unsubscribe | test
 
-### Testing
+pg_cron, every 15 min ── send-reminders function
+      checks the token, reads who has a reminder on, works out who is due,
+      claims it (reminder_log), encrypts and sends to each device
 
-The rule of who is due (time, zone, midnight, already logged) as pure
-functions with unit tests; the function with a fake push service, like the
-other server tests; one real push to the owner's phone before it ships.
+service worker ── shows the notification, opens the page on a tap
+```
 
-Size: about 3–5 days.
+- **Web Push, by hand** (`_shared/webPush.ts`): the message is encrypted to
+  each browser (RFC 8291) and signed for the push service (VAPID, RFC 8292)
+  with Web Crypto alone. A test decrypts our messages with `http_ece`, the
+  reference implementation by the RFC's author, and checks the signature
+  with Node's own crypto.
+- **Nothing for a person to set up or hold.** The schedule's token is made
+  inside the database by the migration, and never seen by anyone. The push
+  keys are made by the server the first time they are needed and kept for
+  good (a new pair would orphan every subscribed device).
+- **Only push services.** A subscription naming any other address is
+  refused, so the server can never be pointed at an address of a caller's
+  choosing. At most 10 devices per person.
+- **Devices that are gone are forgotten:** when a push service answers 404
+  or 410 (uninstalled, unsubscribed), the row is deleted.
+- **Two new tables, server-only:** `push_subscriptions` and `reminder_log`,
+  with row-level security on and no grants to users. The person's own
+  choices are new columns on `user_preferences`, under its existing rules.
+- **The daily health check** names the schedule if the database could not
+  create it ("reminders schedule (cron job send-reminders)"), and the new
+  tables and functions like everything else.
+- **Account deletion** empties both new tables (cascade, and checked).
 
-## 2. The "sync your watch" reminder
+## Where it works
 
-**What the owner asked for:** at the end of the week, if 5 or more days
-have no calories burned and a watch is connected, a notification to sync
-it.
+- **The Android app and Android Chrome:** yes. Notifications are already
+  switched on in the app package, so no new version is needed; to be
+  confirmed on a real phone (below).
+- **Desktop browsers:** yes.
+- **iPhone:** only from the Home Screen (iOS 16.4 and later). In a Safari
+  tab the card says how to add it, instead of a switch that cannot work.
 
-### What already exists
+## Going live (owner)
 
-- A watch connection is a row in `device_tokens` that is not revoked, and
-  `last_used_at` says when it last sent anything.
-- Days without calories burned can be counted from `observations`
-  (`TOTAL_ENERGY`).
+1. **Decide the Privacy Policy line** (below). Changing the policy asks
+   everyone to agree again, so it may wait for the next change if
+   reminders can wait too.
+2. **Deploy with reminders:** `REMINDERS=1 ./scripts/deploy-functions.sh`.
+   Without `REMINDERS=1` the script leaves the two reminder functions out
+   (so other fixes can be deployed meanwhile) and the Settings card stays
+   hidden; migration 0018 applies either way, harmlessly. Nothing to type:
+   no secret, no key.
+3. **Check the schedule exists:** the script's health check at the end
+   says so; or Supabase dashboard → Integrations → Cron → `send-reminders`.
+4. **One real reminder on your phone:** Settings → Reminders → turn on →
+   "Send a test". Then set the time 15 minutes ahead with nothing logged
+   that day, and wait for the real one.
+5. **Google Play's Data safety form:** add **Device or other IDs** (the
+   push address of each device), collected, optional, for app
+   functionality. The answers are in `../android/store-listing.md`.
 
-So once the daily reminder's machinery exists, this is a second, small job
-on the same scheduler: about half a day. Built on its own, it would carry
-all of that machinery: about 2 days.
+### The Privacy Policy line, proposed
 
-### One problem with the rule as asked
+Under "What this app holds about you":
 
-The watch keeps only **the last 7 days** of activity (Connect IQ's
-`ActivityMonitor.getHistory()`, measured in Slice 4). By the time 5 days are
-missing at the week's end, some of them may already have fallen off the
-watch and cannot be recovered. **The recommendation:** check every day, and
-remind after **3 days** without a sync, while those days can still be
-recovered. To decide when this is picked up.
+> Reminders, if you turn them on: the time you chose, your time zone, and,
+> for each device you turned them on, the address your browser's push
+> service gave it.
 
-Also worth knowing: the watch app already syncs by itself every morning in
-the background. Several days missing usually means the watch app was
-removed, or the phone and the watch stopped talking, so the message should
-say how to check both, not only "open the app".
+Under "Who else sees it":
 
-## Order, when picked up
+> Your browser's push service (Google's on Android and in Chrome, Apple's
+> on iPhone, Mozilla's in Firefox) delivers reminders. It receives the
+> device's address and an encrypted message it cannot read, which says only
+> that it is time to log.
 
-The daily reminder first (it builds the machinery), then the watch
-reminder on top of it. Quick-set a day is independent and comes before
-both.
+## Tests
+
+- **Unit** (`src/__tests__/reminderRules.test.ts`, `webPush.test.ts`): the
+  time window, after midnight, zones, a late schedule; a deleted meal; the
+  watch going quiet, and a second watch still syncing; the words never
+  mention food; encryption decrypted by the reference implementation, a
+  stranger's keys failing, a fresh salt each time; the VAPID signature
+  verified independently; addresses outside the push services refused.
+- **Database** (`supabase/test/01_verify.sql`): once a day, three days for
+  the watch; the token made in the database; the keys made once and never
+  replaced; the time between 16:00 and 04:00; both tables, the keys and the
+  private settings out of a user's reach; a person changing their own
+  choices.
+- **Server** (`supabase/test/reminders.ts`, `send-reminders.ts`): sign-in
+  required except for "available"; subscribe, the address check, ten
+  devices, a device moving accounts, nobody removing someone else's device;
+  the test push encrypted, signed and short-lived; the schedule's token;
+  due at the time, not before, not twice; a logged day, a deleted meal,
+  after midnight, another zone, switched off, a bad zone; the watch quiet,
+  syncing, disconnected; a gone device forgotten.
+- **Browser** (`e2e/reminders.spec.ts`, desktop, phone and iPhone): no card
+  before the server is deployed; signed out, the card says an account is
+  needed; turning it on asks, subscribes and saves (time, zone); a time
+  after midnight; a test; both off stops the device; permission refused;
+  an iPhone Safari tab told about the Home Screen; the accessibility scan;
+  Hebrew. The browser's push machinery is a stand-in there: a headless
+  browser has no push service.
+
+## Not in this version
+
+- A different time for the watch reminder than for meals.
+- Reminders for signed-out use (they need the server to know whether the
+  day was logged).

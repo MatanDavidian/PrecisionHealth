@@ -61,6 +61,8 @@ automatically ("Scanning", below).
 | `play-billing` | A signed-in user | The purchase is verified with Google, and refused if Google says it was made for another account |
 | `health` | The daily check | A secret header, constant time |
 | `device-sync` | A watch | A hashed device token; rate-limited (429) and capped in entries and days |
+| `reminders` | A signed-in user (except "available", which says only that reminders exist) | The session token is verified; a device may subscribe only an address on a known push service, so the server cannot be pointed elsewhere; at most 10 devices each |
+| `send-reminders` | The database's scheduler | A token made inside the database by the migration and never seen by a person; checked before any read |
 | `report-error`, `report-ai` | Anyone, signed out too | Size-capped (16 KB, 4 KB), at most 500 distinct errors a day, no user id stored, keys and emails scrubbed |
 
 Cross-origin requests are allowed from anywhere (`*`). That is safe here:

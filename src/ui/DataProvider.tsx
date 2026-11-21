@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { keepReminderZone } from '@/data/reminders'
 import { ensureSeeded, selectRepositoriesFor, selectEstimatorFor } from '@/data'
 import { readTrialStatus, type TrialStatus } from '@/data/trial'
 import { readPlanStatus, type PlanStatus } from '@/data/plan'
@@ -161,6 +162,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (reported) void applyEstimator(session)
     })
   }, [session, applyEstimator])
+
+  /*
+    Reminders follow the person (reminders.md): opened in a new time zone,
+    the stored zone moves with them, so 22:30 stays 22:30 on their own
+    clock. One small read on start, and a write only when they travelled.
+  */
+  useEffect(() => {
+    if (!session.authenticated) return
+    void keepReminderZone(session.userId).catch(() => undefined)
+  }, [session])
 
   const refreshTrial = useCallback(() => {
     void applyEstimator(session)

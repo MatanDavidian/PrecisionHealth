@@ -156,6 +156,16 @@ Deno.serve(async (request) => {
     : (missing as string[] | null) ?? []
 
   /*
+    The reminders' schedule (migration 0018) lives in the database's own
+    scheduler, which a migration can fail to set up without failing itself.
+    Without it no reminder ever goes, and nothing else would say so. An
+    error means the check function is absent, which health_missing above
+    already names.
+  */
+  const { data: scheduled } = await admin.rpc('reminders_scheduled')
+  if (scheduled === false) schemaMissing.push('reminders schedule (cron job send-reminders)')
+
+  /*
     The day's spend the same way `estimate-food` counts it — owner-paid rows
     since midnight UTC — so the number here is the number the ceiling sees.
   */

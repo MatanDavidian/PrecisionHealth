@@ -33,5 +33,5 @@
     "supabase/functions/_shared"
   ],
   // Server-only: talk to Lemon Squeezy and Google Play with Deno's env. `npm run check:functions` checks them.
-  "exclude": ["supabase/functions/_shared/lemonsqueezy.ts", "supabase/functions/_shared/googlePlay.ts", "supabase/functions/_shared/playSubscriptions.ts"]
+  "exclude": ["supabase/functions/_shared/lemonsqueezy.ts", "supabase/functions/_shared/googlePlay.ts", "supabase/functions/_shared/playSubscriptions.ts", "supabase/functions/_shared/pushDelivery.ts"]
 }

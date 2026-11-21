@@ -35,6 +35,12 @@ export interface DateRange {
 
 export interface ProfileRepository {
   get(userId: UserId): Promise<UserProfile | undefined>
+  /**
+   * Replaces the profile. Not versioned, unlike health records: height, year
+   * of birth and the like are facts about a person rather than readings over
+   * time, and the profile row has always been one per person.
+   */
+  save(profile: UserProfile): Promise<void>
 }
 
 export interface MealRepository {
@@ -59,6 +65,13 @@ export interface ObservationRepository {
   listByDay(userId: UserId, day: CalendarDate, code?: ObservationCode): Promise<Observation[]>
   /** All candidates for the most recent day that has any, for a single code. */
   latest(userId: UserId, code: ObservationCode): Promise<Observation[]>
+  /**
+   * Every candidate for one code across a stretch of days, inclusive.
+   *
+   * One read where a loop of `listByDay` would be one request per day: the
+   * daily targets average four weeks of burn (docs/features/daily-targets.md).
+   */
+  listByRange(userId: UserId, range: DateRange, code: ObservationCode): Promise<Observation[]>
   add(observation: Observation): Promise<void>
 }
 

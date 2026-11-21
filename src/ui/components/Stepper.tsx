@@ -21,6 +21,7 @@ export function Stepper({
   max,
   decimals = 0,
   note,
+  saved = true,
   onChange,
 }: {
   label: string
@@ -31,6 +32,12 @@ export function Stepper({
   max: number
   decimals?: number
   note?: string
+  /**
+   * False when `value` is only a starting point, never stored (an unset
+   * height shows 170). Then confirming it, unchanged, still saves it: someone
+   * who is 170 cm must be able to say so.
+   */
+  saved?: boolean
   onChange: (next: number) => void
 }) {
   const t = useT()
@@ -54,7 +61,7 @@ export function Stepper({
   const [draft, setDraft] = useState<string>()
   const shown = draft ?? value.toFixed(decimals)
   const parsed = Number(shown)
-  const dirty = draft !== undefined && Number.isFinite(parsed) && clamp(parsed) !== value
+  const dirty = draft !== undefined && Number.isFinite(parsed) && (clamp(parsed) !== value || !saved)
 
   const commit = () => {
     if (draft === undefined) return
@@ -63,7 +70,7 @@ export function Stepper({
     setDraft(undefined)
     if (!Number.isFinite(next)) return
     const rounded = Math.round(clamp(next) * 10 ** decimals) / 10 ** decimals
-    if (rounded !== value) onChange(rounded)
+    if (rounded !== value || !saved) onChange(rounded)
   }
 
   // Rebuilt from a rounded number each time, or 0.1 + 0.2 arithmetic leaves

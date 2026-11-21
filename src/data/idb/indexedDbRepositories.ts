@@ -48,6 +48,9 @@ export function createIndexedDbRepositories(
   return {
     profiles: {
       get: async (userId) => (await db()).get('profiles', userId),
+      save: async (profile) => {
+        await (await db()).put('profiles', profile)
+      },
     },
 
     meals: {
@@ -101,6 +104,10 @@ export function createIndexedDbRepositories(
         // resolves precedence, so we must not pre-filter to one record.
         const mostRecentDay = rows.map((row) => row.day).sort().at(-1)
         return unwrap(rows.filter((row) => row.day === mostRecentDay))
+      },
+      listByRange: async (userId, range, code) => {
+        const rows = await (await db()).getAllFromIndex('observations', 'by-user-day', dayRange(userId, range))
+        return unwrap(rows.filter((row) => row.code === code))
       },
       add: async (observation: Observation) => {
         await (await db()).put('observations', observationRow(observation))

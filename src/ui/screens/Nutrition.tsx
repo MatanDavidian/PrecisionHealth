@@ -1,4 +1,5 @@
 import { SampleDayLabel } from '../components/SampleDayLabel'
+import { useDailyTargets } from '../useDailyTargets'
 import { useEffect, useState } from 'react'
 import { Card } from '../components/Card'
 import { MealForm } from '../components/MealForm'
@@ -27,7 +28,7 @@ import {
 } from '@/domain'
 import { MealConflictNotice } from '../components/MealConflictNotice'
 import { useDataRevision } from '../DataProvider'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 import { SetDayCard } from '../components/QuickSet'
 import type { StringKey } from '../i18n/strings'
 
@@ -40,10 +41,12 @@ interface JustDeleted {
 }
 
 export function Nutrition() {
-  const t = useT()
+  const { t, lang } = useLang()
   const selected = useSelectedDay()
   const { day, today, isToday } = selected
   const { data, error, retry } = useDay(day)
+  /** The day's targets, shown beside each total (daily-targets.md). */
+  const targetsReading = useDailyTargets(day)
   const {
     addMeal,
     addEstimatedMeal,
@@ -107,6 +110,13 @@ export function Nutrition() {
   const estimates = meals.filter(isPatternFilled)
   const proteinGoal = goals.find((g) => g.metric === 'PROTEIN')
   const progress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
+  /*
+    With targets, every total carries its own; without, protein still shows a
+    goal the person set, as it always did.
+  */
+  const targets = targetsReading?.result.ok ? targetsReading.result.targets : undefined
+  const fmt = (n: number) => Math.round(n).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')
+  const proteinReached = targets ? convert(nutrients.protein, 'g') >= targets.proteinG : progress?.attained
 
   const remove = async (meal: Meal) => {
     const retraction = await deleteMeal(meal)
@@ -153,15 +163,33 @@ export function Nutrition() {
             deliberate and keeps the four baselines aligned.
           */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-2">
-            <Total name={t('estimate.calories')} value={showNumber(nutrients.energy, 'kcal')} />
+            <Total
+              name={t('estimate.calories')}
+              value={showNumber(nutrients.energy, 'kcal')}
+              sub={targets ? `/ ${fmt(targets.energyKcal)}` : undefined}
+            />
             <Total
               name={t('estimate.protein')}
               value={showNumber(nutrients.protein, 'g')}
-              sub={proteinGoal ? `/ ${showNumber(proteinGoal.target, 'g')} g` : 'g'}
-              good={progress?.attained}
+              sub={
+                targets
+                  ? `/ ${fmt(targets.proteinG)} g`
+                  : proteinGoal
+                    ? `/ ${showNumber(proteinGoal.target, 'g')} g`
+                    : 'g'
+              }
+              good={proteinReached}
             />
-            <Total name={t('estimate.carbs')} value={showNumber(nutrients.carbs, 'g')} sub="g" />
-            <Total name={t('estimate.fat')} value={showNumber(nutrients.fat, 'g')} sub="g" />
+            <Total
+              name={t('estimate.carbs')}
+              value={showNumber(nutrients.carbs, 'g')}
+              sub={targets ? `/ ${fmt(targets.carbsG)} g` : 'g'}
+            />
+            <Total
+              name={t('estimate.fat')}
+              value={showNumber(nutrients.fat, 'g')}
+              sub={targets ? `/ ${fmt(targets.fatG)} g` : 'g'}
+            />
           </div>
           {estimates.length > 0 && (
             <EstimatedTotals
@@ -444,8 +472,10 @@ function Total({
   return (
     <div>
       <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted">{name}</p>
-      <p className={`tabular ltr-nums pt-1 text-xl font-medium sm:text-lg ${good ? 'text-leaf' : ''}`}>
-        {value}
+      {/* The number in its own element: read on its own, and with a target
+          beside it ("/ 2,150") the figure is still just the figure. */}
+      <p className="ltr-nums pt-1 text-xl font-medium sm:text-lg">
+        <span className={`tabular ${good ? 'text-leaf' : ''}`}>{value}</span>
         {sub && <span className="ps-1 text-[0.81rem] font-normal text-ink-muted">{sub}</span>}
       </p>
     </div>

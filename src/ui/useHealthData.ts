@@ -45,6 +45,7 @@ import {
   type Meal,
   type Nutrients,
   type Objective,
+  type UserProfile,
   type Observation,
   type Sleep,
   type Workout,
@@ -175,6 +176,9 @@ export function useDay(day: string): DayState {
 }
 
 /** Write actions. Each one persists, then bumps the revision so reads re-run. */
+/** Profile saves, in the order they were made (see `saveProfile`). */
+let profileWrites: Promise<unknown> = Promise.resolve()
+
 export function useActions() {
   const { runWrite } = useDataRevision()
 
@@ -268,6 +272,46 @@ export function useActions() {
       await runWrite('that goal', () =>
         getRepositories().goals.add(buildObjectiveGoal(currentUserId(), objective)),
       )
+    },
+    [runWrite],
+  )
+
+  /**
+   * Height, year of birth, sex, activity: the facts the burn is estimated from
+   * when no watch reports one (docs/features/daily-targets.md).
+   *
+   * Merged onto the stored profile rather than replacing it, so saving one
+   * field never blanks the others; a person with no profile yet gets one.
+   */
+  const saveProfile = useCallback(
+    async (patch: Partial<Omit<UserProfile, 'userId'>>) => {
+      /*
+        One after another. Each save reads the profile, merges, writes it
+        back; two taps in quick succession (a year, then "Male") would
+        otherwise both read the old profile, and the second would put the
+        first's field back the way it was.
+      */
+      const queued = profileWrites.then(() => runWrite('that detail', async () => {
+        const repos = getRepositories()
+        const userId = currentUserId()
+        const stored = await repos.profiles.get(userId)
+        await repos.profiles.save({
+          ...(stored ?? {
+            userId,
+            displayName: '',
+            timezone: deviceZone(),
+            preferredMassUnit: 'kg',
+            preferredLengthUnit: 'cm',
+          }),
+          ...patch,
+          userId,
+        })
+      }))
+      profileWrites = queued.then(
+        () => undefined,
+        () => undefined,
+      )
+      await queued
     },
     [runWrite],
   )
@@ -447,6 +491,7 @@ export function useActions() {
     recordObservation,
     setGoal,
     setObjective,
+    saveProfile,
     resolveConflict,
     confirmEstimate,
     resolveMealVersion,

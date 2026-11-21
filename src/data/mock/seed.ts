@@ -88,6 +88,16 @@ export function buildSeed(
   displayName: 'Matan',
   timezone: ZONE,
   height: { value: 178, unit: 'cm' },
+  /*
+    Enough to estimate a burn (daily-targets.md): the sample's watch reports
+    only a few days, under the five an average needs, so without these the
+    sample day would show the setup checklist instead of its targets.
+  */
+  // Relative to the sample's own day, so the sample person is 36 in any year
+  // and a test's expected numbers do not move on the first of January.
+  birthYear: Number(day.slice(0, 4)) - 36,
+  sex: 'MALE',
+  activity: 'MODERATE',
   preferredMassUnit: 'kg',
   preferredLengthUnit: 'cm',
 }

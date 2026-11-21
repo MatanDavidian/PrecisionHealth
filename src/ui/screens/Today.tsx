@@ -56,6 +56,8 @@ import { useSearchParams } from 'react-router-dom'
 import { SampleDayLabel } from '../components/SampleDayLabel'
 import { SetDayCard } from '../components/QuickSet'
 import { Welcome } from '../components/Welcome'
+import { TargetsCard, TargetsSetupCard } from '../components/DailyTargets'
+import { useDailyTargets } from '../useDailyTargets'
 import type { StringKey } from '../i18n/strings'
 
 export function Today() {
@@ -77,6 +79,8 @@ export function Today() {
   const { data, error, retry } = useDay(day)
   const { resolveConflict, recordObservation, fillDayFromPattern, deleteMeals } = useActions()
   const { session, revision } = useDataRevision()
+  /** Daily targets (daily-targets.md): read beside the day, never in its way. */
+  const targetsReading = useDailyTargets(day)
 
   /*
     Everything the plan card needs, derived BEFORE the early returns below.
@@ -251,6 +255,21 @@ export function Today() {
   // taken the estimate out, so the two never appear together.)
   const logged = data.meals.filter((meal) => !isPatternFilled(meal))
   const estimatedDay = logged.length < data.meals.length
+  /** An estimated day, foods waiting for a look: said under the day's totals, wherever they are shown. */
+  const nutritionNotes = (
+    <>
+      {estimatedDay && <EstimatedTotals />}
+      {unconfirmed.length > 0 && (
+        <p className="pt-3 text-xs text-ink-muted">
+          {t('today.unconfirmed', { count: unconfirmed.length })}{' '}
+          <Link to="/nutrition" className="underline">
+            {t('today.reviewInNutrition')}
+          </Link>
+          .
+        </p>
+      )}
+    </>
+  )
   /*
     Quick-set on the Day tab (quick-set-a-day.md): a day with nothing on it.
     A past day always; today only from 16:00, the start of the evening, since
@@ -454,7 +473,37 @@ export function Today() {
       ) : (
         <>
 
+      {/*
+        Daily targets (daily-targets.md), first on the day: it answers the
+        question the screen is opened for. Once they exist the card takes the
+        Nutrition card's place, notes included, rather than repeating its four
+        numbers; until then the Nutrition card stays, under a checklist.
+      */}
+      {targetsReading?.result.ok ? (
+        <div className="mb-4">
+          <TargetsCard
+            targets={targetsReading.result.targets}
+            eaten={{
+              energyKcal: convert(nutrients.energy, 'kcal'),
+              proteinG: convert(nutrients.protein, 'g'),
+              carbsG: convert(nutrients.carbs, 'g'),
+              fatG: convert(nutrients.fat, 'g'),
+            }}
+            isToday={isToday}
+            dayName={dayLabel(day, today, t)}
+            extra={nutritionNotes}
+          />
+        </div>
+      ) : (
+        targetsReading && (
+          <div className="mb-4">
+            <TargetsSetupCard reading={targetsReading} />
+          </div>
+        )
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {!targetsReading?.result.ok && (
         <Card label={t('today.nutrition')}>
           <StatRow name={t('estimate.calories')} value={showNumber(nutrients.energy, 'kcal')} />
           <StatRow
@@ -468,17 +517,9 @@ export function Today() {
           />
           <StatRow name={t('estimate.carbs')} value={show(nutrients.carbs, 'g')} />
           <StatRow name={t('estimate.fat')} value={show(nutrients.fat, 'g')} />
-          {estimatedDay && <EstimatedTotals />}
-          {unconfirmed.length > 0 && (
-            <p className="pt-3 text-xs text-ink-muted">
-              {t('today.unconfirmed', { count: unconfirmed.length })}{' '}
-              <Link to="/nutrition" className="underline">
-                {t('today.reviewInNutrition')}
-              </Link>
-              .
-            </p>
-          )}
+          {nutritionNotes}
         </Card>
+        )}
 
         <Card label={t('today.activity')}>
           <StatRow

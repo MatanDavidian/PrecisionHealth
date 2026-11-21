@@ -100,6 +100,7 @@ export function YouSettings({
                 ? t('settings.lastRead', { date: weightRecordedOn })
                 : t('settings.notRecorded')
             }
+            saved={weightKg !== undefined}
             onChange={onWeight}
           />
 
@@ -114,6 +115,7 @@ export function YouSettings({
               max={200}
               decimals={1}
               note={targetNote() ?? t('settings.targetNotSet')}
+              saved={targetKg !== undefined}
               onChange={onTarget}
             />
           )}

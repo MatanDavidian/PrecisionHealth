@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AboutYou, TargetsWorking } from '../components/DailyTargets'
+import { useDailyTargets } from '../useDailyTargets'
 import { askToKeep, storagePersistence, type Persistence } from '@/data/persistence'
 import { useSearchParams } from 'react-router-dom'
 import { getRepositories } from '@/data'
@@ -48,7 +50,9 @@ export function Settings() {
   })
   const { today } = useSelectedDay()
   const { data } = useDay(today)
-  const { recordObservation, setGoal, setObjective } = useActions()
+  const { recordObservation, setGoal, setObjective, saveProfile } = useActions()
+  /** What the daily targets are worked out from, and the working (daily-targets.md). */
+  const targetsReading = useDailyTargets(today)
 
   const goals = data?.goals ?? []
   const weightTarget = goalFor(goals, 'WEIGHT')
@@ -274,6 +278,16 @@ export function Settings() {
                   })
                 }
               />
+              {targetsReading && (
+                <>
+                  <AboutYou
+                    reading={targetsReading}
+                    thisYear={Number(today.slice(0, 4))}
+                    onSave={(patch) => void saveProfile(patch)}
+                  />
+                  <TargetsWorking reading={targetsReading} />
+                </>
+              )}
               <Card label={t('settings.language')}>
                 <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map((option) => (

@@ -135,6 +135,12 @@ export function createSupabaseRepositories(
         if (error) throw new Error(error.message)
         return (data as Row<UserProfile> | null)?.data
       },
+      save: async (profile) => {
+        const { error } = await client
+          .from('profiles')
+          .upsert({ user_id: profile.userId, data: profile, updated_at: new Date().toISOString() })
+        if (error) throw new Error(error.message)
+      },
     },
 
     meals: {
@@ -185,6 +191,18 @@ export function createSupabaseRepositories(
         if (code) query = query.eq('code', code)
         return rowsOf<Observation>(unwrap(await query))
       },
+      listByRange: async (userId, range, code) =>
+        rowsOf<Observation>(
+          unwrap(
+            await client
+              .from('observations')
+              .select('data')
+              .eq('user_id', userId)
+              .eq('code', code)
+              .gte('day', range.from)
+              .lte('day', range.to),
+          ),
+        ),
       latest: async (userId, code) => {
         // Newest day first, then every candidate from that day — the caller
         // resolves precedence (D5), so we must not narrow it to one record.

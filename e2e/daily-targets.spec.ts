@@ -1,0 +1,174 @@
+import { expect, test, type Page } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
+import { dayKey, open, switchToHebrew } from './app'
+
+/**
+ * Daily targets (docs/features/daily-targets.md).
+ *
+ * The sample person: losing fat, 72.8 kg, 178 cm, 36, a man, on his feet most
+ * of the day, and a protein goal of 145 g. His watch reports too few days to
+ * average, so the burn is estimated: (10 × 72.8 + 6.25 × 178 − 5 × 36 + 5) ×
+ * 1.5 = 2,498, about 2,500. Less 350 for losing fat: 2,150 kcal. Fat is 30%
+ * of that, 70 g; carbs take the rest, 235 g.
+ */
+
+const card = (page: Page) => page.getByTestId('targets-card')
+
+/** The day's calories as the card shows them, as a number. */
+async function eatenKcal(page: Page): Promise<number> {
+  return Number((await card(page).locator('.font-display').first().innerText()).replace(/[^\d]/g, ''))
+}
+
+/** As though the profile had never been filled in: no height, age, sex or activity. */
+async function forgetProfile(page: Page) {
+  await page.evaluate(async () => {
+    const db: IDBDatabase = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('timeline-health')
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const tx = db.transaction('profiles', 'readwrite')
+    tx.objectStore('profiles').clear()
+    await new Promise((resolve) => (tx.oncomplete = resolve))
+    db.close()
+  })
+}
+
+test('Today shows the day against its targets, and where they came from', async ({ page }) => {
+  await open(page, '/today')
+  await expect(card(page)).toBeVisible({ timeout: 15_000 })
+  await expect(card(page).getByRole('heading', { name: "Today's targets" })).toBeVisible()
+  await expect(card(page).getByText('of 2,150 kcal')).toBeVisible()
+
+  // What is left is the target less what is eaten, unless the day is already near it.
+  const eaten = await eatenKcal(page)
+  const status = page.getByTestId('targets-status')
+  if (Math.abs(2150 - eaten) <= 2150 * 0.05) await expect(status).toHaveText('On target')
+  else if (eaten < 2150) await expect(status).toHaveText(`${(2150 - eaten).toLocaleString('en-US')} left`)
+  else await expect(status).toHaveText(`${(eaten - 2150).toLocaleString('en-US')} over`)
+
+  // Each macro against its own target; protein's is the goal he set.
+  await expect(card(page).getByText(/^[\d,]+ \/ 145 g$/)).toBeVisible()
+  await expect(card(page).getByText(/^[\d,]+ \/ 235 g$/)).toBeVisible()
+  await expect(card(page).getByText(/^[\d,]+ \/ 70 g$/)).toBeVisible()
+  await expect(card(page).getByRole('progressbar')).toHaveCount(4)
+
+  await expect(
+    card(page).getByText(
+      'Lose fat, keep muscle: 350 kcal under the 2,500 you burn on a typical day, estimated from your body and activity.',
+    ),
+  ).toBeVisible()
+  // The card replaces the Nutrition card rather than repeating its four numbers.
+  await expect(page.locator('main section').filter({ hasText: /^Nutrition/ })).toHaveCount(0)
+})
+
+test('a past day says what it came to: under or over, not "left"', async ({ page }) => {
+  await open(page, `/today?d=${dayKey(-3)}`)
+  await expect(card(page)).toBeVisible({ timeout: 15_000 })
+  await expect(card(page).getByRole('heading', { name: /^Targets on / })).toBeVisible()
+  await expect(page.getByTestId('targets-status')).toHaveText(/^([\d,]+ (under|over)|On target)$/)
+})
+
+test('"How?" opens the working, every step of it', async ({ page }) => {
+  await open(page, '/today')
+  await card(page).getByRole('link', { name: 'How?' }).click()
+  await expect(page).toHaveURL(/\/settings\?tab=you#daily-targets$/)
+
+  const tiles = page.getByTestId('targets-tiles')
+  await expect(tiles.getByText('2,150')).toBeVisible({ timeout: 15_000 })
+  await expect(tiles.getByText('145')).toBeVisible()
+  await expect(page.getByText('You burn about 2,500 kcal a day: 1,666 at rest, × 1.5 for “On my feet”.')).toBeVisible()
+  await expect(page.getByText('Lose fat, keep muscle takes 350 kcal off that: 2,150 kcal.')).toBeVisible()
+  await expect(page.getByText('Protein: the 145 g goal you set.')).toBeVisible()
+  await expect(page.getByText('A starting point, not medical advice.')).toBeVisible()
+})
+
+test('a more active day moves the target, at once', async ({ page }) => {
+  await open(page, '/settings')
+  const tiles = page.getByTestId('targets-tiles')
+  await expect(tiles.getByText('2,150')).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: /^Very active/ }).click()
+  // 1,665.5 × 1.7 − 350 = 2,481, to the nearest 10.
+  await expect(tiles.getByText('2,480')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('button', { name: /^Very active/ })).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('without the details, a checklist; filling them in brings the targets', async ({ page }) => {
+  await open(page, '/today')
+  await expect(card(page)).toBeVisible({ timeout: 15_000 })
+  await forgetProfile(page)
+  await open(page, '/today')
+
+  const setup = page.getByTestId('targets-setup')
+  await expect(setup.getByRole('heading', { name: 'A few details, and your targets are ready' })).toBeVisible({
+    timeout: 15_000,
+  })
+  // What is already known is ticked, and said.
+  await expect(setup.getByText('Your goal: Lose fat, keep muscle')).toBeVisible()
+  await expect(setup.getByText('Your weight: 72.8 kg')).toBeVisible()
+  await expect(setup.getByText('Height, age and activity, or a watch that reports calories burned')).toBeVisible()
+  await expect(card(page)).toHaveCount(0)
+
+  const { violations } = await new AxeBuilder({ page })
+    .include('[data-testid="targets-setup"]')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .options({ preload: false })
+    .analyze()
+  // The brand orange behind the button is a recorded exception (accessibility.spec.ts).
+  expect(
+    violations.flatMap((v) => v.nodes.filter((n) => v.id !== 'color-contrast' || !/#c2673e/.test(n.failureSummary ?? ''))),
+  ).toEqual([])
+
+  await setup.getByRole('link', { name: 'Set them up' }).click()
+  await expect(page).toHaveURL(/\/settings\?tab=you#about-you$/)
+
+  const height = page.getByRole('spinbutton', { name: 'Height' })
+  await expect(height).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('Not set yet').first()).toBeVisible()
+  // Typed as a person types: cleared, then the number. (Filling in the value
+  // already shown, as a placeholder, would raise no change at all.)
+  await height.fill('')
+  await height.pressSequentially('178')
+  await height.press('Enter')
+  const year = page.getByRole('spinbutton', { name: 'Year of birth' })
+  await year.fill('')
+  await year.pressSequentially(String(Number(dayKey(0).slice(0, 4)) - 36))
+  await year.press('Enter')
+  await page.getByRole('button', { name: 'Male', exact: true }).click()
+  await page.getByRole('button', { name: /^On my feet/ }).click()
+
+  await expect(page.getByTestId('targets-tiles').getByText('2,150')).toBeVisible({ timeout: 15_000 })
+  await open(page, '/today')
+  await expect(card(page).getByText('of 2,150 kcal')).toBeVisible({ timeout: 15_000 })
+})
+
+test('a height of exactly the starting number can still be saved', async ({ page }) => {
+  await open(page, '/today')
+  await expect(card(page)).toBeVisible({ timeout: 15_000 })
+  await forgetProfile(page)
+  await open(page, '/settings')
+  const height = page.getByRole('spinbutton', { name: 'Height' })
+  await expect(height).toHaveValue('170', { timeout: 15_000 })
+  // Typing the shown number and confirming it is saying "that is me".
+  await height.fill('')
+  await height.pressSequentially('170')
+  await height.press('Enter')
+  await expect(page.getByText('Not set yet')).toHaveCount(1) // the year of birth, still unset
+})
+
+test('the Nutrition tab shows each total against its target', async ({ page }) => {
+  await open(page, '/nutrition')
+  await expect(page.getByText('/ 2,150')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('/ 145 g')).toBeVisible()
+  await expect(page.getByText('/ 235 g')).toBeVisible()
+  await expect(page.getByText('/ 70 g')).toBeVisible()
+})
+
+test('in Hebrew, the card reads right to left', async ({ page }) => {
+  await switchToHebrew(page)
+  await open(page, '/today')
+  await expect(card(page).getByRole('heading', { name: 'היעדים של היום' })).toBeVisible({ timeout: 15_000 })
+  await expect(card(page).getByText('מתוך 2,150 קלוריות')).toBeVisible()
+  await expect(card(page).getByRole('link', { name: 'איך?' })).toBeVisible()
+  await expect(page.locator('html[dir="rtl"]')).toHaveCount(1)
+})

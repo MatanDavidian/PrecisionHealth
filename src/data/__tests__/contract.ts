@@ -241,6 +241,54 @@ export function runRepositoryContract(
       expect(hrv).toHaveLength(0)
     })
 
+    it('listByRange() returns one code across days, and nothing outside the range', async () => {
+      const { ctx, day } = await begin()
+      await ctx.repositories.observations.add(observationFor(ctx, day(0), 'r-before', 74))
+      await ctx.repositories.observations.add(observationFor(ctx, day(1), 'r-first', 73.5))
+      await ctx.repositories.observations.add(observationFor(ctx, day(2), 'r-second-a', 73.2, 'SMART_SCALE'))
+      await ctx.repositories.observations.add(observationFor(ctx, day(2), 'r-second-b', 73.9, 'APPLE_HEALTH'))
+      await ctx.repositories.observations.add(observationFor(ctx, day(4), 'r-after', 72.9))
+
+      const inRange = mine(
+        ctx,
+        await ctx.repositories.observations.listByRange(ctx.userId, { from: day(1), to: day(3) }, 'WEIGHT'),
+      )
+      // Every candidate, both of day 2's included: precedence stays the caller's (D5).
+      expect(inRange.map((o) => o.id.slice(ctx.prefix.length + 1)).sort()).toEqual([
+        'r-first',
+        'r-second-a',
+        'r-second-b',
+      ])
+      const otherCode = mine(
+        ctx,
+        await ctx.repositories.observations.listByRange(ctx.userId, { from: day(0), to: day(4) }, 'HRV'),
+      )
+      expect(otherCode).toHaveLength(0)
+    })
+
+    it('saves a profile and reads the same one back', async () => {
+      const { ctx } = await begin()
+      const before = await ctx.repositories.profiles.get(ctx.userId)
+      const profile = {
+        ...(before ?? {
+          userId: ctx.userId,
+          displayName: '',
+          timezone: ZONE,
+          preferredMassUnit: 'kg' as const,
+          preferredLengthUnit: 'cm' as const,
+        }),
+        height: { value: 171, unit: 'cm' as const },
+        birthYear: 1988,
+        sex: 'FEMALE' as const,
+        activity: 'MODERATE' as const,
+      }
+      await ctx.repositories.profiles.save(profile)
+      expect(await ctx.repositories.profiles.get(ctx.userId)).toEqual(profile)
+      // Saving again replaces rather than adds: one profile per person.
+      await ctx.repositories.profiles.save({ ...profile, activity: 'HIGH' })
+      expect((await ctx.repositories.profiles.get(ctx.userId))?.activity).toBe('HIGH')
+    })
+
     it('latest() returns candidates from exactly one day', async () => {
       const { ctx, day } = await begin()
       await ctx.repositories.observations.add(observationFor(ctx, day(0), 'old', 74))

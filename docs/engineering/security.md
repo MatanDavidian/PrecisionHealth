@@ -152,6 +152,32 @@ removing it from history comes last and does not undo the exposure.
 | 6 | **HSTS for subdomains** (`includeSubDomains`) | Once `www` redirects to the apex over HTTPS (still owed), every subdomain can be held to HTTPS too | Claude | S |
 | 7 | **An outside penetration test** before the coaches feature, or before handling another person's data in any new way | A second pair of eyes; sharing data between accounts is where row-level security is easiest to get wrong | Owner | M + C |
 
+## Still open (set aside 2026-11-21, for later)
+
+The owner has no time for these now. None is urgent; each is a loose end of
+the 2026-11-17 review.
+
+1. **Confirm the first run of the scans.** The `Security` workflow has not
+   run yet: it starts with the next push. Gitleaks may raise a false alarm
+   on that first run. One test file that builds a throwaway key
+   (`supabase/test/_stub.ts`) is allowed in `.gitleaks.toml` in advance, but
+   that could not be checked locally. If something else is flagged, read
+   the redacted log: a test value goes into `.gitleaks.toml` by its exact
+   path; a real key is rotated first, then removed. CodeQL's findings, if
+   any, are under the repository's Security tab. (Claude, after the push.)
+2. **The two GitHub settings** (#4 above): repository → Settings → Code
+   security → **Dependabot alerts** and **Secret scanning with push
+   protection**. Free for a public repository. With them on, a security fix
+   arrives as a pull request at once, and a pasted key is refused before it
+   is ever pushed. (Owner, a few minutes.)
+3. **A static scan run locally was not done.** Installing Semgrep and
+   Gitleaks on the owner's machine needed a permission that was not given,
+   and it was not worked around. The same patterns were searched for by
+   hand instead (see the top of this page): nothing found beyond the CDN
+   import, since fixed. Once item 1 is green, CodeQL and Gitleaks in CI
+   cover this, and a local run is optional. (Claude, only if the owner
+   allows the install.)
+
 ## Keeping it true
 
 - Every new table: row-level security on, a policy per action, and a

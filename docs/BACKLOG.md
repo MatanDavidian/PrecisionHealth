@@ -39,6 +39,7 @@ picker).
 | HSTS for subdomains | S | After the `www` redirect (`engineering/security.md`, #6) |
 | Split the app script | S–M | One 567 KB script (170 KB compressed); loading the screens a first visit does not need later takes about a third off (`engineering/performance.md`) |
 | A load test on a staging project | M | Before a public launch; never against production, where every analysis costs money (`engineering/performance.md`) |
+| Check the first run of the `Security` workflow | S | After the next push: Gitleaks may flag a test value on its first run, and CodeQL may report findings under the Security tab (`engineering/security.md`, "Still open") |
 
 ## Tasks for the owner
 
@@ -55,7 +56,7 @@ picker).
 | A Gmail filter on `to:support@vimetry.app`, never spam | S | One support message has already landed out of sight |
 | The leftover test subscription on `davidianmatan+phtest` | S | Refund it, or keep it for testing as a subscriber |
 | Two-factor sign-in on GitHub, Supabase, Cloudflare, Play Console, Google Cloud and OpenAI | S | The likeliest breach is a stolen password, not the code; GitHub alone can deploy (`engineering/security.md`, #1) |
-| Turn on Dependabot alerts, and secret scanning with push protection | S | GitHub → the repository → Settings → Code security. Free for a public repository: a security fix opens a pull request at once, and a key is refused before it is pushed (`engineering/security.md`, #4) |
+| Turn on Dependabot alerts, and secret scanning with push protection | S | GitHub → the repository → Settings → Code security. Free for a public repository: a security fix opens a pull request at once, and a key is refused before it is pushed (`engineering/security.md`, #4 and "Still open"). Set aside by the owner 2026-11-21, for later |
 | Check the sign-in rate limits in the Supabase dashboard | S | Set outside the repository, not checked in the review (`engineering/security.md`, #5) |
 | Raise the trial spend ceiling on a launch day | S | $10 a day is about 90 free analyses, 9–10 new people; `DAILY_BUDGET_MICROS` in the function secrets (`engineering/performance.md`) |
 

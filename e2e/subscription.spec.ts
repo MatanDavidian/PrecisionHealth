@@ -133,7 +133,7 @@ test('on our account, the tab is the plan and the model — the own-key setup is
   // "Analyze automatically" lives with the model choice now, and there is no separate Analysis card.
   const accuracy = page.locator('section').filter({ hasText: 'Accuracy or speed' })
   await expect(accuracy.getByLabel(/Analyze automatically/)).toBeVisible()
-  await expect(page.getByText('Analysis', { exact: true })).toHaveCount(0)
+  await expect(page.locator('section').getByText('Analysis', { exact: true })).toHaveCount(0)
 
   // The own key is one closed line, not a form with setup steps.
   const ownKey = page.getByText('Use your own OpenAI key instead')
@@ -149,6 +149,6 @@ test('on their own key, the key and model are up front as before', async ({ page
   await signIn(page, { trialUsed: 10 })
   await openPlan(page)
   await expect(page.locator('#apiKey')).toBeVisible()
-  await expect(page.getByText('Analysis', { exact: true })).toBeVisible()
+  await expect(page.locator('section').getByText('Analysis', { exact: true })).toBeVisible()
   await expect(page.getByText('Use your own OpenAI key instead')).toHaveCount(0)
 })

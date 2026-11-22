@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Reminders } from '../components/Reminders'
+import { remindersDeployed } from '@/data/reminders'
 import { AboutYou, TargetsWorking } from '../components/DailyTargets'
 import { useDailyTargets } from '../useDailyTargets'
 import { askToKeep, storagePersistence, type Persistence } from '@/data/persistence'
@@ -25,13 +26,22 @@ import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay } from '../useSelectedDay'
 import { convert, directionToward, goalChoiceOf, goalFor } from '@/domain'
 
-type SettingsTab = 'you' | 'ai' | 'account'
+type SettingsTab = 'goals' | 'reminders' | 'ai' | 'account'
 
-const TABS: { tab: SettingsTab; label: StringKey; blurb: StringKey }[] = [
-  { tab: 'you', label: 'settings.tabYou', blurb: 'settings.blurbYou' },
-  { tab: 'ai', label: 'settings.tabAi', blurb: 'settings.blurbAi' },
-  { tab: 'account', label: 'settings.tabAccount', blurb: 'settings.blurbAccount' },
+/**
+ * Four tabs (owner's layout, 2026-11-22): what you are working towards, when
+ * to be reminded, how photos are read, and the account (with the language at
+ * its top). `short` is the phone's label, where four have to share one row.
+ */
+const TABS: { tab: SettingsTab; label: StringKey; short: StringKey; blurb: StringKey }[] = [
+  { tab: 'goals', label: 'settings.tabGoals', short: 'settings.tabGoals', blurb: 'settings.blurbGoals' },
+  { tab: 'reminders', label: 'settings.tabReminders', short: 'settings.tabReminders', blurb: 'settings.blurbReminders' },
+  { tab: 'ai', label: 'settings.tabAi', short: 'settings.tabAiShort', blurb: 'settings.blurbAi' },
+  { tab: 'account', label: 'settings.tabAccount', short: 'settings.tabAccountShort', blurb: 'settings.blurbAccount' },
 ]
+
+/** Links made before the split still land somewhere sensible: "you" was the goals. */
+const LEGACY_TABS: Record<string, SettingsTab> = { you: 'goals' }
 
 const label = 'block text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-ink-muted pb-1'
 const field =
@@ -44,11 +54,29 @@ export function Settings() {
   const [params, setParams] = useSearchParams()
   /** Back from a Lemon Squeezy checkout: open on the subscription and wait for it. */
   const justSubscribed = params.get('billing') === 'success'
-  const [tab, setTab] = useState<SettingsTab>(() => {
+  const [chosenTab, setTab] = useState<SettingsTab>(() => {
     const asked = params.get('tab')
     if (justSubscribed) return 'ai'
-    return TABS.some((option) => option.tab === asked) ? (asked as SettingsTab) : 'you'
+    const wanted = asked && LEGACY_TABS[asked] ? LEGACY_TABS[asked] : asked
+    return TABS.some((option) => option.tab === wanted) ? (wanted as SettingsTab) : 'goals'
   })
+  /**
+   * Reminders need the server side. Until it is deployed (a fork, a local
+   * build) there is no Reminders tab, rather than an empty one. Assumed
+   * there while asking, as it is in production, so the tab row does not jump.
+   */
+  const [remindersLive, setRemindersLive] = useState(true)
+  useEffect(() => {
+    let cancelled = false
+    void remindersDeployed().then((live) => {
+      if (!cancelled) setRemindersLive(live)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  const tabs = remindersLive ? TABS : TABS.filter((option) => option.tab !== 'reminders')
+  const tab: SettingsTab = tabs.some((option) => option.tab === chosenTab) ? chosenTab : 'goals'
   const { today } = useSelectedDay()
   const { data } = useDay(today)
   const { recordObservation, setGoal, setGoalChoice, saveProfile } = useActions()
@@ -218,10 +246,10 @@ export function Settings() {
       </header>
 
       {/*
-        Three groups, because the screen had grown to seven cards with nothing
-        saying which belonged together. The split is by what a person came to
-        do: change something about themselves, change how photos are read, or
-        deal with the account.
+        Four groups, by what a person came to do: their goal and what follows
+        from it, their reminders, how photos are read, or the account (and the
+        language, at its top). The goals tab had grown long enough to split
+        (2026-11-22).
       */}
       <div className="flex flex-wrap items-start gap-x-7 gap-y-5">
         {/*
@@ -233,11 +261,13 @@ export function Settings() {
           level of navigation reads as underneath the first instead of beside it.
         */}
         <nav aria-label={t('settings.title')} className="flex w-full shrink-0 gap-1 rounded-full bg-card p-1 sm:w-[188px] sm:flex-col sm:rounded-none sm:bg-transparent sm:p-0">
-          {TABS.map((option) => (
+          {tabs.map((option) => (
             <button
               key={option.tab}
               type="button"
               onClick={() => setTab(option.tab)}
+              // The full name on every screen; the short one a phone shows is part of it.
+              aria-label={t(option.label)}
               aria-current={tab === option.tab ? 'page' : undefined}
               className={`flex-1 rounded-full py-2 text-center text-[12.5px] transition-colors sm:flex-none sm:rounded-xl sm:px-3.5 sm:py-[9px] sm:text-start sm:text-sm ${
                 tab === option.tab
@@ -245,13 +275,14 @@ export function Settings() {
                   : 'text-ink-soft sm:text-ink-muted sm:hover:bg-card-soft/60'
               }`}
             >
-              {t(option.label)}
+              <span className="sm:hidden">{t(option.short)}</span>
+              <span className="hidden sm:inline">{t(option.label)}</span>
             </button>
           ))}
         </nav>
 
         <div className="grid min-w-[300px] flex-1 gap-4">
-          {tab === 'you' && (
+          {tab === 'goals' && (
             <>
               <YouSettings
                 choice={choice}
@@ -300,30 +331,10 @@ export function Settings() {
                   />
                 </>
               )}
-              <Reminders session={session} />
-              <Card label={t('settings.language')}>
-                <div className="flex flex-wrap gap-2">
-                  {LANGUAGES.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setLang(option.value)}
-                      aria-pressed={lang === option.value}
-                      lang={option.value}
-                      className={`rounded-full border px-[15px] py-[7px] text-[13.5px] transition-colors ${
-                        lang === option.value
-                          ? 'border-ink bg-ink font-medium text-canvas'
-                          : 'border-hairline bg-surface hover:bg-card-soft'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="pt-3 text-xs text-ink-muted">{t('settings.languageHint')}</p>
-              </Card>
             </>
           )}
+
+          {tab === 'reminders' && <Reminders session={session} />}
 
           {tab === 'ai' && (
             <>
@@ -842,6 +853,27 @@ export function Settings() {
 
           {tab === 'account' && (
             <>
+              <Card label={t('settings.language')}>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGES.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setLang(option.value)}
+                      aria-pressed={lang === option.value}
+                      lang={option.value}
+                      className={`rounded-full border px-[15px] py-[7px] text-[13.5px] transition-colors ${
+                        lang === option.value
+                          ? 'border-ink bg-ink font-medium text-canvas'
+                          : 'border-hairline bg-surface hover:bg-card-soft'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="pt-3 text-xs text-ink-muted">{t('settings.languageHint')}</p>
+              </Card>
               <Card label={t('settings.account')}>
                 {!authAvailable ? (
                   <p className="text-sm text-ink-muted">{t('settings.noBackend')}</p>

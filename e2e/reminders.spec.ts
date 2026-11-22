@@ -103,24 +103,25 @@ const mealSwitch = (page: Page) => page.getByRole('switch', { name: 'End of the 
 
 test('signed out, the card says reminders need an account', async ({ page }) => {
   await fakeFunction(page)
-  await open(page, '/settings')
+  await open(page, '/settings?tab=reminders')
   await expect(page.getByText(/Reminders come from our server/)).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('link', { name: 'Sign in' }).last()).toHaveAttribute('href', '/signin?next=/settings')
 })
 
-test('before the server side is deployed, there is no card at all', async ({ page }) => {
+test('before the server side is deployed, there is no Reminders tab at all', async ({ page }) => {
   await fakeFunction(page, false)
-  await open(page, '/settings')
-  await expect(page.getByRole('heading', { name: /Settings/ }).first()).toBeVisible({ timeout: 15_000 })
-  await page.waitForTimeout(1_000)
-  await expect(page.getByText('Reminders', { exact: true })).toHaveCount(0)
+  await open(page, '/settings?tab=reminders')
+  // Asked for the Reminders tab, it opens on Goals instead.
+  await expect(page.getByRole('button', { name: 'Goals' })).toHaveAttribute('aria-current', 'page', { timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Reminders' })).toHaveCount(0)
+  await expect(card(page)).toHaveCount(0)
 })
 
 test('turning the reminder on asks this device, subscribes it, and saves the choice', async ({ page }) => {
   await fakePush(page)
   const tables = await signIn(page, { keep: true })
   const asked = await fakeFunction(page)
-  await openSignedIn(page, '/settings')
+  await openSignedIn(page, '/settings?tab=reminders')
 
   await expect(mealSwitch(page)).toHaveAttribute('aria-checked', 'false', { timeout: 15_000 })
   // Off until switched on, at 22:30 unless changed.
@@ -149,7 +150,7 @@ test('turning both off stops this device', async ({ page }) => {
   await fakePush(page)
   await signIn(page, { keep: true })
   const asked = await fakeFunction(page)
-  await openSignedIn(page, '/settings')
+  await openSignedIn(page, '/settings?tab=reminders')
   await mealSwitch(page).click()
   await expect(mealSwitch(page)).toHaveAttribute('aria-checked', 'true', { timeout: 15_000 })
   await mealSwitch(page).click()
@@ -162,7 +163,7 @@ test('when the person says no to notifications, nothing is saved and the card sa
   await fakePush(page, 'denied')
   const tables = await signIn(page, { keep: true })
   const asked = await fakeFunction(page)
-  await openSignedIn(page, '/settings')
+  await openSignedIn(page, '/settings?tab=reminders')
   await mealSwitch(page).click()
   await expect(page.getByRole('alert').filter({ hasText: /Notifications are blocked/ })).toBeVisible({ timeout: 15_000 })
   await expect(mealSwitch(page)).toHaveAttribute('aria-checked', 'false')
@@ -179,7 +180,7 @@ test.describe('on an iPhone, in a Safari tab', () => {
     await fakePush(page, 'granted', false)
     await signIn(page, { keep: true })
     await fakeFunction(page)
-    await openSignedIn(page, '/settings')
+    await openSignedIn(page, '/settings?tab=reminders')
     await expect(card(page).getByText(/reminders need Vimetry on your Home Screen/)).toBeVisible({ timeout: 15_000 })
   })
 })
@@ -188,7 +189,7 @@ test('the card passes an accessibility scan, and reads in Hebrew', async ({ page
   await fakePush(page)
   await signIn(page, { keep: true })
   await fakeFunction(page)
-  await openSignedIn(page, '/settings')
+  await openSignedIn(page, '/settings?tab=reminders')
   await expect(mealSwitch(page)).toBeVisible({ timeout: 15_000 })
   const { violations } = await new AxeBuilder({ page })
     .include('#reminders')
@@ -197,9 +198,11 @@ test('the card passes an accessibility scan, and reads in Hebrew', async ({ page
     .analyze()
   expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([])
 
-  // Signed in, the language is chosen on the Settings card itself.
+  // Signed in, the language is chosen at the top of the Account tab.
+  await openSignedIn(page, '/settings?tab=account')
   await page.getByRole('button', { name: 'עברית' }).first().click()
   await page.locator('html[dir="rtl"]').waitFor()
+  await page.getByRole('button', { name: 'תזכורות' }).click()
   await expect(page.getByRole('switch', { name: 'בסוף היום, אם לא נרשם כלום' })).toBeVisible({ timeout: 15_000 })
   await expect(card(page).getByText('תזכורות', { exact: true })).toBeVisible()
 })
@@ -208,7 +211,7 @@ test('a lunch reminder: switched on, its own time, and the usual meals saved for
   await fakePush(page)
   const tables = await signIn(page, { keep: true })
   await fakeFunction(page)
-  await openSignedIn(page, '/settings')
+  await openSignedIn(page, '/settings?tab=reminders')
 
   const lunch = page.getByRole('switch', { name: 'Lunch' })
   await expect(lunch).toHaveAttribute('aria-checked', 'false', { timeout: 15_000 })

@@ -131,7 +131,7 @@ They are split by how often they move:
 
 - **Today → Activity** keeps *Burned, total*, because it is a fact about a day
   and you set it daily.
-- **Settings → You** keeps the goal and both weights, because they are facts
+- **Settings → Goals** (once **You**) keeps the goal and both weights, because they are facts
   about a person that you set once and revisit rarely.
 
 The balance strip went with the card. It is no loss: the week view answers "am

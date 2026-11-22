@@ -119,7 +119,7 @@ test('inside the Android app there is no own-key way around the account', async 
 
 test('in Hebrew, the waiting photo speaks Hebrew', async ({ page }) => {
   await stubSupabase(page)
-  await openSignedOut(page, '/settings')
+  await openSignedOut(page, '/settings?tab=account')
   await page.getByRole('button', { name: 'עברית' }).click()
   await page.locator('html[dir="rtl"]').waitFor()
   await page.goto('/log')

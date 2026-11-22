@@ -205,7 +205,7 @@ export function TargetsCard({
         <h2 id="targets-title" className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">
           {isToday ? t('targets.today') : t('targets.onDay', { day: dayName })}
         </h2>
-        <Link to="/settings?tab=you#daily-targets" className="text-xs text-ink-soft underline underline-offset-2">
+        <Link to="/settings?tab=goals#daily-targets" className="text-xs text-ink-soft underline underline-offset-2">
           {t('targets.how')}
         </Link>
       </div>
@@ -335,7 +335,7 @@ export function TargetsSetupCard({ reading }: { reading: TargetsReading }) {
       </h2>
       <Checklist input={reading.input} result={reading.result} />
       <Link
-        to="/settings?tab=you#about-you"
+        to="/settings?tab=goals#about-you"
         className="mt-4 inline-flex rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-surface"
       >
         {t('targets.missing.setUp')}

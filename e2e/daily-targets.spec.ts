@@ -73,7 +73,7 @@ test('a past day says what it came to: under or over, not "left"', async ({ page
 test('"How?" opens the working, every step of it', async ({ page }) => {
   await open(page, '/today')
   await card(page).getByRole('link', { name: 'How?' }).click()
-  await expect(page).toHaveURL(/\/settings\?tab=you#daily-targets$/)
+  await expect(page).toHaveURL(/\/settings\?tab=goals#daily-targets$/)
 
   const tiles = page.getByTestId('targets-tiles')
   await expect(tiles.getByText('2,150')).toBeVisible({ timeout: 15_000 })
@@ -121,7 +121,7 @@ test('without the details, a checklist; filling them in brings the targets', asy
   ).toEqual([])
 
   await setup.getByRole('link', { name: 'Set them up' }).click()
-  await expect(page).toHaveURL(/\/settings\?tab=you#about-you$/)
+  await expect(page).toHaveURL(/\/settings\?tab=goals#about-you$/)
 
   const height = page.getByRole('spinbutton', { name: 'Height' })
   await expect(height).toBeVisible({ timeout: 15_000 })

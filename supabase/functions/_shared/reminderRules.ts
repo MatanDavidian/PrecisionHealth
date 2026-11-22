@@ -152,7 +152,7 @@ export function reminderMessage(kind: MessageKind, lang: string | null | undefin
       return {
         title: 'Vimetry',
         body: he ? 'כך תיראה תזכורת.' : 'This is how a reminder will look.',
-        url: '/settings?tab=you',
+        url: '/settings?tab=reminders',
         tag: 'vimetry-test',
       }
   }

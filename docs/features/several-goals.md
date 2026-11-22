@@ -42,7 +42,7 @@ keep, gain (build muscle), or none (ungraded), the same five as before.
 
 ## UX
 
-- **Settings → Your goal:** "Your weight" as a row of four pills that
+- **Settings → Goals → Your goal:** "Your weight" as a row of four pills that
   behave as radio buttons (one is dark); "Also working on · any, or none"
   as three toggles. Under them, one or two sentences saying what the
   combination means ("Losing while keeping muscle: a gentler deficit, so

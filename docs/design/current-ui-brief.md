@@ -273,7 +273,7 @@ URL (`/today?view=week`).
 ### Where the numbers live
 
 There is no panel at the top of Today. What changes daily lives on the day
-view; what rarely changes lives in Settings → You.
+view; what rarely changes lives in Settings → Goals.
 
 - **Activity card** gains a **Burned, total** row. Unset it reads *"Set it"*
   with *"Until you set this, nothing is compared against it — the tracker read
@@ -282,8 +282,10 @@ view; what rarely changes lives in Settings → You.
   **Active kcal** row above it: that is what a tracker reports for movement,
   this is everything the body burned, and only the second one is what the week
   measures eating against.
-- **Settings → You** holds the goal (five pills), Current and Target weight as
-  steppers, and Language.
+- **Settings → Goals** holds the goal (two questions since 2026-11-22: the
+  weight, and what else), Current and Target weight as steppers, the details
+  about you, and the daily targets' working. Language moved to the top of
+  Account & data.
 
 The sidebar entry for Today reads **Week** while the week view is showing, so
 the highlighted item names what is on screen.
@@ -338,12 +340,28 @@ The header carries no "Log a meal" button. Log is a top-level destination in
 both the sidebar and the bottom bar, so a second route to it on the screen next
 door was a duplicate paying for itself in width.
 
-### Settings, in three tabs
+### Settings, in four tabs
 
-A vertical nav at 188px — **You · Photo analysis · Account & data** — with the
-subtitle under the title changing to match. Seven cards had grown up with
-nothing saying which belonged together; the split is by what someone came to
-do.
+A vertical nav at 188px — **Goals · Reminders · Photo analysis · Account &
+data** — with the subtitle under the title changing to match. Seven cards had
+grown up with nothing saying which belonged together; the split is by what
+someone came to do.
+
+On 2026-11-22 the old **You** tab had grown too long (goal, weight, details
+about you, daily targets, reminders, language), and the owner had it split:
+
+- **Goals** (where Settings opens): the goal, the weight, about you, and the
+  daily targets' working.
+- **Reminders**: the meal reminders and the evening ones. Shown only once the
+  server side is deployed, so a fork or a local build has no empty tab.
+- **Account & data** now starts with **Language**: set once, and it belongs
+  with the account rather than with a goal.
+
+On a phone the nav is a pill row, and four long names do not fit in 390px, so
+it shows short ones: **Goals · Reminders · Analysis · Account**. Each button's
+accessible name is still the full one, and each short name is part of its full
+one (so the spoken name contains the visible one, WCAG 2.5.3). Old links
+(`?tab=you`) open Goals.
 
 ### (Removed) The plan card
 

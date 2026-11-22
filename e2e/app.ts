@@ -96,7 +96,8 @@ export const open = async (page: Page, path: string) => {
  * in English the whole time. Clicking the control is slower and cannot lie.
  */
 export async function switchToHebrew(page: Page) {
-  await open(page, '/settings')
+  // The language sits at the top of the Account tab.
+  await open(page, '/settings?tab=account')
   await page.getByRole('button', { name: 'עברית' }).click()
   await page.locator('html[dir="rtl"]').waitFor()
 }

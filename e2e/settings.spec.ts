@@ -42,7 +42,7 @@ test('the goal survives a reload, because it belongs to the person', async ({ pa
 })
 
 test('switching language turns the whole app over, and back', async ({ page }) => {
-  await open(page, '/settings')
+  await open(page, '/settings?tab=account')
   await page.getByRole('button', { name: 'עברית' }).click()
 
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
@@ -53,7 +53,7 @@ test('switching language turns the whole app over, and back', async ({ page }) =
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
   await expect(page.getByRole('heading', { name: 'תזונה' })).toBeVisible()
 
-  await open(page, '/settings')
+  await open(page, '/settings?tab=account')
   await page.getByRole('button', { name: 'English' }).click()
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr')
 })

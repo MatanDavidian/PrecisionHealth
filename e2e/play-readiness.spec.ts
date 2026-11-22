@@ -13,7 +13,7 @@ import { openSignedIn, signIn } from './supabase'
 
 test('Settings carries the disclaimer and the policy links, on every tab, signed out', async ({ page }) => {
   await open(page, '/settings')
-  for (const tab of ['You', 'Photo analysis', 'Account & data']) {
+  for (const tab of ['Goals', 'Photo analysis', 'Account & data']) {
     await page.getByRole('button', { name: tab, exact: true }).click()
     await expect(page.getByText(/Vimetry is not a medical device/)).toBeVisible()
     await expect(page.getByRole('link', { name: 'Privacy Policy' })).toBeVisible()

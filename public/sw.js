@@ -34,19 +34,36 @@ p{color:#6f6a60}</style></head><body><h1>You're offline</h1><p>Vimetry needs a c
 <h1 dir="rtl">אין חיבור לרשת</h1><p dir="rtl">כדי לפתוח את Vimetry בפעם הראשונה צריך חיבור. התחברו ונסו שוב.</p></body></html>`
 
 self.addEventListener('install', (event) => {
+  /*
+    Saving the app for offline use is best effort, and never a reason not to
+    install. It used to be all or nothing: one failed save (Chrome on Android
+    answered "Unexpected internal error" from Cache.addAll, 2026-11-22)
+    rejected the install, the new worker was thrown away, and the old one,
+    with no reminder handling, stayed in charge. A reminder that arrives and
+    is never shown is worse than an offline start that is missing a file.
+
+    So each file is saved on its own, and a failure is skipped.
+  */
+  const keep = async (cacheName, requests) => {
+    const cache = await caches.open(cacheName)
+    await Promise.allSettled(requests.map((request) => cache.add(request)))
+  }
   event.waitUntil(
     (async () => {
-      const shell = await caches.open(SHELL)
-      const page = await fetch('/', { cache: 'no-cache' })
-      if (!page.ok) return
-      // The scripts and styles this page names, so the first offline start works.
-      const html = await page.clone().text()
-      const named = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1])
-      // The full list when the build wrote one in; the page's own references otherwise.
-      const assets = [...new Set([...named, ...(Array.isArray(PRECACHE) ? PRECACHE : [])])]
-      await shell.put('/', page)
-      await shell.addAll(['/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png'])
-      await (await caches.open(ASSETS)).addAll(assets)
+      try {
+        const page = await fetch('/', { cache: 'no-cache' })
+        if (!page.ok) return
+        // The scripts and styles this page names, so the first offline start works.
+        const html = await page.clone().text()
+        const named = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1])
+        // The full list when the build wrote one in; the page's own references otherwise.
+        const assets = [...new Set([...named, ...(Array.isArray(PRECACHE) ? PRECACHE : [])])]
+        await (await caches.open(SHELL)).put('/', page).catch(() => undefined)
+        await keep(SHELL, ['/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png'])
+        await keep(ASSETS, assets)
+      } catch {
+        // Offline, or storage refusing: the worker still installs.
+      }
     })(),
   )
   self.skipWaiting()

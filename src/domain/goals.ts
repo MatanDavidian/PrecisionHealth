@@ -2,6 +2,7 @@ import type { Id } from './ids'
 import type { CanonicalQuantity } from './units'
 import type { ObservationCode } from './observation'
 import type { Objective } from './objectives'
+import type { GoalChoice } from './goalChoice'
 import type { Provenance } from './provenance'
 import type { CalendarDate } from './time'
 import type { UserId } from './user'
@@ -53,17 +54,15 @@ export interface Goal {
    */
   objective?: Objective
   /**
-   * Every goal chosen together (several-goals.md), of which `objective` is
-   * the one leading the calories. Absent on goals saved before several could
-   * be chosen: read those through `chosenObjectives`.
+   * The two answers this goal was chosen by (several-goals.md): which way the
+   * weight goes, and what else. `objective` is derived from them. Absent on
+   * goals saved before: read every goal through `goalChoiceOf`.
    */
+  choice?: GoalChoice
+  /** Several of the five at once: saved for one day (2026-11-22), still read. */
   objectives?: Objective[]
   provenance: Provenance
 }
-
-/** The goals a person chose, whichever way the record was saved. */
-export const chosenObjectives = (goal: Goal | undefined): Objective[] =>
-  goal?.objectives?.length ? [...goal.objectives] : goal?.objective ? [goal.objective] : []
 
 export interface NutritionPlan {
   id: NutritionPlanId

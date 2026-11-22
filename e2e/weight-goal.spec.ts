@@ -142,18 +142,15 @@ test('only a programme that is about the scale asks for a target', async ({ page
   await open(page, '/settings')
   await expect(target(page)).toBeVisible()
 
-  // Holding steady has no number to aim at, and general fitness is not about
-  // weight at all.
-  // Goals combine (several-goals.md): keeping weight alone means the sample's
-  // "lose fat" goes too.
-  await page.getByRole('button', { name: 'Keep this weight' }).click()
-  await page.getByRole('button', { name: 'Lose fat, keep muscle' }).click()
+  // Holding steady has no number to aim at, and no weight goal is not about
+  // the scale at all.
+  await page.getByRole('radio', { name: 'Keep my weight' }).click()
   await expect(target(page)).toBeHidden()
 
-  await page.getByRole('button', { name: 'General fitness' }).click()
+  await page.getByRole('radio', { name: 'No weight goal' }).click()
   await expect(target(page)).toBeHidden()
 
-  await page.getByRole('button', { name: 'Build muscle' }).click()
+  await page.getByRole('radio', { name: 'Gain weight' }).click()
   await expect(target(page)).toBeVisible()
 
   // Current weight is a fact about you rather than about the programme: it stays.

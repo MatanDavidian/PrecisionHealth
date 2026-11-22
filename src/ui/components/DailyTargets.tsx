@@ -12,6 +12,7 @@ import {
   type Streak,
   type ActivityLevel,
   type DailyTargets,
+  type GoalChoice,
   type Objective,
   type Sex,
   type TargetsInput,
@@ -34,10 +35,21 @@ import type { StringKey } from '../i18n/strings'
 
 const objectiveName = (o: Objective): StringKey => `objective.${o}` as StringKey
 
-/** Every chosen goal's name, joined: "Lose weight + Build muscle". */
+/**
+ * What the person is working towards, named: the weight answer and what
+ * else ("Lose weight + Lower body fat"). Goals saved before the two answers
+ * have their single goal's name.
+ */
 function useGoalNames() {
   const { t } = useLang()
-  return (objectives: readonly Objective[]) => objectives.map((o) => t(objectiveName(o))).join(' + ')
+  return (choice: GoalChoice | undefined, objective: Objective | undefined): string => {
+    if (!choice) return objective ? t(objectiveName(objective)) : ''
+    const parts = [
+      ...(choice.aim !== 'NONE' || choice.focus.length === 0 ? [t(`goal.aim.${choice.aim}` as StringKey)] : []),
+      ...choice.focus.map((f) => t(`goal.focus.${f}` as StringKey)),
+    ]
+    return parts.join(' + ')
+  }
 }
 
 function useFormat() {
@@ -129,7 +141,7 @@ function useWhy() {
     if (targets.energy.from === 'GOAL' || !targets.burn || !targets.objective) {
       return t('targets.why.own', { kcal: fmt(targets.energyKcal) })
     }
-    const goal = goalNames(targets.objectives.length ? targets.objectives : targets.objective ? [targets.objective] : [])
+    const goal = goalNames(targets.choice, targets.objective)
     const burn = fmt(Math.round(targets.burn.kcal / 10) * 10)
     const head =
       targets.balanceKcal < 0
@@ -277,7 +289,7 @@ function Checklist({ input, result }: { input: TargetsInput; result: Extract<Tar
     {
       done: !result.missing.includes('OBJECTIVE'),
       text: input.objective
-        ? t('targets.missing.goalDone', { goal: goalNames(input.objectives?.length ? input.objectives : [input.objective]) })
+        ? t('targets.missing.goalDone', { goal: goalNames(input.choice, input.objective) })
         : t('targets.missing.goal'),
     },
     {
@@ -401,7 +413,7 @@ function TargetsWorkingBody({
         })
     : undefined
   const balanceLine = (): string => {
-    const goal = targets.objective ? goalNames(targets.objectives.length ? targets.objectives : targets.objective ? [targets.objective] : []) : ''
+    const goal = targets.objective ? goalNames(targets.choice, targets.objective) : ''
     if (targets.objective === 'FITNESS') return t('targets.work.fitness', { target })
     if (targets.balanceKcal < 0) return t('targets.work.deficit', { goal, n: fmt(-targets.balanceKcal), target })
     if (targets.balanceKcal > 0) return t('targets.work.surplus', { goal, n: fmt(targets.balanceKcal), target })

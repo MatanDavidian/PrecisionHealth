@@ -11,13 +11,9 @@ import { open } from './app'
 test('choosing a goal changes how the week is judged', async ({ page }) => {
   await open(page, '/settings')
 
-  // Goals combine (several-goals.md): general fitness alone means the sample's
-  // "lose fat" has to go too.
-  const fitness = page.getByRole('button', { name: 'General fitness' })
-  await fitness.click()
-  await expect(fitness).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('button', { name: 'Lose fat, keep muscle' }).click()
-  await expect(page.getByRole('button', { name: 'Lose fat, keep muscle' })).toHaveAttribute('aria-pressed', 'false')
+  const noWeightGoal = page.getByRole('radio', { name: 'No weight goal' })
+  await noWeightGoal.click()
+  await expect(noWeightGoal).toHaveAttribute('aria-checked', 'true')
 
   // An untargeted goal is never scored — it says so rather than inventing one.
   await open(page, '/today?view=week')
@@ -25,9 +21,9 @@ test('choosing a goal changes how the week is judged', async ({ page }) => {
     .toBeVisible({ timeout: 15_000 })
 
   await open(page, '/settings')
-  const loseFat = page.getByRole('button', { name: 'Lose fat, keep muscle' })
-  await loseFat.click()
-  await expect(loseFat).toHaveAttribute('aria-pressed', 'true')
+  const lose = page.getByRole('radio', { name: 'Lose weight' })
+  await lose.click()
+  await expect(lose).toHaveAttribute('aria-checked', 'true')
 
   await open(page, '/today?view=week')
   await expect(page.getByText(/On track|kcal short|kcal off/i).first())

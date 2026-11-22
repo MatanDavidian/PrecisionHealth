@@ -44,7 +44,7 @@ import {
   type Goal,
   type Meal,
   type Nutrients,
-  type Objective,
+  type GoalChoice,
   type UserProfile,
   PROFILE_DETAILS,
   type Observation,
@@ -268,15 +268,12 @@ export function useActions() {
   )
 
   /**
-   * Records which goals the user chose, as an ENERGY goal (D4: appended).
-   * Several at once (several-goals.md): one leads the calories, all are kept.
+   * Records what the user is working towards (several-goals.md): the two
+   * answers, as an ENERGY goal (D4: appended).
    */
-  const setObjectives = useCallback(
-    async (objectives: Objective[]) => {
-      if (objectives.length === 0) return
-      await runWrite('that goal', () =>
-        getRepositories().goals.add(buildObjectiveGoal(currentUserId(), objectives)),
-      )
+  const setGoalChoice = useCallback(
+    async (choice: GoalChoice) => {
+      await runWrite('that goal', () => getRepositories().goals.add(buildObjectiveGoal(currentUserId(), choice)))
     },
     [runWrite],
   )
@@ -503,7 +500,7 @@ export function useActions() {
     applyLeftoverToMeal,
     recordObservation,
     setGoal,
-    setObjectives,
+    setGoalChoice,
     saveProfile,
     resolveConflict,
     confirmEstimate,

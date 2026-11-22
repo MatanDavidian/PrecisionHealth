@@ -10,6 +10,7 @@
  * unit test can pin it. docs/features/daily-targets.md has the reasoning.
  */
 import { OBJECTIVE_SHAPE, type Objective } from './objectives'
+import { proteinPerKg, type GoalChoice } from './goalChoice'
 import type { Sex } from './user'
 
 /** How much a day moves, said the way people say it. Asked only when no watch reports a burn. */
@@ -102,8 +103,8 @@ export type BurnBasis =
 export interface TargetsInput {
   /** The goal leading the calories (several-goals.md). */
   objective?: Objective
-  /** Every goal chosen; protein follows the highest of them. Defaults to `[objective]`. */
-  objectives?: Objective[]
+  /** The two answers (several-goals.md); protein follows them. Without it, the objective's own rate. */
+  choice?: GoalChoice
   /** Current weight. */
   weightKg?: number
   /** The target weight, when the goal has one. */
@@ -126,8 +127,8 @@ export type TargetsMissing = 'OBJECTIVE' | 'WEIGHT' | 'BURN'
 export interface DailyTargets {
   /** Undefined only when both calories and protein are the person's own numbers. */
   objective?: Objective
-  /** Every goal chosen, for naming them together. */
-  objectives: Objective[]
+  /** The two answers the goal was chosen by, for naming it. */
+  choice?: GoalChoice
   energyKcal: number
   proteinG: number
   carbsG: number
@@ -194,7 +195,6 @@ export function dailyTargets(input: TargetsInput): TargetsResult {
   if (missing.length > 0) return { ok: false, missing }
 
   const objective = input.objective
-  const chosen: Objective[] = input.objectives?.length ? input.objectives : objective ? [objective] : []
   const balanceKcal = objective ? OBJECTIVE_SHAPE[objective].dailyKcal ?? 0 : 0
   const floor = minIntakeKcal(input.sex)
 
@@ -214,10 +214,8 @@ export function dailyTargets(input: TargetsInput): TargetsResult {
     proteinG = Math.round(ownProtein)
     protein = { from: 'GOAL' }
   } else {
-    // The highest rate any chosen goal asks for, the leading one included:
-    // losing and building together lead as "lose fat, keep muscle", and ask
-    // for its protein (several-goals.md).
-    const perKg = Math.max(...[...chosen, objective!].map((o) => PROTEIN_G_PER_KG[o]))
+    // By the two answers when there are some (several-goals.md); else the goal's own rate.
+    const perKg = input.choice ? proteinPerKg(input.choice) : PROTEIN_G_PER_KG[objective!]
     const basisKg = proteinWeightKg(objective!, input.weightKg!, input.targetKg)
     proteinG = round(perKg * basisKg, 5)
     protein = { from: 'RULE', perKg, weightKg: basisKg }
@@ -230,7 +228,7 @@ export function dailyTargets(input: TargetsInput): TargetsResult {
     ok: true,
     targets: {
       objective,
-      objectives: chosen,
+      choice: input.choice,
       energyKcal,
       proteinG,
       carbsG,

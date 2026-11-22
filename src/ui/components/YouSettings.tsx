@@ -1,16 +1,19 @@
-import { useState } from 'react'
+import { useId } from 'react'
 import {
-  OBJECTIVES,
-  OBJECTIVE_SHAPE,
-  resolveObjectives,
+  FOCUSES,
+  leadObjective,
+  WEIGHT_AIMS,
+  wantsTargetWeight,
+  type Focus,
+  type GoalChoice,
   type Objective,
+  type WeightAim,
 } from '@/domain'
 import { Card } from './Card'
 import { Stepper } from './Stepper'
 import { useT } from '../i18n'
 import type { StringKey } from '../i18n/strings'
 
-const nameKey = (o: Objective): StringKey => `objective.${o}` as StringKey
 const aimKey = (o: Objective): StringKey => `objective.aim.${o}` as StringKey
 
 /**
@@ -22,37 +25,53 @@ const aimKey = (o: Objective): StringKey => `objective.aim.${o}` as StringKey
  * move. Today keeps what changes daily; this keeps what does not.
  */
 export function YouSettings({
-  objectives,
+  choice,
   weightKg,
   targetKg,
   weightRecordedOn,
-  onObjectives,
+  onChoice,
   onWeight,
   onTarget,
 }: {
-  /** Every goal chosen (several-goals.md); one of them leads the calories. */
-  objectives: Objective[]
+  /** What the person is working towards, as two answers (several-goals.md). */
+  choice?: GoalChoice
   weightKg?: number
   targetKg?: number
   /** When the current weight was last written, said plainly. */
   weightRecordedOn?: string
-  onObjectives: (next: Objective[]) => void
+  onChoice: (next: GoalChoice) => void
   onWeight: (kg: number) => void
   onTarget: (kg: number) => void
 }) {
   const t = useT()
-  const resolved = resolveObjectives(objectives)
-  const wantsTarget = objectives.some((o) => OBJECTIVE_SHAPE[o].wantsTarget)
-  /** Shown when the last goal is tapped: at least one stays chosen. */
-  const [keepOne, setKeepOne] = useState(false)
-  const toggle = (option: Objective) => {
-    const on = objectives.includes(option)
-    if (on && objectives.length === 1) {
-      setKeepOne(true)
-      return
-    }
-    setKeepOne(false)
-    onObjectives(on ? objectives.filter((o) => o !== option) : [...objectives, option])
+  const wantsTarget = wantsTargetWeight(choice)
+  const weightLabel = useId()
+  const alsoLabel = useId()
+  const pill = (on: boolean) =>
+    `rounded-full border px-[15px] py-[7px] text-[13.5px] transition-colors ${
+      on ? 'border-ink bg-ink font-medium text-canvas' : 'border-hairline bg-surface hover:bg-card-soft'
+    }`
+  const setAim = (aim: WeightAim) => onChoice({ aim, focus: choice?.focus ?? [] })
+  // Something else chosen before the weight question: no weight goal, until one is picked.
+  const toggleFocus = (focus: Focus) => {
+    const now = choice?.focus ?? []
+    onChoice({ aim: choice?.aim ?? 'NONE', focus: now.includes(focus) ? now.filter((f) => f !== focus) : [...now, focus] })
+  }
+  /** What the combination means, in one or two sentences. */
+  const meaning = (): string => {
+    if (!choice) return t('objective.chooseAim')
+    const lead: Objective = leadObjective(choice)
+    const extra =
+      choice.aim === 'LOSE' && (choice.focus.includes('MUSCLE') || choice.focus.includes('FAT'))
+        ? t('goal.loseKeepMuscle')
+        : choice.aim === 'KEEP' && choice.focus.includes('FAT')
+          ? t('goal.recomposition')
+          : choice.aim === 'KEEP' && choice.focus.includes('MUSCLE')
+            ? t('goal.keepBuild')
+            : choice.aim === 'GAIN' && choice.focus.includes('FAT')
+              ? t('goal.leanGain')
+              : ''
+    return `${t(aimKey(lead))}${extra ? ` ${extra}` : ''}`
   }
 
   /*
@@ -75,41 +94,46 @@ export function YouSettings({
   return (
     <>
       <Card label={t('settings.yourGoal')}>
-        <div className="flex flex-wrap gap-2">
-          {OBJECTIVES.map((option) => (
+        <p id={weightLabel} className="pb-2.5 text-sm font-medium">
+          {t('goal.weightTitle')}
+        </p>
+        <div role="radiogroup" aria-labelledby={weightLabel} className="flex flex-wrap gap-2">
+          {WEIGHT_AIMS.map((aim) => (
             <button
-              key={option}
+              key={aim}
               type="button"
-              onClick={() => toggle(option)}
-              aria-pressed={objectives.includes(option)}
-              /* Selected is ink, not accent: five orange-capable pills would
-                 leave the screen with no way left to say "this is the button". */
-              className={`rounded-full border px-[15px] py-[7px] text-[13.5px] transition-colors ${
-                objectives.includes(option)
-                  ? 'border-ink bg-ink font-medium text-canvas'
-                  : 'border-hairline bg-surface hover:bg-card-soft'
-              }`}
+              role="radio"
+              aria-checked={choice?.aim === aim}
+              onClick={() => setAim(aim)}
+              /* Selected is ink, not accent: orange-capable pills would leave
+                 the screen with no way left to say "this is the button". */
+              className={pill(choice?.aim === aim)}
             >
-              {t(nameKey(option))}
+              {t(`goal.aim.${aim}` as StringKey)}
             </button>
           ))}
         </div>
-        <p className="max-w-[60ch] pt-3.5 text-[0.81rem] leading-relaxed text-ink-muted">
-          {resolved && resolved.chosen.length > 1 && (
-            <span className="block pb-1 font-medium text-ink-soft">
-              {resolved.chosen.map((o) => t(nameKey(o))).join(' + ')}
-            </span>
-          )}
-          {resolved ? `${t(aimKey(resolved.lead))} ` : `${t('objective.chooseAim')} `}
-          {resolved?.recomposition && `${t('objective.together')} `}
-          {resolved && resolved.chosen.length > 1 && `${t('objective.severalTail')} `}
-          {t('settings.goalTail')}
+
+        <p id={alsoLabel} className="pb-2.5 pt-5 text-sm font-medium">
+          {t('goal.alsoTitle')} <span className="font-normal text-ink-muted">· {t('goal.alsoOptional')}</span>
         </p>
-        {keepOne && (
-          <p role="status" className="pt-2 text-[0.81rem] text-ink-soft">
-            {t('objective.keepOne')}
-          </p>
-        )}
+        <div role="group" aria-labelledby={alsoLabel} className="flex flex-wrap gap-2">
+          {FOCUSES.map((focus) => (
+            <button
+              key={focus}
+              type="button"
+              aria-pressed={choice?.focus.includes(focus) ?? false}
+              onClick={() => toggleFocus(focus)}
+              className={pill(choice?.focus.includes(focus) ?? false)}
+            >
+              {t(`goal.focus.${focus}` as StringKey)}
+            </button>
+          ))}
+        </div>
+
+        <p className="max-w-[60ch] pt-3.5 text-[0.81rem] leading-relaxed text-ink-muted" data-testid="goal-meaning">
+          {meaning()} {t('settings.goalTail')}
+        </p>
       </Card>
 
       <Card label={t('settings.weight')}>

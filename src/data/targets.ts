@@ -10,7 +10,8 @@
 import {
   addDays,
   ageOn,
-  chosenObjectives,
+  goalChoiceOf,
+  leadObjective,
   BURN_LOOKBACK_DAYS,
   convert,
   countedMeals,
@@ -79,6 +80,7 @@ interface Basis {
 function inputFor(day: CalendarDate, basis: Basis, burns: Map<CalendarDate, number>): TargetsInput {
   const { profile, goals } = basis
   const energyGoal = goalFor(goals, 'ENERGY')
+  const choice = goalChoiceOf(energyGoal)
   const weightGoal = goalFor(goals, 'WEIGHT')
   const weight = effectiveObservation(basis.weights)
   const history: number[] = []
@@ -91,8 +93,9 @@ function inputFor(day: CalendarDate, basis: Basis, burns: Map<CalendarDate, numb
   const ownProtein = ownGoal(goals, 'PROTEIN')
   const ownEnergy = ownGoal(goals, 'ENERGY_INTAKE')
   return {
-    objective: isObjective(energyGoal?.objective) ? energyGoal.objective : undefined,
-    objectives: chosenObjectives(energyGoal),
+    // The lead follows the two answers when the goal has them (several-goals.md).
+    objective: choice ? leadObjective(choice) : isObjective(energyGoal?.objective) ? energyGoal.objective : undefined,
+    choice,
     weightKg: weight ? convert(weight.value, 'kg') : undefined,
     targetKg: weightGoal ? convert(weightGoal.target, 'kg') : undefined,
     heightCm: profile?.height ? convert(toCanonical(profile.height), 'cm') : undefined,

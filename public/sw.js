@@ -150,22 +150,42 @@ self.addEventListener('push', (event) => {
     message = {}
   }
   const text = (value, fallback) => (typeof value === 'string' && value.length < 300 ? value : fallback)
-  const url = text(message.url, '/today')
+  // Only paths on this site: a message cannot send anyone elsewhere.
+  const local = (value, fallback) => {
+    const path = text(value, fallback)
+    return path.startsWith('/') && !path.startsWith('//') ? path : fallback
+  }
+  const url = local(message.url, '/today')
+  /*
+    Buttons (meal-reminders.md): the usual meal, then "Something else".
+    As many as this platform shows (Chrome: two; iPhone: none); a tap on
+    the notification itself opens the quick sheet either way.
+  */
+  const limit = typeof Notification !== 'undefined' && Number.isInteger(Notification.maxActions) ? Notification.maxActions : 0
+  const actions = (Array.isArray(message.actions) ? message.actions : [])
+    .filter((a) => a && typeof a.action === 'string' && typeof a.title === 'string')
+    .slice(0, limit)
+    .map((a) => ({ action: a.action.slice(0, 20), title: a.title.slice(0, 60) }))
+  const actionUrls = {}
+  for (const a of actions) actionUrls[a.action] = local(message.actionUrls && message.actionUrls[a.action], url)
   event.waitUntil(
     self.registration.showNotification(text(message.title, 'Vimetry'), {
       body: text(message.body, ''),
       // One per kind: tonight's reminder replaces an unread one from last night.
       tag: text(message.tag, 'vimetry'),
       icon: '/icons/icon-192.png',
-      // Only paths on this site: a message cannot send anyone elsewhere.
-      data: { url: url.startsWith('/') && !url.startsWith('//') ? url : '/today' },
+      actions,
+      data: { url, actionUrls },
     }),
   )
 })
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const target = new URL(event.notification.data?.url ?? '/today', self.location.origin).href
+  const data = event.notification.data || {}
+  // A button opens its own address (the usual meal, logged once); the notification itself, the sheet.
+  const path = (event.action && data.actionUrls && data.actionUrls[event.action]) || data.url || '/today'
+  const target = new URL(path, self.location.origin).href
   event.waitUntil(
     (async () => {
       // An open window of the app is brought forward and taken there; otherwise a new one opens.

@@ -113,6 +113,13 @@ export interface ReminderMessage {
   url: string
   /** One per kind on the phone: a new one replaces an unread old one. */
   tag: string
+  /**
+   * Buttons, for platforms that show them (Chrome: two at most; iPhone: none).
+   * The service worker shows as many as the platform allows, in this order.
+   */
+  actions?: { action: string; title: string }[]
+  /** Where each button opens, by its action. */
+  actionUrls?: Record<string, string>
 }
 
 /**
@@ -148,5 +155,113 @@ export function reminderMessage(kind: MessageKind, lang: string | null | undefin
         url: '/settings?tab=you',
         tag: 'vimetry-test',
       }
+  }
+}
+
+// ------------------------------------------------------- meal reminders ---
+// docs/features/meal-reminders.md
+
+export type MealReminderSlot = 'BREAKFAST' | 'LUNCH' | 'DINNER'
+export const MEAL_REMINDER_SLOTS: readonly MealReminderSlot[] = ['BREAKFAST', 'LUNCH', 'DINNER']
+
+/** Each meal's window, inclusive, in quarter hours. */
+export const SLOT_WINDOWS: Record<MealReminderSlot, readonly [string, string]> = {
+  BREAKFAST: ['05:00', '11:45'],
+  LUNCH: ['11:00', '16:45'],
+  DINNER: ['17:00', '23:45'],
+}
+
+/** A meal reminder is about now: 90 minutes late is still lunch, three hours late is not. */
+export const SLOT_REMINDER_WINDOW_MINUTES = 90
+
+export const isSlotTime = (slot: MealReminderSlot, time: unknown): time is string =>
+  typeof time === 'string' &&
+  /^([01][0-9]|2[0-3]):(00|15|30|45)$/.test(time) &&
+  time >= SLOT_WINDOWS[slot][0] &&
+  time <= SLOT_WINDOWS[slot][1]
+
+/** The day a meal reminder at `time` is due for, now: the same day only, never the night after. */
+export function dueToday(time: string, zone: string, now: Date, windowMinutes = SLOT_REMINDER_WINDOW_MINUTES): string | undefined {
+  const [hours, minutes] = time.split(':').map(Number)
+  const at = hours * 60 + minutes
+  const clock = localClock(now, zone)
+  return clock.minutes >= at && clock.minutes < at + windowMinutes ? clock.date : undefined
+}
+
+/**
+ * Whether this meal is already logged that day: a live meal in the slot, or
+ * a day set in one tap (which stands in for every meal of it).
+ */
+export function slotLogged(
+  rows: readonly { data: { id?: string; version?: number; retracted?: boolean; slot?: string; provenance?: { source?: string } } }[],
+  slot: MealReminderSlot,
+): boolean {
+  const newest = new Map<string, (typeof rows)[number]['data']>()
+  for (const { data } of rows) {
+    const id = data.id ?? ''
+    const held = newest.get(id)
+    if (!held || (data.version ?? 1) > (held.version ?? 1)) newest.set(id, data)
+  }
+  return [...newest.values()].some(
+    (meal) => meal.retracted !== true && (meal.slot === slot || meal.provenance?.source === 'PATTERN_FILL'),
+  )
+}
+
+/** A usual meal as the app saved it for the buttons. */
+export interface UsualChoice {
+  /** The meal's signature (its foods), which the app looks up again. */
+  key: string
+  name: string
+  kcal: number
+}
+
+const SLOT_WORDS: Record<MealReminderSlot, { en: string; he: string }> = {
+  BREAKFAST: { en: 'Breakfast?', he: 'ארוחת בוקר?' },
+  LUNCH: { en: 'Lunch?', he: 'ארוחת צהריים?' },
+  DINNER: { en: 'Dinner?', he: 'ארוחת ערב?' },
+}
+
+const shorten = (text: string, max: number) => (text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`)
+
+/**
+ * A meal reminder: the meal's name as the title, the usual meal as a button
+ * that logs it in one tap, "Something else" for the quick sheet. Without a
+ * usual meal yet, no buttons: a tap opens the sheet.
+ *
+ * `once` marks this reminder, so a button tapped twice, or a page reloaded,
+ * logs one meal and not two.
+ */
+export function slotMessage(
+  slot: MealReminderSlot,
+  lang: string | null | undefined,
+  usuals: readonly UsualChoice[] | undefined,
+  day: string,
+): ReminderMessage {
+  const he = lang === 'he'
+  const sheet = `/quick?slot=${slot}`
+  const top = usuals?.find((u) => typeof u.key === 'string' && typeof u.name === 'string' && u.name.length > 0)
+  const message: ReminderMessage = {
+    title: SLOT_WORDS[slot][he ? 'he' : 'en'],
+    body: top
+      ? he
+        ? 'אפשר לרשום בהקשה אחת.'
+        : 'Log it in one tap.'
+      : he
+        ? 'הקישו כדי לרשום.'
+        : 'Tap to log it.',
+    url: sheet,
+    tag: `vimetry-${slot.toLowerCase()}`,
+  }
+  if (!top) return message
+  return {
+    ...message,
+    actions: [
+      { action: 'usual', title: shorten(top.name, 40) },
+      { action: 'other', title: he ? 'משהו אחר' : 'Something else' },
+    ],
+    actionUrls: {
+      usual: `${sheet}&log=${encodeURIComponent(top.key)}&once=${day}-${slot}`,
+      other: sheet,
+    },
   }
 }

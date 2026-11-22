@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   dayHasMeal,
   dueDay,
+  dueToday,
+  isSlotTime,
+  slotLogged,
+  slotMessage,
   isReminderTime,
   localClock,
   reminderMessage,
@@ -118,5 +122,55 @@ describe('the words', () => {
   it('in Hebrew for a Hebrew account, English otherwise', () => {
     expect(reminderMessage('MEAL', 'he').body).toMatch(/הגיע הזמן/)
     expect(reminderMessage('MEAL', null).body).toMatch(/^Time to log today/)
+  })
+})
+
+
+describe('meal reminders (meal-reminders.md)', () => {
+  const ZONE = 'Asia/Jerusalem'
+  it('each meal keeps to its own window', () => {
+    expect(isSlotTime('BREAKFAST', '08:30')).toBe(true)
+    expect(isSlotTime('BREAKFAST', '12:00')).toBe(false)
+    expect(isSlotTime('LUNCH', '11:00')).toBe(true)
+    expect(isSlotTime('LUNCH', '17:00')).toBe(false)
+    expect(isSlotTime('DINNER', '23:45')).toBe(true)
+    expect(isSlotTime('DINNER', '00:00')).toBe(false)
+  })
+  it('is due from its time for ninety minutes, the same day only', () => {
+    // 13:30 in Jerusalem is 11:30 UTC.
+    expect(dueToday('13:30', ZONE, at('2026-11-21T11:29:00Z'))).toBeUndefined()
+    expect(dueToday('13:30', ZONE, at('2026-11-21T11:30:00Z'))).toBe('2026-11-21')
+    expect(dueToday('13:30', ZONE, at('2026-11-21T12:59:00Z'))).toBe('2026-11-21')
+    expect(dueToday('13:30', ZONE, at('2026-11-21T13:00:00Z'))).toBeUndefined()
+  })
+  it('a meal in the slot counts; one in another slot does not; a set day counts for all', () => {
+    const meal = (slot: string, extra: Record<string, unknown> = {}) => ({ data: { id: slot, version: 1, slot, provenance: { source: 'USER' }, ...extra } })
+    expect(slotLogged([meal('LUNCH')], 'LUNCH')).toBe(true)
+    expect(slotLogged([meal('BREAKFAST')], 'LUNCH')).toBe(false)
+    expect(slotLogged([meal('SNACK', { provenance: { source: 'PATTERN_FILL' } })], 'DINNER')).toBe(true)
+    expect(slotLogged([meal('LUNCH'), { data: { id: 'LUNCH', version: 2, slot: 'LUNCH', retracted: true } }], 'LUNCH')).toBe(false)
+  })
+  it('names the usual meal as a button that logs it once, and offers something else', () => {
+    const message = slotMessage('LUNCH', 'en', [{ key: 'chicken + rice', name: 'Chicken, rice', kcal: 650 }], '2026-11-21')
+    expect(message.title).toBe('Lunch?')
+    expect(message.actions).toEqual([
+      { action: 'usual', title: 'Chicken, rice' },
+      { action: 'other', title: 'Something else' },
+    ])
+    expect(message.url).toBe('/quick?slot=LUNCH')
+    expect(message.actionUrls?.usual).toBe('/quick?slot=LUNCH&log=chicken%20%2B%20rice&once=2026-11-21-LUNCH')
+    expect(message.actionUrls?.other).toBe('/quick?slot=LUNCH')
+  })
+  it('without a usual meal yet: no buttons, a tap opens the sheet', () => {
+    const message = slotMessage('BREAKFAST', 'he', [], '2026-11-21')
+    expect(message.title).toBe('ארוחת בוקר?')
+    expect(message.actions).toBeUndefined()
+    expect(message.url).toBe('/quick?slot=BREAKFAST')
+  })
+  it('a long meal name is shortened for the button', () => {
+    const name = 'Grilled chicken breast, white rice, tahini, chopped salad and pita'
+    const message = slotMessage('DINNER', 'en', [{ key: 'k', name, kcal: 900 }], '2026-11-21')
+    expect(message.actions?.[0].title.length).toBeLessThanOrEqual(40)
+    expect(message.actions?.[0].title.endsWith('…')).toBe(true)
   })
 })

@@ -280,8 +280,10 @@ export async function stubSupabase(page: Page, options: StubOptions = {}): Promi
         const upsert = (request.headers()['prefer'] ?? '').includes('resolution=merge-duplicates')
         for (const row of Array.isArray(posted) ? posted : [posted]) {
           if (upsert) {
-            tables[table] = tables[table].filter((held) => held[key] !== row[key])
-            tables[table].push(row)
+            // As PostgREST does: the columns sent replace theirs, the others stay.
+            const held = tables[table].find((h) => h[key] === row[key])
+            if (held) Object.assign(held, row)
+            else tables[table].push(row)
             continue
           }
           if (tables[table].some((held) => held[key] === row[key])) {

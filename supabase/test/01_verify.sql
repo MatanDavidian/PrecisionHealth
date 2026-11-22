@@ -890,3 +890,35 @@ select case when (select meal_reminder = false and reminder_zone = 'Asia/Jerusal
   then 'PASS: a person changes their own reminder choices'
   else 'FAIL: own reminder choices could not be changed' end;
 reset role;
+
+\echo '== 0019: meal reminders, each in its own window, each once a day =='
+set role postgres;
+do $$
+begin
+  insert into public.user_preferences (user_id, lunch_time) values ('11111111-1111-1111-1111-111111111111', '19:00')
+  on conflict (user_id) do update set lunch_time = excluded.lunch_time;
+  raise exception 'FAIL: a lunch reminder at 19:00 was accepted';
+exception
+  when check_violation then raise notice 'PASS: each meal reminder stays in its own window';
+end
+$$;
+update public.user_preferences set breakfast_time = '07:15', lunch_time = '12:45', dinner_time = '19:30'
+where user_id = '11111111-1111-1111-1111-111111111111';
+select case when (select dinner_time from public.user_preferences where user_id = '11111111-1111-1111-1111-111111111111') = '19:30'
+  then 'PASS: times inside their windows are kept'
+  else 'FAIL: a valid meal time was refused' end;
+do $$
+begin
+  update public.user_preferences set reminder_usuals = jsonb_build_object('LUNCH', repeat('x', 5000))
+  where user_id = '11111111-1111-1111-1111-111111111111';
+  raise exception 'FAIL: an oversized usual-meals list was accepted';
+exception
+  when check_violation then raise notice 'PASS: the usual meals kept for buttons are bounded in size';
+end
+$$;
+select case when public.claim_reminder('11111111-1111-1111-1111-111111111111', 'LUNCH', '2026-11-22', 1) = true
+             and public.claim_reminder('11111111-1111-1111-1111-111111111111', 'LUNCH', '2026-11-22', 1) = false
+             and public.claim_reminder('11111111-1111-1111-1111-111111111111', 'DINNER', '2026-11-22', 1) = true
+  then 'PASS: each meal''s reminder goes once a day, separately'
+  else 'FAIL: meal reminders were claimed wrongly' end;
+reset role;

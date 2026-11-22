@@ -9,7 +9,8 @@
  */
 import { getSupabaseClient, isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase/client'
 import { deviceZone } from './newRecords'
-import type { UserId } from '@/domain'
+import { convert, liveItems, type UserId } from '@/domain'
+import { readUsuals } from './usuals'
 
 export const DEFAULT_REMINDER_TIME = '22:30'
 
@@ -23,12 +24,45 @@ export const REMINDER_TIMES: string[] = (() => {
   return times
 })()
 
+export type MealReminderSlot = 'BREAKFAST' | 'LUNCH' | 'DINNER'
+export const MEAL_REMINDER_SLOTS: MealReminderSlot[] = ['BREAKFAST', 'LUNCH', 'DINNER']
+
+/** Each meal's window and default (meal-reminders.md); the database checks the same windows. */
+export const SLOT_REMINDER: Record<MealReminderSlot, { from: string; to: string; default: string }> = {
+  BREAKFAST: { from: '05:00', to: '11:45', default: '08:30' },
+  LUNCH: { from: '11:00', to: '16:45', default: '13:30' },
+  DINNER: { from: '17:00', to: '23:45', default: '20:00' },
+}
+
+/** The quarter hours of a meal's window. */
+export function slotTimes(slot: MealReminderSlot): string[] {
+  const toMinutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3))
+  const times: string[] = []
+  for (let m = toMinutes(SLOT_REMINDER[slot].from); m <= toMinutes(SLOT_REMINDER[slot].to); m += 15) {
+    times.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`)
+  }
+  return times
+}
+
 export interface ReminderPrefs {
+  /** The evening "nothing logged today" reminder. */
   meal: boolean
   watch: boolean
   time: string
   zone?: string
+  /** Breakfast, lunch and dinner, each on or off at its own time. */
+  slots: Record<MealReminderSlot, { on: boolean; time: string }>
 }
+
+export const defaultSlots = (): ReminderPrefs['slots'] => ({
+  BREAKFAST: { on: false, time: SLOT_REMINDER.BREAKFAST.default },
+  LUNCH: { on: false, time: SLOT_REMINDER.LUNCH.default },
+  DINNER: { on: false, time: SLOT_REMINDER.DINNER.default },
+})
+
+/** Whether any reminder at all is on, which is what keeps this device subscribed. */
+export const anyReminderOn = (prefs: ReminderPrefs): boolean =>
+  prefs.meal || prefs.watch || MEAL_REMINDER_SLOTS.some((slot) => prefs.slots[slot].on)
 
 /**
  * Whether this browser can be reminded at all.
@@ -108,21 +142,28 @@ export async function readReminderPrefs(userId: UserId): Promise<ReminderPrefs |
   try {
     const { data, error } = await (await getSupabaseClient())
       .from('user_preferences')
-      .select('meal_reminder, watch_reminder, reminder_time, reminder_zone')
+      .select(
+        'meal_reminder, watch_reminder, reminder_time, reminder_zone, ' +
+          'breakfast_reminder, breakfast_time, lunch_reminder, lunch_time, dinner_reminder, dinner_time',
+      )
       .eq('user_id', userId)
       .maybeSingle()
     if (error) return undefined
-    const row = data as {
-      meal_reminder?: boolean
-      watch_reminder?: boolean
-      reminder_time?: string
-      reminder_zone?: string | null
-    } | null
+    const row = (data ?? {}) as Record<string, unknown>
+    const slots = defaultSlots()
+    for (const slot of MEAL_REMINDER_SLOTS) {
+      const name = slot.toLowerCase()
+      slots[slot] = {
+        on: row[`${name}_reminder`] === true,
+        time: typeof row[`${name}_time`] === 'string' ? (row[`${name}_time`] as string) : SLOT_REMINDER[slot].default,
+      }
+    }
     return {
-      meal: row?.meal_reminder === true,
-      watch: row?.watch_reminder === true,
-      time: row?.reminder_time ?? DEFAULT_REMINDER_TIME,
-      zone: row?.reminder_zone ?? undefined,
+      meal: row.meal_reminder === true,
+      watch: row.watch_reminder === true,
+      time: typeof row.reminder_time === 'string' ? row.reminder_time : DEFAULT_REMINDER_TIME,
+      zone: typeof row.reminder_zone === 'string' ? row.reminder_zone : undefined,
+      slots,
     }
   } catch {
     return undefined
@@ -138,12 +179,60 @@ export async function saveReminderPrefs(userId: UserId, prefs: ReminderPrefs): P
       meal_reminder: prefs.meal,
       watch_reminder: prefs.watch,
       reminder_time: prefs.time,
+      breakfast_reminder: prefs.slots.BREAKFAST.on,
+      breakfast_time: prefs.slots.BREAKFAST.time,
+      lunch_reminder: prefs.slots.LUNCH.on,
+      lunch_time: prefs.slots.LUNCH.time,
+      dinner_reminder: prefs.slots.DINNER.on,
+      dinner_time: prefs.slots.DINNER.time,
       reminder_zone: deviceZone(),
       updated_at: new Date().toISOString(),
     })
-    return !error
+    if (error) return false
+    if (MEAL_REMINDER_SLOTS.some((slot) => prefs.slots[slot].on)) await saveReminderUsuals(userId)
+    return true
   } catch {
     return false
+  }
+}
+
+/** A usual meal as a notification button shows it. */
+export interface UsualChoice {
+  key: string
+  name: string
+  kcal: number
+}
+
+/**
+ * The top three usual meals for each meal time, saved for the buttons
+ * (meal-reminders.md). The app works them out with the same rule as the
+ * "Again" panel, so a button never offers a meal the app would not; the
+ * schedule only reads them. At most as old as the last time the app opened.
+ */
+export async function usualChoices(userId: UserId): Promise<Record<MealReminderSlot, UsualChoice[]>> {
+  const out = {} as Record<MealReminderSlot, UsualChoice[]>
+  for (const slot of MEAL_REMINDER_SLOTS) {
+    const { forThisSlot } = await readUsuals(userId, slot)
+    out[slot] = forThisSlot.map((usual) => ({
+      key: usual.signature,
+      name: liveItems(usual.template.items).map((item) => item.name).join(', ').slice(0, 80),
+      kcal: Math.round(liveItems(usual.template.items).reduce((sum, item) => sum + convert(item.nutrients.energy, 'kcal'), 0)),
+    }))
+  }
+  return out
+}
+
+export async function saveReminderUsuals(userId: UserId): Promise<void> {
+  if (!isSupabaseConfigured) return
+  try {
+    const reminder_usuals = await usualChoices(userId)
+    // An upsert rather than an update: it also works before the row exists,
+    // and touches only these columns when it does.
+    await (await getSupabaseClient())
+      .from('user_preferences')
+      .upsert({ user_id: userId, reminder_usuals, updated_at: new Date().toISOString() })
+  } catch {
+    // Best effort: the buttons wait for the next time the app opens.
   }
 }
 
@@ -154,8 +243,10 @@ export async function saveReminderPrefs(userId: UserId, prefs: ReminderPrefs): P
  */
 export async function keepReminderZone(userId: UserId): Promise<void> {
   const prefs = await readReminderPrefs(userId)
-  if (!prefs || (!prefs.meal && !prefs.watch) || prefs.zone === deviceZone()) return
-  await saveReminderPrefs(userId, prefs)
+  if (!prefs || !anyReminderOn(prefs)) return
+  if (prefs.zone !== deviceZone()) await saveReminderPrefs(userId, prefs)
+  // The usual meals move with what is eaten: refreshed each time the app opens.
+  else if (MEAL_REMINDER_SLOTS.some((slot) => prefs.slots[slot].on)) await saveReminderUsuals(userId)
 }
 
 const fromBase64url = (text: string): Uint8Array<ArrayBuffer> => {

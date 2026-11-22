@@ -153,4 +153,69 @@ async function setUp(prefs: Record<string, unknown> = {}) {
   check('before anyone ever subscribed, there is nothing to send', r.status === 200 && r.body.checked === 0)
 }
 
+// ------------------------------------------------------ meal reminders ---
+// Lunch at 13:30 in Jerusalem on 21 November is 11:30 UTC.
+const lunchOn = {
+  meal_reminder: false,
+  lunch_reminder: true,
+  lunch_time: '13:30',
+  reminder_usuals: { LUNCH: [{ key: 'chicken + rice + tahini', name: 'Chicken, rice, tahini', kcal: 690 }] },
+}
+const lastMessage = async () => {
+  // The body is encrypted; what was meant is checked through the claim and the headers.
+  return state.pushes.at(-1)
+}
+{
+  await setUp(lunchOn)
+  pinned = RealDate.parse('2026-11-21T11:35:00Z')
+  const r = await run()
+  check('at lunch time with no lunch logged, the lunch reminder goes', r.body.slots === 1 && state.pushes.length === 1, JSON.stringify(r.body))
+  check('claimed as LUNCH, for the day', state.claimed.has(`${DANA}|LUNCH|2026-11-21`))
+  const push = await lastMessage()
+  check('it expires within the hour, and replaces an unread lunch reminder', push?.headers.get('ttl') === '3600' && push?.headers.get('topic') === 'vimetry-lunch')
+  const again = await run()
+  check('and goes once', again.body.slots === 0 && state.pushes.length === 1)
+}
+{
+  await setUp(lunchOn)
+  rows('meals').push({ user_id: DANA, day: '2026-11-21', data: { id: 'l1', version: 1, slot: 'LUNCH', provenance: { source: 'USER' } } })
+  pinned = RealDate.parse('2026-11-21T11:35:00Z')
+  const r = await run()
+  check('lunch already logged: no lunch reminder', r.body.slots === 0 && state.pushes.length === 0)
+}
+{
+  await setUp(lunchOn)
+  rows('meals').push({ user_id: DANA, day: '2026-11-21', data: { id: 'b1', version: 1, slot: 'BREAKFAST', provenance: { source: 'USER' } } })
+  pinned = RealDate.parse('2026-11-21T11:35:00Z')
+  const r = await run()
+  check('breakfast logged does not count as lunch', r.body.slots === 1)
+}
+{
+  await setUp(lunchOn)
+  rows('meals').push({ user_id: DANA, day: '2026-11-21', data: { id: 'f1', version: 1, slot: 'SNACK', provenance: { source: 'PATTERN_FILL' } } })
+  pinned = RealDate.parse('2026-11-21T11:35:00Z')
+  const r = await run()
+  check('a day set in one tap counts for every meal', r.body.slots === 0)
+}
+{
+  await setUp(lunchOn)
+  pinned = RealDate.parse('2026-11-21T13:05:00Z') // 15:05 in Jerusalem: more than 90 minutes late
+  const r = await run()
+  check('three quarters of an hour past the window, it is no longer lunch', r.body.slots === 0)
+}
+{
+  await setUp({ ...lunchOn, breakfast_reminder: true, breakfast_time: '13:00' })
+  pinned = RealDate.parse('2026-11-21T11:35:00Z')
+  const r = await run()
+  check('a breakfast time outside breakfast is ignored, not sent', r.body.slots === 1 && !state.claimed.has(`${DANA}|BREAKFAST|2026-11-21`))
+}
+{
+  await setUp({ ...lunchOn, meal_reminder: true, reminder_time: '22:30' })
+  pinned = RealDate.parse('2026-11-21T11:35:00Z')
+  await run()
+  pinned = RealDate.parse('2026-11-21T20:35:00Z')
+  const evening = await run()
+  check('the evening reminder still comes, separately', evening.body.meal === 1 && state.claimed.has(`${DANA}|MEAL|2026-11-21`))
+}
+
 finish('send-reminders')

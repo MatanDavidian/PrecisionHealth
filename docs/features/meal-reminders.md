@@ -4,7 +4,9 @@
 at its own time, each offering the meal you usually eat then as a button:
 one tap logs it.
 
-Status: **built 2026-11-22, live after the Privacy Policy change below.**
+Status: **built 2026-11-22; live with the next deploy** (`REMINDERS=1
+./scripts/deploy-functions.sh`, which applies migration 0019). The Privacy
+Policy change below is in the same release (version 2026-11-22).
 Builds on [`reminders.md`](reminders.md) (the machinery, and the evening
 reminder, which stays). Owner's choices, 2026-11-22: the top meal as a
 button plus a quick sheet; the evening reminder kept.

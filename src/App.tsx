@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { QuickLog } from './ui/screens/QuickLog'
 import { DeleteAccountInfo } from './ui/screens/DeleteAccountInfo'
 import { AppShell } from './ui/AppShell'
 import { Today } from './ui/screens/Today'
@@ -16,6 +17,7 @@ export function App() {
         {/* Slice 2: the camera is the front door. */}
         <Route path="/" element={<Navigate to="/log" replace />} />
         <Route path="/log" element={<Log />} />
+        <Route path="/quick" element={<QuickLog />} />
         <Route path="/today" element={<Today />} />
         <Route path="/nutrition" element={<Nutrition />} />
         <Route path="/training" element={<Placeholder title="nav.training" phase="phase.training" />} />

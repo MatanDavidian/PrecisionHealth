@@ -1,7 +1,12 @@
 import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  anyReminderOn,
   DEFAULT_REMINDER_TIME,
+  defaultSlots,
+  MEAL_REMINDER_SLOTS,
+  slotTimes,
+  type MealReminderSlot,
   keepReminderZone,
   notificationPermission,
   pushSupport,
@@ -19,6 +24,7 @@ import {
 import type { Session } from '@/data/session'
 import { Card } from './Card'
 import { useLang } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 
 /**
  * Settings: reminders (docs/features/reminders.md).
@@ -87,6 +93,42 @@ function Switch({
   )
 }
 
+function SlotTime({
+  slot,
+  value,
+  busy,
+  onChange,
+}: {
+  slot: MealReminderSlot
+  value: string
+  busy: boolean
+  onChange: (time: string) => void
+}) {
+  const { t } = useLang()
+  const id = useId()
+  return (
+    <div className="flex items-center gap-3 ps-0.5">
+      <label htmlFor={id} className="text-sm text-ink-soft">
+        {t('reminders.at')}
+      </label>
+      <select
+        id={id}
+        value={value}
+        disabled={busy}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={`${t(`reminders.slot.${slot}` as StringKey)}: ${t('reminders.at')}`}
+        className="tabular ltr-nums rounded-xl border border-hairline bg-surface px-3 py-2 text-sm"
+      >
+        {slotTimes(slot).map((time) => (
+          <option key={time} value={time}>
+            {time}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 export function Reminders({ session }: { session: Session }) {
   const { t, lang } = useLang()
   const [state, setState] = useState<State>({ kind: 'loading' })
@@ -113,7 +155,7 @@ export function Reminders({ session }: { session: Session }) {
       ])
       if (cancelled) return
       if (!publicKey) return setState({ kind: 'unavailable' })
-      setState({ kind: 'ready', publicKey, prefs: prefs ?? { meal: false, watch: false, time: DEFAULT_REMINDER_TIME }, here })
+      setState({ kind: 'ready', publicKey, prefs: prefs ?? { meal: false, watch: false, time: DEFAULT_REMINDER_TIME, slots: defaultSlots() }, here })
       // Opened somewhere new: the reminder follows to the new zone.
       void keepReminderZone(session.userId)
     })()
@@ -144,7 +186,7 @@ export function Reminders({ session }: { session: Session }) {
     setBusy(true)
     setNotice(undefined)
     try {
-      const turningOn = (next.meal || next.watch) && !here
+      const turningOn = anyReminderOn(next) && !here
       if (turningOn) {
         const result = await subscribeThisDevice(publicKey)
         if (result !== 'ok') {
@@ -156,7 +198,7 @@ export function Reminders({ session }: { session: Session }) {
         setNotice('saveFailed')
         return
       }
-      const bothOff = !next.meal && !next.watch
+      const bothOff = !anyReminderOn(next)
       if (bothOff && here) await unsubscribeThisDevice()
       setState({ kind: 'ready', publicKey, prefs: next, here: bothOff ? false : here || turningOn })
     } finally {
@@ -198,6 +240,27 @@ export function Reminders({ session }: { session: Session }) {
         )}
 
         <div className="grid gap-5">
+          {/* Breakfast, lunch, dinner (meal-reminders.md): each with its own time. */}
+          {MEAL_REMINDER_SLOTS.map((slot) => (
+            <div key={slot} className="grid gap-3">
+              <Switch
+                label={t(`reminders.slot.${slot}` as StringKey)}
+                note={t(`reminders.slotNote.${slot}` as StringKey)}
+                on={prefs.slots[slot].on}
+                busy={busy || (unusable && !prefs.slots[slot].on)}
+                onChange={(on) => void change({ ...prefs, slots: { ...prefs.slots, [slot]: { ...prefs.slots[slot], on } } })}
+              />
+              {prefs.slots[slot].on && (
+                <SlotTime
+                  slot={slot}
+                  value={prefs.slots[slot].time}
+                  busy={busy}
+                  onChange={(time) => void change({ ...prefs, slots: { ...prefs.slots, [slot]: { ...prefs.slots[slot], time } } })}
+                />
+              )}
+            </div>
+          ))}
+          <div className="h-px bg-hairline" aria-hidden />
           <Switch
             label={t('reminders.meal')}
             note={t('reminders.mealNote')}
@@ -232,7 +295,7 @@ export function Reminders({ session }: { session: Session }) {
           />
         </div>
 
-        {(prefs.meal || prefs.watch) && !here && support === 'supported' && !blocked && (
+        {anyReminderOn(prefs) && !here && support === 'supported' && !blocked && (
           <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl bg-surface p-3.5">
             <p className="text-sm">{t('reminders.notHere')}</p>
             <button
@@ -249,7 +312,7 @@ export function Reminders({ session }: { session: Session }) {
         <div className="flex flex-wrap items-center gap-3 pt-5">
           <button
             type="button"
-            disabled={busy || (!prefs.meal && !prefs.watch)}
+            disabled={busy || !anyReminderOn(prefs)}
             onClick={() => void test()}
             className="rounded-full border border-hairline bg-surface px-4 py-2 text-sm font-medium disabled:opacity-40"
           >

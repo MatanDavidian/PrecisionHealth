@@ -13,7 +13,23 @@
  */
 import { VERSION } from '../_shared/version.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { dayHasMeal, dueDay, isReminderTime, isZone, reminderMessage, watchSilent, WATCH_SILENT_DAYS, type ReminderKind } from '../_shared/reminderRules.ts'
+import {
+  dayHasMeal,
+  dueDay,
+  dueToday,
+  isReminderTime,
+  isSlotTime,
+  isZone,
+  MEAL_REMINDER_SLOTS,
+  reminderMessage,
+  slotLogged,
+  slotMessage,
+  watchSilent,
+  WATCH_SILENT_DAYS,
+  type MealReminderSlot,
+  type ReminderKind,
+  type UsualChoice,
+} from '../_shared/reminderRules.ts'
 import { deliver, pushKeys, type Delivery } from '../_shared/pushDelivery.ts'
 
 const HEADERS = { 'x-vimetry-version': VERSION, 'Access-Control-Expose-Headers': 'x-vimetry-version' }
@@ -30,6 +46,21 @@ interface Preference {
   reminder_time: string
   reminder_zone: string | null
   language: string | null
+  breakfast_reminder?: boolean
+  breakfast_time?: string
+  lunch_reminder?: boolean
+  lunch_time?: string
+  dinner_reminder?: boolean
+  dinner_time?: string
+  reminder_usuals?: Partial<Record<MealReminderSlot, UsualChoice[]>> | null
+}
+
+type MealRow = { data: { id?: string; version?: number; retracted?: boolean; slot?: string; provenance?: { source?: string } } }
+
+/** A meal reminder's switch and time on the preferences row. */
+const slotSetting = (person: Preference, slot: MealReminderSlot) => {
+  const name = slot.toLowerCase() as 'breakfast' | 'lunch' | 'dinner'
+  return { on: person[`${name}_reminder`] === true, time: person[`${name}_time`] }
 }
 
 Deno.serve(async (request) => {
@@ -41,33 +72,78 @@ Deno.serve(async (request) => {
   if (tokenError) return json({ error: 'unavailable' }, 503)
   if (allowed !== true) return json({ error: 'unauthorized' }, 401)
 
-  const totals = { checked: 0, meal: 0, watch: 0, sent: 0, gone: 0, failed: 0 }
+  const totals = { checked: 0, meal: 0, watch: 0, slots: 0, sent: 0, gone: 0, failed: 0 }
   try {
     // No keys means nobody has ever subscribed: nothing to send.
     const keys = await pushKeys(admin, false)
     if (!keys) return json(totals)
 
-    const columns = 'user_id, meal_reminder, watch_reminder, reminder_time, reminder_zone, language'
-    const [meal, watch] = await Promise.all([
-      admin.from('user_preferences').select(columns).eq('meal_reminder', true),
-      admin.from('user_preferences').select(columns).eq('watch_reminder', true),
-    ])
-    if (meal.error || watch.error) throw new Error((meal.error ?? watch.error)!.message)
+    const columns =
+      'user_id, meal_reminder, watch_reminder, reminder_time, reminder_zone, language, ' +
+      'breakfast_reminder, breakfast_time, lunch_reminder, lunch_time, dinner_reminder, dinner_time, reminder_usuals'
+    const reads = await Promise.all(
+      ['meal_reminder', 'watch_reminder', 'breakfast_reminder', 'lunch_reminder', 'dinner_reminder'].map((column) =>
+        admin.from('user_preferences').select(columns).eq(column, true),
+      ),
+    )
+    const failedRead = reads.find((read) => read.error)
+    if (failedRead) throw new Error(failedRead.error!.message)
     const people = new Map<string, Preference>()
-    for (const row of [...(meal.data ?? []), ...(watch.data ?? [])] as Preference[]) people.set(row.user_id, row)
+    for (const row of reads.flatMap((read) => (read.data ?? []) as unknown as Preference[])) people.set(row.user_id, row)
 
     const now = new Date()
     for (const person of people.values()) {
       totals.checked += 1
-      if (!isReminderTime(person.reminder_time) || !isZone(person.reminder_zone)) continue
-      const day = dueDay(person.reminder_time, person.reminder_zone, now)
+      if (!isZone(person.reminder_zone)) continue
+      const zone = person.reminder_zone
+
+      // Breakfast, lunch, dinner (meal-reminders.md): each at its own time,
+      // only if that meal is not logged yet today, with the usual one as a button.
+      const mealsByDay = new Map<string, MealRow[]>()
+      const mealsOn = async (day: string): Promise<MealRow[]> => {
+        if (!mealsByDay.has(day)) {
+          const { data, error } = await admin.from('meals').select('data').eq('user_id', person.user_id).eq('day', day)
+          if (error) throw new Error(error.message)
+          mealsByDay.set(day, (data ?? []) as MealRow[])
+        }
+        return mealsByDay.get(day)!
+      }
+      for (const slot of MEAL_REMINDER_SLOTS) {
+        const setting = slotSetting(person, slot)
+        if (!setting.on || !isSlotTime(slot, setting.time)) continue
+        const slotDay = dueToday(setting.time, zone, now)
+        if (!slotDay || slotLogged(await mealsOn(slotDay), slot)) continue
+        const { data: claimed, error } = await admin.rpc('claim_reminder', {
+          p_user: person.user_id,
+          p_kind: slot,
+          p_day: slotDay,
+          p_gap_days: 1,
+        })
+        if (error) throw new Error(error.message)
+        if (claimed !== true) continue
+        const usuals = person.reminder_usuals?.[slot]
+        const delivered = await deliver(
+          admin,
+          person.user_id,
+          slotMessage(slot, person.language, Array.isArray(usuals) ? usuals : undefined, slotDay),
+          keys,
+          // A lunch reminder at dinner is no use: it expires in an hour.
+          60 * 60,
+        )
+        totals.slots += 1
+        totals.sent += delivered.sent
+        totals.gone += delivered.gone
+        totals.failed += delivered.failed
+      }
+
+      // The evening reminder and the watch, as before.
+      if (!isReminderTime(person.reminder_time)) continue
+      const day = dueDay(person.reminder_time, zone, now)
       if (!day) continue
 
       const due: ReminderKind[] = []
       if (person.meal_reminder) {
-        const { data: meals, error } = await admin.from('meals').select('data').eq('user_id', person.user_id).eq('day', day)
-        if (error) throw new Error(error.message)
-        if (!dayHasMeal((meals ?? []) as { data: { id?: string; version?: number; retracted?: boolean } }[])) due.push('MEAL')
+        if (!dayHasMeal(await mealsOn(day))) due.push('MEAL')
       }
       if (person.watch_reminder) {
         const { data: watches, error } = await admin

@@ -27,7 +27,9 @@ asked to agree again), and the server side was deployed with
 - **"Send a test"**, to see what a reminder looks like.
 - **The words say nothing about food or the body:** "Time to log today. Add
   your meals, or set the day in one tap." The text passes through the push
-  service and sits on a lock screen.
+  service and sits on a lock screen. (The meal reminders added on
+  2026-11-22 are the exception, by the owner's choice: their button names
+  your usual meal. See [`meal-reminders.md`](meal-reminders.md).)
 - English and Hebrew; the notification is in the account's language.
 
 ### The two decisions (owner, 2026-11-21)

@@ -99,7 +99,7 @@ async function fakeFunction(page: Page, deployed = true) {
 }
 
 const card = (page: Page) => page.locator('#reminders')
-const mealSwitch = (page: Page) => page.getByRole('switch', { name: 'Remind me to log' })
+const mealSwitch = (page: Page) => page.getByRole('switch', { name: 'End of the day, if nothing is logged' })
 
 test('signed out, the card says reminders need an account', async ({ page }) => {
   await fakeFunction(page)
@@ -200,6 +200,36 @@ test('the card passes an accessibility scan, and reads in Hebrew', async ({ page
   // Signed in, the language is chosen on the Settings card itself.
   await page.getByRole('button', { name: 'עברית' }).first().click()
   await page.locator('html[dir="rtl"]').waitFor()
-  await expect(page.getByRole('switch', { name: 'להזכיר לי לרשום' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('switch', { name: 'בסוף היום, אם לא נרשם כלום' })).toBeVisible({ timeout: 15_000 })
   await expect(card(page).getByText('תזכורות', { exact: true })).toBeVisible()
+})
+
+test('a lunch reminder: switched on, its own time, and the usual meals saved for its button', async ({ page }) => {
+  await fakePush(page)
+  const tables = await signIn(page, { keep: true })
+  await fakeFunction(page)
+  await openSignedIn(page, '/settings')
+
+  const lunch = page.getByRole('switch', { name: 'Lunch' })
+  await expect(lunch).toHaveAttribute('aria-checked', 'false', { timeout: 15_000 })
+  await lunch.click()
+  await expect(lunch).toHaveAttribute('aria-checked', 'true', { timeout: 15_000 })
+  const latest = () => tables.user_preferences.at(-1) as Record<string, unknown>
+  await expect.poll(() => latest().lunch_reminder).toBe(true)
+  expect(latest().lunch_time).toBe('13:30')
+  // Off by default, the others stay off.
+  expect(latest().breakfast_reminder).toBe(false)
+  expect(latest().dinner_reminder).toBe(false)
+
+  // Lunch's own time, from lunch's own window.
+  const time = page.getByRole('combobox', { name: 'Lunch: At' })
+  await expect(time.locator('option').first()).toHaveText('11:00')
+  await expect(time.locator('option').last()).toHaveText('16:45')
+  await time.selectOption('12:45')
+  await expect.poll(() => latest().lunch_time).toBe('12:45')
+
+  // The usual meals for each meal, saved for the buttons (this account has none yet).
+  await expect.poll(() => JSON.stringify(Object.keys((latest().reminder_usuals ?? {}) as object))).toBe(
+    JSON.stringify(['BREAKFAST', 'LUNCH', 'DINNER']),
+  )
 })

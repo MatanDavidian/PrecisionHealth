@@ -254,5 +254,38 @@ test('details and a goal set before signing in come into the account; the sample
   // The sample person's year of birth and activity stayed behind.
   expect(profile.data.birthYear).toBeUndefined()
   expect(profile.data.activity).toBeUndefined()
-  expect((tables.goals as { data: { objective?: string } }[]).map((row) => row.data.objective)).toContain('BUILD_MUSCLE')
+  // Chosen beside the sample's "lose fat" (goals combine): the whole choice travels.
+  expect((tables.goals as { data: { objectives?: string[] } }[]).some((row) => row.data.objectives?.includes('BUILD_MUSCLE'))).toBe(true)
+})
+
+test('several goals at once: the calories follow the lead, protein the highest', async ({ page }) => {
+  await open(page, '/settings')
+  const tiles = page.getByTestId('targets-tiles')
+  await expect(tiles.getByText('2,150')).toBeVisible({ timeout: 15_000 })
+
+  // The sample is losing fat. Adding Build muscle keeps "lose fat, keep muscle" leading.
+  await page.getByRole('button', { name: 'Build muscle', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Build muscle', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'Lose fat, keep muscle' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByText('Lose fat, keep muscle + Build muscle', { exact: true })).toBeVisible()
+  await expect(page.getByText(/Losing and building together means losing fat while keeping muscle/)).toBeVisible()
+  await expect(tiles.getByText('2,150')).toBeVisible()
+
+  // Dropping "lose fat" leaves Build muscle leading: 250 over the 2,500 burned.
+  await page.getByRole('button', { name: 'Lose fat, keep muscle' }).click()
+  await expect(tiles.getByText('2,750')).toBeVisible({ timeout: 15_000 })
+
+  // The last goal cannot be taken away; the app says why.
+  await page.getByRole('button', { name: 'Build muscle', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Build muscle', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByText(/At least one goal stays chosen/)).toBeVisible()
+
+  // Today names every chosen goal.
+  await page.getByRole('button', { name: 'Keep this weight' }).click()
+  await expect(page.getByRole('button', { name: 'Keep this weight' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('targets-tiles').getByText('2,500')).toBeVisible({ timeout: 15_000 })
+  await open(page, '/today')
+  await expect(page.getByTestId('targets-card').getByText(/^Build muscle \+ Keep this weight: about the 2,500 kcal/)).toBeVisible({
+    timeout: 15_000,
+  })
 })

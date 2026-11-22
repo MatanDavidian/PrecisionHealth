@@ -10,6 +10,7 @@
 import {
   addDays,
   ageOn,
+  chosenObjectives,
   BURN_LOOKBACK_DAYS,
   convert,
   countedMeals,
@@ -91,6 +92,7 @@ function inputFor(day: CalendarDate, basis: Basis, burns: Map<CalendarDate, numb
   const ownEnergy = ownGoal(goals, 'ENERGY_INTAKE')
   return {
     objective: isObjective(energyGoal?.objective) ? energyGoal.objective : undefined,
+    objectives: chosenObjectives(energyGoal),
     weightKg: weight ? convert(weight.value, 'kg') : undefined,
     targetKg: weightGoal ? convert(weightGoal.target, 'kg') : undefined,
     heightCm: profile?.height ? convert(toCanonical(profile.height), 'cm') : undefined,

@@ -267,11 +267,15 @@ export function useActions() {
     [runWrite],
   )
 
-  /** Records which programme the user is on, as an ENERGY goal (D4: appended). */
-  const setObjective = useCallback(
-    async (objective: Objective) => {
+  /**
+   * Records which goals the user chose, as an ENERGY goal (D4: appended).
+   * Several at once (several-goals.md): one leads the calories, all are kept.
+   */
+  const setObjectives = useCallback(
+    async (objectives: Objective[]) => {
+      if (objectives.length === 0) return
       await runWrite('that goal', () =>
-        getRepositories().goals.add(buildObjectiveGoal(currentUserId(), objective)),
+        getRepositories().goals.add(buildObjectiveGoal(currentUserId(), objectives)),
       )
     },
     [runWrite],
@@ -499,7 +503,7 @@ export function useActions() {
     applyLeftoverToMeal,
     recordObservation,
     setGoal,
-    setObjective,
+    setObjectives,
     saveProfile,
     resolveConflict,
     confirmEstimate,

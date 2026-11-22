@@ -100,7 +100,10 @@ export type BurnBasis =
   | { kind: 'ESTIMATED'; kcal: number; restingKcal: number; activity: ActivityLevel }
 
 export interface TargetsInput {
+  /** The goal leading the calories (several-goals.md). */
   objective?: Objective
+  /** Every goal chosen; protein follows the highest of them. Defaults to `[objective]`. */
+  objectives?: Objective[]
   /** Current weight. */
   weightKg?: number
   /** The target weight, when the goal has one. */
@@ -123,6 +126,8 @@ export type TargetsMissing = 'OBJECTIVE' | 'WEIGHT' | 'BURN'
 export interface DailyTargets {
   /** Undefined only when both calories and protein are the person's own numbers. */
   objective?: Objective
+  /** Every goal chosen, for naming them together. */
+  objectives: Objective[]
   energyKcal: number
   proteinG: number
   carbsG: number
@@ -189,6 +194,7 @@ export function dailyTargets(input: TargetsInput): TargetsResult {
   if (missing.length > 0) return { ok: false, missing }
 
   const objective = input.objective
+  const chosen: Objective[] = input.objectives?.length ? input.objectives : objective ? [objective] : []
   const balanceKcal = objective ? OBJECTIVE_SHAPE[objective].dailyKcal ?? 0 : 0
   const floor = minIntakeKcal(input.sex)
 
@@ -208,7 +214,10 @@ export function dailyTargets(input: TargetsInput): TargetsResult {
     proteinG = Math.round(ownProtein)
     protein = { from: 'GOAL' }
   } else {
-    const perKg = PROTEIN_G_PER_KG[objective!]
+    // The highest rate any chosen goal asks for, the leading one included:
+    // losing and building together lead as "lose fat, keep muscle", and ask
+    // for its protein (several-goals.md).
+    const perKg = Math.max(...[...chosen, objective!].map((o) => PROTEIN_G_PER_KG[o]))
     const basisKg = proteinWeightKg(objective!, input.weightKg!, input.targetKg)
     proteinG = round(perKg * basisKg, 5)
     protein = { from: 'RULE', perKg, weightKg: basisKg }
@@ -221,6 +230,7 @@ export function dailyTargets(input: TargetsInput): TargetsResult {
     ok: true,
     targets: {
       objective,
+      objectives: chosen,
       energyKcal,
       proteinG,
       carbsG,

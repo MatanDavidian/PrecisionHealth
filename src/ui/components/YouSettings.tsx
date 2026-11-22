@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import {
   OBJECTIVES,
   OBJECTIVE_SHAPE,
+  resolveObjectives,
   type Objective,
 } from '@/domain'
 import { Card } from './Card'
@@ -20,25 +22,38 @@ const aimKey = (o: Objective): StringKey => `objective.aim.${o}` as StringKey
  * move. Today keeps what changes daily; this keeps what does not.
  */
 export function YouSettings({
-  objective,
+  objectives,
   weightKg,
   targetKg,
   weightRecordedOn,
-  onObjective,
+  onObjectives,
   onWeight,
   onTarget,
 }: {
-  objective?: Objective
+  /** Every goal chosen (several-goals.md); one of them leads the calories. */
+  objectives: Objective[]
   weightKg?: number
   targetKg?: number
   /** When the current weight was last written, said plainly. */
   weightRecordedOn?: string
-  onObjective: (next: Objective) => void
+  onObjectives: (next: Objective[]) => void
   onWeight: (kg: number) => void
   onTarget: (kg: number) => void
 }) {
   const t = useT()
-  const wantsTarget = objective ? OBJECTIVE_SHAPE[objective].wantsTarget : false
+  const resolved = resolveObjectives(objectives)
+  const wantsTarget = objectives.some((o) => OBJECTIVE_SHAPE[o].wantsTarget)
+  /** Shown when the last goal is tapped: at least one stays chosen. */
+  const [keepOne, setKeepOne] = useState(false)
+  const toggle = (option: Objective) => {
+    const on = objectives.includes(option)
+    if (on && objectives.length === 1) {
+      setKeepOne(true)
+      return
+    }
+    setKeepOne(false)
+    onObjectives(on ? objectives.filter((o) => o !== option) : [...objectives, option])
+  }
 
   /*
     The note also carries whether a target EXISTS.
@@ -65,12 +80,12 @@ export function YouSettings({
             <button
               key={option}
               type="button"
-              onClick={() => onObjective(option)}
-              aria-pressed={objective === option}
+              onClick={() => toggle(option)}
+              aria-pressed={objectives.includes(option)}
               /* Selected is ink, not accent: five orange-capable pills would
                  leave the screen with no way left to say "this is the button". */
               className={`rounded-full border px-[15px] py-[7px] text-[13.5px] transition-colors ${
-                objective === option
+                objectives.includes(option)
                   ? 'border-ink bg-ink font-medium text-canvas'
                   : 'border-hairline bg-surface hover:bg-card-soft'
               }`}
@@ -80,9 +95,21 @@ export function YouSettings({
           ))}
         </div>
         <p className="max-w-[60ch] pt-3.5 text-[0.81rem] leading-relaxed text-ink-muted">
-          {objective ? `${t(aimKey(objective))} ` : `${t('objective.chooseAim')} `}
+          {resolved && resolved.chosen.length > 1 && (
+            <span className="block pb-1 font-medium text-ink-soft">
+              {resolved.chosen.map((o) => t(nameKey(o))).join(' + ')}
+            </span>
+          )}
+          {resolved ? `${t(aimKey(resolved.lead))} ` : `${t('objective.chooseAim')} `}
+          {resolved?.recomposition && `${t('objective.together')} `}
+          {resolved && resolved.chosen.length > 1 && `${t('objective.severalTail')} `}
           {t('settings.goalTail')}
         </p>
+        {keepOne && (
+          <p role="status" className="pt-2 text-[0.81rem] text-ink-soft">
+            {t('objective.keepOne')}
+          </p>
+        )}
       </Card>
 
       <Card label={t('settings.weight')}>

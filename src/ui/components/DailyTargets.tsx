@@ -34,6 +34,12 @@ import type { StringKey } from '../i18n/strings'
 
 const objectiveName = (o: Objective): StringKey => `objective.${o}` as StringKey
 
+/** Every chosen goal's name, joined: "Lose weight + Build muscle". */
+function useGoalNames() {
+  const { t } = useLang()
+  return (objectives: readonly Objective[]) => objectives.map((o) => t(objectiveName(o))).join(' + ')
+}
+
 function useFormat() {
   const { lang } = useLang()
   return (n: number) => Math.round(n).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')
@@ -117,12 +123,13 @@ function MacroRow({
 /** The sentence under the card: where the calorie target came from. */
 function useWhy() {
   const { t } = useLang()
+  const goalNames = useGoalNames()
   const fmt = useFormat()
   return (targets: DailyTargets): string => {
     if (targets.energy.from === 'GOAL' || !targets.burn || !targets.objective) {
       return t('targets.why.own', { kcal: fmt(targets.energyKcal) })
     }
-    const goal = t(objectiveName(targets.objective))
+    const goal = goalNames(targets.objectives.length ? targets.objectives : targets.objective ? [targets.objective] : [])
     const burn = fmt(Math.round(targets.burn.kcal / 10) * 10)
     const head =
       targets.balanceKcal < 0
@@ -265,10 +272,13 @@ function CheckIcon() {
 /** What is done and what is still needed, as a checklist rather than an error. */
 function Checklist({ input, result }: { input: TargetsInput; result: Extract<TargetsResult, { ok: false }> }) {
   const { t } = useLang()
+  const goalNames = useGoalNames()
   const items: { done: boolean; text: string }[] = [
     {
       done: !result.missing.includes('OBJECTIVE'),
-      text: input.objective ? t('targets.missing.goalDone', { goal: t(objectiveName(input.objective)) }) : t('targets.missing.goal'),
+      text: input.objective
+        ? t('targets.missing.goalDone', { goal: goalNames(input.objectives?.length ? input.objectives : [input.objective]) })
+        : t('targets.missing.goal'),
     },
     {
       done: !result.missing.includes('WEIGHT'),
@@ -371,6 +381,7 @@ function TargetsWorkingBody({
   fmt: (n: number) => string
 }) {
   const { t } = useLang()
+  const goalNames = useGoalNames()
   const target = fmt(targets.energyKcal)
   const burn = targets.burn
   const tiles: { value: string; unit: string; name: string }[] = [
@@ -390,7 +401,7 @@ function TargetsWorkingBody({
         })
     : undefined
   const balanceLine = (): string => {
-    const goal = targets.objective ? t(objectiveName(targets.objective)) : ''
+    const goal = targets.objective ? goalNames(targets.objectives.length ? targets.objectives : targets.objective ? [targets.objective] : []) : ''
     if (targets.objective === 'FITNESS') return t('targets.work.fitness', { target })
     if (targets.balanceKcal < 0) return t('targets.work.deficit', { goal, n: fmt(-targets.balanceKcal), target })
     if (targets.balanceKcal > 0) return t('targets.work.surplus', { goal, n: fmt(targets.balanceKcal), target })

@@ -23,7 +23,7 @@ import { AccountData } from '../components/AccountData'
 import { Devices } from '../components/Devices'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay } from '../useSelectedDay'
-import { convert, directionToward, goalFor, isObjective } from '@/domain'
+import { chosenObjectives, convert, directionToward, goalFor } from '@/domain'
 
 type SettingsTab = 'you' | 'ai' | 'account'
 
@@ -51,14 +51,14 @@ export function Settings() {
   })
   const { today } = useSelectedDay()
   const { data } = useDay(today)
-  const { recordObservation, setGoal, setObjective, saveProfile } = useActions()
+  const { recordObservation, setGoal, setObjectives, saveProfile } = useActions()
   /** What the daily targets are worked out from, and the working (daily-targets.md). */
   const targetsReading = useDailyTargets(today)
 
   const goals = data?.goals ?? []
   const weightTarget = goalFor(goals, 'WEIGHT')
   const energyGoal = goalFor(goals, 'ENERGY')
-  const objective = isObjective(energyGoal?.objective) ? energyGoal.objective : undefined
+  const objectives = chosenObjectives(energyGoal)
   const weight = data?.effective.WEIGHT
   const weightKg = weight ? convert(weight.value, 'kg') : undefined
   const targetKg = weightTarget ? convert(weightTarget.target, 'kg') : undefined
@@ -254,11 +254,11 @@ export function Settings() {
           {tab === 'you' && (
             <>
               <YouSettings
-                objective={objective}
+                objectives={objectives}
                 weightKg={weightKg}
                 targetKg={targetKg}
                 weightRecordedOn={weightRecordedOn}
-                onObjective={(next) => void setObjective(next)}
+                onObjectives={(next) => void setObjectives(next)}
                 onWeight={(kg) =>
                   void recordObservation({ code: 'WEIGHT', value: kg, unit: 'kg', day: today })
                 }

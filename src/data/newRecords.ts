@@ -31,7 +31,7 @@ import {
   type Unit,
   type UserId,
 } from '@/domain'
-import { OBJECTIVE_SHAPE } from '@/domain'
+import { OBJECTIVE_SHAPE, resolveObjectives } from '@/domain'
 
 export const deviceZone = (): IanaZone => Intl.DateTimeFormat().resolvedOptions().timeZone
 
@@ -198,9 +198,13 @@ export function buildGoal(userId: UserId, input: GoalInput, zone = deviceZone())
  */
 export function buildObjectiveGoal(
   userId: UserId,
-  objective: Objective,
+  objectives: Objective | readonly Objective[],
   zone = deviceZone(),
 ): Goal {
+  // Several goals at once (several-goals.md): one leads the calories, all are kept.
+  const resolved = resolveObjectives(typeof objectives === 'string' ? [objectives] : objectives)
+  if (!resolved) throw new Error('at least one goal')
+  const objective = resolved.lead
   const daily = OBJECTIVE_SHAPE[objective].dailyKcal
   return {
     ...buildGoal(
@@ -215,6 +219,7 @@ export function buildObjectiveGoal(
       zone,
     ),
     objective,
+    objectives: resolved.chosen,
   }
 }
 

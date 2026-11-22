@@ -11,9 +11,13 @@ import { open } from './app'
 test('choosing a goal changes how the week is judged', async ({ page }) => {
   await open(page, '/settings')
 
+  // Goals combine (several-goals.md): general fitness alone means the sample's
+  // "lose fat" has to go too.
   const fitness = page.getByRole('button', { name: 'General fitness' })
   await fitness.click()
   await expect(fitness).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Lose fat, keep muscle' }).click()
+  await expect(page.getByRole('button', { name: 'Lose fat, keep muscle' })).toHaveAttribute('aria-pressed', 'false')
 
   // An untargeted goal is never scored — it says so rather than inventing one.
   await open(page, '/today?view=week')

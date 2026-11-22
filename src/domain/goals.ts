@@ -52,8 +52,18 @@ export interface Goal {
    * reads to name it and to decide whether a target weight applies.
    */
   objective?: Objective
+  /**
+   * Every goal chosen together (several-goals.md), of which `objective` is
+   * the one leading the calories. Absent on goals saved before several could
+   * be chosen: read those through `chosenObjectives`.
+   */
+  objectives?: Objective[]
   provenance: Provenance
 }
+
+/** The goals a person chose, whichever way the record was saved. */
+export const chosenObjectives = (goal: Goal | undefined): Objective[] =>
+  goal?.objectives?.length ? [...goal.objectives] : goal?.objective ? [goal.objective] : []
 
 export interface NutritionPlan {
   id: NutritionPlanId

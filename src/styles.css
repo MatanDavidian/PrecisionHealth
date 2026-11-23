@@ -66,6 +66,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * No letter-spacing for the small card titles in Hebrew.
+ *
+ * The wide tracking is for English capitals ("YOUR GOAL"). Hebrew has no
+ * capitals, and spacing its letters apart breaks each word into pieces
+ * (ה י ע ד). Owner's choice, 2026-11-23: same fonts, no spacing in Hebrew.
+ * The sign-in code box (0.3em, digits) keeps its spacing.
+ */
+html[dir='rtl'] .tracking-\[0\.12em\],
+html[dir='rtl'] .tracking-\[0\.14em\] {
+  letter-spacing: 0;
+}
+
 /* Numbers in stat rows should align regardless of digit width. */
 .tabular {
   font-variant-numeric: tabular-nums;

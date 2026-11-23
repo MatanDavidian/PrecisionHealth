@@ -306,7 +306,7 @@ const en = {
   'targets.work.deficit': '{goal} takes {n} kcal off that: {target} kcal.',
   'targets.work.surplus': '{goal} adds {n} kcal to that: {target} kcal.',
   'targets.work.level': '{goal} keeps it level: {target} kcal.',
-  'targets.work.fitness': 'Fitness sets no deficit or surplus, so this is a guide: {target} kcal.',
+  'targets.work.fitness': 'No weight goal, so no deficit or surplus: this is a guide, {target} kcal.',
   'targets.work.proteinRule': 'Protein: {perKg} g for each kilo of your {kg} kg.',
   'targets.work.proteinRuleTarget': 'Protein: {perKg} g for each kilo of your {kg} kg target.',
   'targets.work.proteinGoal': 'Protein: the {g} g goal you set.',
@@ -385,7 +385,7 @@ const en = {
   'reminders.testFailed': 'Could not send just now. Try again in a minute.',
   'reminders.saveFailed': 'Could not save that. Try again.',
   'reminders.privacy':
-    'A reminder says only that it is time to log, never what you ate. It comes to every device where you turned reminders on.',
+    'A reminder says it is time to log. A meal reminder also names your usual meal for that time, never anything else you ate. It comes to every device where you turned reminders on.',
   'settings.aboutYou': 'About you',
   'settings.height': 'Height',
   'settings.birthYear': 'Year of birth',
@@ -438,7 +438,7 @@ const en = {
   'settings.account': 'Account',
   'settings.language': 'Language',
   'settings.languageHint':
-    'Changes the app immediately, and asks the model to answer in the same language. Kept on this device.',
+    'Changes the app immediately, and asks the model to answer in the same language. Kept on this device, and with your account when you are signed in.',
   'settings.apiKey': 'OpenAI API key',
   'settings.accuracyOrSpeed': 'Accuracy or speed',
   'settings.appAnalysisOnPlan':
@@ -715,7 +715,7 @@ const en = {
   'settings.step3': 'Create a new secret key and copy it straight away. OpenAI shows it once.',
   'settings.notIncludedBold': 'A ChatGPT subscription does not include this.',
   'settings.notIncluded':
-    'The API is a separate product on separate billing, and paying for Plus grants no API access at all. The upside is that it is cheap: analysing a photo costs a fraction of a cent, so a few meals a day runs to pennies a month.',
+    'The API is a separate product on separate billing, and paying for Plus grants no API access at all. The upside is that it is cheap: analyzing a photo costs a fraction of a cent, so a few meals a day runs to pennies a month.',
   'settings.storedHead': 'Your key is stored',
   'settings.storedBold': 'on this device only',
   'settings.storedTail':
@@ -903,7 +903,7 @@ const en = {
   'week.levelWeek': 'a level week',
   'week.aimOver': '{count} kcal over the week',
   'week.noTarget': 'No calorie target on this goal — the balance is here for context, not as a score.',
-  'week.noGoalYet': 'No goal set yet. Pick one on the day view and the week gets something to measure against.',
+  'week.noGoalYet': 'No goal set yet. Pick one in Settings → Goals and the week gets something to measure against.',
   'week.onTrack': 'On track',
   'week.short': '{count} kcal short',
   'week.off': '{count} kcal off',
@@ -971,7 +971,7 @@ const en = {
   'devices.adding': 'Creating…',
   'devices.copyNow': 'Token for {label}',
   'devices.onceOnly':
-    'Copy it now. This is the only time it is shown — it is stored hashed, so nobody can look it up again, including us. Lost one is replaced, not recovered.',
+    'Copy it now. This is the only time it is shown — it is stored hashed, so nobody can look it up again, including us. A lost one is replaced, not recovered.',
   'devices.copy': 'Copy',
   'devices.copied': 'Copied',
   'devices.done': 'Done',
@@ -1176,7 +1176,7 @@ const he: Dictionary = {
   'log.write.estimate': 'הערכה',
   'log.write.hint': 'כמה שניות, ובטווח שגיאה רחב יותר מתמונה.',
   'log.write.recent': 'דברים שתיארתם בעבר, מוכנים לשליחה חוזרת.',
-  'log.write.forget': 'שכחו את זה',
+  'log.write.forget': 'לשכוח את זה',
 
   'log.analyzing.reading': 'קוראים את הצלחת…',
   'log.analyzing.usually': 'בדרך כלל בערך 15 שניות',
@@ -1203,7 +1203,7 @@ const he: Dictionary = {
   'log.action.startOver': 'להתחיל מחדש',
   'log.action.edit': 'עריכה',
   'log.saved': 'נשמר.',
-  'log.savedLink': 'לצפייה בהיום',
+  'log.savedLink': 'למסך היום',
 
   'log.error.photo': 'משהו השתבש בקריאת התמונה',
   'log.error.session': 'התנתקתם, ולכן הניתוח לא רץ. שום דבר לא נספר.',
@@ -1264,9 +1264,9 @@ const he: Dictionary = {
   'usuals.cancel': 'ביטול',
   'usuals.selected': '{count} נבחרו',
   'usuals.unconfirmed': 'הערכה לא מאושרת',
-  'usuals.loggedTimes': { one: 'נרשם {count} פעם לאחרונה', other: 'נרשם {count} פעמים לאחרונה' },
-  'usuals.mealCount': { one: 'ארוחה {count}', other: '{count} ארוחות' },
-  'usuals.logged': '{label} נרשם',
+  'usuals.loggedTimes': { one: 'נרשם פעם אחת לאחרונה', other: 'נרשם {count} פעמים לאחרונה' },
+  'usuals.mealCount': { one: 'ארוחה אחת', other: '{count} ארוחות' },
+  'usuals.logged': 'נרשם: {label}',
   'usuals.loggedNote': 'בלי תמונה, בלי הערכה לאשר.',
   'usuals.undo': 'ביטול',
   'usuals.dismiss': 'סגירה',
@@ -1304,7 +1304,7 @@ const he: Dictionary = {
   'nutrition.nothingLogged': 'עוד לא נרשם דבר ליום הזה.',
   'nutrition.loggedCount': 'נרשמו ({count})',
   'nutrition.gProtein': '{grams} גרם חלבון',
-  'nutrition.deleted': '{slot} נמחקה · {kcal} קלוריות ירדו מהסך היומי',
+  'nutrition.deleted': 'נמחק: {slot} · {kcal} קלוריות ירדו מהסך היומי',
 
   'editor.editing': 'עריכת {slot}',
   'editor.loggedAt': 'נרשם ב{time}, {origin}',
@@ -1356,9 +1356,9 @@ const he: Dictionary = {
   'targets.barText': '{eaten} מתוך {target}',
   'targets.why.deficit': '{goal}: {n} קלוריות פחות מה־{burn} שאתם שורפים ביום רגיל',
   'targets.why.surplus': '{goal}: {n} קלוריות יותר מה־{burn} שאתם שורפים ביום רגיל',
-  'targets.why.level': '{goal}: בערך ה־{burn} קלוריות שאתם שורפים ביום רגיל',
+  'targets.why.level': '{goal}: בערך כמו ה־{burn} קלוריות שאתם שורפים ביום רגיל',
   'targets.why.measured': {
-    one: ', לפי השעון (יום {count}).',
+    one: ', לפי השעון (יום אחד).',
     other: ', לפי השעון ({count} ימים).',
   } as Plural,
   'targets.why.estimated': ', בהערכה לפי הגוף ורמת הפעילות.',
@@ -1374,14 +1374,14 @@ const he: Dictionary = {
   'targets.done': 'הושלם',
   'targets.todo': 'עוד חסר',
   'targets.work.measured': {
-    one: 'אתם שורפים בערך {kcal} קלוריות ביום: לפי יום {count} מהשעון.',
+    one: 'אתם שורפים בערך {kcal} קלוריות ביום: לפי יום אחד מהשעון.',
     other: 'אתם שורפים בערך {kcal} קלוריות ביום: הממוצע של {count} ימים מהשעון.',
   } as Plural,
   'targets.work.estimated': 'אתם שורפים בערך {kcal} קלוריות ביום: {resting} במנוחה, כפול {factor} עבור „{activity}”.',
   'targets.work.deficit': '{goal}: פחות {n} קלוריות, כלומר {target} קלוריות.',
   'targets.work.surplus': '{goal}: עוד {n} קלוריות, כלומר {target} קלוריות.',
   'targets.work.level': '{goal}: בלי שינוי, {target} קלוריות.',
-  'targets.work.fitness': 'כושר לא קובע גירעון או עודף, אז זה קו מנחה: {target} קלוריות.',
+  'targets.work.fitness': 'בלי יעד משקל, אז אין גירעון או עודף: זה קו מנחה, {target} קלוריות.',
   'targets.work.proteinRule': 'חלבון: {perKg} גרם לכל קילו מתוך {kg} ק״ג.',
   'targets.work.proteinRuleTarget': 'חלבון: {perKg} גרם לכל קילו ממשקל היעד, {kg} ק״ג.',
   'targets.work.proteinGoal': 'חלבון: יעד ה־{g} גרם שהגדרתם.',
@@ -1390,7 +1390,7 @@ const he: Dictionary = {
   'targets.why.own': 'היעד שקבעתם: {kcal} קלוריות.',
   'targets.belowFloor': 'פחות מ־{kcal} קלוריות, המינימום שאנחנו ממליצים עליו בלי ליווי של איש מקצוע.',
   'targets.streak': {
-    one: 'יום {count} ברצף ביעד',
+    one: 'יום אחד ברצף ביעד',
     other: '{count} ימים ברצף ביעד',
   } as Plural,
   'targets.work.ownEnergy': 'קלוריות: ה־{kcal} שקבעתם בעצמכם.',
@@ -1403,7 +1403,7 @@ const he: Dictionary = {
   'targets.own.note': 'מספר משלכם גובר על החישוב, והפחמימות והשומן נגזרים ממנו. „אוטומטי” מחזיר לחישוב.',
   'targets.week.title': 'היעדים השבוע',
   'targets.week.hit': {
-    one: '{hit} מתוך יום {count} ביעד',
+    one: '{hit} מתוך יום אחד ביעד',
     other: '{hit} מתוך {count} ימים ביעד',
   } as Plural,
   'targets.week.protein': {
@@ -1420,8 +1420,8 @@ const he: Dictionary = {
   'adopt.detailsToo': 'גם היעד ופרטי הגוף שלכם עברו.',
   'adopt.detailsOnly': 'היעד ופרטי הגוף שלכם עברו לחשבון.',
   'quick.subtitle': 'הקשה אחת רושמת, להיום.',
-  'quick.usualsLabel': '{slot} הרגילה שלכם',
-  'quick.none': 'עוד אין {slot} רגילה. רשמו אותה פעם או פעמיים והיא תופיע כאן.',
+  'quick.usualsLabel': 'הרגילים שלכם ל{slot}',
+  'quick.none': 'עוד אין משהו רגיל ל{slot}. רשמו פעם או פעמיים והוא יופיע כאן.',
   'quick.write': 'לכתוב',
   'quick.photo': 'לצלם',
   'quick.logged': 'נרשם: {name} · {kcal} קלוריות',
@@ -1435,7 +1435,7 @@ const he: Dictionary = {
   'reminders.signIn': 'כניסה',
   'reminders.unsupported': 'הדפדפן הזה לא יכול להציג התראות.',
   'reminders.iosHomeScreen':
-    'באייפון, תזכורות דורשות את Vimetry במסך הבית: בספארי, שיתוף ואז „הוספה למסך הבית”, ולפתוח משם.',
+    'באייפון, תזכורות דורשות את Vimetry במסך הבית: בספארי, שיתוף ואז „הוספה למסך הבית”, ופתחו אותה משם.',
   'reminders.denied': 'ההתראות של Vimetry חסומות. אפשרו אותן בהגדרות הדפדפן או הטלפון, וחזרו לכאן.',
   'reminders.meal': 'בסוף היום, אם לא נרשם כלום',
   'reminders.slot.BREAKFAST': 'ארוחת בוקר',
@@ -1457,7 +1457,7 @@ const he: Dictionary = {
   'reminders.testFailed': 'לא הצלחנו לשלוח כרגע. נסו שוב בעוד דקה.',
   'reminders.saveFailed': 'לא הצלחנו לשמור. נסו שוב.',
   'reminders.privacy':
-    'תזכורת אומרת רק שהגיע הזמן לרשום, אף פעם לא מה אכלתם. היא מגיעה לכל מכשיר שבו הפעלתם תזכורות.',
+    'תזכורת אומרת שהגיע הזמן לרשום. תזכורת לארוחה מציינת גם את הארוחה הרגילה שלכם לאותה שעה, ולא שום דבר אחר שאכלתם. היא מגיעה לכל מכשיר שבו הפעלתם תזכורות.',
   'settings.aboutYou': 'עליכם',
   'settings.height': 'גובה',
   'settings.birthYear': 'שנת לידה',
@@ -1509,7 +1509,7 @@ const he: Dictionary = {
   'settings.account': 'חשבון',
   'settings.language': 'שפה',
   'settings.languageHint':
-    'משנה את האפליקציה מיד, ומבקש מהמודל לענות באותה שפה. נשמר במכשיר הזה.',
+    'משנה את האפליקציה מיד, ומבקש מהמודל לענות באותה שפה. נשמר במכשיר הזה, ובחשבון שלכם כשאתם מחוברים.',
   'settings.apiKey': 'מפתח API של OpenAI',
   'settings.accuracyOrSpeed': 'דיוק או מהירות',
   'settings.appAnalysisOnPlan': 'באפליקציה, ניתוח תמונות וטקסט מגיע עם הניתוחים החינמיים או עם המנוי שלמעלה. רישום ידני תמיד בחינם.',
@@ -1591,17 +1591,17 @@ const he: Dictionary = {
 
   // ----------------------------------------------------------- docked bar --
   'bar.analyzing': 'מנתחים את {label}',
-  'bar.estimated': '{label} הוערכה',
+  'bar.estimated': 'ההערכה ל{label} מוכנה',
   'bar.view': 'הצגה',
   'bar.review': 'סקירה',
 
   // ------------------------------------------------------------ conflicts --
-  'conflict.twoSources': 'שני מקורות חלוקים',
+  'conflict.twoSources': 'שני מקורות לא מסכימים',
   'conflict.showing': 'מוצג {source} עד שתאשרו אחד.',
   'conflict.mealTwoPlaces': 'הארוחה הזו נערכה בשני מקומות',
   'conflict.mealBoth':
     'שתי העריכות יצאו מגרסה {version}. בחרו את זו שנשמרת — השנייה נשארת בהיסטוריה שלכם כך או כך.',
-  'conflict.itemCount': { one: 'פריט {count}', other: '{count} פריטים' },
+  'conflict.itemCount': { one: 'פריט אחד', other: '{count} פריטים' },
   'conflict.noItems': 'אין פריטים',
 
   // ------------------------------------------------------------- failures --
@@ -1617,7 +1617,7 @@ const he: Dictionary = {
   'source.GARMIN': 'גרמין',
   'source.APPLE_HEALTH': 'Apple Health',
   'source.HEALTH_CONNECT': 'Health Connect',
-  'source.SMART_SCALE': 'משקל',
+  'source.SMART_SCALE': 'משקל חכם',
   'source.AI_ESTIMATE': 'הערכת AI',
   'source.LAB_DOCUMENT': 'דוח מעבדה',
 
@@ -1626,13 +1626,13 @@ const he: Dictionary = {
   'adopt.moving': 'מעבירים את הרשומות שלכם…',
   'adopt.offer':
     'בדפדפן הזה שמורות {records} שרשמתם{days}. להעביר אותן לחשבון שלכם כדי שילוו אתכם בין מכשירים?',
-  'adopt.recordCount': { one: 'רשומה {count}', other: '{count} רשומות' },
+  'adopt.recordCount': { one: 'רשומה אחת', other: '{count} רשומות' },
   'adopt.acrossDays': ' על פני {days}',
-  'adopt.dayCount': { one: 'יום {count}', other: '{count} ימים' },
+  'adopt.dayCount': { one: 'יום אחד', other: '{count} ימים' },
   'adopt.sampleStays': 'יום הדוגמה נשאר מאחור, והעותקים המקומיים שלכם לא נמחקים.',
   'adopt.moved': 'הועברו {what} לחשבון שלכם.',
-  'adopt.mealCount': { one: 'ארוחה {count}', other: '{count} ארוחות' },
-  'adopt.measurementCount': { one: 'מדידה {count}', other: '{count} מדידות' },
+  'adopt.mealCount': { one: 'ארוחה אחת', other: '{count} ארוחות' },
+  'adopt.measurementCount': { one: 'מדידה אחת', other: '{count} מדידות' },
   'adopt.and': '{meals} ו{measurements}',
   'adopt.alreadyThere': '{count} כבר היו שם.',
   'adopt.untouched': 'העותקים בדפדפן הזה נשארים כמו שהם.',
@@ -1807,7 +1807,7 @@ const he: Dictionary = {
   'settings.defaultIs':
     'ברירת המחדל היא {model}. מודל גדול יותר קורא צלחת בקפידה רבה יותר ועולה יותר לכל תמונה.',
   'settings.autoAnalyze': 'לנתח אוטומטית אחרי צילום התמונה',
-  'settings.autoAnalyzeHint': 'כיבוי משמעו הקשה אחת נוספת, ואף בקשה שלא ביקשתם.',
+  'settings.autoAnalyzeHint': 'כשזה כבוי: עוד הקשה אחת, ושום דבר לא נשלח בלי שביקשתם.',
   'settings.photosBody':
     'תמונות של ארוחות אף פעם לא נשמרות — לא במכשיר הזה ולא בשום מקום אחר. כל תמונה נשלחת לניתוח פעם אחת ואז נזרקת. מה שנשמר הוא ההערכה, רמת הביטחון שלה, ורישום של גודל התמונה וטביעת האצבע שלה.',
   'settings.storageAccount':
@@ -1828,7 +1828,7 @@ const he: Dictionary = {
     'כל מה שהאפליקציה שומרת עליכם, כקובץ JSON — כדי שיהיה לכם עותק בלי תלות בדפדפן הזה ובחשבון.',
   'settings.exportButton': 'הורדת הנתונים שלי',
   'settings.exportPreparing': 'אוספים…',
-  'settings.exportDone': 'ירד — {count} רשומות.',
+  'settings.exportDone': 'הורדו {count} רשומות.',
   'settings.exportFailed': 'לא הצלחנו לבנות את הייצוא.',
   'settings.exportExcludes':
     'מפתח ה־OpenAI שלכם מושמט בכוונה: הוא אישור גישה ולא נתוני בריאות, וקובץ ייצוא הוא דבר ששולחים לעצמם במייל. תמונות של ארוחות לא נשמרות בכלל, ולכן גם הן לא מופיעות.',
@@ -1911,7 +1911,7 @@ const he: Dictionary = {
   'report.noteLabel': 'רוצים להוסיף משהו? (לא חובה — בלי פרטים אישיים, בבקשה)',
   'report.whatIsSent': 'נשלחים: הסיבה, ההערה שלכם, ואיזה מודל AI ענה. לא הארוחה, לא התמונה, לא התשובה ולא החשבון שלכם.',
   'report.send': 'שליחת הדיווח',
-  'report.sending': 'שולח…',
+  'report.sending': 'שולחים…',
   'report.cancel': 'ביטול',
   'report.thanks': 'תודה — הדיווח נשלח.',
   'report.failed': 'לא הצלחנו לשלוח את הדיווח. בדקו את החיבור ונסו שוב.',
@@ -1960,7 +1960,7 @@ const he: Dictionary = {
   'week.levelWeek': 'שבוע מאוזן',
   'week.aimOver': '{count} קלוריות לשבוע',
   'week.noTarget': 'אין יעד קלורי ביעד הזה — המאזן כאן להקשר, לא כציון.',
-  'week.noGoalYet': 'עוד לא הוגדר יעד. בחרו אחד בתצוגת היום ולשבוע יהיה מול מה להימדד.',
+  'week.noGoalYet': 'עוד לא הוגדר יעד. בחרו אחד בהגדרות ← יעדים ולשבוע יהיה מול מה להימדד.',
   'week.onTrack': 'בכיוון',
   'week.short': 'חסרות {count} קלוריות',
   'week.off': 'סטייה של {count} קלוריות',
@@ -2127,7 +2127,7 @@ const he: Dictionary = {
   'quickSet.done': 'היום נקבע: {kcal} קלוריות.',
   'quickSet.filledManyKcal': '{count} ימים מולאו: {kcal} קלוריות לכל יום.',
 
-  'chooseLang.title': 'באיזו שפה שנציג את זה?',
+  'chooseLang.title': 'באיזו שפה להציג את האפליקציה?',
   'chooseLang.body':
     'זה חל בכל מקום, כולל התשובות שהמודל נותן לכם, ומלווה אתכם לכל מכשיר שתתחברו בו. אפשר לשנות בהגדרות בכל רגע.',
   'chooseLang.later': 'להחליט אחר כך',

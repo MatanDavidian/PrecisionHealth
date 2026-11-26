@@ -10,15 +10,40 @@ import {
   buildSuggestionRequest,
   dayKey,
   latestVersions,
+  weekSoFar,
+  weekStartOf,
   type DailyTargets,
   type Macros,
   type Meal,
   type SuggestionRequest,
   type UserId,
+  type WeekSoFar,
 } from '@/domain'
 import { getRepositories } from '.'
 import { deviceZone, suggestSlot } from './newRecords'
 import { USUALS_WINDOW_DAYS } from './usuals'
+import { readTargetsHistory } from './targets'
+
+/**
+ * The week so far, Sunday to now (meal-suggestions.md): each day before today
+ * against its own targets and what it really burned, and today against its
+ * target.
+ */
+export async function readWeekSoFar(
+  userId: UserId,
+  targets: DailyTargets,
+  eaten: Macros,
+  now: Date = new Date(),
+): Promise<WeekSoFar> {
+  const today = dayKey(now.toISOString(), deviceZone())
+  const start = weekStartOf(today)
+  const before =
+    start < today ? await readTargetsHistory(userId, start, addDays(today, -1), getRepositories()) : []
+  return weekSoFar(
+    before.map((day) => ({ eatenKcal: day.eaten.energyKcal, targets: day.targets, burnedKcal: day.burnedKcal })),
+    { eatenKcal: eaten.energyKcal, targets },
+  )
+}
 
 const instantOf = (meal: Meal): string | undefined =>
   meal.time.kind === 'instant' ? meal.time.at : meal.time.kind === 'interval' ? meal.time.start : undefined
@@ -29,7 +54,13 @@ export async function readSuggestionRequest(
   userId: UserId,
   targets: DailyTargets,
   eaten: Macros,
-  options: { note?: string; avoid?: readonly string[]; now?: Date } = {},
+  options: {
+    note?: string
+    avoid?: readonly string[]
+    now?: Date
+    plan?: { kind: 'FILL' | 'PROTEIN'; maxKcal: number }
+    week?: WeekSoFar
+  } = {},
 ): Promise<SuggestionRequest> {
   const now = options.now ?? new Date()
   const zone = deviceZone()
@@ -50,5 +81,7 @@ export async function readSuggestionRequest(
     today: todays,
     note: options.note,
     avoid: options.avoid,
+    plan: options.plan,
+    week: options.week,
   })
 }

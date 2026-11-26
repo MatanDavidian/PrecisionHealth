@@ -169,3 +169,77 @@ screens = {
 for name, html in screens.items():
     (HERE / f"{name}.html").write_text(html)
 print(json.dumps(list(screens)))
+
+
+# --- 2026-11-26, second round: over today, protein short; the week decides ---
+OVER = {
+ 'en': dict(eaten='2,476', of='of 2,150 kcal', status='326 over', p='134 / 145 g', c='241 / 215', f='78 / 72',
+   line='326 kcal over today · 11 g protein short',
+   weekRoom='Week so far: 450 kcal under your targets, so a light protein snack still fits.',
+   weekNote='Sunday to today. Days your watch reported count what you really burned.',
+   askProtein='Suggest a protein snack',
+   stopTitle='Better to stop for today.',
+   stopBody="You're 326 kcal over today and 180 over for the week so far. The 11 g of protein can wait: start tomorrow with it.",
+   weekOver='Week so far: 180 kcal over your targets.',
+   hungry='Hungry anyway? Suggest something light',
+   forProtein='A light protein snack: up to 250 kcal, the most protein for it',
+   s1=('Your usual','Cottage cheese 1%',[('Cottage cheese 1%','150 g')],'105 kcal · 17 g protein · 5 g carbs · 1.5 g fat','+105 kcal today · protein 151 of 145 g ✓ · week 345 under','Closes the 11 g with the fewest calories of anything you eat.'),
+   s2=('From your foods','Tuna in water',[('Tuna in water, half a tin','56 g')],'58 kcal · 13 g protein · 0 g carbs · 0.5 g fat','+58 kcal today · protein 147 of 145 g ✓ · week 392 under','Half a tin is enough for the 11 g.')),
+ 'he': dict(eaten='2,476', of='מתוך 2,150 קלוריות', status='326 מעל', p='134 / 145', c='241 / 215', f='78 / 72',
+   line='326 קלוריות מעל היום · חסרים 11 גרם חלבון',
+   weekRoom='השבוע עד עכשיו: 450 קלוריות מתחת ליעדים, אז נשנוש חלבון קל עדיין נכנס.',
+   weekNote='מיום ראשון עד היום. בימים שהשעון דיווח נספר מה ששרפתם באמת.',
+   askProtein='הצעה לנשנוש חלבון',
+   stopTitle='עדיף לעצור להיום.',
+   stopBody='אתם 326 קלוריות מעל היום ו־180 מעל לשבוע עד עכשיו. 11 גרם החלבון יכולים לחכות: התחילו איתם את מחר.',
+   weekOver='השבוע עד עכשיו: 180 קלוריות מעל היעדים.',
+   hungry='רעבים בכל זאת? הצעה למשהו קל',
+   forProtein='נשנוש חלבון קל: עד 250 קלוריות, הכי הרבה חלבון בשבילן',
+   s1=('הרגיל שלכם','קוטג׳ 1%',[('קוטג׳ 1%','150 גרם')],'105 קלוריות · 17 גרם חלבון · 5 גרם פחמימות · 1.5 גרם שומן','‎+105 קלוריות היום · חלבון 151 מתוך 145 גרם ✓ · השבוע 345 מתחת','סוגר את 11 הגרם בהכי מעט קלוריות מכל מה שאתם אוכלים.'),
+   s2=('מהמזונות שלכם','טונה במים',[('טונה במים, חצי קופסה','56 גרם')],'58 קלוריות · 13 גרם חלבון · 0 גרם פחמימות · 0.5 גרם שומן','‎+58 קלוריות היום · חלבון 147 מתוך 145 גרם ✓ · השבוע 392 מתחת','חצי קופסה מספיקה ל־11 הגרם.')),
+}
+
+def over_card(L, O, inner):
+    return f"""<div class="card">
+<div class="head"><span class="lab">{L['tt']}</span><span class="how">{L['how']}</span></div>
+<div class="row1"><div><span class="big num">{O['eaten']}</span> <span class="of">{O['of']}</span></div><span class="status">{O['status']}</span></div>
+<div class="bar" style="background:#ddd4c2"><i style="width:100%;background:#2b2721"></i></div>
+<div class="macro"><span>{L['prot']}</span><div class="bar"><i style="width:92%"></i></div><span class="num">{O['p']}</span></div>
+<div class="macro"><span>{L['carbs']}</span><div class="bar m"><i style="width:100%"></i></div><span class="num">{O['c']}</span></div>
+<div class="macro"><span>{L['fat']}</span><div class="bar m"><i style="width:100%"></i></div><span class="num">{O['f']}</span></div>
+<div class="ask">{inner}</div></div>"""
+
+def protein_idle(lang):
+    L, O = T[lang], OVER[lang]
+    return page(L, over_card(L, O, f"""<div class="left">{O['line']}</div>
+<p class="muted" style="margin:6px 0 0;font-size:13px;color:#504c45">{O['weekRoom']}</p>
+<div style="display:flex;gap:14px;align-items:center;padding-top:12px;flex-wrap:wrap"><button class="btn">✦ {O['askProtein']}</button><span class="link">{L['addNote']}</span></div>
+<p class="muted" style="margin:10px 0 0">{O['weekNote']} {L['costs'].split('.')[0]}.</p>"""))
+
+def stop_idle(lang):
+    L, O = T[lang], OVER[lang]
+    return page(L, over_card(L, O, f"""<div class="left">{O['line']}</div>
+<div class="alert" style="background:#eaf1da"><b>{O['stopTitle']}</b><br>{O['stopBody']}</div>
+<p class="muted" style="margin:8px 0 0">{O['weekOver']} {O['weekNote']}</p>
+<div style="padding-top:10px"><span class="link">{O['hungry']}</span></div>"""))
+
+def protein_answer(lang):
+    L, O = T[lang], OVER[lang]
+    def card(s, best):
+        items = ''.join(f"<li><span>{a}</span><span class='num'>{b}</span></li>" for a,b in s[2])
+        cls = '' if s[0] in ('Your usual','הרגיל שלכם') else 'foods'
+        return f"""<div class="sug {'best' if best else ''}"><span class="badge {cls}">{s[0]}</span><div class="sname">{s[1]}</div><ul class="items">{items}</ul>
+<div class="nums"><span>{s[3]}</span></div><div class="fit">{s[4]}</div><div class="why">{s[5]}</div>
+<div class="sugfoot" style="justify-content:flex-start;gap:8px"><button class="btn small">{L['logit']}</button><button class="btn ghost small">{'Take a photo' if lang=='en' else 'לצלם'}</button></div></div>"""
+    return page(L, over_card(L, O, f"""<div class="left">{O['forProtein']}</div>{card(O['s1'],True)}{card(O['s2'],False)}
+<div style="display:flex;gap:10px;padding-top:14px"><button class="btn ghost small">{L['again']}</button><button class="btn ghost small">{L['close']}</button></div>
+<p class="muted" style="margin:12px 0 0">{L['notMed']}</p>"""))
+
+for name, html in {
+  '13-over-protein-ask': protein_idle('en'),
+  '14-over-protein-suggestions': protein_answer('en'),
+  '15-over-stop': stop_idle('en'),
+  '16-he-over-protein-ask': protein_idle('he'),
+  '17-he-over-stop': stop_idle('he'),
+}.items():
+    (HERE / f"{name}.html").write_text(html)

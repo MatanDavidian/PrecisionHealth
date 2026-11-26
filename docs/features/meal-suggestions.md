@@ -49,8 +49,31 @@ is.
     served. A photo analysis, like any other.
 - **Ask again** asks once more (the same request, told to avoid what it just
   offered). **Close** puts the card back to the one line.
-- **When the day has no room**, there is no button: the targets card already
-  says "On target" or "X over", and suggesting more food would be wrong.
+- **When today's calories are used** (under 100 kcal left, or over), there
+  is something to offer only if protein is short by 10 g or more. Then the
+  week decides (added 2026-11-26, after the owner was 326 kcal over with 11 g
+  of protein missing and saw no button):
+  - **Room in the week** (100 kcal or more under, today included): the line
+    says "326 kcal over today · 11 g protein short" and "Week so far: 450 kcal
+    under your targets. A light protein snack still fits.", and the button
+    is **Suggest a protein snack**: lean protein only, up to that room and
+    never more than 250 kcal. Each one's fit says what it adds today, the
+    protein, and where the week lands: "+105 kcal today · protein 151 of 145
+    g ✓ · week 345 under".
+  - **No room in the week**: "Better to stop for today. You're 326 kcal over
+    today, and the week so far has no room for more. The 11 g of protein can
+    wait: start tomorrow with it." The app says this itself, without asking
+    the model, so it costs nothing. **Hungry anyway? Suggest something
+    light** asks for a protein snack of at most 120 kcal.
+- **The week so far** is Sunday to today. Each day before today is weighed
+  against what it really burned, when a watch or the person recorded it (its
+  burn plus the goal's balance: a long run leaves room its average target
+  would not show), and against its target otherwise. Today is weighed against
+  its target, because today's burn is not finished. A day with nothing on it
+  is left out. A recorded burn under 60% of the usual one is taken as a watch
+  that stopped counting, and a calorie target typed in by the person stays
+  theirs.
+- **Nothing at all** when the day is used and the protein reached.
 
 ### Rules the model is held to
 
@@ -127,6 +150,11 @@ Today ── TargetsCard ── <SuggestMeals> (today only, room left)
             shape of what was sent (not the foods themselves)
 ```
 
+- **The plan** (`suggestPlan`, pure): FILL with today's room, PROTEIN with
+  the week's (capped at 250 kcal), or STOP; `weekSoFar` adds the week up
+  from `readTargetsHistory`, which now reports each day's own burn. The
+  request carries `mode`, `maxKcal` and the week; the reply check drops any
+  suggestion past `maxKcal` (+10%).
 - **Pure core:** `buildSuggestionRequest` picks the usual meals and foods
   (existing `findUsualMeals` / `findUsualFoods` over 90 days), works out
   per-100 g numbers, and trims to the limits. `fitOf(suggestion, left)` gives

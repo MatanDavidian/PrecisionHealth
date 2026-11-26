@@ -69,6 +69,15 @@ export interface SuggestionRequest {
   note?: string
   /** Titles offered a moment ago, when asking again. */
   avoid?: string[]
+  /**
+   * FILL: today has room. PROTEIN: today's calories are used (or over) but
+   * protein is short and the week has room, so only lean protein.
+   */
+  mode: 'FILL' | 'PROTEIN'
+  /** The most calories one suggestion may have. Enforced again on the reply. */
+  maxKcal: number
+  /** The week so far, Sunday to now, against its targets: negative is under. */
+  week?: { days: number; balanceKcal: number; measuredDays: number }
 }
 
 export type SuggestionSource = 'USUAL' | 'FOODS' | 'NEW'
@@ -98,18 +107,105 @@ export interface MealSuggestions {
 
 const one = (value: number) => Math.round(value * 10) / 10
 
+/** The most a protein snack may add when today's calories are used: a snack, not a meal. */
+export const PROTEIN_SNACK_MAX_KCAL = 250
+/** "Hungry anyway?" after the card said to stop: something very light. */
+export const LIGHT_SNACK_MAX_KCAL = 120
 /**
- * Whether to offer suggestions at all.
- *
- * Only while the day has room: enough calories left for something real, or
- * protein short while calories are not over. On target with nothing short,
- * or over, suggesting more food would be the wrong thing to say.
+ * A day's recorded burn below this share of the usual one is taken as a watch
+ * that stopped counting (a flat battery, left on the charger), not as a day of
+ * lying still: the day is weighed against its target instead.
  */
-export function hasRoom(progress: DayProgress): boolean {
-  if (progress.energy.state === 'OVER') return false
-  return (
-    progress.energy.remaining >= SUGGEST_MIN_KCAL || progress.protein.remaining >= SUGGEST_MIN_PROTEIN_G
-  )
+export const PLAUSIBLE_BURN_SHARE = 0.6
+
+/** One day of the week, as the balance needs it. */
+export interface WeekDayInput {
+  eatenKcal: number
+  targets?: Pick<DailyTargets, 'energyKcal' | 'balanceKcal' | 'energy'>
+  /** What the day really burned, if a watch or the person recorded it. */
+  burnedKcal?: number
+}
+
+export interface WeekSoFar {
+  /** Days that counted: with food on them, and targets. */
+  days: number
+  /** Eaten minus budget, summed: negative is under. Today's eaten against today's target. */
+  balanceKcal: number
+  /** Of the days before today, how many used a recorded burn. */
+  measuredDays: number
+}
+
+/**
+ * A day's budget: what it burned plus the goal's balance, when the burn was
+ * recorded and believable; otherwise its target. A target the person typed
+ * in is their number and stays it.
+ */
+function budgetOf(day: WeekDayInput): { kcal: number; measured: boolean } | undefined {
+  const targets = day.targets
+  if (!targets) return undefined
+  if (day.burnedKcal !== undefined && targets.energy.from === 'RULE') {
+    const usual = targets.energyKcal - targets.balanceKcal
+    if (day.burnedKcal >= usual * PLAUSIBLE_BURN_SHARE) {
+      return { kcal: day.burnedKcal + targets.balanceKcal, measured: true }
+    }
+  }
+  return { kcal: targets.energyKcal, measured: false }
+}
+
+/**
+ * The week so far, Sunday to now: eaten against budget, day by day.
+ *
+ * Days before today count what they really burned where it was recorded
+ * (a watch, or a number typed on Today), so a long run on Tuesday leaves room
+ * that the same day's average target would not show. Today is weighed against
+ * its target, because today's burn is not finished. A day with nothing on it
+ * is left out: it is a day not logged, not a day of eating nothing.
+ */
+export function weekSoFar(before: readonly WeekDayInput[], today: WeekDayInput): WeekSoFar {
+  let balance = 0
+  let days = 0
+  let measuredDays = 0
+  for (const day of before) {
+    if (day.eatenKcal <= 0) continue
+    const budget = budgetOf(day)
+    if (!budget) continue
+    balance += day.eatenKcal - budget.kcal
+    days += 1
+    if (budget.measured) measuredDays += 1
+  }
+  if (today.targets) {
+    balance += today.eatenKcal - today.targets.energyKcal
+    days += 1
+  }
+  return { days, balanceKcal: Math.round(balance), measuredDays }
+}
+
+/** What the card offers, by today and the week. */
+export type SuggestPlan =
+  /** Today has room: suggestions that fill it. */
+  | { kind: 'FILL'; maxKcal: number }
+  /** Today is used, protein is short, the week has room: a lean protein snack. */
+  | { kind: 'PROTEIN'; maxKcal: number }
+  /** Protein is short but neither today nor the week has room: better to stop. */
+  | { kind: 'STOP' }
+
+/**
+ * Whether to offer anything, and what.
+ *
+ * - Enough calories left today (100): fill them, up to what is left plus 10%.
+ * - Otherwise nothing, unless protein is short by 10 g. Then the week
+ *   decides: room in it (100 kcal or more under, today included) allows a
+ *   lean protein snack, up to that room and never more than 250 kcal; no room
+ *   says it is better to stop for today, and costs nothing to say.
+ */
+export function suggestPlan(progress: DayProgress, week?: WeekSoFar): SuggestPlan | undefined {
+  const left = progress.energy.remaining
+  if (left >= SUGGEST_MIN_KCAL) return { kind: 'FILL', maxKcal: Math.round(left * 1.1) }
+  if (progress.protein.remaining < SUGGEST_MIN_PROTEIN_G) return undefined
+  // Without the week, today alone decides, and today has no room by now.
+  const room = week ? -week.balanceKcal : left
+  if (room >= SUGGEST_MIN_KCAL) return { kind: 'PROTEIN', maxKcal: Math.min(PROTEIN_SNACK_MAX_KCAL, Math.round(room)) }
+  return { kind: 'STOP' }
 }
 
 /** What is left of the day, as the card says it and the model is sent it. */
@@ -145,6 +241,9 @@ export interface SuggestionInput {
   today: readonly Meal[]
   note?: string
   avoid?: readonly string[]
+  /** What the card is offering; FILL with today's room when not given. */
+  plan?: { kind: 'FILL' | 'PROTEIN'; maxKcal: number }
+  week?: WeekSoFar
 }
 
 /**
@@ -221,6 +320,9 @@ export function buildSuggestionRequest(input: SuggestionInput): SuggestionReques
     usualFoods,
     ...(note ? { note } : {}),
     ...(avoid && avoid.length > 0 ? { avoid } : {}),
+    mode: input.plan?.kind ?? 'FILL',
+    maxKcal: input.plan?.maxKcal ?? Math.max(0, Math.round(progress.energy.remaining * 1.1)),
+    ...(input.week ? { week: input.week } : {}),
   }
 }
 
@@ -246,6 +348,10 @@ export function totalsOf(foods: readonly Macros[]): Macros {
 export interface SuggestionFit {
   /** Calories to spare after eating it; negative is over. */
   spareKcal: number
+  /** True when today was already used up before it: then what it adds is the honest number. */
+  todayFull: boolean
+  /** The week's balance after it, when the week is known: negative is under. */
+  weekAfter?: number
   /** Protein for the day after eating it, against the target. */
   proteinAfter: number
   proteinTarget: number
@@ -253,11 +359,17 @@ export interface SuggestionFit {
 }
 
 /** How a suggestion leaves the day: "Leaves 14 kcal · protein 140 of 140 g". */
-export function fitOf(suggestion: Pick<MealSuggestion, 'totals'>, progress: DayProgress): SuggestionFit {
+export function fitOf(
+  suggestion: Pick<MealSuggestion, 'totals'>,
+  progress: DayProgress,
+  week?: WeekSoFar,
+): SuggestionFit {
   const proteinAfter = Math.round(progress.protein.eaten + suggestion.totals.proteinG)
   const proteinTarget = Math.round(progress.protein.target)
   return {
     spareKcal: Math.round(progress.energy.remaining - suggestion.totals.energyKcal),
+    todayFull: progress.energy.remaining < SUGGEST_MIN_KCAL,
+    ...(week ? { weekAfter: Math.round(week.balanceKcal + suggestion.totals.energyKcal) } : {}),
     proteinAfter,
     proteinTarget,
     proteinReached: proteinAfter >= proteinTarget,

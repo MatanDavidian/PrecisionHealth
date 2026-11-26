@@ -195,6 +195,8 @@ describe('asking our server what to eat now', () => {
       eatenToday: [],
       usualMeals: [],
       usualFoods: [],
+      mode: 'FILL' as const,
+      maxKcal: 330,
     }
     const answer = await new ProxyEstimator(options(fetchImpl)).suggestMeals(request, { language: 'he' })
 

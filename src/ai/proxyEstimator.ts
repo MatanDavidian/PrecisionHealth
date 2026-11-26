@@ -138,7 +138,9 @@ export class ProxyEstimator implements FoodEstimator {
   }
 
   async suggestMeals(request: SuggestionRequest, hints: EstimateHints): Promise<MealSuggestions> {
-    return this.send({ suggest: request }, hints, [], validateSuggestions) as Promise<MealSuggestions>
+    return this.send({ suggest: request }, hints, [], (parsed, model) =>
+      validateSuggestions(parsed, model, request.maxKcal),
+    ) as Promise<MealSuggestions>
   }
 
   /**

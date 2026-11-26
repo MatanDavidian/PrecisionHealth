@@ -154,7 +154,7 @@ export class OpenAiEstimator implements FoodEstimator {
       `Here is the day, as JSON:\n${JSON.stringify(request)}`,
       {},
       [],
-      validateSuggestions,
+      (parsed, model) => validateSuggestions(parsed, model, request.maxKcal),
     )
   }
 

@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   dayProgress,
   fitOf,
-  hasRoom,
   leftOf,
+  LIGHT_SNACK_MAX_KCAL,
+  suggestPlan,
+  type WeekSoFar,
   type AIInferenceId,
   type DailyTargets,
   type Macros,
@@ -15,7 +17,7 @@ import {
 import { getEstimator, getRepositories } from '@/data'
 import { currentUserId } from '@/data/session'
 import { suggestSlot } from '@/data/newRecords'
-import { readSuggestionRequest } from '@/data/suggestions'
+import { readSuggestionRequest, readWeekSoFar } from '@/data/suggestions'
 import { buildSuggestionInference } from '@/data/estimatedMeal'
 import { EstimateError } from '@/ai/estimator'
 import { PlanExhaustedError, TrialExhaustedError } from '@/ai/proxyEstimator'
@@ -28,10 +30,14 @@ import { ReportAnswer } from './ReportAnswer'
 /**
  * What to eat now (docs/features/meal-suggestions.md).
  *
- * Inside Today's targets card, today only, while the day has room. One tap
- * asks the model for up to three things that fit what is left, built mostly
- * from the person's own foods; each one logs in a tap (with Undo), or opens
- * the camera for when it is made.
+ * Inside Today's targets card, today only. One tap asks the model for up to
+ * three things that fit what is left, built mostly from the person's own
+ * foods; each one logs in a tap (with Undo), or opens the camera for when it
+ * is made.
+ *
+ * When today's calories are used but protein is short, the week decides: room
+ * in it offers a lean protein snack; none says it is better to stop for today,
+ * without asking the model at all.
  */
 
 type State =
@@ -44,19 +50,38 @@ type State =
 export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten: Macros }) {
   const { t, lang } = useLang()
   const navigate = useNavigate()
-  const { session } = useDataRevision()
+  const { session, revision } = useDataRevision()
   const { logSuggestion, deleteMeal } = useActions()
   const [state, setState] = useState<State>({ kind: 'idle' })
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
   const [offered, setOffered] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  /** The week so far; undefined while it is read. */
+  const [week, setWeek] = useState<WeekSoFar>()
+  /** What the last request asked for, so Ask again asks the same. */
+  const [asked, setAsked] = useState<{ kind: 'FILL' | 'PROTEIN'; maxKcal: number }>()
   const fmt = (n: number) => Math.round(n).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')
 
+  useEffect(() => {
+    let cancelled = false
+    void readWeekSoFar(currentUserId(), targets, eaten)
+      .then((read) => !cancelled && setWeek(read))
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revision, targets.energyKcal, eaten.energyKcal])
+
   const progress = dayProgress(targets, eaten)
-  // Once something is logged, the card says so even though the day may now be full.
-  if (!hasRoom(progress) && state.kind !== 'logged') return null
+  const plan = suggestPlan(progress, week)
+  const showing = state.kind !== 'idle' || (plan && (plan.kind === 'FILL' || week))
+  // Once asked or logged, the card stays, even though the day may now be full.
+  // While the week is read, a full day waits rather than saying "stop" too soon.
+  if (!showing) return null
   const left = leftOf(progress)
+  const over = Math.max(0, Math.round(-progress.energy.remaining))
 
   const leftWords = [
     left.energyKcal > 0 ? t('suggest.leftKcal', { kcal: fmt(left.energyKcal) }) : undefined,
@@ -65,12 +90,17 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
     .filter(Boolean)
     .join(' · ')
 
-  async function ask(again = false) {
+  async function ask(again = false, want = asked) {
+    const wanted = want ?? (plan && plan.kind !== 'STOP' ? plan : undefined)
+    if (!wanted) return
+    setAsked(wanted)
     setState({ kind: 'running' })
     try {
       const request = await readSuggestionRequest(currentUserId(), targets, eaten, {
         note,
         avoid: again ? offered : undefined,
+        plan: wanted,
+        week,
       })
       const answer = await getEstimator().suggestMeals(request, { language: lang })
       const inference = buildSuggestionInference(currentUserId(), request, answer)
@@ -104,48 +134,99 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
     navigate(`/log?mode=photo&note=${encodeURIComponent(words)}`)
   }
 
+  /** "Week so far: 450 kcal under your targets." */
+  const weekWords = (balance: number) =>
+    Math.abs(balance) < 25
+      ? t('suggest.weekLevel')
+      : balance < 0
+        ? t('suggest.weekUnder', { kcal: fmt(-balance) })
+        : t('suggest.weekOver', { kcal: fmt(balance) })
+
   const date = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', { day: 'numeric', month: 'long' }) : ''
 
   return (
     <div className="mt-5 border-t border-hairline pt-4" data-testid="suggest-meals">
-      {state.kind === 'idle' && (
+      {state.kind === 'idle' && plan && (
         <>
-          <p className="text-sm font-semibold">
-            {t('suggest.left')} <span className="font-normal text-ink-soft">{leftWords}</span>
-          </p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3">
-            <button
-              type="button"
-              onClick={() => void ask()}
-              className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-canvas"
-            >
-              <SparkIcon />
-              {t('suggest.ask')}
-            </button>
-            {!noteOpen && (
-              <button type="button" onClick={() => setNoteOpen(true)} className="text-sm text-ink-soft underline underline-offset-2">
-                {t('suggest.addNote')}
-              </button>
+          <p className="text-sm font-semibold" data-testid="suggest-line">
+            {over > 0 ? (
+              <>
+                {t('suggest.overLine', { kcal: fmt(over) })} · {t('suggest.shortLine', { protein: fmt(left.proteinG) })}
+              </>
+            ) : (
+              <>
+                {t('suggest.left')} <span className="font-normal text-ink-soft">{leftWords}</span>
+              </>
             )}
-          </div>
-          {noteOpen && (
-            <div className="pt-3">
-              <label htmlFor="suggest-note" className="sr-only">
-                {t('suggest.noteLabel')}
-              </label>
-              <input
-                id="suggest-note"
-                autoFocus
-                value={note}
-                maxLength={200}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t('suggest.notePlaceholder')}
-                className="w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm outline-none focus:border-accent"
-              />
-            </div>
+          </p>
+          {week && week.days > 1 && plan.kind !== 'STOP' && (
+            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-week">
+              {weekWords(week.balanceKcal)}
+              {plan.kind === 'PROTEIN' && ` ${t('suggest.weekRoomProtein')}`}
+            </p>
           )}
-          <p className="pt-2.5 text-xs leading-relaxed text-ink-muted">{t('suggest.costs')}</p>
+          {plan.kind === 'STOP' ? (
+            <>
+              <div className="mt-3 rounded-2xl bg-leaf-soft px-4 py-3 text-sm leading-relaxed" data-testid="suggest-stop">
+                <p className="font-semibold">{t('suggest.stopTitle')}</p>
+                <p>
+                  {over > 0 ? t('suggest.stopOver', { kcal: fmt(over) }) : t('suggest.stopFull')}{' '}
+                  {t('suggest.stopWeek')} {t('suggest.stopProtein', { protein: fmt(left.proteinG) })}
+                </p>
+              </div>
+              {week && week.days > 1 && <p className="pt-2 text-xs text-ink-muted">{weekWords(week.balanceKcal)}</p>}
+              <button
+                type="button"
+                onClick={() => void ask(false, { kind: 'PROTEIN', maxKcal: LIGHT_SNACK_MAX_KCAL })}
+                className="mt-2.5 text-sm text-ink-soft underline underline-offset-2"
+              >
+                {t('suggest.hungry')}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => void ask(false, plan)}
+                  className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-canvas"
+                >
+                  <SparkIcon />
+                  {plan.kind === 'PROTEIN' ? t('suggest.askProtein') : t('suggest.ask')}
+                </button>
+                {!noteOpen && (
+                  <button type="button" onClick={() => setNoteOpen(true)} className="text-sm text-ink-soft underline underline-offset-2">
+                    {t('suggest.addNote')}
+                  </button>
+                )}
+              </div>
+              {noteOpen && (
+                <div className="pt-3">
+                  <label htmlFor="suggest-note" className="sr-only">
+                    {t('suggest.noteLabel')}
+                  </label>
+                  <input
+                    id="suggest-note"
+                    autoFocus
+                    value={note}
+                    maxLength={200}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder={t('suggest.notePlaceholder')}
+                    className="w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm outline-none focus:border-accent"
+                  />
+                </div>
+              )}
+              <p className="pt-2.5 text-xs leading-relaxed text-ink-muted">
+                {week && week.days > 1 && (
+                  <>
+                    {t('suggest.weekSpan')} {week.measuredDays > 0 && `${t('suggest.weekMeasured')} `}
+                  </>
+                )}
+                {t('suggest.costs')}
+              </p>
+            </>
+          )}
         </>
       )}
 
@@ -174,12 +255,14 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
       {state.kind === 'done' && (
         <section aria-labelledby="suggest-title">
           <h3 id="suggest-title" className="text-sm font-semibold">
-            {t('suggest.for', { left: leftWords })}
+            {asked?.kind === 'PROTEIN'
+              ? t('suggest.forProtein', { kcal: fmt(asked.maxKcal) })
+              : t('suggest.for', { left: leftWords })}
           </h3>
           {state.answer.note && <p className="pt-2 text-sm text-ink-soft">{state.answer.note}</p>}
           <ul className="grid gap-2.5 pt-3">
             {state.answer.suggestions.map((suggestion, index) => {
-              const fit = fitOf(suggestion, progress)
+              const fit = fitOf(suggestion, progress, asked?.kind === 'PROTEIN' ? week : undefined)
               return (
                 <li
                   key={`${suggestion.title}-${index}`}
@@ -215,15 +298,23 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
                     })}
                   </p>
                   <p
-                    className={`pt-1 text-[12.5px] font-semibold ${fit.spareKcal >= 0 ? 'text-leaf' : 'text-ink-soft'}`}
+                    className={`pt-1 text-[12.5px] font-semibold ${fit.spareKcal >= 0 || (fit.weekAfter ?? 1) <= 0 ? 'text-ink' : 'text-ink-soft'}`}
                     data-testid="suggestion-fit"
                   >
-                    {fit.spareKcal >= 0
-                      ? t('suggest.fitSpare', { kcal: fmt(fit.spareKcal) })
-                      : t('suggest.fitOver', { kcal: fmt(-fit.spareKcal) })}
+                    {fit.todayFull
+                      ? t('suggest.fitAdds', { kcal: fmt(suggestion.totals.energyKcal) })
+                      : fit.spareKcal >= 0
+                        ? t('suggest.fitSpare', { kcal: fmt(fit.spareKcal) })
+                        : t('suggest.fitOver', { kcal: fmt(-fit.spareKcal) })}
                     {' · '}
                     {t('suggest.fitProtein', { after: fmt(fit.proteinAfter), target: fmt(fit.proteinTarget) })}
                     {fit.proteinReached && ' ✓'}
+                    {fit.weekAfter !== undefined &&
+                      ` · ${
+                        fit.weekAfter <= 0
+                          ? t('suggest.fitWeekUnder', { kcal: fmt(-fit.weekAfter) })
+                          : t('suggest.fitWeekOver', { kcal: fmt(fit.weekAfter) })
+                      }`}
                   </p>
                   {suggestion.why && <p className="pt-1 text-[12.5px] leading-relaxed text-ink-muted">{suggestion.why}</p>}
                   <div className="flex flex-wrap items-center gap-2 pt-3">

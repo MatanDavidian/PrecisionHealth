@@ -452,6 +452,8 @@ describe('a suggestion, logged', () => {
     usualMeals: [],
     usualFoods: [],
     note: 'quick',
+    mode: 'FILL' as const,
+    maxKcal: 330,
   }
 
   it('keeps the answer and the shape of what was sent, as advice the app gave', () => {

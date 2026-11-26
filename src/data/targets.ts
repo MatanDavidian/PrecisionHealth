@@ -142,6 +142,11 @@ export interface DayAgainstTargets {
   eaten: { energyKcal: number; proteinG: number; carbsG: number; fatG: number }
   /** Whether anyone logged a meal: a day filled from the average is not logging. */
   logged: boolean
+  /**
+   * What the day really burned, when a watch or the person recorded it: the
+   * week's balance counts it (meal-suggestions.md). Undefined otherwise.
+   */
+  burnedKcal?: number
   /** Undefined when the day had no targets to be measured against. */
   outcome?: DayOutcome
   proteinReached?: boolean
@@ -162,7 +167,9 @@ export async function readTargetsHistory(
 ): Promise<DayAgainstTargets[]> {
   const [basis, burns, meals] = await Promise.all([
     readBasis(userId, repos),
-    readBurns(userId, from, to, repos),
+    // Through `to` itself (readBurns stops the day before its end): each day's
+    // own burn is reported, and a day's target still uses only the days before.
+    readBurns(userId, from, addDays(to, 1), repos),
     repos.meals.listByRange(userId, { from, to }),
   ])
 
@@ -194,6 +201,7 @@ export async function readTargetsHistory(
       targets,
       eaten,
       logged,
+      burnedKcal: burns.get(day),
       outcome: targets ? dayOutcome(targets.energyKcal, eaten.energyKcal, logged) : undefined,
       proteinReached: targets ? logged && eaten.proteinG >= targets.proteinG : undefined,
     })

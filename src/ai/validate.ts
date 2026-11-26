@@ -263,7 +263,8 @@ function suggestedFood(value: unknown): SuggestedFood | undefined {
   if (numbers.some((n) => !Number.isFinite(n) || n < 0)) return undefined
   if (food.amountG <= 0 || food.amountG > 2000) return undefined
   if (food.energyKcal > food.amountG * MAX_KCAL_PER_GRAM) return undefined
-  if (food.proteinG + food.carbsG + food.fatG > food.amountG * 1.01) return undefined
+  // Half a gram for rounding: 10 g of rice cake can say 10.1 g of macros.
+  if (food.proteinG + food.carbsG + food.fatG > food.amountG * 1.01 + 0.5) return undefined
   // Macros that say a quarter more calories than claimed (or a quarter fewer,
   // with something to count) are not a rounding difference; they are wrong.
   const implied = kcalFromMacros(food.proteinG, food.carbsG, food.fatG)
@@ -283,7 +284,7 @@ function suggestedFood(value: unknown): SuggestedFood | undefined {
  * survive, and at most one of them a new idea; an answer with none left is
  * an error the card offers to retry.
  */
-export function validateSuggestions(raw: unknown, model: string): MealSuggestions {
+export function validateSuggestions(raw: unknown, model: string, maxKcal?: number): MealSuggestions {
   if (!isObject(raw)) throw new EstimateError('UNREADABLE', 'reply is not an object', raw)
   const list = Array.isArray(raw.suggestions) ? raw.suggestions : []
 
@@ -305,7 +306,11 @@ export function validateSuggestions(raw: unknown, model: string): MealSuggestion
       newIdeas += 1
     }
     const kept = foods as SuggestedFood[]
-    suggestions.push({ title, source, why: text(entry.why), foods: kept, totals: totalsOf(kept) })
+    const totals = totalsOf(kept)
+    // The cap the card promised ("up to 250 kcal"), with room for rounding: a
+    // suggestion past it is dropped, not shown with a warning.
+    if (maxKcal !== undefined && totals.energyKcal > maxKcal * 1.1 + 20) continue
+    suggestions.push({ title, source, why: text(entry.why), foods: kept, totals })
   }
 
   if (suggestions.length === 0) {

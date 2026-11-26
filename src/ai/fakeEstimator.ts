@@ -147,7 +147,7 @@ export class FakeEstimator implements FoodEstimator {
     if (this.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, this.delayMs))
     if (this.failWith) throw this.failWith
     const he = hints.language === 'he'
-    const room = Math.max(80, request.left.energyKcal * 0.95)
+    const room = Math.max(40, (request.maxKcal || request.left.energyKcal) * 0.95)
     const r1 = (n: number) => Math.round(n * 10) / 10
     /** Scales foods down (never up) so their calories fit the room. */
     const fit = (foods: SuggestedFood[]): SuggestedFood[] => {
@@ -155,7 +155,7 @@ export class FakeEstimator implements FoodEstimator {
       const scale = kcal > room ? room / kcal : 1
       return foods.map((food) => ({
         name: food.name,
-        amountG: Math.max(5, Math.round((food.amountG * scale) / 5) * 5),
+        amountG: Math.max(5, Math.round(food.amountG * scale)),
         energyKcal: Math.round(food.energyKcal * scale),
         proteinG: r1(food.proteinG * scale),
         carbsG: r1(food.carbsG * scale),
@@ -177,8 +177,8 @@ export class FakeEstimator implements FoodEstimator {
         title: own.map((food) => food.name).join(he ? ' + ' : ' and '),
         source: 'FOODS',
         why: he
-          ? `שני מזונות שאתם רושמים הכי הרבה, בתוך ${request.left.energyKcal} הקלוריות שנשארו.`
-          : `Two foods you log most, inside the ${request.left.energyKcal} kcal left.`,
+          ? `שני מזונות שאתם רושמים הכי הרבה, בתוך ${request.maxKcal} קלוריות.`
+          : `Two foods you log most, within the ${request.maxKcal} kcal.`,
         foods: fit(own),
       })
     }
@@ -214,7 +214,13 @@ export class FakeEstimator implements FoodEstimator {
       ]),
     })
 
-    return validateSuggestions({ suggestions, note: '' }, this.model)
+    // A protein snack is lean protein only: the person's leanest food, and the yogurt.
+    const offered = request.mode === 'PROTEIN' ? suggestions.filter((_, i) => i !== 1) : suggestions
+    return validateSuggestions(
+      { suggestions: offered, note: request.mode === 'PROTEIN' ? (he ? 'השאר יכול לחכות למחר.' : 'The rest can wait for tomorrow.') : '' },
+      this.model,
+      request.maxKcal,
+    )
   }
 
   async weekInsights(report: WeekReport, _hints: EstimateHints): Promise<WeekInsight> {

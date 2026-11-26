@@ -19,3 +19,20 @@ real model's. Each suggestion also has **Take a photo** (the owner's addition).
 | --- | --- |
 | ![](09-built-ask.png) **9. Ask** | ![](10-built-suggestions.png) **10. Suggestions** |
 | ![](11-built-he-ask.png) **11. Hebrew, ask** | ![](12-built-he-suggestions.png) **12. Hebrew, suggestions** |
+
+**Second round** (2026-11-26): over today but short of protein, the week
+decides. Drawn first:
+
+| | |
+| --- | --- |
+| ![](13-over-protein-ask.png) **13. Room in the week: a protein snack** | ![](14-over-protein-suggestions.png) **14. The protein snacks** |
+| ![](15-over-stop.png) **15. No room: better to stop** | ![](16-he-over-protein-ask.png) **16. Hebrew, protein snack** |
+| ![](17-he-over-stop.png) **17. Hebrew, stop** | |
+
+And as built, on the sample day (20 kcal left, 17 g of protein short, the
+week 190 under), then with a 1,200 kcal dinner added:
+
+| | |
+| --- | --- |
+| ![](18-built-protein-ask.png) **18. Protein snack** | ![](19-built-protein-suggestions.png) **19. The snacks**, up to 190 kcal |
+| ![](20-built-stop.png) **20. Stop** | ![](21-built-he-stop.png) **21. Hebrew, stop** |

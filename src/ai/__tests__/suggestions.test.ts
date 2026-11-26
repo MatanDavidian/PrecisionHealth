@@ -57,6 +57,11 @@ describe('reading the model’s suggestions', () => {
     expect(answer.suggestions.map((s) => s.title)).toEqual(['New 1', 'A', 'B'])
   })
 
+  it('drops a suggestion past the cap the card promised', () => {
+    const answer = validateSuggestions(reply([usual, { ...usual, title: 'Small', foods: [cottage] }]), 'm', 150)
+    expect(answer.suggestions.map((s) => s.title)).toEqual(['Small'])
+  })
+
   it('treats an unknown source as a new idea', () => {
     expect(validateSuggestions(reply([{ ...usual, source: 'GUESS' }]), 'm').suggestions[0].source).toBe('NEW')
   })
@@ -75,8 +80,13 @@ describe('reading the model’s suggestions', () => {
 
 describe('what the prompt insists on', () => {
   it('fits what is left, protein first', () => {
-    expect(SUGGEST_SYSTEM_PROMPT).toMatch(/at most "left.kcal" plus 10%/)
+    expect(SUGGEST_SYSTEM_PROMPT).toMatch(/at most "maxKcal". Never more/)
     expect(SUGGEST_SYSTEM_PROMPT).toMatch(/Close the protein gap first/)
+  })
+
+  it('in protein mode, lean protein only, and the rest can wait', () => {
+    expect(SUGGEST_SYSTEM_PROMPT).toMatch(/Mode "PROTEIN".*LEAN protein foods only/s)
+    expect(SUGGEST_SYSTEM_PROMPT).toMatch(/the rest of the gap can wait for tomorrow/)
   })
 
   it('prefers the person’s own foods and numbers, with one new idea at most', () => {
@@ -131,12 +141,21 @@ describe('the fake builds from the request it was handed', () => {
       { name: 'Tuna in water', usualG: 112, per100g: { kcal: 104, proteinG: 23.2, carbsG: 0, fatG: 0.9 }, timesLogged: 6 },
       { name: 'Rice cakes', usualG: 18, per100g: { kcal: 389, proteinG: 8.3, carbsG: 80.6, fatG: 2.8 }, timesLogged: 4 },
     ],
+    mode: 'FILL',
+    maxKcal: 330,
   }
 
   it('offers the person’s foods, their usual meal and one new idea, each within what is left', async () => {
     const answer = await new FakeEstimator().suggestMeals(request, { language: 'en' })
     expect(answer.suggestions.map((s) => s.source)).toEqual(['FOODS', 'USUAL', 'NEW'])
     for (const suggestion of answer.suggestions) expect(suggestion.totals.energyKcal).toBeLessThanOrEqual(300)
+  })
+
+  it('offers lean protein only in protein mode, within the cap, and says the rest can wait', async () => {
+    const answer = await new FakeEstimator().suggestMeals({ ...request, mode: 'PROTEIN', maxKcal: 120 }, { language: 'en' })
+    expect(answer.suggestions.map((s) => s.source)).toEqual(['FOODS', 'NEW'])
+    for (const suggestion of answer.suggestions) expect(suggestion.totals.energyKcal).toBeLessThanOrEqual(120)
+    expect(answer.note).toBe('The rest can wait for tomorrow.')
   })
 
   it('speaks Hebrew when asked', async () => {

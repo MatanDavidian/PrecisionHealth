@@ -4,6 +4,8 @@
 left in the evening), one tap asks the model for three things to eat that
 fit it, built mostly from foods you already eat, each one tap to log.
 
+How to make the suggestions precise to the person (the burn, training, the week, uncertainty), and what comes next: [`meal-suggestions-precision.md`](meal-suggestions-precision.md).
+
 Status: **built 2026-11-26; live with the next deploy** (the app and the
 `estimate-food` function; the Privacy Policy and Terms change with it, version
 2026-11-26). Mock-ups and screens as built:

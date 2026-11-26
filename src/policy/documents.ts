@@ -76,7 +76,7 @@ const OPERATOR = 'Matan Davidian, an individual based in Israel'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-11-22',
+  version: '2026-11-26',
   sections: [
     {
       heading: 'Who we are',
@@ -110,7 +110,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
     {
       heading: 'When you report an AI answer',
       body: [
-        'Under each AI estimate and the week’s insights there is “Report this answer”. A report holds the reason you chose, the note you wrote if any, which AI model answered, and the app’s version. It does not include the meal, the photo, the answer or your account, and email addresses, keys and similar are removed from the note before it is kept. Reports are kept for a year.',
+        'Under each AI estimate, the week’s insights and the suggestions of what to eat there is “Report this answer”. A report holds the reason you chose, the note you wrote if any, which AI model answered, and the app’s version. It does not include the meal, the photo, the answer or your account, and email addresses, keys and similar are removed from the note before it is kept. Reports are kept for a year.',
       ],
     },
     {
@@ -145,7 +145,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       ],
       bullets: [
         'Supabase hosts the database and handles sign-in. Everything in your account is stored there, in Frankfurt, Germany.',
-        'OpenAI receives the meal photograph or description you ask us to analyse, and the weekly summary when you ask for an insight. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
+        'OpenAI receives the meal photograph or description you ask us to analyse, the weekly summary when you ask for an insight, and, when you ask what to eat, what is left of your day and the foods you usually eat. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
         'Cloudflare serves the app itself, and forwards mail sent to our @vimetry.app addresses.',
         'Your browser’s push service (Google’s on Android and in Chrome, Apple’s on iPhone, Mozilla’s in Firefox) delivers reminders, if you turn them on. It receives the device’s address and an encrypted message it cannot read, which says it is time to log and, for a meal reminder, names the meal you usually eat then. That name shows on the notification, on your lock screen too.',
         'Brevo, in France, sends the sign-in emails. It receives your email address and the one-time code and link it delivers, and records whether the email was opened and the link clicked. It receives no health data.',
@@ -157,7 +157,8 @@ export const PRIVACY_POLICY: PolicyDocument = {
       heading: 'What we send to OpenAI, exactly',
       body: [
         'When you photograph or describe a meal, that photograph or description is sent, with the hints you supplied: the day, and anything you typed in "add details". When you ask for a weekly insight, a summary of that week’s totals is sent.',
-        'The weekly summary carries no identity at all: no name, no email, no account id, no record ids. That is enforced in the code and there is a test asserting it.',
+        'When you ask what to eat now, what is sent is: what is left of today’s targets, your goal, the time and the meal, the names of the foods you have eaten today, the meals and foods you log most often with their usual amounts and their nutrition, and the note you wrote, if any.',
+        'Neither the weekly summary nor a request for suggestions carries any identity: no name, no email, no account id, no record ids, no dates. That is enforced in the code and there are tests asserting it.',
         'If you supply your own OpenAI key in Settings (on the website), requests go directly from your browser to OpenAI and never pass through our servers. That key is stored on your device only and is never uploaded, synced, or included in an export.',
       ],
     },
@@ -204,7 +205,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
 export const TERMS: PolicyDocument = {
   id: 'TERMS',
   title: 'Terms of Use',
-  version: '2026-11-14',
+  version: '2026-11-26',
   sections: [
     {
       heading: 'Who we are',
@@ -215,7 +216,7 @@ export const TERMS: PolicyDocument = {
     {
       heading: 'This is not medical advice',
       body: [
-        'The most important sentence here. This app is a tool for recording and looking at your own data. It is not a medical device: it does not diagnose, treat, cure or prevent any medical condition, and nothing it shows you, the week’s suggestions included, is medical advice or a medical opinion. Its suggestions are general habits.',
+        'The most important sentence here. This app is a tool for recording and looking at your own data. It is not a medical device: it does not diagnose, treat, cure or prevent any medical condition, and nothing it shows you, the week’s suggestions and the suggestions of what to eat included, is medical advice or a medical opinion. Its suggestions are general habits.',
         'If something in your health worries you, talk to a doctor. Do not let a number in this app talk you out of that, and do not change medication, treatment, or how you eat in a way that matters on the strength of it.',
       ],
     },
@@ -243,7 +244,7 @@ export const TERMS: PolicyDocument = {
     {
       heading: 'Subscription',
       body: [
-        'Vimetry Monthly costs US$4.99 a month and includes, each month, 100 AI analyses of photos and 200 of written descriptions (written leftovers and week insights count as written). The two are counted separately, on whichever of the offered models you choose, and unused analyses do not carry over. Answering a follow-up question about a meal is free. Repeating a meal you have logged before uses no analysis at all. Everything else in the app (logging by hand, the week view, exporting your data) is free with or without a subscription.',
+        'Vimetry Monthly costs US$4.99 a month and includes, each month, 100 AI analyses of photos and 200 of written descriptions (written leftovers, week insights and suggestions of what to eat count as written). The two are counted separately, on whichever of the offered models you choose, and unused analyses do not carry over. Answering a follow-up question about a meal is free. Repeating a meal you have logged before uses no analysis at all. Everything else in the app (logging by hand, the week view, exporting your data) is free with or without a subscription.',
         'Payments are handled by Lemon Squeezy, our merchant of record: your purchase is made from Lemon Squeezy, and its terms apply to the payment. Depending on where you live, sales tax or VAT may be added at checkout.',
         'In the Android app, the subscription is sold by Google Play instead, at Google Play’s price for your country, and Google Play’s terms apply to the payment. You manage and cancel it in Google Play, with the same rule: cancelling stops the next renewal, and you keep what you paid for until the end of the month. One subscription covers the app and the website, whichever you bought it from, and an account cannot hold two at once.',
         'Your subscription renews automatically each month until you cancel. On the website, you can cancel at any time from Settings → Photo analysis → Manage subscription, or from the link in your receipt email. Cancelling stops the next renewal; you keep the analyses and access you have paid for until the end of the current month.',

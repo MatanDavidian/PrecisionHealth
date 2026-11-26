@@ -628,6 +628,40 @@ for (const status of ['expired', 'unpaid', 'paused']) {
     String(r.status))
 }
 
+console.log('\nWhat to eat now')
+{
+  reset()
+  const suggest = {
+    slot: 'DINNER',
+    localTime: '20:40',
+    left: { energyKcal: 300, proteinG: 38, carbsG: 25, fatG: 9 },
+    goal: { focus: [] },
+    eatenToday: [],
+    usualMeals: [],
+    usualFoods: [{ name: 'Tuna in water', usualG: 112, per100g: { kcal: 104, proteinG: 23.2, carbsG: 0, fatG: 0.9 }, timesLogged: 6 }],
+  }
+  const r = await call({ suggest, day: DAY, hints: { language: 'he' } })
+  const [system, user] = providerCalls[0]?.messages ?? []
+  check('a suggestion request is answered', r.status === 200 && typeof r.body.content === 'string', String(r.status))
+  check('with the suggestion prompt, in Hebrew', String(system?.content).includes('suggest what somebody could eat now') &&
+    String(system?.content).includes('Reply in Hebrew'))
+  check('and the day as JSON', String(user?.content).startsWith('Here is the day, as JSON:') &&
+    String(user?.content).includes('Tuna in water'))
+  check('counted as a written analysis', usage.length === 1 && usage[0].kind === 'TEXT', JSON.stringify(usage[0]))
+}
+{
+  reset()
+  subscriptions = [subscribed()]
+  fill(PLAN_ALLOWANCE.TEXT, { kind: 'TEXT' })
+  const r = await call({ suggest: { slot: 'DINNER' }, day: DAY })
+  check('refused when the written analyses are used', r.status === 402 && r.body.kind === 'TEXT', JSON.stringify(r.body))
+}
+{
+  reset()
+  const r = await call({ suggest: ['not', 'an', 'object'], day: DAY })
+  check('a request that is not an object is refused', r.status === 400 && providerCalls.length === 0, String(r.status))
+}
+
 await stub.shutdown()
 console.log(failed === 0 ? '\nestimate-food: all checks passed' : `\nestimate-food: ${failed} failed`)
 Deno.exit(failed === 0 ? 0 : 1)

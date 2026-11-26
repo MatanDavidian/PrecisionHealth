@@ -12,8 +12,8 @@ import type {
   LeftoverInput,
   PlatedFood,
 } from './estimator'
-import type { LeftoverEstimate, WeekReport } from '@/domain'
-import { applyGramsHint, validateEstimate } from './validate'
+import type { LeftoverEstimate, MealSuggestions, SuggestedFood, SuggestionRequest, WeekReport } from '@/domain'
+import { applyGramsHint, validateEstimate, validateSuggestions } from './validate'
 
 export const SAMPLE_REPLY = {
   items: [
@@ -135,6 +135,86 @@ export class FakeEstimator implements FoodEstimator {
       model: this.model,
       confidence: 0.72,
     }
+  }
+
+  /**
+   * Suggestions built from the request it was given: the person's two most
+   * logged foods, their most logged meal, and one new idea, each scaled to fit
+   * what is left. Run through the real validator, so a fake that would not
+   * survive it fails here rather than looking right on screen.
+   */
+  async suggestMeals(request: SuggestionRequest, hints: EstimateHints): Promise<MealSuggestions> {
+    if (this.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, this.delayMs))
+    if (this.failWith) throw this.failWith
+    const he = hints.language === 'he'
+    const room = Math.max(80, request.left.energyKcal * 0.95)
+    const r1 = (n: number) => Math.round(n * 10) / 10
+    /** Scales foods down (never up) so their calories fit the room. */
+    const fit = (foods: SuggestedFood[]): SuggestedFood[] => {
+      const kcal = foods.reduce((sum, food) => sum + food.energyKcal, 0)
+      const scale = kcal > room ? room / kcal : 1
+      return foods.map((food) => ({
+        name: food.name,
+        amountG: Math.max(5, Math.round((food.amountG * scale) / 5) * 5),
+        energyKcal: Math.round(food.energyKcal * scale),
+        proteinG: r1(food.proteinG * scale),
+        carbsG: r1(food.carbsG * scale),
+        fatG: r1(food.fatG * scale),
+      }))
+    }
+    const suggestions: unknown[] = []
+
+    const own = request.usualFoods.slice(0, 2).map((food) => ({
+      name: food.name,
+      amountG: food.usualG,
+      energyKcal: Math.round((food.per100g.kcal * food.usualG) / 100),
+      proteinG: r1((food.per100g.proteinG * food.usualG) / 100),
+      carbsG: r1((food.per100g.carbsG * food.usualG) / 100),
+      fatG: r1((food.per100g.fatG * food.usualG) / 100),
+    }))
+    if (own.length > 0) {
+      suggestions.push({
+        title: own.map((food) => food.name).join(he ? ' + ' : ' and '),
+        source: 'FOODS',
+        why: he
+          ? `שני מזונות שאתם רושמים הכי הרבה, בתוך ${request.left.energyKcal} הקלוריות שנשארו.`
+          : `Two foods you log most, inside the ${request.left.energyKcal} kcal left.`,
+        foods: fit(own),
+      })
+    }
+
+    const meal = request.usualMeals[0]
+    if (meal) {
+      const grams = meal.foods.reduce((sum, food) => sum + food.grams, 0) || 1
+      const share = (food: { grams: number }) => food.grams / grams
+      suggestions.push({
+        title: meal.name,
+        source: 'USUAL',
+        why: he ? `הארוחה שאתם רושמים הכי הרבה, ${meal.timesLogged} פעמים.` : `Your most logged meal, ${meal.timesLogged} times.`,
+        foods: fit(
+          meal.foods.map((food) => ({
+            name: food.name,
+            amountG: food.grams,
+            energyKcal: Math.round(meal.kcal * share(food)),
+            proteinG: r1(meal.proteinG * share(food)),
+            carbsG: r1(meal.carbsG * share(food)),
+            fatG: r1(meal.fatG * share(food)),
+          })),
+        ),
+      })
+    }
+
+    suggestions.push({
+      title: he ? 'יוגורט יווני 0% עם פירות יער' : 'Greek yogurt 0% with berries',
+      source: 'NEW',
+      why: he ? 'משהו אחר: הרבה חלבון וכמעט בלי שומן.' : 'Something different: high in protein, almost no fat.',
+      foods: fit([
+        { name: he ? 'יוגורט יווני 0%' : 'Greek yogurt 0%', amountG: 250, energyKcal: 148, proteinG: 25, carbsG: 10, fatG: 0 },
+        { name: he ? 'פירות יער' : 'Mixed berries', amountG: 100, energyKcal: 50, proteinG: 1, carbsG: 12, fatG: 0.3 },
+      ]),
+    })
+
+    return validateSuggestions({ suggestions, note: '' }, this.model)
   }
 
   async weekInsights(report: WeekReport, _hints: EstimateHints): Promise<WeekInsight> {

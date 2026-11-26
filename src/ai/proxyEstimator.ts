@@ -23,8 +23,8 @@ import {
   type WeekInsight,
 } from './estimator'
 import { toDataUrl } from './photo'
-import { applyGramsHint, validateEstimate, validateInsight, validateLeftover } from './validate'
-import type { LeftoverEstimate, WeekReport } from '@/domain'
+import { applyGramsHint, validateEstimate, validateInsight, validateLeftover, validateSuggestions } from './validate'
+import type { LeftoverEstimate, MealSuggestions, SuggestionRequest, WeekReport } from '@/domain'
 
 export interface TrialState {
   used: number
@@ -137,6 +137,10 @@ export class ProxyEstimator implements FoodEstimator {
     return this.send({ report }, hints, [], validateInsight) as Promise<WeekInsight>
   }
 
+  async suggestMeals(request: SuggestionRequest, hints: EstimateHints): Promise<MealSuggestions> {
+    return this.send({ suggest: request }, hints, [], validateSuggestions) as Promise<MealSuggestions>
+  }
+
   /**
    * One request, whichever input it carries.
    *
@@ -150,6 +154,7 @@ export class ProxyEstimator implements FoodEstimator {
       | { photo: string }
       | { text: string }
       | { report: WeekReport }
+      | { suggest: SuggestionRequest }
       | { leftover: { photo?: string; text?: string; plate: readonly PlatedFood[] } },
     hints: EstimateHints,
     answers: readonly FollowUp[] = [],

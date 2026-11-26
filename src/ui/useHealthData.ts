@@ -43,6 +43,8 @@ import {
   type UsualMeal,
   type Goal,
   type Meal,
+  type MealSuggestion,
+  type AIInferenceId,
   type Nutrients,
   type GoalChoice,
   type UserProfile,
@@ -56,7 +58,7 @@ import {
   type QuickSetChoice,
 } from '@/domain'
 import { buildPatternFilledDay } from '@/data/patternFilledDay'
-import { buildEstimatedMeal, type EstimatedMealInput } from '@/data/estimatedMeal'
+import { buildEstimatedMeal, suggestionAsEstimate, type EstimatedMealInput } from '@/data/estimatedMeal'
 import { buildLeftoverMeal } from '@/data/leftoverMeal'
 import { useDataRevision } from './DataProvider'
 
@@ -473,6 +475,30 @@ export function useActions() {
     [runWrite],
   )
 
+  /**
+   * Logs a suggestion (meal-suggestions.md): an estimate like any other model
+   * numbers, pointing at the answer it came from. Returns the meal, so Undo
+   * has the record to take back.
+   */
+  const logSuggestion = useCallback(
+    async (suggestion: MealSuggestion, answer: AIInferenceId, model: string, slot: MealSlot): Promise<Meal | undefined> => {
+      const { meal, inference } = buildEstimatedMeal(currentUserId(), {
+        slot,
+        at: new Date(),
+        zone: deviceZone(),
+        hints: {},
+        source: { kind: 'suggestion', title: suggestion.title, answer },
+        result: suggestionAsEstimate(suggestion, model),
+      })
+      const ok = await runWrite('this meal', async () => {
+        await getRepositories().inferences.add(inference)
+        await getRepositories().meals.add(meal)
+      })
+      return ok ? meal : undefined
+    },
+    [runWrite],
+  )
+
   /** Takes back everything a whole-day repeat wrote. */
   const deleteMeals = useCallback(
     async (meals: Meal[]) => {
@@ -509,6 +535,7 @@ export function useActions() {
     logRepeat,
     logFoods,
     logDay,
+    logSuggestion,
     deleteMeal,
     deleteMeals,
     undeleteMeal,

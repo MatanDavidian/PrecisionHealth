@@ -21,6 +21,8 @@ import type { LeftoverEstimate } from '@/domain'
 // on whose key paid for it.
 import {
   INSIGHTS_SYSTEM_PROMPT,
+  SUGGEST_SYSTEM_PROMPT,
+  suggestLanguageRule,
   LEFTOVER_SYSTEM_PROMPT,
   plateLines,
   SYSTEM_PROMPT,
@@ -31,8 +33,8 @@ import {
   insightsLanguageRule,
   languageRule,
 } from '../../supabase/functions/_shared/prompt'
-import { applyGramsHint, validateEstimate, validateInsight, validateLeftover } from './validate'
-import type { WeekReport } from '@/domain'
+import { applyGramsHint, validateEstimate, validateInsight, validateLeftover, validateSuggestions } from './validate'
+import type { MealSuggestions, SuggestionRequest, WeekReport } from '@/domain'
 
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions'
 
@@ -144,6 +146,16 @@ export class OpenAiEstimator implements FoodEstimator {
       validateInsight,
     )
     return content
+  }
+
+  async suggestMeals(request: SuggestionRequest, hints: EstimateHints): Promise<MealSuggestions> {
+    return this.ask(
+      SUGGEST_SYSTEM_PROMPT + suggestLanguageRule(hints.language),
+      `Here is the day, as JSON:\n${JSON.stringify(request)}`,
+      {},
+      [],
+      validateSuggestions,
+    )
   }
 
   /**

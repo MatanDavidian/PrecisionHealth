@@ -184,6 +184,8 @@ export interface AIInference {
   /** Judging how much of an already-logged meal came back on the plate. */
   | 'FOOD_LEFTOVER_ESTIMATE'
     | 'HEALTH_SCAN'
+    /** What to eat now: an answer, and each suggestion that was logged from it. */
+    | 'MEAL_SUGGESTION'
     | 'PLAN_GENERATION'
     | 'DOCUMENT_EXTRACTION'
   model: string

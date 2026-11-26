@@ -30,6 +30,9 @@ import {
   type Portioned,
   type UserId,
   reportMealCount,
+  type MealSuggestion,
+  type MealSuggestions,
+  type SuggestionRequest,
   type WeekReport,
 } from '@/domain'
 import type { EstimateHints, EstimateResult, PhotoMeta, WeekInsight } from '@/ai/estimator'
@@ -45,6 +48,8 @@ import { newId } from './newRecords'
 export type EstimateSource =
   | { kind: 'photo'; photo: PhotoMeta }
   | { kind: 'text'; description: string }
+  /** A suggestion the person logged, pointing at the answer it came from. */
+  | { kind: 'suggestion'; title: string; answer: AIInferenceId }
 
 /**
  * One estimated item as the user corrected it, before anything was saved.
@@ -185,7 +190,11 @@ export function buildEstimatedMeal(
   const inference: AIInference = {
     id: inferenceId,
     userId,
-    purpose: fromPhoto ? 'FOOD_PHOTO_ESTIMATE' : 'FOOD_TEXT_ESTIMATE',
+    purpose: fromPhoto
+      ? 'FOOD_PHOTO_ESTIMATE'
+      : input.source.kind === 'suggestion'
+        ? 'MEAL_SUGGESTION'
+        : 'FOOD_TEXT_ESTIMATE',
     model: input.result.model,
     modelVersion: input.result.model,
     createdAt: at,
@@ -193,11 +202,17 @@ export function buildEstimatedMeal(
     // The photo is gone; its hash identifies what was analyzed. A description
     // needs no such stand-in — it is small enough to keep verbatim, below.
     inputReferences:
-      input.source.kind === 'photo' ? [`photo:${input.source.photo.sha256}`] : [],
+      input.source.kind === 'photo'
+        ? [`photo:${input.source.photo.sha256}`]
+        : input.source.kind === 'suggestion'
+          ? [`inference:${input.source.answer}`]
+          : [],
     output: {
       ...(input.source.kind === 'photo'
         ? { photoMeta: input.source.photo }
-        : { description: input.source.description }),
+        : input.source.kind === 'suggestion'
+          ? { suggestion: input.source.title }
+          : { description: input.source.description }),
       hints: input.hints,
       assumptions: input.result.assumptions,
       // What the human overrode, so the audit answers both halves of "why does
@@ -290,5 +305,65 @@ export function buildInsightInference(
     },
     userConfirmed: false,
     safetyFlags: insight.confidence < 0.5 ? ['LOW_CONFIDENCE'] : [],
+  }
+}
+/**
+ * The audit row for an answer to "what should I eat now?".
+ *
+ * Kept like the week's (D13): advice the app gave has to be answerable for
+ * later. What is kept is the reply and the SHAPE of what was sent: what was
+ * left, the goal, and how many usual meals and foods went with it. The foods
+ * themselves are records of their own already.
+ */
+export function buildSuggestionInference(
+  userId: UserId,
+  request: SuggestionRequest,
+  answer: MealSuggestions,
+): AIInference {
+  const at = new Date().toISOString()
+  return {
+    id: newId() as AIInferenceId,
+    userId,
+    purpose: 'MEAL_SUGGESTION',
+    model: answer.model,
+    modelVersion: answer.model,
+    createdAt: at,
+    confidence: 1,
+    inputReferences: [],
+    output: {
+      suggestions: answer.suggestions,
+      note: answer.note,
+      sent: {
+        slot: request.slot,
+        localTime: request.localTime,
+        left: request.left,
+        goal: request.goal,
+        usualMeals: request.usualMeals.length,
+        usualFoods: request.usualFoods.length,
+        eatenToday: request.eatenToday.length,
+        note: request.note,
+      },
+      raw: answer.raw,
+    },
+    userConfirmed: false,
+    safetyFlags: [],
+  }
+}
+
+/**
+ * A suggestion as an estimate, ready for `buildEstimatedMeal`.
+ *
+ * The numbers came from a model (scaled from the person's own foods, mostly),
+ * so they are logged as an estimate to confirm or correct in Nutrition, like
+ * any other model numbers: logging a suggestion does not launder it into fact.
+ */
+export function suggestionAsEstimate(suggestion: MealSuggestion, model: string): EstimateResult {
+  return {
+    items: suggestion.foods.map((food) => ({ ...food, confidence: suggestion.source === 'NEW' ? 0.6 : 0.8 })),
+    overallConfidence: suggestion.source === 'NEW' ? 0.6 : 0.8,
+    assumptions: [],
+    flags: [],
+    model,
+    raw: suggestion,
   }
 }

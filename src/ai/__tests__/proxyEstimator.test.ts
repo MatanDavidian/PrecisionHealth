@@ -165,3 +165,42 @@ describe('what the server reports back', () => {
     expect(estimator.trial).toEqual({ used: 5, allowance: 10 })
   })
 })
+
+describe('asking our server what to eat now', () => {
+  it('sends the request as its own input, and reads the reply with the suggestion rules', async () => {
+    let sent: Record<string, unknown> | undefined
+    const fetchImpl = (async (_url: string, init?: RequestInit) => {
+      sent = JSON.parse(String(init!.body))
+      return reply({
+        content: JSON.stringify({
+          suggestions: [
+            {
+              title: 'Tuna on rice cakes',
+              source: 'FOODS',
+              why: 'Closes the gap.',
+              foods: [{ name: 'Tuna', amountG: 112, energyKcal: 116, proteinG: 26, carbsG: 0, fatG: 1 }],
+            },
+          ],
+          note: '',
+        }),
+        model: 'gpt-6.1-sol',
+      })
+    }) as unknown as typeof fetch
+
+    const request = {
+      slot: 'DINNER' as const,
+      localTime: '20:40',
+      left: { energyKcal: 300, proteinG: 38, carbsG: 25, fatG: 9 },
+      goal: { focus: [] },
+      eatenToday: [],
+      usualMeals: [],
+      usualFoods: [],
+    }
+    const answer = await new ProxyEstimator(options(fetchImpl)).suggestMeals(request, { language: 'he' })
+
+    expect(sent!.suggest).toEqual(request)
+    expect(sent!.hints).toEqual({ language: 'he' })
+    expect(sent).not.toHaveProperty('photo')
+    expect(answer.suggestions[0].totals.energyKcal).toBe(116)
+  })
+})

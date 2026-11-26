@@ -6,7 +6,9 @@ import { DB_NAME, openHealthDB, type HealthDB } from '../idb/schema'
 import {
   buildEstimatedMeal,
   buildFailedInference,
+  buildSuggestionInference,
   correctionsFrom,
+  suggestionAsEstimate,
   correctsAnything,
   type EstimateCorrection,
 } from '../estimatedMeal'
@@ -420,5 +422,61 @@ describe('correcting an estimate before it is saved', () => {
   it('keeps the meal itself an estimate, because that is how it began', async () => {
     const { meal } = await corrected({ index: 0, energyKcal: 200 })
     expect(meal.provenance.source).toBe('AI_ESTIMATE')
+  })
+})
+
+
+describe('a suggestion, logged', () => {
+  const answer = {
+    suggestions: [
+      {
+        title: 'Tuna on rice cakes',
+        source: 'FOODS' as const,
+        why: 'Closes the gap.',
+        foods: [
+          { name: 'Tuna', amountG: 112, energyKcal: 116, proteinG: 26, carbsG: 0, fatG: 1 },
+          { name: 'Rice cakes', amountG: 18, energyKcal: 70, proteinG: 1.5, carbsG: 14.5, fatG: 0.5 },
+        ],
+        totals: { energyKcal: 186, proteinG: 27.5, carbsG: 14.5, fatG: 1.5 },
+      },
+    ],
+    raw: {},
+    model: 'gpt-6.1-sol',
+  }
+  const request = {
+    slot: 'DINNER' as const,
+    localTime: '20:40',
+    left: { energyKcal: 300, proteinG: 38, carbsG: 25, fatG: 9 },
+    goal: { focus: [] },
+    eatenToday: ['Eggs'],
+    usualMeals: [],
+    usualFoods: [],
+    note: 'quick',
+  }
+
+  it('keeps the answer and the shape of what was sent, as advice the app gave', () => {
+    const row = buildSuggestionInference('u1' as never, request, answer)
+    expect(row.purpose).toBe('MEAL_SUGGESTION')
+    expect(row.output).toMatchObject({
+      suggestions: answer.suggestions,
+      sent: { slot: 'DINNER', left: request.left, usualMeals: 0, usualFoods: 0, eatenToday: 1, note: 'quick' },
+    })
+  })
+
+  it('is an estimate to confirm, pointing at the answer it came from', () => {
+    const { meal, inference } = buildEstimatedMeal('u1' as never, {
+      slot: 'DINNER',
+      at: new Date('2026-11-26T18:40:00Z'),
+      zone: 'Asia/Jerusalem',
+      hints: {},
+      source: { kind: 'suggestion', title: 'Tuna on rice cakes', answer: 'answer-1' as never },
+      result: suggestionAsEstimate(answer.suggestions[0], answer.model),
+    })
+    expect(inference.purpose).toBe('MEAL_SUGGESTION')
+    expect(inference.inputReferences).toEqual(['inference:answer-1'])
+    expect(meal.items.map((item) => item.name)).toEqual(['Tuna', 'Rice cakes'])
+    expect(convert(meal.items[0].nutrients.protein, 'g')).toBe(26)
+    // Logging a suggestion does not turn the model's numbers into facts.
+    expect(meal.items.every((item) => needsConfirmation(item.provenance))).toBe(true)
   })
 })

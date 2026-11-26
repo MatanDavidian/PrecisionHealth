@@ -61,6 +61,7 @@ import { SampleDayLabel } from '../components/SampleDayLabel'
 import { SetDayCard } from '../components/QuickSet'
 import { Welcome } from '../components/Welcome'
 import { TargetsCard, TargetsSetupCard, TargetsWeekCard } from '../components/DailyTargets'
+import { SuggestMeals } from '../components/SuggestMeals'
 import { useTargetsHistory } from '../useTargetsHistory'
 import { useDailyTargets } from '../useDailyTargets'
 import type { StringKey } from '../i18n/strings'
@@ -269,6 +270,12 @@ export function Today() {
 
   const { nutrients, workouts, sleep, conflicts, unconfirmed, effective } = data
   const workout = workouts[0]
+  const eatenToday = {
+    energyKcal: convert(nutrients.energy, 'kcal'),
+    proteinG: convert(nutrients.protein, 'g'),
+    carbsG: convert(nutrients.carbs, 'g'),
+    fatG: convert(nutrients.fat, 'g'),
+  }
   const proteinGoal = ownGoal(goals, 'PROTEIN')
   const proteinProgress = proteinGoal ? evaluateGoal(proteinGoal, nutrients.protein.value) : undefined
   const weightConflict = conflicts.find((c) => c.effective.code === 'WEIGHT')
@@ -515,16 +522,17 @@ export function Today() {
         <div className="mb-4">
           <TargetsCard
             targets={targetsReading.result.targets}
-            eaten={{
-              energyKcal: convert(nutrients.energy, 'kcal'),
-              proteinG: convert(nutrients.protein, 'g'),
-              carbsG: convert(nutrients.carbs, 'g'),
-              fatG: convert(nutrients.fat, 'g'),
-            }}
+            eaten={eatenToday}
             isToday={isToday}
             dayName={dayLabel(day, today, t)}
             streak={isToday ? streak : undefined}
-            extra={nutritionNotes}
+            extra={
+              <>
+                {nutritionNotes}
+                {/* What to eat now (meal-suggestions.md): today only, while the day has room. */}
+                {isToday && <SuggestMeals targets={targetsReading.result.targets} eaten={eatenToday} />}
+              </>
+            }
           />
         </div>
       ) : (

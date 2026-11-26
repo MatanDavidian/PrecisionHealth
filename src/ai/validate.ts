@@ -15,7 +15,17 @@ import {
   type EstimateResult,
   type WeekInsight,
 } from './estimator'
-import { clampFraction, type LeftoverEstimate, type LeftoverPortion } from '@/domain'
+import {
+  clampFraction,
+  MAX_SUGGESTIONS,
+  totalsOf,
+  type LeftoverEstimate,
+  type LeftoverPortion,
+  type MealSuggestion,
+  type MealSuggestions,
+  type SuggestedFood,
+  type SuggestionSource,
+} from '@/domain'
 
 /** Calories implied by macros. Atwater factors: 4/4/9 kcal per gram. */
 export const kcalFromMacros = (proteinG: number, carbsG: number, fatG: number): number =>
@@ -223,4 +233,84 @@ export function validateLeftover(raw: unknown, model: string, plateSize: number)
   }
 
   return { portions, model, confidence: confidence(raw.confidence), raw }
+}
+
+
+/** No real food carries more than this per gram (pure fat is 9). */
+const MAX_KCAL_PER_GRAM = 9.5
+/** The most foods one suggestion may have. Past this it is a menu, not a snack. */
+const MAX_SUGGESTED_FOODS = 6
+const SOURCES: readonly SuggestionSource[] = ['USUAL', 'FOODS', 'NEW']
+
+/** One suggested food, or undefined when its numbers cannot be real. */
+function suggestedFood(value: unknown): SuggestedFood | undefined {
+  if (!isObject(value)) return undefined
+  const name = text(value.name)
+  const read = (field: unknown) => {
+    const parsed = typeof field === 'string' ? Number(field.trim()) : field
+    return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : Number.NaN
+  }
+  const food = {
+    name,
+    amountG: read(value.amountG),
+    energyKcal: read(value.energyKcal),
+    proteinG: read(value.proteinG),
+    carbsG: read(value.carbsG),
+    fatG: read(value.fatG),
+  }
+  if (!name) return undefined
+  const numbers = [food.amountG, food.energyKcal, food.proteinG, food.carbsG, food.fatG]
+  if (numbers.some((n) => !Number.isFinite(n) || n < 0)) return undefined
+  if (food.amountG <= 0 || food.amountG > 2000) return undefined
+  if (food.energyKcal > food.amountG * MAX_KCAL_PER_GRAM) return undefined
+  if (food.proteinG + food.carbsG + food.fatG > food.amountG * 1.01) return undefined
+  // Macros that say a quarter more calories than claimed (or a quarter fewer,
+  // with something to count) are not a rounding difference; they are wrong.
+  const implied = kcalFromMacros(food.proteinG, food.carbsG, food.fatG)
+  if (food.energyKcal > 20 && Math.abs(implied - food.energyKcal) > food.energyKcal * MACRO_MISMATCH_TOLERANCE + 15) {
+    return undefined
+  }
+  return food
+}
+
+/**
+ * The model's suggestions, made safe (docs/features/meal-suggestions.md).
+ *
+ * Strict on numbers, soft on words. A suggestion is about to be logged with
+ * one tap, so a food whose numbers cannot be real takes the whole suggestion
+ * with it, and the totals are always added up here rather than read from the
+ * model. A missing "why" is a thinner answer, not a corrupt one. At most three
+ * survive, and at most one of them a new idea; an answer with none left is
+ * an error the card offers to retry.
+ */
+export function validateSuggestions(raw: unknown, model: string): MealSuggestions {
+  if (!isObject(raw)) throw new EstimateError('UNREADABLE', 'reply is not an object', raw)
+  const list = Array.isArray(raw.suggestions) ? raw.suggestions : []
+
+  const suggestions: MealSuggestion[] = []
+  let newIdeas = 0
+  for (const entry of list) {
+    if (suggestions.length >= MAX_SUGGESTIONS) break
+    if (!isObject(entry)) continue
+    const title = text(entry.title)
+    const foodsRaw = Array.isArray(entry.foods) ? entry.foods : []
+    if (!title || foodsRaw.length === 0 || foodsRaw.length > MAX_SUGGESTED_FOODS) continue
+    const foods = foodsRaw.map(suggestedFood)
+    if (foods.some((food) => food === undefined)) continue
+    const source: SuggestionSource = SOURCES.includes(entry.source as SuggestionSource)
+      ? (entry.source as SuggestionSource)
+      : 'NEW'
+    if (source === 'NEW') {
+      if (newIdeas >= 1) continue
+      newIdeas += 1
+    }
+    const kept = foods as SuggestedFood[]
+    suggestions.push({ title, source, why: text(entry.why), foods: kept, totals: totalsOf(kept) })
+  }
+
+  if (suggestions.length === 0) {
+    throw new EstimateError('UNREADABLE', 'reply carried no usable suggestion', raw)
+  }
+  const note = text(raw.note)
+  return { suggestions, ...(note ? { note } : {}), raw, model }
 }

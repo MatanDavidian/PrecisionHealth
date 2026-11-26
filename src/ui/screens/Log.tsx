@@ -128,7 +128,12 @@ export function Log() {
   const [foodName, setFoodName] = useState('')
   const [grams, setGrams] = useState('')
   /** Free text sent with a photo — what the camera cannot see. */
-  const [note, setNote] = useState('')
+  /*
+    A note can arrive in the address: "Take a photo" on a suggestion opens
+    the camera with what was suggested (meal-suggestions.md), so the photo is
+    read knowing what it is.
+  */
+  const [note, setNote] = useState(() => (params.get('note') ?? '').slice(0, 300))
   /** The sentence being written in Write mode. */
   const [description, setDescription] = useState('')
   const [recent, setRecent] = useState<string[]>(() => readRecentDescriptions())

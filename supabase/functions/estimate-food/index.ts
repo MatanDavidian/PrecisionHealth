@@ -21,6 +21,9 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   INSIGHTS_SYSTEM_PROMPT,
   LEFTOVER_SYSTEM_PROMPT,
+  MAX_SUGGEST_CHARS,
+  SUGGEST_SYSTEM_PROMPT,
+  suggestLanguageRule,
   plateLines,
   MAX_DESCRIPTION_CHARS,
   MAX_FOLLOW_UPS,
@@ -94,6 +97,12 @@ interface RequestBody {
    */
   report?: unknown
   leftover?: unknown
+  /**
+   * What is left of the day and the foods the person usually eat, when they
+   * ask what to eat (meal-suggestions.md). Passed through as JSON, bounded,
+   * never stored, and counted as a written analysis.
+   */
+  suggest?: unknown
   /** The exchange so far, when the model asked something and the user replied. */
   answers?: FollowUp[]
   /**
@@ -183,8 +192,13 @@ Deno.serve(async (request) => {
     else here — it comes from a client, and a client can send anything.
   */
   const leftover = readLeftover(body?.leftover)
+  /** The fifth: what to eat now. Bounded like the week, for the same reason. */
+  const suggested =
+    body?.suggest && typeof body.suggest === 'object' && !Array.isArray(body.suggest)
+      ? JSON.stringify(body.suggest).slice(0, MAX_SUGGEST_CHARS)
+      : ''
 
-  if ((!body?.photo && !described && !reported && !leftover) || !body?.day) {
+  if ((!body?.photo && !described && !reported && !leftover && !suggested) || !body?.day) {
     return json({ error: 'bad_request' }, 400)
   }
 
@@ -451,6 +465,8 @@ Deno.serve(async (request) => {
               ? LEFTOVER_SYSTEM_PROMPT + languageRule(body.hints?.language)
               : reported
                 ? INSIGHTS_SYSTEM_PROMPT + insightsLanguageRule(body.hints?.language)
+                : suggested
+                  ? SUGGEST_SYSTEM_PROMPT + suggestLanguageRule(body.hints?.language)
                 : (body.photo ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT) +
                   languageRule(body.hints?.language),
           },
@@ -460,6 +476,8 @@ Deno.serve(async (request) => {
               ? leftoverContent(leftover)
               : reported
                 ? `Here is the week, as JSON:\n${reported}`
+                : suggested
+                  ? `Here is the day, as JSON:\n${suggested}`
                 : body.photo
                 ? [
                     { type: 'text', text: hintText(body.hints ?? {}) },

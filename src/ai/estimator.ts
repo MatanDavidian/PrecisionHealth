@@ -16,7 +16,7 @@
 // The conversation shape lives with the prompt, so the client and the edge
 // function cannot disagree about what a follow-up round looks like.
 import type { FollowUp } from '../../supabase/functions/_shared/prompt'
-import type { LeftoverEstimate, WeekReport } from '@/domain'
+import type { LeftoverEstimate, MealSuggestions, SuggestionRequest, WeekReport } from '@/domain'
 export type { FollowUp }
 
 /** Optional user input. The model must treat these as ground truth, not suggestions. */
@@ -158,6 +158,14 @@ export interface FoodEstimator {
    * name.
    */
   weekInsights(report: WeekReport, hints: EstimateHints): Promise<WeekInsight>
+  /**
+   * What to eat now, to fill what is left of the day (meal-suggestions.md).
+   *
+   * On this port for the same reason as the week: the same provider, key,
+   * entitlement and errors, a different question. Counted as a written
+   * analysis.
+   */
+  suggestMeals(request: SuggestionRequest, hints: EstimateHints): Promise<MealSuggestions>
   /**
    * What came back on the plate, judged against what was on it.
    *

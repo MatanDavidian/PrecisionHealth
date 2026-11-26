@@ -7,6 +7,8 @@ import {
   LIGHT_SNACK_MAX_KCAL,
   suggestPlan,
   type WeekSoFar,
+  type MealToCome,
+  type SuggestionRequest,
   type AIInferenceId,
   type DailyTargets,
   type Macros,
@@ -16,8 +18,7 @@ import {
 } from '@/domain'
 import { getEstimator, getRepositories } from '@/data'
 import { currentUserId } from '@/data/session'
-import { suggestSlot } from '@/data/newRecords'
-import { readSuggestionRequest, readWeekSoFar } from '@/data/suggestions'
+import { readMealsToCome, readSuggestionRequest, readWeekSoFar, slotFor } from '@/data/suggestions'
 import { buildSuggestionInference } from '@/data/estimatedMeal'
 import { EstimateError } from '@/ai/estimator'
 import { PlanExhaustedError, TrialExhaustedError } from '@/ai/proxyEstimator'
@@ -47,7 +48,16 @@ type State =
   | { kind: 'failed'; reason: 'FREE' | 'PLAN' | 'ACCOUNT' | 'SESSION' | 'OTHER'; resetsAt?: string }
   | { kind: 'logged'; suggestion: MealSuggestion; meal?: Meal; undone?: boolean }
 
-export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten: Macros }) {
+export function SuggestMeals({
+  targets,
+  eaten,
+  training,
+}: {
+  targets: DailyTargets
+  eaten: Macros
+  /** Today's training, which shapes what is suggested: protein first after a workout. */
+  training?: SuggestionRequest['trainingToday']
+}) {
   const { t, lang } = useLang()
   const navigate = useNavigate()
   const { session, revision } = useDataRevision()
@@ -57,17 +67,20 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
   const [note, setNote] = useState('')
   const [offered, setOffered] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
-  /** The week so far; undefined while it is read. */
-  const [week, setWeek] = useState<WeekSoFar>()
+  /** The week so far and the usual meals still to come; undefined while they are read. */
+  const [context, setContext] = useState<{ week?: WeekSoFar; toCome: MealToCome[] }>()
+  const week = context?.week
+  const toCome = context?.toCome ?? []
   /** What the last request asked for, so Ask again asks the same. */
   const [asked, setAsked] = useState<{ kind: 'FILL' | 'PROTEIN'; maxKcal: number }>()
   const fmt = (n: number) => Math.round(n).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')
 
   useEffect(() => {
     let cancelled = false
-    void readWeekSoFar(currentUserId(), targets, eaten)
-      .then((read) => !cancelled && setWeek(read))
-      .catch(() => undefined)
+    void Promise.all([readWeekSoFar(currentUserId(), targets, eaten), readMealsToCome(currentUserId())])
+      .then(([readWeek, readToCome]) => !cancelled && setContext({ week: readWeek, toCome: readToCome }))
+      // Unreadable, the card still offers to fill a day with room: no week, nothing to come.
+      .catch(() => !cancelled && setContext({ toCome: [] }))
     return () => {
       cancelled = true
     }
@@ -75,10 +88,11 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
   }, [revision, targets.energyKcal, eaten.energyKcal])
 
   const progress = dayProgress(targets, eaten)
-  const plan = suggestPlan(progress, week)
-  const showing = state.kind !== 'idle' || (plan && (plan.kind === 'FILL' || week))
+  const plan = suggestPlan(progress, week, toCome)
   // Once asked or logged, the card stays, even though the day may now be full.
-  // While the week is read, a full day waits rather than saying "stop" too soon.
+  // While the week and the meals to come are read, it waits rather than
+  // offering a size it would then change, or saying "stop" too soon.
+  const showing = state.kind !== 'idle' || (plan && context)
   if (!showing) return null
   const left = leftOf(progress)
   const over = Math.max(0, Math.round(-progress.energy.remaining))
@@ -91,7 +105,7 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
     .join(' · ')
 
   async function ask(again = false, want = asked) {
-    const wanted = want ?? (plan && plan.kind !== 'STOP' ? plan : undefined)
+    const wanted = want ?? (plan && (plan.kind === 'FILL' || plan.kind === 'PROTEIN') ? plan : undefined)
     if (!wanted) return
     setAsked(wanted)
     setState({ kind: 'running' })
@@ -101,6 +115,8 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
         avoid: again ? offered : undefined,
         plan: wanted,
         week,
+        toCome,
+        training,
       })
       const answer = await getEstimator().suggestMeals(request, { language: lang })
       const inference = buildSuggestionInference(currentUserId(), request, answer)
@@ -121,7 +137,7 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
 
   async function log(suggestion: MealSuggestion, answer: MealSuggestions, answerId: AIInferenceId) {
     setBusy(true)
-    const meal = await logSuggestion(suggestion, answerId, answer.model, suggestSlot(new Date()))
+    const meal = await logSuggestion(suggestion, answerId, answer.model, slotFor(new Date(), toCome))
     setBusy(false)
     if (meal) setState({ kind: 'logged', suggestion, meal })
   }
@@ -134,13 +150,18 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
     navigate(`/log?mode=photo&note=${encodeURIComponent(words)}`)
   }
 
-  /** "Week so far: 450 kcal under your targets." */
-  const weekWords = (balance: number) =>
-    Math.abs(balance) < 25
-      ? t('suggest.weekLevel')
+  /** One row of the week: "450 under", "62 g behind", "40 g over", "on target". */
+  const weekCell = (balance: number, near: number, under: StringKey, over: StringKey) =>
+    Math.abs(balance) < near
+      ? t('suggest.weekOnTarget')
       : balance < 0
-        ? t('suggest.weekUnder', { kcal: fmt(-balance) })
-        : t('suggest.weekOver', { kcal: fmt(balance) })
+        ? t(under, { n: fmt(-balance) })
+        : t(over, { n: fmt(balance) })
+  const fatHigh = !!week && week.fatG >= Math.max(10, targets.fatG * 0.15)
+  const slotsWords = (slots: readonly string[]) =>
+    slots.map((slot) => t(`common.slotLabel.${slot}` as StringKey)).join(t('suggest.and'))
+  const strength = training?.workouts.some((w) => w.kind === 'STRENGTH')
+  const trainedMinutes = training?.workouts.reduce((sum, w) => sum + w.minutes, 0) ?? 0
 
   const date = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', { day: 'numeric', month: 'long' }) : ''
@@ -160,22 +181,68 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
               </>
             )}
           </p>
-          {week && week.days > 1 && plan.kind !== 'STOP' && (
-            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-week">
-              {weekWords(week.balanceKcal)}
-              {plan.kind === 'PROTEIN' && ` ${t('suggest.weekRoomProtein')}`}
+          {week && week.days > 1 && (
+            <div className="mt-2.5 rounded-xl bg-card-soft px-3.5 py-2.5" data-testid="suggest-week">
+              <p className="pb-1 text-xs font-semibold text-ink-muted">{t('suggest.weekTitle')}</p>
+              <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-[13px]">
+                <dt className="text-ink-soft">{t('estimate.calories')}</dt>
+                <dd className="tabular text-end font-semibold">
+                  {weekCell(week.balanceKcal, 50, 'suggest.weekKcalUnder', 'suggest.weekKcalOver')}
+                </dd>
+                <dt className="text-ink-soft">{t('estimate.protein')}</dt>
+                <dd className="tabular text-end font-semibold">
+                  {weekCell(week.proteinG, 5, 'suggest.weekProteinBehind', 'suggest.weekProteinAhead')}
+                </dd>
+                <dt className="text-ink-soft">{t('estimate.fat')}</dt>
+                <dd className="tabular text-end font-semibold">{weekCell(week.fatG, 5, 'suggest.weekGUnder', 'suggest.weekGOver')}</dd>
+                <dt className="text-ink-soft">{t('estimate.carbs')}</dt>
+                <dd className="tabular text-end font-semibold">{weekCell(week.carbsG, 10, 'suggest.weekGUnder', 'suggest.weekGOver')}</dd>
+              </dl>
+              <p className="pt-1 text-[11.5px] text-ink-muted">
+                {t('suggest.weekSpan')}
+                {week.measuredDays > 0 && ` ${t('suggest.weekMeasured')}`}
+              </p>
+            </div>
+          )}
+          {plan.kind === 'PROTEIN' && (
+            <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-hint">
+              {fatHigh ? t('suggest.hintLeanProtein') : t('suggest.weekRoomProtein')}
             </p>
           )}
-          {plan.kind === 'STOP' ? (
+          {plan.kind === 'FILL' && toCome.length > 0 && (
+            <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-to-come">
+              {t(toCome.length === 1 ? 'suggest.toComeOne' : 'suggest.toComeMany', {
+                meals: slotsWords(toCome.map((meal) => meal.slot)),
+                kcal: fmt(toCome.reduce((sum, meal) => sum + meal.usualKcal, 0)),
+                max: fmt(plan.maxKcal),
+              })}
+            </p>
+          )}
+          {trainedMinutes > 0 && (plan.kind === 'FILL' || plan.kind === 'PROTEIN') && (
+            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-training">
+              {t(strength ? 'suggest.trainedStrength' : 'suggest.trained', { minutes: fmt(trainedMinutes) })}
+            </p>
+          )}
+          {plan.kind === 'STOP' || plan.kind === 'WAIT' ? (
             <>
               <div className="mt-3 rounded-2xl bg-leaf-soft px-4 py-3 text-sm leading-relaxed" data-testid="suggest-stop">
-                <p className="font-semibold">{t('suggest.stopTitle')}</p>
-                <p>
-                  {over > 0 ? t('suggest.stopOver', { kcal: fmt(over) }) : t('suggest.stopFull')}{' '}
-                  {t('suggest.stopWeek')} {t('suggest.stopProtein', { protein: fmt(left.proteinG) })}
-                </p>
+                {plan.kind === 'WAIT' ? (
+                  <>
+                    <p className="font-semibold">{t('suggest.waitTitle', { meals: slotsWords(plan.meals) })}</p>
+                    <p>{t('suggest.waitBody', { kcal: fmt(plan.kcal) })}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold">{t('suggest.stopTitle')}</p>
+                    <p>
+                      {over > 0 ? t('suggest.stopOver', { kcal: fmt(over) }) : t('suggest.stopFull')}{' '}
+                      {plan.reason === 'PROTEIN_AHEAD' && week
+                        ? t('suggest.stopProteinAhead', { ahead: fmt(week.proteinG + left.proteinG), protein: fmt(left.proteinG) })
+                        : `${t('suggest.stopWeek')} ${t('suggest.stopProtein', { protein: fmt(left.proteinG) })}`}
+                    </p>
+                  </>
+                )}
               </div>
-              {week && week.days > 1 && <p className="pt-2 text-xs text-ink-muted">{weekWords(week.balanceKcal)}</p>}
               <button
                 type="button"
                 onClick={() => void ask(false, { kind: 'PROTEIN', maxKcal: LIGHT_SNACK_MAX_KCAL })}
@@ -217,14 +284,7 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
                   />
                 </div>
               )}
-              <p className="pt-2.5 text-xs leading-relaxed text-ink-muted">
-                {week && week.days > 1 && (
-                  <>
-                    {t('suggest.weekSpan')} {week.measuredDays > 0 && `${t('suggest.weekMeasured')} `}
-                  </>
-                )}
-                {t('suggest.costs')}
-              </p>
+              <p className="pt-2.5 text-xs leading-relaxed text-ink-muted">{t('suggest.costs')}</p>
             </>
           )}
         </>
@@ -360,7 +420,7 @@ export function SuggestMeals({ targets, eaten }: { targets: DailyTargets; eaten:
             {state.undone
               ? t('suggest.undone')
               : t('suggest.logged', {
-                  slot: t(`common.slotLabel.${state.meal?.slot ?? suggestSlot(new Date())}` as StringKey),
+                  slot: t(`common.slotLabel.${state.meal?.slot ?? slotFor(new Date(), toCome)}` as StringKey),
                   title: state.suggestion.title,
                   kcal: fmt(state.suggestion.totals.energyKcal),
                 })}

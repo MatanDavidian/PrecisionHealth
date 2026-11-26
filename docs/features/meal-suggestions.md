@@ -75,6 +75,31 @@ is.
   theirs.
 - **Nothing at all** when the day is used and the protein reached.
 
+### What else shapes a suggestion (added 2026-11-26, the owner chose all four)
+
+- **The week's protein, fat and carbs**, beside its calories, each against
+  each day's own targets, shown as a small table ("Calories 450 under ·
+  Protein 62 g behind · Fat 40 g over · Carbs on target"). When today's
+  calories are used, a week whose protein is ahead of its targets (today's
+  gap included) means today's gap can wait: **better to stop**, with the
+  reason ("this week's protein is 58 g ahead of its targets: today's 11 g
+  can wait"). Fat over for the week asks the model for low-fat options.
+- **The usual meals still to come today.** A main meal eaten on at least
+  half the logged days (and on four or more), at a usual time more than 45
+  minutes away, not logged yet today: its usual calories are kept. At 16:30
+  with 900 left and dinner usually 650 at 20:00, the room is 250, and the
+  suggestion is a snack, logged as one. If the meals to come take all that
+  is left: **better to wait for dinner**, with "Hungry anyway?".
+- **Today's training**, its kind and length and the active calories: "62
+  min of strength training today: protein first, and some carbs are fine."
+- **Food preferences**, saved in Settings → Goals: vegetarian, vegan, no
+  meat with dairy, no pork, no fish, lactose-free, gluten-free, and
+  "anything else to avoid" in the person's words (allergies among them).
+  Rules the model must never break, sent with every request. Kept in the
+  profile, so they come into an account at sign-in. The card says that a
+  choice like "no meat with dairy" can say something about beliefs, and the
+  Privacy Policy lists them (version 2026-11-26.2).
+
 ### Rules the model is held to
 
 - Fit the room: total calories at most what is left (+10%), and close the

@@ -14,9 +14,52 @@ export interface User {
 export type Sex = 'MALE' | 'FEMALE' | 'OTHER' | 'UNDISCLOSED'
 
 /** The profile details the daily targets use, and that sign-in carries into an account. */
-export type ProfileDetail = 'height' | 'birthYear' | 'sex' | 'activity'
+export type ProfileDetail = 'height' | 'birthYear' | 'sex' | 'activity' | 'foodPreferences'
 
-export const PROFILE_DETAILS: readonly ProfileDetail[] = ['height', 'birthYear', 'sex', 'activity']
+export const PROFILE_DETAILS: readonly ProfileDetail[] = ['height', 'birthYear', 'sex', 'activity', 'foodPreferences']
+
+/**
+ * Ways of eating the suggestions must follow (meal-suggestions.md). Rules, not
+ * tastes: a vegetarian is never offered tuna, and "no meat with dairy" never
+ * puts the two in one suggestion.
+ */
+export type FoodDiet =
+  | 'VEGETARIAN'
+  | 'VEGAN'
+  | 'NO_MEAT_WITH_DAIRY'
+  | 'NO_PORK'
+  | 'NO_FISH'
+  | 'LACTOSE_FREE'
+  | 'GLUTEN_FREE'
+
+export const FOOD_DIETS: readonly FoodDiet[] = [
+  'VEGETARIAN',
+  'VEGAN',
+  'NO_MEAT_WITH_DAIRY',
+  'NO_PORK',
+  'NO_FISH',
+  'LACTOSE_FREE',
+  'GLUTEN_FREE',
+]
+
+/** The longest "anything else to avoid" worth keeping: a list, not a diary. */
+export const MAX_AVOID_CHARS = 200
+
+export interface FoodPreferences {
+  diets: FoodDiet[]
+  /** The person's own words: "peanuts (allergy), mushrooms". */
+  avoid?: string
+}
+
+/** Preferences as kept: known diets only, the words trimmed and bounded. */
+export function cleanFoodPreferences(value: unknown): FoodPreferences | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const raw = value as { diets?: unknown; avoid?: unknown }
+  const diets = FOOD_DIETS.filter((diet) => Array.isArray(raw.diets) && raw.diets.includes(diet))
+  const avoid = typeof raw.avoid === 'string' ? raw.avoid.trim().slice(0, MAX_AVOID_CHARS) : ''
+  if (diets.length === 0 && !avoid) return undefined
+  return { diets, ...(avoid ? { avoid } : {}) }
+}
 
 export interface UserProfile {
   userId: UserId
@@ -41,6 +84,8 @@ export interface UserProfile {
    * sample's details never travel and the person's own always do.
    */
   youSet?: ProfileDetail[]
+  /** What suggestions must follow: ways of eating, and anything to avoid. */
+  foodPreferences?: FoodPreferences
   /**
    * The zone stamped onto new records. Historical records keep the zone they
    * were created with, so changing this never rewrites the past.

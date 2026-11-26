@@ -216,8 +216,13 @@ export class FakeEstimator implements FoodEstimator {
 
     // A protein snack is lean protein only: the person's leanest food, and the yogurt.
     const offered = request.mode === 'PROTEIN' ? suggestions.filter((_, i) => i !== 1) : suggestions
+    // Saying which rules it was given lets a browser test see the preferences arrive.
+    const following = request.preferences?.diets.length
+      ? `${he ? 'לפי ההעדפות' : 'Following'}: ${request.preferences.diets.join(', ')}.`
+      : ''
+    const rest = request.mode === 'PROTEIN' ? (he ? 'השאר יכול לחכות למחר.' : 'The rest can wait for tomorrow.') : ''
     return validateSuggestions(
-      { suggestions: offered, note: request.mode === 'PROTEIN' ? (he ? 'השאר יכול לחכות למחר.' : 'The rest can wait for tomorrow.') : '' },
+      { suggestions: offered, note: [rest, following].filter(Boolean).join(' ') },
       this.model,
       request.maxKcal,
     )

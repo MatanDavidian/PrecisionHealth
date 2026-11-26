@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Reminders } from '../components/Reminders'
 import { remindersDeployed } from '@/data/reminders'
 import { AboutYou, TargetsWorking } from '../components/DailyTargets'
+import { FoodPreferences } from '../components/FoodPreferences'
 import { useDailyTargets } from '../useDailyTargets'
 import { askToKeep, storagePersistence, type Persistence } from '@/data/persistence'
 import { useSearchParams } from 'react-router-dom'
@@ -316,6 +317,10 @@ export function Settings() {
                     reading={targetsReading}
                     thisYear={Number(today.slice(0, 4))}
                     onSave={(patch) => void saveProfile(patch)}
+                  />
+                  <FoodPreferences
+                    value={targetsReading.profile?.foodPreferences}
+                    onSave={(foodPreferences) => saveProfile({ foodPreferences })}
                   />
                   <TargetsWorking
                     reading={targetsReading}

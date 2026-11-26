@@ -530,7 +530,16 @@ export function Today() {
               <>
                 {nutritionNotes}
                 {/* What to eat now (meal-suggestions.md): today only, while the day has room. */}
-                {isToday && <SuggestMeals targets={targetsReading.result.targets} eaten={eatenToday} />}
+                {isToday && (
+                  <SuggestMeals
+                    targets={targetsReading.result.targets}
+                    eaten={eatenToday}
+                    training={{
+                      workouts: workouts.map((w) => ({ kind: w.type, minutes: Math.round(convert(w.duration, 'min')) })),
+                      activeKcal: effective.ACTIVE_ENERGY ? Math.round(convert(effective.ACTIVE_ENERGY.value, 'kcal')) : undefined,
+                    }}
+                  />
+                )}
               </>
             }
           />

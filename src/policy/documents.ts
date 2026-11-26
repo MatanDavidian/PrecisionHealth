@@ -76,7 +76,7 @@ const OPERATOR = 'Matan Davidian, an individual based in Israel'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-11-26',
+  version: '2026-11-26.2',
   sections: [
     {
       heading: 'Who we are',
@@ -98,6 +98,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'Your email address, if you create an account.',
         'Whether you subscribe: your plan and when it renews. Card and billing details are held by Lemon Squeezy, or by Google Play if you subscribed in the Android app. We never hold them.',
         'The language you chose to read the app in.',
+        'Food preferences, if you set them: ways of eating you chose (such as vegetarian, or no meat with dairy) and the foods you wrote to avoid. They are used only for suggestions of what to eat. A choice like “no meat with dairy” can say something about your beliefs, so set only what you are comfortable sharing; you can clear them at any time in Settings.',
         'Reminders, if you turn them on: the times you chose, your time zone, the meals you usually eat at breakfast, lunch and dinner (so a reminder can offer one as a button), and, for each device you turned them on, the address your browser’s push service gave it.',
       ],
     },
@@ -145,7 +146,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       ],
       bullets: [
         'Supabase hosts the database and handles sign-in. Everything in your account is stored there, in Frankfurt, Germany.',
-        'OpenAI receives the meal photograph or description you ask us to analyse, the weekly summary when you ask for an insight, and, when you ask what to eat, what is left of your day and the foods you usually eat. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
+        'OpenAI receives the meal photograph or description you ask us to analyse, the weekly summary when you ask for an insight, and, when you ask what to eat, what is left of your day and your week, the foods you usually eat, and the food preferences you set. It receives nothing else, and it is not given your name, your email, or any identifier for you. They retain what is sent for up to 30 days for abuse monitoring, then delete it.',
         'Cloudflare serves the app itself, and forwards mail sent to our @vimetry.app addresses.',
         'Your browser’s push service (Google’s on Android and in Chrome, Apple’s on iPhone, Mozilla’s in Firefox) delivers reminders, if you turn them on. It receives the device’s address and an encrypted message it cannot read, which says it is time to log and, for a meal reminder, names the meal you usually eat then. That name shows on the notification, on your lock screen too.',
         'Brevo, in France, sends the sign-in emails. It receives your email address and the one-time code and link it delivers, and records whether the email was opened and the link clicked. It receives no health data.',
@@ -157,7 +158,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       heading: 'What we send to OpenAI, exactly',
       body: [
         'When you photograph or describe a meal, that photograph or description is sent, with the hints you supplied: the day, and anything you typed in "add details". When you ask for a weekly insight, a summary of that week’s totals is sent.',
-        'When you ask what to eat now, what is sent is: what is left of today’s targets, your goal, the time and the meal, the names of the foods you have eaten today, the meals and foods you log most often with their usual amounts and their nutrition, and the note you wrote, if any.',
+        'When you ask what to eat now, what is sent is: what is left of today’s targets, how the week so far stands against its targets (calories, protein, fat and carbs), your goal, the time and the meal, the usual meals still to come today, today’s training (its kind, its length and the active calories), the names of the foods you have eaten today, the meals and foods you log most often with their usual amounts and their nutrition, your food preferences if you set them, and the note you wrote, if any.',
         'Neither the weekly summary nor a request for suggestions carries any identity: no name, no email, no account id, no record ids, no dates. That is enforced in the code and there are tests asserting it.',
         'If you supply your own OpenAI key in Settings (on the website), requests go directly from your browser to OpenAI and never pass through our servers. That key is stored on your device only and is never uploaded, synced, or included in an export.',
       ],

@@ -36,3 +36,20 @@ week 190 under), then with a 1,200 kcal dinner added:
 | --- | --- |
 | ![](18-built-protein-ask.png) **18. Protein snack** | ![](19-built-protein-suggestions.png) **19. The snacks**, up to 190 kcal |
 | ![](20-built-stop.png) **20. Stop** | ![](21-built-he-stop.png) **21. Hebrew, stop** |
+
+**Third round, drawn** (2026-11-26): the week's protein, fat and carbs, and
+what else should shape a suggestion.
+
+| | |
+| --- | --- |
+| ![](22-week-macros.png) **22. The week's macros** decide with the calories | ![](23-stop-protein-ahead.png) **23. Protein ahead for the week**: stop |
+| ![](24-meals-to-come-and-training.png) **24. Room kept for the usual dinner, and today's training** | ![](25-food-preferences.png) **25. Food preferences**, in Settings → Goals |
+| ![](26-he-week-macros.png) **26. Hebrew, the week** | ![](27-he-meals-to-come-and-training.png) **27. Hebrew, dinner to come and training** |
+| ![](28-he-food-preferences.png) **28. Hebrew, food preferences** | |
+
+As built (all four chosen), on the sample day:
+
+| | |
+| --- | --- |
+| ![](29-built-week-and-training.png) **29. The week's table and today's training** | ![](30-built-food-preferences.png) **30. Food preferences** |
+| ![](31-built-he-week-and-training.png) **31. Hebrew** | ![](32-built-he-food-preferences.png) **32. Hebrew, food preferences** |

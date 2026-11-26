@@ -55,14 +55,29 @@ test('today, with room left, the card offers to suggest what to eat', async ({ p
   await expect(section(page).getByText('Left today:')).toBeVisible()
   await expect(section(page).getByText(/g protein/)).toBeVisible()
   await expect(section(page).getByText(/Uses one written analysis. Built from what you usually eat./)).toBeVisible()
-  await expect(section(page).getByTestId('suggest-week')).toHaveText(/^Week so far: [\d,]+ kcal (under|over) your targets\.$/)
+  // The week so far, every macro against each day's targets.
+  const week = section(page).getByTestId('suggest-week')
+  await expect(week.getByText('Week so far')).toBeVisible()
+  for (const [name, value] of [
+    ['Calories', /^([\d,]+ (under|over)|on target)$/],
+    ['Protein', /^([\d,]+ g (behind|ahead)|on target)$/],
+    ['Fat', /^([\d,]+ g (under|over)|on target)$/],
+    ['Carbs', /^([\d,]+ g (under|over)|on target)$/],
+  ] as const) {
+    await expect(week.locator('dt', { hasText: name }).locator('+ dd')).toHaveText(value)
+  }
 })
 
 test('calories used but protein short, with room in the week: a lean protein snack, within the room', async ({ page }) => {
   await open(page, '/today')
   await expect(section(page).getByTestId('suggest-line')).toHaveText('Left today: 20 kcal · 17 g protein', { timeout: 15_000 })
-  await expect(section(page).getByTestId('suggest-week')).toHaveText(
-    'Week so far: 190 kcal under your targets. A light protein snack still fits.',
+  const week = section(page).getByTestId('suggest-week')
+  await expect(week.locator('dt', { hasText: 'Calories' }).locator('+ dd')).toHaveText('190 under')
+  await expect(week.locator('dt', { hasText: 'Protein' }).locator('+ dd')).toHaveText('127 g behind')
+  await expect(section(page).getByTestId('suggest-hint')).toHaveText('A light protein snack still fits.')
+  // The sample day has a 62-minute strength session.
+  await expect(section(page).getByTestId('suggest-training')).toHaveText(
+    '62 min of strength training today: protein first, and some carbs are fine.',
   )
   await section(page).getByRole('button', { name: 'Suggest a protein snack' }).click()
   await expect(section(page).getByRole('heading', { name: 'A light protein snack: up to 190 kcal, the most protein for it' })).toBeVisible({
@@ -166,9 +181,12 @@ test('it reads in Hebrew, and passes an accessibility scan', async ({ page }) =>
 test('in Hebrew, the protein snack reads right', async ({ page }) => {
   await switchToHebrew(page)
   await open(page, '/today')
-  await expect(section(page).getByTestId('suggest-week')).toHaveText(
-    'השבוע עד עכשיו: 190 קלוריות מתחת ליעדים. נשנוש חלבון קל עדיין נכנס.',
-    { timeout: 15_000 },
+  const week = section(page).getByTestId('suggest-week')
+  await expect(week.getByText('השבוע עד עכשיו')).toBeVisible({ timeout: 15_000 })
+  await expect(week.locator('dt', { hasText: 'חלבון' }).locator('+ dd')).toHaveText('חסרים 127 גרם')
+  await expect(section(page).getByTestId('suggest-hint')).toHaveText('נשנוש חלבון קל עדיין נכנס.')
+  await expect(section(page).getByTestId('suggest-training')).toHaveText(
+    'אימון כוח של 62 דקות היום: חלבון קודם, וגם קצת פחמימות זה בסדר.',
   )
   await expect(section(page).getByRole('button', { name: 'הצעה לנשנוש חלבון' })).toBeVisible()
 })
@@ -180,4 +198,45 @@ test('in Hebrew, the stop reads right', async ({ page }) => {
   await expect(section(page).getByTestId('suggest-stop')).toContainText('עדיף לעצור להיום.', { timeout: 15_000 })
   await expect(section(page).getByTestId('suggest-stop')).toContainText('17 גרם החלבון יכולים לחכות')
   await expect(section(page).getByRole('button', { name: 'רעבים בכל זאת? הצעה למשהו קל' })).toBeVisible()
+})
+
+test('food preferences are set in Settings, kept, and go with every request', async ({ page }) => {
+  await open(page, '/settings?tab=goals')
+  const card = page.getByTestId('food-preferences')
+  await expect(card).toBeVisible({ timeout: 15_000 })
+  await card.getByRole('button', { name: 'No meat with dairy' }).click()
+  await expect(card.getByRole('button', { name: 'No meat with dairy' })).toHaveAttribute('aria-pressed', 'true')
+  await card.getByLabel('Anything else to avoid').fill('Peanuts (allergy)')
+  await card.getByLabel('Anything else to avoid').press('Enter')
+  await expect(card.getByTestId('food-preferences-saved')).toHaveText('Saved')
+
+  // Kept: still set after a reload.
+  await open(page, '/settings?tab=goals')
+  await expect(card.getByRole('button', { name: 'No meat with dairy' })).toHaveAttribute('aria-pressed', 'true', { timeout: 15_000 })
+  await expect(card.getByLabel('Anything else to avoid')).toHaveValue('Peanuts (allergy)')
+
+  // Sent: the test model says which rules it was given.
+  await makeRoom(page)
+  await open(page, '/today')
+  await section(page).getByRole('button', { name: 'Suggest what to eat' }).click()
+  await expect(section(page).getByText('Following: NO_MEAT_WITH_DAIRY.')).toBeVisible({ timeout: 15_000 })
+
+  // And off again.
+  await open(page, '/settings?tab=goals')
+  await card.getByRole('button', { name: 'No meat with dairy' }).click()
+  await expect(card.getByRole('button', { name: 'No meat with dairy' })).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('the food preferences card reads in Hebrew, and passes an accessibility scan', async ({ page }) => {
+  await switchToHebrew(page)
+  await open(page, '/settings?tab=goals')
+  const card = page.getByTestId('food-preferences')
+  await expect(card.getByRole('button', { name: 'בלי בשר עם חלב' })).toBeVisible({ timeout: 15_000 })
+  await expect(card.getByLabel('עוד משהו להימנע ממנו')).toBeVisible()
+  const { violations } = await new AxeBuilder({ page })
+    .include('[data-testid="food-preferences"]')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .options({ preload: false })
+    .analyze()
+  expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([])
 })

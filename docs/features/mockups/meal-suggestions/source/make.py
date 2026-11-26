@@ -243,3 +243,91 @@ for name, html in {
   '17-he-over-stop': stop_idle('he'),
 }.items():
     (HERE / f"{name}.html").write_text(html)
+
+
+# --- 2026-11-26, third round: the week's macros, meals to come, training, preferences ---
+def card_with(L, big, of, status, p, c, f, inner, barcolor='#c2673e', share=86):
+    return f"""<div class="card">
+<div class="head"><span class="lab">{L['tt']}</span><span class="how">{L['how']}</span></div>
+<div class="row1"><div><span class="big num">{big}</span> <span class="of">{of}</span></div><span class="status">{status}</span></div>
+<div class="bar"><i style="width:{share}%;background:{barcolor}"></i></div>
+<div class="macro"><span>{L['prot']}</span><div class="bar"><i style="width:70%"></i></div><span class="num">{p}</span></div>
+<div class="macro"><span>{L['carbs']}</span><div class="bar m"><i style="width:60%"></i></div><span class="num">{c}</span></div>
+<div class="macro"><span>{L['fat']}</span><div class="bar m"><i style="width:75%"></i></div><span class="num">{f}</span></div>
+<div class="ask">{inner}</div></div>"""
+
+WEEKROW = {
+ 'en': ('Week so far', [('Calories','450 under'),('Protein','62 g behind'),('Fat','40 g over'),('Carbs','on target')], 'Sunday to today, against each day’s targets.'),
+ 'he': ('השבוע עד עכשיו', [('קלוריות','450 מתחת'),('חלבון','חסרים 62 גרם'),('שומן','40 גרם מעל'),('פחמימות','ביעד')], 'מיום ראשון עד היום, מול היעדים של כל יום.'),
+}
+def week_table(lang):
+    title, rows, note = WEEKROW[lang]
+    cells = ''.join(f"<div style='display:flex;justify-content:space-between;font-size:13px;padding:3px 0'><span style='color:#504c45'>{a}</span><span class='num' style='font-weight:600'>{b}</span></div>" for a,b in rows)
+    return f"""<div style="background:#eee8da;border-radius:14px;padding:10px 12px;margin-top:10px"><div style="font-size:12px;font-weight:600;color:#656056;padding-bottom:4px">{title}</div>{cells}<div class="muted" style="padding-top:4px">{note}</div></div>"""
+
+def r3_week(lang):
+    L = T[lang]
+    line = '326 kcal over today · 11 g protein short' if lang=='en' else '326 קלוריות מעל היום · חסרים 11 גרם חלבון'
+    hint = ('The week is behind on protein and over on fat: a lean protein snack makes sense.' if lang=='en'
+            else 'השבוע חסר חלבון ויש עודף שומן: נשנוש חלבון רזה הגיוני.')
+    btn = 'Suggest a protein snack' if lang=='en' else 'הצעה לנשנוש חלבון'
+    return page(L, card_with(L, '2,476', OVER[lang]['of'], OVER[lang]['status'], OVER[lang]['p'], OVER[lang]['c'], OVER[lang]['f'],
+      f"""<div class="left">{line}</div>{week_table(lang)}<p style="font-size:13px;color:#504c45;margin:10px 0 0">{hint}</p>
+<div style="padding-top:12px"><button class="btn">✦ {btn}</button></div>""", '#2b2721', 100))
+
+def r3_stop_protein_ahead():
+    L = T['en']
+    rows = [('Calories','120 under'),('Protein','58 g ahead'),('Fat','on target'),('Carbs','on target')]
+    cells = ''.join(f"<div style='display:flex;justify-content:space-between;font-size:13px;padding:3px 0'><span style='color:#504c45'>{a}</span><span class='num' style='font-weight:600'>{b}</span></div>" for a,b in rows)
+    table = f"""<div style="background:#eee8da;border-radius:14px;padding:10px 12px;margin-top:10px"><div style="font-size:12px;font-weight:600;color:#656056;padding-bottom:4px">Week so far</div>{cells}</div>"""
+    return page(L, card_with(L, '2,476', OVER['en']['of'], OVER['en']['status'], OVER['en']['p'], OVER['en']['c'], OVER['en']['f'],
+      f"""<div class="left">326 kcal over today · 11 g protein short</div>
+<div class="alert" style="background:#eaf1da"><b>Better to stop for today.</b><br>You’re 326 kcal over today, and this week’s protein is 58 g ahead of its targets: today’s 11 g can wait.</div>{table}
+<div style="padding-top:10px"><span class="link">Hungry anyway? Suggest something light</span></div>""", '#2b2721', 100))
+
+def r3_to_come(lang):
+    L = T[lang]
+    if lang == 'en':
+        date='Thursday 26 November · 16:30'; left='Left today:'; nums='900 kcal · 52 g protein'
+        come='Your usual dinner is still to come, about 650 kcal, so this leaves room for it: up to 250 kcal now.'
+        train='Strength today, 62 min: protein first, and some carbs are fine.'
+        btn='Suggest what to eat'
+    else:
+        date='יום חמישי, 26 בנובמבר · 16:30'; left='נשאר להיום:'; nums='900 קלוריות · 52 גרם חלבון'
+        come='ארוחת הערב הרגילה שלכם עוד לפניכם, כ־650 קלוריות, אז נשאיר לה מקום: עד 250 קלוריות עכשיו.'
+        train='אימון כוח היום, 62 דקות: חלבון קודם, וגם קצת פחמימות זה בסדר.'
+        btn='מה לאכול עכשיו?'
+    html = page(L, card_with(L, '1,250', T[lang]['of'], '900 left' if lang=='en' else 'נשארו 900', '93 / 145', '120 / 235', '38 / 70',
+      f"""<div class="left">{left} <span>{nums}</span></div>
+<div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#504c45;padding-top:8px"><span>🍽</span><span>{come}</span></div>
+<div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#504c45;padding-top:6px"><span>🏋</span><span>{train}</span></div>
+<div style="padding-top:12px"><button class="btn">✦ {btn}</button></div>""", '#c2673e', 58))
+    return html.replace(T[lang]['date'], date)
+
+PREFS = {
+ 'en': dict(title='Food preferences', lead='The suggestions follow these, every time.', chips=['Vegetarian','Vegan','No meat with dairy','No pork','No fish','Lactose-free','Gluten-free'], on=['No meat with dairy'],
+            avoidLabel='Anything else to avoid', avoid='Peanuts (allergy), mushrooms',
+            note='Sent to the AI only when you ask for suggestions, with nothing that says who you are. A choice like “no meat with dairy” can say something about your beliefs: write only what you are comfortable sharing.'),
+ 'he': dict(title='העדפות אוכל', lead='ההצעות יתחשבו בהן, בכל פעם.', chips=['צמחוני','טבעוני','בלי בשר עם חלב','בלי חזיר','בלי דגים','בלי לקטוז','בלי גלוטן'], on=['בלי בשר עם חלב'],
+            avoidLabel='עוד משהו להימנע ממנו', avoid='בוטנים (אלרגיה), פטריות',
+            note='נשלח ל־AI רק כשמבקשים הצעות, בלי שום דבר שמזהה אתכם. בחירה כמו „בלי בשר עם חלב” יכולה לרמוז על אמונה: כתבו רק מה שנוח לכם לשתף.'),
+}
+def r3_prefs(lang):
+    L = T[lang]; P = PREFS[lang]
+    chips = ''.join(f"<span class='pill{' on' if c in P['on'] else ''}' style='display:inline-block;border:1px solid #ddd4c2;border-radius:99px;padding:6px 13px;font-size:13.5px;margin:0 6px 8px 0;{'background:#2b2721;color:#f1ece1' if c in P['on'] else 'background:#faf7f0'}'>{c}</span>" for c in P['chips'])
+    body = f"""<div class="card"><div class="lab" style="padding-bottom:10px">{P['title']}</div><p style="font-size:14px;margin:0 0 10px">{P['lead']}</p>{chips}
+<div style="font-size:13px;font-weight:500;padding:8px 0 6px">{P['avoidLabel']}</div><div class="note" style="color:#2b2721">{P['avoid']}</div>
+<p class="muted" style="margin:10px 0 0">{P['note']}</p></div>"""
+    html = page(L, body)
+    return html.replace(f">{L['today']}<", '>Settings<' if lang=='en' else '>הגדרות<').replace(L['date'], 'Goals' if lang=='en' else 'יעדים')
+
+for name, html in {
+  '22-week-macros': r3_week('en'),
+  '23-stop-protein-ahead': r3_stop_protein_ahead(),
+  '24-meals-to-come-and-training': r3_to_come('en'),
+  '25-food-preferences': r3_prefs('en'),
+  '26-he-week-macros': r3_week('he'),
+  '27-he-meals-to-come-and-training': r3_to_come('he'),
+  '28-he-food-preferences': r3_prefs('he'),
+}.items():
+    (HERE / f"{name}.html").write_text(html)

@@ -15,6 +15,7 @@ import type { HealthRepositories } from '@/data/repositories'
 import type { CalendarDate } from '@/domain'
 import {
   canonical,
+  dayAnswers,
   deviceReading,
   detectMealConflicts,
   latestVersions,
@@ -353,6 +354,25 @@ export function runRepositoryContract(
       // The audit payload must survive intact — it is the "why did it think
       // that" record.
       expect((found?.output as { assumptions: string[] }).assumptions[0]).toContain('cooked')
+    })
+
+    it('keeps a day\'s log answers, in a range, and the latest one wins', async () => {
+      const { ctx, day } = await begin()
+      const answer = (suffix: string, at: string, completeness: 'COMPLETE' | 'INCOMPLETE') => ({
+        id: `${ctx.prefix}-check-${suffix}`,
+        userId: ctx.userId,
+        day: day(),
+        recordedAt: `${day()}T${at}:00.000Z`,
+        completeness,
+      })
+      await ctx.repositories.dayChecks.add(answer('a', '20:00', 'INCOMPLETE'))
+      await ctx.repositories.dayChecks.add(answer('b', '21:00', 'COMPLETE'))
+      // Another day, outside the range read below.
+      await ctx.repositories.dayChecks.add({ ...answer('c', '09:00', 'INCOMPLETE'), day: day(3) })
+
+      const found = mine(ctx, await ctx.repositories.dayChecks.listByRange(ctx.userId, { from: day(), to: day(1) }))
+      expect(found.map((check) => check.id).sort()).toEqual([`${ctx.prefix}-check-a`, `${ctx.prefix}-check-b`])
+      expect(dayAnswers(found).get(day())?.completeness).toBe('COMPLETE')
     })
 
     it('surfaces a same-version write as a conflict, not silent success (D15)', async () => {

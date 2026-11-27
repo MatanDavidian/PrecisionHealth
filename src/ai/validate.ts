@@ -307,9 +307,9 @@ export function validateSuggestions(raw: unknown, model: string, maxKcal?: numbe
     }
     const kept = foods as SuggestedFood[]
     const totals = totalsOf(kept)
-    // The cap the card promised ("up to 250 kcal"), with room for rounding: a
-    // suggestion past it is dropped, not shown with a warning.
-    if (maxKcal !== undefined && totals.energyKcal > maxKcal * 1.1 + 20) continue
+    // The cap the card states is the cap enforced, with no tolerance
+    // (meal-suggestions-precision.md §4.5): "up to 120 kcal" means 120.
+    if (maxKcal !== undefined && totals.energyKcal > maxKcal) continue
     suggestions.push({ title, source, why: text(entry.why), foods: kept, totals })
   }
 

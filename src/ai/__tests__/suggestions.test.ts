@@ -62,6 +62,15 @@ describe('reading the model’s suggestions', () => {
     expect(answer.suggestions.map((s) => s.title)).toEqual(['Small'])
   })
 
+  it('enforces the stated cap exactly: 120 is shown, 121 is not', () => {
+    const at = (kcal: number) => ({
+      ...usual,
+      title: `${kcal}`,
+      foods: [{ name: 'Cottage cheese 1%', amountG: 150, energyKcal: kcal, proteinG: 17, carbsG: 5, fatG: 3.3 }],
+    })
+    expect(validateSuggestions(reply([at(120), at(121)]), 'm', 120).suggestions.map((s) => s.title)).toEqual(['120'])
+  })
+
   it('treats an unknown source as a new idea', () => {
     expect(validateSuggestions(reply([{ ...usual, source: 'GUESS' }]), 'm').suggestions[0].source).toBe('NEW')
   })

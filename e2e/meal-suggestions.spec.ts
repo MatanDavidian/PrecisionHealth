@@ -40,11 +40,22 @@ async function overfill(page: Page) {
   await expect(page.getByText('A big dinner out')).toBeVisible()
 }
 
+/**
+ * Taking the sample's breakfast back makes it a usual meal missing today, so
+ * the card asks about it first; the tests say it was skipped.
+ */
+async function skipIfAsked(page: Page) {
+  const question = section(page).getByTestId('suggest-question')
+  await question.or(suggestions(page).first()).waitFor({ timeout: 15_000 })
+  if (await question.isVisible()) await question.getByRole('button', { name: /^(I skipped it|דילגתי עליה)$/ }).click()
+}
+
 async function askOnToday(page: Page) {
   await makeRoom(page)
   await open(page, '/today')
   await expect(section(page)).toBeVisible({ timeout: 15_000 })
   await section(page).getByRole('button', { name: 'Suggest what to eat' }).click()
+  await skipIfAsked(page)
   await expect(suggestions(page)).toHaveCount(3, { timeout: 15_000 })
 }
 
@@ -55,11 +66,11 @@ test('today, with room left, the card offers to suggest what to eat', async ({ p
   await expect(section(page).getByText('Left today:')).toBeVisible()
   await expect(section(page).getByText(/g protein/)).toBeVisible()
   await expect(section(page).getByText(/Uses one written analysis. Built from what you usually eat./)).toBeVisible()
-  // The week so far, every macro against each day's targets.
+  // The period so far: its dates and days, against its plan, and every macro against each day's targets.
   const week = section(page).getByTestId('suggest-week')
-  await expect(week.getByText('Week so far')).toBeVisible()
+  await expect(week.getByTestId('suggest-period')).toHaveText(/^\w{3} \d+ \w{3} – \w{3} \d+ \w{3} · \d of \d days counted$/)
+  await expect(week.getByTestId('suggest-range')).toHaveText(/^[+−]?[\d,]+ · (below|within|above) plan range \(±[\d,]+\)$/)
   for (const [name, value] of [
-    ['Calories', /^([\d,]+ (under|over)|on target)$/],
     ['Protein', /^([\d,]+ g (behind|ahead)|on target)$/],
     ['Fat', /^([\d,]+ g (under|over)|on target)$/],
     ['Carbs', /^([\d,]+ g (under|over)|on target)$/],
@@ -72,7 +83,8 @@ test('calories used but protein short, with room in the week: a lean protein sna
   await open(page, '/today')
   await expect(section(page).getByTestId('suggest-line')).toHaveText('Left today: 20 kcal · 17 g protein', { timeout: 15_000 })
   const week = section(page).getByTestId('suggest-week')
-  await expect(week.locator('dt', { hasText: 'Calories' }).locator('+ dd')).toHaveText('190 under')
+  // Just below its plan range: a protein snack, up to the 190 below plan.
+  await expect(week.getByTestId('suggest-range')).toHaveText('−190 · below plan range (±188)')
   await expect(week.locator('dt', { hasText: 'Protein' }).locator('+ dd')).toHaveText('127 g behind')
   await expect(section(page).getByTestId('suggest-hint')).toHaveText('A light protein snack still fits.')
   // The sample day has a 62-minute strength session.
@@ -89,22 +101,22 @@ test('calories used but protein short, with room in the week: a lean protein sna
     const kcal = Number((await suggestions(page).nth(i).getByText(/^[\d,]+ kcal · /).innerText()).split(' kcal')[0].replace(/[^\d]/g, ''))
     expect(kcal).toBeLessThanOrEqual(190)
     await expect(suggestions(page).nth(i).getByTestId('suggestion-fit')).toHaveText(
-      /^\+[\d,]+ kcal today · protein \d+ of 145 g( ✓)? · week [\d,]+ (under|over)$/,
+      /^\+[\d,]+ kcal today · protein \d+ of 145 g( ✓)? · 3 days [+−]?[\d,]+, (below|within|above) plan range$/,
     )
   }
 })
 
-test('no room in the day or the week: better to stop, and it costs nothing to say', async ({ page }) => {
+test('above plan range: better to stop, said without asking the model, with the light snack optional', async ({ page }) => {
   await overfill(page)
   await open(page, '/today')
   await expect(section(page).getByTestId('suggest-stop')).toBeVisible({ timeout: 15_000 })
-  await expect(section(page).getByTestId('suggest-line')).toHaveText(/^[\d,]+ kcal over today · 17 g protein short$/)
+  await expect(section(page).getByTestId('suggest-line')).toHaveText(/^\w{3} \d+ \w{3} · [\d,]+ kcal above target · protein 17 g short$/)
   await expect(section(page).getByTestId('suggest-stop')).toContainText('Better to stop for today.')
-  await expect(section(page).getByTestId('suggest-stop')).toContainText('The 17 g of protein can wait: start tomorrow with it.')
+  await expect(section(page).getByTestId('suggest-stop')).toContainText(/ is [\d,]+ kcal above plan\./)
   await expect(section(page).getByRole('button', { name: 'Suggest a protein snack' })).toHaveCount(0)
 
-  // Hungry anyway: something very light, on request.
-  await section(page).getByRole('button', { name: 'Hungry anyway? Suggest something light' }).click()
+  // Hungry? Something very light, on request.
+  await section(page).getByRole('button', { name: 'Hungry? Suggest a light protein snack' }).click()
   await expect(section(page).getByRole('heading', { name: /up to 120 kcal/ })).toBeVisible({ timeout: 15_000 })
   for (const kcal of await suggestions(page).getByText(/^[\d,]+ kcal · /).allInnerTexts()) {
     expect(Number(kcal.split(' kcal')[0].replace(/[^\d]/g, ''))).toBeLessThanOrEqual(120)
@@ -164,6 +176,9 @@ test('it reads in Hebrew, and passes an accessibility scan', async ({ page }) =>
   await open(page, '/today')
   await expect(section(page).getByText('נשאר להיום:')).toBeVisible({ timeout: 15_000 })
   await section(page).getByRole('button', { name: 'מה לאכול עכשיו?' }).click()
+  // The breakfast taken back is asked about first, in Hebrew too.
+  await expect(section(page).getByTestId('suggest-question')).toContainText('לא נרשמה ארוחת בוקר היום. אכלתם?', { timeout: 15_000 })
+  await skipIfAsked(page)
   await expect(suggestions(page)).toHaveCount(3, { timeout: 15_000 })
   await expect(suggestions(page).nth(0).getByText('מהמזונות שלכם')).toBeVisible()
   await expect(suggestions(page).nth(2).getByText('יוגורט יווני 0% עם פירות יער')).toBeVisible()
@@ -182,7 +197,7 @@ test('in Hebrew, the protein snack reads right', async ({ page }) => {
   await switchToHebrew(page)
   await open(page, '/today')
   const week = section(page).getByTestId('suggest-week')
-  await expect(week.getByText('השבוע עד עכשיו')).toBeVisible({ timeout: 15_000 })
+  await expect(week.getByTestId('suggest-period')).toHaveText(/נספרו 3 מתוך 4 ימים$/, { timeout: 15_000 })
   await expect(week.locator('dt', { hasText: 'חלבון' }).locator('+ dd')).toHaveText('חסרים 127 גרם')
   await expect(section(page).getByTestId('suggest-hint')).toHaveText('נשנוש חלבון קל עדיין נכנס.')
   await expect(section(page).getByTestId('suggest-training')).toHaveText(
@@ -196,8 +211,7 @@ test('in Hebrew, the stop reads right', async ({ page }) => {
   await switchToHebrew(page)
   await open(page, '/today')
   await expect(section(page).getByTestId('suggest-stop')).toContainText('עדיף לעצור להיום.', { timeout: 15_000 })
-  await expect(section(page).getByTestId('suggest-stop')).toContainText('17 גרם החלבון יכולים לחכות')
-  await expect(section(page).getByRole('button', { name: 'רעבים בכל זאת? הצעה למשהו קל' })).toBeVisible()
+  await expect(section(page).getByRole('button', { name: 'רעבים? הצעה לנשנוש חלבון קל' })).toBeVisible()
 })
 
 test('food preferences are set in Settings, kept, and go with every request', async ({ page }) => {
@@ -219,6 +233,7 @@ test('food preferences are set in Settings, kept, and go with every request', as
   await makeRoom(page)
   await open(page, '/today')
   await section(page).getByRole('button', { name: 'Suggest what to eat' }).click()
+  await skipIfAsked(page)
   await expect(section(page).getByText('Following: NO_MEAT_WITH_DAIRY.')).toBeVisible({ timeout: 15_000 })
 
   // And off again.

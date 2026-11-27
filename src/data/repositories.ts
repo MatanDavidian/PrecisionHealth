@@ -15,6 +15,7 @@ import type {
   AIInference,
   CalendarDate,
   Condition,
+  DayCheck,
   Goal,
   IntakeEvent,
   LabPanel,
@@ -99,6 +100,16 @@ export interface ClinicalRepository {
  * The AI audit trail (D4, D13). Every inference is recorded — including the
  * ones that failed — so "why did the app think that?" always has an answer.
  */
+/**
+ * What the person said about a day's log (meal-suggestions-precision.md §4.6):
+ * complete, not complete, a usual meal skipped. Append-only; the latest
+ * answer for a day wins (`dayAnswers`).
+ */
+export interface DayCheckRepository {
+  add(check: DayCheck): Promise<void>
+  listByRange(userId: UserId, range: DateRange): Promise<DayCheck[]>
+}
+
 export interface InferenceRepository {
   add(inference: AIInference): Promise<void>
   listByDay(userId: UserId, day: CalendarDate): Promise<AIInference[]>
@@ -171,6 +182,8 @@ export interface PersonalRecords {
   regimens: Regimen[]
   intakeEvents: IntakeEvent[]
   inferences: AIInference[]
+  /** What the person said about each day's log. */
+  dayChecks: DayCheck[]
 }
 
 /**
@@ -199,6 +212,7 @@ export interface HealthRepositories {
   goals: GoalRepository
   clinical: ClinicalRepository
   inferences: InferenceRepository
+  dayChecks: DayCheckRepository
   settings: SettingsRepository
   account: AccountRepository
 }

@@ -37,6 +37,8 @@ import {
   type Meal,
   type QuickSetChoice,
   type TypicalIntake,
+  isEstimatedPortion,
+  liveItems,
 } from '@/domain'
 import { useLang } from '../i18n'
 import { InsightsCard, type InsightsState } from '../components/InsightsCard'
@@ -285,9 +287,19 @@ export function Today() {
   const logged = data.meals.filter((meal) => !isPatternFilled(meal))
   const estimatedDay = logged.length < data.meals.length
   /** An estimated day, foods waiting for a look: said under the day's totals, wherever they are shown. */
+  // Foods whose numbers came from a model, confirmed or not (meal-suggestions-precision.md §4.7).
+  const estimatedPortions = logged.flatMap((meal) => liveItems(meal.items)).filter((item) => isEstimatedPortion(item.provenance)).length
   const nutritionNotes = (
     <>
       {estimatedDay && <EstimatedTotals />}
+      {estimatedPortions > 0 && (
+        <p className="pt-3 text-xs text-ink-muted" data-testid="estimated-portions">
+          {t('today.estimatedPortions', {
+            count: estimatedPortions,
+            kcal: Math.round(convert(nutrients.energy, 'kcal')).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US'),
+          })}
+        </p>
+      )}
       {unconfirmed.length > 0 && (
         <p className="pt-3 text-xs text-ink-muted">
           {t('today.unconfirmed', { count: unconfirmed.length })}{' '}

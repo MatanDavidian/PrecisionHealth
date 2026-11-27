@@ -15,6 +15,7 @@ import {
   addDays,
   dayKey,
   type CalendarDate,
+  type DayCheck,
   type Goal,
   type Meal,
   type Observation,
@@ -37,6 +38,8 @@ export interface AdoptableRecords {
   /** The profile details the person set themselves (`youSet`), never the sample's. */
   details: Partial<Pick<UserProfile, ProfileDetail>>
   days: CalendarDate[]
+  /** What the person said about those days' logs; they travel with the meals they describe. */
+  dayChecks?: DayCheck[]
 }
 
 /** How many things a set of records amounts to, for "Move 12 records". */
@@ -116,7 +119,11 @@ export async function findAdoptableRecords(
     )),
   ].sort()
 
-  return { meals, observations, goals, details, days: days as CalendarDate[] }
+  const dayChecks = (await local.dayChecks.listByRange(localUserId, { from, to }).catch(() => [])).filter((check) =>
+    isGeneratedId(check.id),
+  )
+
+  return { meals, observations, goals, details, days: days as CalendarDate[], dayChecks }
 }
 
 /**
@@ -170,6 +177,10 @@ export async function adoptInto(
     } catch {
       result.skipped += 1
     }
+  }
+  // Answers about days: append-only, so one already there is simply skipped.
+  for (const check of records.dayChecks ?? []) {
+    await remote.dayChecks.add({ ...check, userId: accountUserId }).catch(() => undefined)
   }
   /*
     The profile is one record, not a history, so it is merged rather than

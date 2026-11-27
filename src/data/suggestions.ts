@@ -10,7 +10,10 @@ import {
   addDays,
   buildSuggestionRequest,
   cleanFoodPreferences,
+  dayAnswers,
   dayKey,
+  findUsualMeals,
+  missingMeals,
   latestVersions,
   liveItems,
   mealsToCome,
@@ -22,6 +25,9 @@ import {
   type Meal,
   type MealSlot,
   type MealToCome,
+  type DayAnswers,
+  type PastMeal,
+  type UsualMeal,
   type SuggestionRequest,
   type UserId,
   type WeekSoFar,
@@ -41,7 +47,8 @@ const mealKcal = (meal: Meal) => liveItems(meal.items).reduce((sum, item) => sum
 
 /**
  * The week so far, Sunday to now: each day before today against its own
- * targets and what it really burned, and today against its targets.
+ * targets and what it really burned, with what the person said about its
+ * log, and today against its targets.
  */
 export async function readWeekSoFar(
   userId: UserId,
@@ -51,11 +58,23 @@ export async function readWeekSoFar(
 ): Promise<WeekSoFar> {
   const today = dayKey(now.toISOString(), deviceZone())
   const start = weekStartOf(today)
-  const before =
-    start < today ? await readTargetsHistory(userId, start, addDays(today, -1), getRepositories()) : []
+  const repos = getRepositories()
+  const [before, checks] = await Promise.all([
+    start < today ? readTargetsHistory(userId, start, addDays(today, -1), repos) : Promise.resolve([]),
+    repos.dayChecks.listByRange(userId, { from: start, to: today }).catch(() => []),
+  ])
+  const answers = dayAnswers(checks)
   return weekSoFar(
-    before.map((day) => ({ eaten: day.eaten, targets: day.targets, burnedKcal: day.burnedKcal })),
-    { eaten, targets },
+    before.map((day) => ({
+      day: day.day,
+      eaten: day.eaten,
+      targets: day.targets,
+      burnedKcal: day.burnedKcal,
+      // Food on the day, but no meal anyone logged: a day set in one tap.
+      setInOneTap: !day.logged && day.eaten.energyKcal > 0,
+      completeness: answers.get(day.day)?.completeness,
+    })),
+    { day: today, eaten, targets },
   )
 }
 
@@ -75,19 +94,48 @@ async function readHistory(userId: UserId, now: Date) {
   return { history, todays, dayOf, today, zone }
 }
 
-/**
- * The usual meals still to come today: their room is kept, and while one is
- * to come, what is suggested now is a snack, not that meal.
- */
-export async function readMealsToCome(userId: UserId, now: Date = new Date()): Promise<MealToCome[]> {
+/** A usual meal that looks missing today, with the meal to add in one tap. */
+export interface MissingMeal extends MealToCome {
+  usual?: UsualMeal
+}
+
+/** What today looks like against the person's habits, and what they said about it. */
+export interface TodayContext {
+  /** Usual meals still to come: their room is kept, and what is suggested now is a snack. */
+  toCome: MealToCome[]
+  /** Usual meals past their time and not logged, nor said to be skipped: asked about first. */
+  missing: MissingMeal[]
+  /** What the person said about today: complete, and meals skipped. */
+  answers: DayAnswers
+  /** How many days had food on them in the last two months: few means no usual foods yet. */
+  loggedDays: number
+}
+
+export async function readTodayContext(userId: UserId, now: Date = new Date()): Promise<TodayContext> {
   const { history, todays, dayOf, today, zone } = await readHistory(userId, now)
-  const past = history.flatMap((meal) => {
+  const checks = await getRepositories()
+    .dayChecks.listByRange(userId, { from: today, to: today })
+    .catch(() => [])
+  const answers = dayAnswers(checks).get(today) ?? { skipped: [] }
+  const pastMeals = history.filter((meal) => {
     const day = dayOf(meal)
-    if (!day || day === today || isPatternFilled(meal) || meal.time.kind !== 'instant') return []
-    return [{ day, slot: meal.slot, time: timeOfDay(meal, zone), kcal: mealKcal(meal) }]
+    return day && day !== today && !isPatternFilled(meal)
+  })
+  const past: PastMeal[] = pastMeals.flatMap((meal) => {
+    if (meal.time.kind !== 'instant') return []
+    return [{ day: dayOf(meal)!, slot: meal.slot, time: timeOfDay(meal, zone), kcal: mealKcal(meal) }]
   })
   const eatenSlots: MealSlot[] = todays.filter((meal) => !isPatternFilled(meal)).map((meal) => meal.slot)
-  return mealsToCome(past, eatenSlots, hhmm(now))
+  const missing = missingMeals(past, eatenSlots, hhmm(now), answers.skipped).map((meal) => ({
+    ...meal,
+    usual: findUsualMeals(pastMeals, { slot: meal.slot, limit: 1 })[0],
+  }))
+  return {
+    toCome: mealsToCome(past, eatenSlots, hhmm(now)),
+    missing,
+    answers,
+    loggedDays: new Set(past.map((meal) => meal.day)).size,
+  }
 }
 
 export async function readSuggestionRequest(

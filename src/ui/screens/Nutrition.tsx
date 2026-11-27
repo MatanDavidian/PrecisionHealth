@@ -10,6 +10,7 @@ import { PILL, PILL_OFF, PILL_ON } from '../components/segmented'
 import { MealEditor } from '../components/MealEditor'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
 import { EstimatedTotals } from '../components/EstimatedTotals'
+import { DayCompleteness } from '../components/DayCompleteness'
 import { showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
@@ -440,6 +441,8 @@ export function Nutrition() {
             ),
           )}
         </Card>
+        {/* A past day with meals: was that everything? (meal-suggestions-precision.md §4.6) */}
+        {day < today && logged.length > 0 && <DayCompleteness day={day} />}
       </div>
     </div>
   )

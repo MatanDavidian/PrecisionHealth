@@ -18,6 +18,15 @@ import type { Instant } from './time'
 /** Ids are generated at the edge; the domain only needs a supplier. */
 export type IdFactory = () => string
 
+/**
+ * An estimated portion: numbers that came from a model (a photo, words, a
+ * suggestion), confirmed or not (meal-suggestions-precision.md §4.7).
+ * Confirming says "I ate this", not "these grams were weighed", so the label
+ * stays. A food whose numbers the person typed or corrected is not one.
+ */
+export const isEstimatedPortion = (provenance: Provenance): boolean =>
+  provenance.source === 'AI_ESTIMATE' || provenance.kind === 'USER_CONFIRMED'
+
 export const confirmedProvenance = (recordedAt: Instant, supersedes: string[]): Provenance => ({
   source: 'USER',
   kind: 'USER_CONFIRMED',

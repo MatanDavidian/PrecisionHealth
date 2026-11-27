@@ -8,6 +8,7 @@
 import type { IDBPDatabase } from 'idb'
 import type {
   AIInference,
+  DayCheck,
   CalendarDate,
   Goal,
   Meal,
@@ -138,6 +139,14 @@ export function createIndexedDbRepositories(
       get: async (id: string) => (await (await db()).get('inferences', id))?.data,
     },
 
+    dayChecks: {
+      add: async (check: DayCheck) => {
+        await (await db()).put('dayChecks', { id: check.id, userId: check.userId, day: check.day, data: check })
+      },
+      listByRange: async (userId, range) =>
+        unwrap(await (await db()).getAllFromIndex('dayChecks', 'by-user-day', dayRange(userId, range))),
+    },
+
     settings: {
       get: async (): Promise<AppSettings> => {
         const rows = await (await db()).getAll('settings')
@@ -213,6 +222,7 @@ export function createIndexedDbRepositories(
           regimens: unwrap(mine(await database.getAll('regimens'))),
           intakeEvents: unwrap(mine(await database.getAll('intakeEvents'))),
           inferences: unwrap(mine(await database.getAll('inferences'))),
+          dayChecks: unwrap(mine(await database.getAll('dayChecks'))),
         }
       },
     },
@@ -269,6 +279,7 @@ const RECORD_STORES = [
   'regimens',
   'intakeEvents',
   'inferences',
+  'dayChecks',
 ] as const
 
 /** Everything a deletion touches, profile included. */

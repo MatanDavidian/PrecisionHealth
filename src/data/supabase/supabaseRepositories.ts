@@ -11,6 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   asMealRecord,
   type AIInference,
+  type DayCheck,
   type CalendarDate,
   type Goal,
   type Meal,
@@ -272,6 +273,12 @@ export function createSupabaseRepositories(
       },
     },
 
+    dayChecks: {
+      add: (check: DayCheck) =>
+        insert('day_checks', { id: check.id, user_id: check.userId, day: check.day, data: check }),
+      listByRange: (userId, range) => listByRange<DayCheck>('day_checks', userId, range),
+    },
+
     /** The one repository that is identical in both adapters — see above. */
     settings: localSettings,
 
@@ -314,6 +321,7 @@ export function createSupabaseRepositories(
         regimens: [],
         intakeEvents: [],
         inferences: await listAll<AIInference>('inferences', userId),
+        dayChecks: await listAll<DayCheck>('day_checks', userId),
       }),
     },
   }

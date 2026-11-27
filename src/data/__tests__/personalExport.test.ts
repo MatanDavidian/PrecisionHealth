@@ -26,6 +26,7 @@ const empty = (): PersonalRecords => ({
   regimens: [],
   intakeEvents: [],
   inferences: [],
+  dayChecks: [],
 })
 
 const settings = { model: 'gpt-5.6', autoAnalyze: true, apiKey: 'sk-a-real-secret', language: 'he' as const }

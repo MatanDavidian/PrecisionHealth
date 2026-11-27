@@ -922,3 +922,43 @@ select case when public.claim_reminder('11111111-1111-1111-1111-111111111111', '
   then 'PASS: each meal''s reminder goes once a day, separately'
   else 'FAIL: meal reminders were claimed wrongly' end;
 reset role;
+
+\echo '== 0020: a day''s log answers are the person''s own, and append-only =='
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into public.day_checks (id, user_id, day, data)
+values ('check-a1', '11111111-1111-1111-1111-111111111111', '2026-11-24', '{"completeness":"INCOMPLETE"}');
+select case when count(*) = 1 then 'PASS: a person records an answer about their own day'
+  else 'FAIL: own day answer missing' end
+from public.day_checks where id = 'check-a1';
+do $$
+begin
+  insert into public.day_checks (id, user_id, day, data)
+  values ('check-evil', '22222222-2222-2222-2222-222222222222', '2026-11-24', '{}');
+  raise exception 'FAIL: wrote a day answer owned by another user';
+exception
+  when insufficient_privilege then raise notice 'PASS: no answering for someone else''s day';
+end
+$$;
+do $$
+begin
+  update public.day_checks set data = '{"completeness":"COMPLETE"}' where id = 'check-a1';
+  raise exception 'FAIL: an answer was rewritten in place';
+exception
+  when insufficient_privilege then raise notice 'PASS: answers are appended, never rewritten';
+end
+$$;
+do $$
+begin
+  insert into public.day_checks (id, user_id, day, data)
+  values ('check-big', '11111111-1111-1111-1111-111111111111', '2026-11-24', jsonb_build_object('x', repeat('x', 3000)));
+  raise exception 'FAIL: an oversized answer was accepted';
+exception
+  when check_violation then raise notice 'PASS: an answer is bounded in size';
+end
+$$;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select case when count(*) = 0 then 'PASS: no one sees another person''s day answers'
+  else 'FAIL: day answers leaked across users' end
+from public.day_checks;
+reset role;

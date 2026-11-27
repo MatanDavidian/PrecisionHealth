@@ -5,11 +5,13 @@ document says what Vimetry knows about the person's day and week, how sure it
 is of each number, and exactly how those numbers decide whether to offer
 anything, how much, and with what explanation.
 
-Status: **design for review, revised 2026-11-26 after the owner's review.**
-Nothing here is built yet; what is built is in
-[`meal-suggestions.md`](meal-suggestions.md). Phase 1 (§4) is specified to
-the level of its acceptance test. The later phases (§5) are separate and
-each needs its own approval.
+Status: **Phase 1 built 2026-11-27** (§4), with the owner's decisions of
+2026-11-26: the range ±max(150 kcal, 3%); under 3 counted days, today alone;
+an unanswered possibly-incomplete day left out until answered (option B);
+the week view showing every day regardless; and a question about today
+before suggesting (§4.7). Screens as built: 33–37 in
+[`mockups/meal-suggestions/`](mockups/meal-suggestions/). The later phases
+(§5) are designed and separate; each needs its own approval.
 
 **The architecture does not change.** Vimetry calculates the targets, the
 room, the plan, the calorie cap and the protein wanted, and validates every
@@ -162,16 +164,47 @@ action, `maxKcal` is 120 (the existing `LIGHT_SNACK_MAX_KCAL`).
 - **Answered "complete":** included, the flag goes.
 - **Answered "incomplete":** excluded from **both** intake and budget, as an
   empty day is.
-- **Not answered:** included, and shown flagged. *(Provisional: while a
-  flagged day is unanswered, the below-range protein snack is limited to the
-  light 120 kcal, so an unlogged dinner cannot buy a 250 kcal snack.)*
+- **Not answered:** left out, like an incomplete day, until the person
+  answers (option B, the owner's choice): safer numbers, at the cost of
+  fewer counted days. The card says *"Not counted until you answer."*
+- **The week view shows every day** as it was logged, whatever was
+  answered; only the suggestion card's balance leaves days out.
+- **Answered anywhere:** on the card, or under that day's meals in
+  Nutrition (*"Did you log everything on Tue 24 Nov? Yes, all of it · No,
+  some is missing"*), for any past day with meals; *Change* takes an answer
+  back.
 - **Counted days are shown:** *"Sun 22 – Thu 26 Nov · 5 of 5 days counted"*,
   or *"4 of 5 days counted: Tue 24 marked incomplete"*.
 - **Stored** as a small record per day (day, complete or incomplete, when),
   append-only like every other record (D4), synced with the account and
   carried into an account at sign-in.
 
-### 4.7 Estimated portions stay labelled
+### 4.7 Asking about today before suggesting
+
+A suggestion is only as good as today's log, so before asking the model the
+card asks one question when something looks missing, and none otherwise:
+
+- **A usual meal looks missing:** a main meal eaten on at least half the
+  logged days (and on 4 or more), 90 minutes past its usual time, not logged
+  today, not said to be skipped: *"No lunch logged today. Did you eat it?"*
+  - *Add my usual lunch · 690 kcal*: one tap logs it, and the card
+    recomputes before anything is suggested.
+  - *Log it now*: opens Log.
+  - *I skipped it*: saved for the day; suggestions go on, and it is not
+    asked again.
+- **The day looks low for the hour:** under 50% of the target from 18:00,
+  with no missing usual meal to explain it: *"Is today's log complete? 800
+  of 2,150 kcal logged so far."* *Yes* goes on and is not asked again; *No*
+  warns that suggestions may be too generous, with *Log it now* or
+  *Continue anyway*, and the card then says today is marked as not fully
+  logged.
+- **One question at most:** a meal said to be skipped is the answer to a
+  low day too.
+
+Answers are the same day records as §4.6, so a day answered here counts as
+answered everywhere.
+
+### 4.7a Estimated portions stay labelled
 
 A food whose numbers came from a model (a photo, words, a suggestion) is an
 **estimated portion**, and stays one after the person confirms it:
@@ -212,7 +245,18 @@ Hebrew follows the same structure, with the dates as *"א׳ 22 – ה׳ 26 בנ�
 and *"בטווח התוכנית"* for *within plan range*. All copy is written in both
 languages at implementation.
 
-### 4.9 What changes in the code (for the implementation step)
+### 4.8a Empty states: not enough logged yet
+
+| Situation | What the card does |
+| --- | --- |
+| No targets yet (goal, weight or burn missing) | No suggestions: the targets setup card is shown instead (as built) |
+| Fewer than 3 days logged in two months | Suggestions still work; the card says *"Only a few days logged so far, so these will be general ideas until your own foods show up."* |
+| The first day of the week (one day in the period) | No period block; today alone decides |
+| Fewer than 3 counted days | *"Too few complete days this week: today's targets only."*, and today alone decides (with today's ±150 range) |
+| No watch, no burn recorded | Each day against its target; nothing about recorded burns is said |
+| Signed out, no key of one's own | *"Suggestions come from the model, with an account"*, and sign-in (as built) |
+
+### 4.9 What changed in the code
 
 - `domain/suggestions.ts`: `planRange(balance, budget)`; `weekSoFar` returns
   the included days, their budget and the excluded ones; `suggestPlan` gains
@@ -226,7 +270,7 @@ languages at implementation.
   day question. `DailyTargets.tsx`: the estimated-portions line.
 - No change to the prompt's job, the server, or what the model decides.
 
-### 4.10 Phase 1 acceptance test
+### 4.10 Phase 1 acceptance test (built: `e2e/meal-suggestion-scenarios.spec.ts`)
 
 A browser test replays the owner's Thursday, with numbers seeded to match
 §3 exactly (28 days of watch burns averaging 2,410 before Thursday, Sunday
@@ -303,7 +347,9 @@ room    = today's target − eaten + credit
 real burn ≈ average eaten − (smoothed weight change in kg × 7,700) ÷ days
 ```
 
-Offered only when **all** of these hold, all provisional:
+Days the person answered "I logged everything" (§4.6) weigh most; days
+marked incomplete are never used. Offered only when **all** of these hold,
+all provisional:
 
 - at least **28 days** of sufficiently complete data (logged days, not
   marked incomplete, and regular weigh-ins);

@@ -17,6 +17,7 @@ import {
   asMealRecord,
   dayKeyOf,
   type AIInference,
+  type DayCheck,
   type CalendarDate,
   type Condition,
   type Goal,
@@ -99,6 +100,8 @@ export interface HealthDB extends DBSchema {
   /** AI audit trail (D4): one row per inference, successful or not. */
   inferences: { key: string; value: Row<AIInference>; indexes: { 'by-user-day': [string, string] } }
   settings: { key: string; value: SettingsRow }
+  /** What the person said about a day's log (v4). */
+  dayChecks: { key: string; value: Row<DayCheck>; indexes: { 'by-user-day': [string, string] } }
 }
 
 export const DB_NAME = 'timeline-health'
@@ -118,7 +121,7 @@ export const DB_NAME = 'timeline-health'
  *      rewrites every meal. A migration that rewrites rows is the one that can
  *      lose them; a tolerant read cannot.
  */
-export const DB_VERSION = 3
+export const DB_VERSION = 4
 
 const DAY_INDEXED = [
   'meals',
@@ -164,6 +167,12 @@ export const openHealthDB = (): Promise<IDBPDatabase<HealthDB>> =>
         if (!meals.indexNames.contains('by-meal')) {
           meals.createIndex('by-meal', 'mealId')
         }
+      }
+
+      if (oldVersion < 4) {
+        // Additive: one new store for the day's log answers.
+        const checks = db.createObjectStore('dayChecks', { keyPath: 'id' })
+        checks.createIndex('by-user-day', ['userId', 'day'])
       }
     },
   })

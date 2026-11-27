@@ -146,6 +146,10 @@ export class FakeEstimator implements FoodEstimator {
   async suggestMeals(request: SuggestionRequest, hints: EstimateHints): Promise<MealSuggestions> {
     if (this.delayMs > 0) await new Promise((resolve) => setTimeout(resolve, this.delayMs))
     if (this.failWith) throw this.failWith
+    // A browser test can hand the fake an exact reply, which still goes
+    // through the real validator: how a cap's edge (120 shown, 121 dropped) is tested.
+    const scripted = (globalThis as { __suggestReply?: unknown }).__suggestReply
+    if (scripted) return validateSuggestions(scripted, this.model, request.maxKcal)
     const he = hints.language === 'he'
     const room = Math.max(40, (request.maxKcal || request.left.energyKcal) * 0.95)
     const r1 = (n: number) => Math.round(n * 10) / 10

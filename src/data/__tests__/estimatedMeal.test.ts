@@ -288,7 +288,7 @@ describe('settings', () => {
 })
 
 describe('migrating a slice-1 database forward', () => {
-  it('reaches v3, adds the new stores, and rekeys meals without losing them', async () => {
+  it('reaches v4, adds the new stores, and rekeys meals without losing them', async () => {
     // Build a database exactly as slice 1 left it.
     const v1 = await openDB(DB_NAME, 1, {
       upgrade(db) {
@@ -320,9 +320,11 @@ describe('migrating a slice-1 database forward', () => {
     // Open at v2.
     const { repos } = await fresh()
     const database = await openConnection!
-    expect(database.version).toBe(3)
+    expect(database.version).toBe(4)
     expect([...database.objectStoreNames]).toContain('inferences')
     expect([...database.objectStoreNames]).toContain('settings')
+    // v4: the day's log answers, a store of its own.
+    expect([...database.objectStoreNames]).toContain('dayChecks')
 
     // The v3 migration REWRITES meal rows rather than just adding a store, so
     // this is the first upgrade that could actually lose data.

@@ -53,3 +53,12 @@ As built (all four chosen), on the sample day:
 | --- | --- |
 | ![](29-built-week-and-training.png) **29. The week's table and today's training** | ![](30-built-food-preferences.png) **30. Food preferences** |
 | ![](31-built-he-week-and-training.png) **31. Hebrew** | ![](32-built-he-food-preferences.png) **32. Hebrew, food preferences** |
+
+**Phase 1 of the precision design, as built** (2026-11-27,
+[`../../meal-suggestions-precision.md`](../../meal-suggestions-precision.md)):
+
+| | |
+| --- | --- |
+| ![](33-built-thursday-within-plan.png) **33. The owner's Thursday: +89, within plan range, and why** | ![](34-built-thursday-light-snack.png) **34. The optional light snack, at most 120** |
+| ![](35-built-possibly-incomplete-day.png) **35. A day possibly incomplete, not counted until answered** | ![](36-built-missing-lunch-question.png) **36. Asked first: no lunch logged** |
+| ![](37-built-he-possibly-incomplete-day.png) **37. Hebrew** | |

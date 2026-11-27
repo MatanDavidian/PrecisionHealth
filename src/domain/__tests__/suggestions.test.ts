@@ -4,14 +4,21 @@ import {
   fitOf,
   leftOf,
   mealsToCome,
+  missingMeals,
+  planRange,
   suggestPlan,
+  todayQuestion,
   weekSoFar,
+  type PastMeal,
+  type WeekSoFar,
   MAX_NOTE_CHARS,
   MAX_USUAL_FOODS,
   totalsOf,
   type SuggestionInput,
 } from '../suggestions'
 import { dayProgress, type DailyTargets } from '../targets'
+import { dayAnswers, type DayCheck } from '../dayChecks'
+import { isEstimatedPortion } from '../corrections'
 import { canonical, userEntered, type FoodItem, type Meal, type MealId, type MealSlot, type UserId } from '../index'
 
 const USER = '03272ea5-0000-4000-8000-000000000000' as UserId
@@ -84,20 +91,30 @@ const input = (over: Partial<SuggestionInput> = {}): SuggestionInput => ({
 describe('whether to offer suggestions, and what', () => {
   const progress = (energyKcal: number, proteinG: number) =>
     dayProgress(targets, { energyKcal, proteinG, carbsG: 100, fatG: 40 })
-  /** A week: calories and protein as given, four days of it. */
-  const week = (balanceKcal: number, proteinG = -40) => ({ days: 4, balanceKcal, proteinG, fatG: 0, carbsG: 0, measuredDays: 2 })
+  /** A period of five counted days: its balance, its budget and its protein. */
+  const week = (balanceKcal: number, proteinG = -40, budgetKcal = 10_830): WeekSoFar => ({
+    from: '2026-11-22',
+    to: '2026-11-26',
+    periodDays: 5,
+    days: 5,
+    balanceKcal,
+    budgetKcal,
+    proteinG,
+    fatG: 0,
+    carbsG: 0,
+    measuredDays: 4,
+    excluded: [],
+    sparse: false,
+    today: { day: '2026-11-26', eatenKcal: 2476, targetKcal: 2150 },
+  })
   const dinner = { slot: 'DINNER' as const, usualKcal: 650, usualTime: '20:00' }
 
   it('fills the day while it has 100 kcal left, up to what is left plus 10%', () => {
     expect(suggestPlan(progress(1850, 140))).toEqual({ kind: 'FILL', maxKcal: 330 })
   })
 
-  it('keeps room for a usual meal still to come', () => {
-    // 900 left at 16:30, dinner usually 650: 250 for now.
+  it('keeps room for a usual meal still to come, or says to wait for it', () => {
     expect(suggestPlan(progress(1250, 93), week(0), [dinner])).toEqual({ kind: 'FILL', maxKcal: 275 })
-  })
-
-  it('says to wait when the meal to come takes what is left', () => {
     expect(suggestPlan(progress(1550, 93), week(0), [dinner])).toEqual({ kind: 'WAIT', meals: ['DINNER'], kcal: 650 })
   })
 
@@ -106,23 +123,42 @@ describe('whether to offer suggestions, and what', () => {
     expect(suggestPlan(progress(2476, 140), week(-500))).toBeUndefined()
   })
 
-  it('over today but short of protein, with room in the week: a lean protein snack, at most 250 kcal', () => {
-    // 326 over today, 11 g short (of 140); the week 450 under, today included, and behind on protein.
-    expect(suggestPlan(progress(2476, 129), week(-450))).toEqual({ kind: 'PROTEIN', maxKcal: 250 })
-    expect(suggestPlan(progress(2476, 129), week(-180))).toEqual({ kind: 'PROTEIN', maxKcal: 180 })
+  it('the owner’s Thursday: +89 of a 10,830 budget is within plan range, so the light snack, optional', () => {
+    expect(suggestPlan(progress(2476, 129), week(89))).toMatchObject({
+      kind: 'USED',
+      status: 'WITHIN',
+      scope: 'WEEK',
+      balanceKcal: 89,
+      rangeKcal: 325,
+      maxKcal: 120,
+      primary: false,
+    })
   })
 
-  it('with no room in the week: better to stop', () => {
-    expect(suggestPlan(progress(2476, 129), week(180))).toEqual({ kind: 'STOP', reason: 'WEEK_FULL' })
-    expect(suggestPlan(progress(2476, 129), week(-60))).toEqual({ kind: 'STOP', reason: 'WEEK_FULL' })
-    // And without the week, today alone, which is full.
-    expect(suggestPlan(progress(2476, 129))).toEqual({ kind: 'STOP', reason: 'WEEK_FULL' })
+  it('below plan range: a protein snack as the main action, up to the room below plan and at most 250', () => {
+    expect(suggestPlan(progress(2476, 129), week(-450))).toMatchObject({ status: 'BELOW', maxKcal: 250, primary: true })
+    expect(suggestPlan(progress(2476, 129), week(-340))).toMatchObject({ status: 'BELOW', maxKcal: 250, primary: true })
+    // With a smaller budget, -200 is below its ±150 range: up to 200.
+    expect(suggestPlan(progress(2476, 129), week(-200, -40, 4000))).toMatchObject({ status: 'BELOW', maxKcal: 200 })
   })
 
-  it('with the week’s protein ahead, today’s gap can wait, even with room in the week', () => {
-    expect(suggestPlan(progress(2476, 129), week(-450, 47))).toEqual({ kind: 'STOP', reason: 'PROTEIN_AHEAD' })
-    // Only once there is a week to speak of: on its first day, today alone.
-    expect(suggestPlan(progress(2476, 129), { ...week(-450, 47), days: 1 })).toEqual({ kind: 'PROTEIN', maxKcal: 250 })
+  it('above plan range: better to stop, and still the optional light snack', () => {
+    expect(suggestPlan(progress(2476, 129), week(400))).toMatchObject({ status: 'ABOVE', maxKcal: 120, primary: false })
+  })
+
+  it('the week’s protein ahead is said, and hides nothing', () => {
+    expect(suggestPlan(progress(2476, 129), week(89, 64))).toMatchObject({ status: 'WITHIN', proteinAhead: true, maxKcal: 120 })
+    expect(suggestPlan(progress(2476, 129), week(-450, 64))).toMatchObject({ status: 'BELOW', proteinAhead: true, primary: true })
+  })
+
+  it('with too few counted days, today alone decides', () => {
+    const sparse = { ...week(-2000), sparse: true }
+    // Today 326 over its 2,150 target, against ±150: above.
+    expect(suggestPlan(progress(2476, 129), sparse)).toMatchObject({ scope: 'TODAY', status: 'ABOVE', balanceKcal: 326 })
+    // Without the period at all, the same.
+    expect(suggestPlan(progress(2476, 129))).toMatchObject({ scope: 'TODAY', status: 'ABOVE' })
+    // 60 over today is within today's ±150.
+    expect(suggestPlan(progress(2210, 129))).toMatchObject({ scope: 'TODAY', status: 'WITHIN', maxKcal: 120 })
   })
 
   it('says what is left, never below zero', () => {
@@ -132,6 +168,20 @@ describe('whether to offer suggestions, and what', () => {
       carbsG: 0,
       fatG: 9,
     })
+  })
+})
+
+describe('the plan range', () => {
+  it('is ± the larger of 150 kcal and 3% of the budget', () => {
+    expect(planRange(89, 10_830)).toEqual({ rangeKcal: 325, status: 'WITHIN' })
+    expect(planRange(209, 10_830)).toEqual({ rangeKcal: 325, status: 'WITHIN' })
+    expect(planRange(89, 10_000)).toEqual({ rangeKcal: 300, status: 'WITHIN' })
+    expect(planRange(326, 2_060)).toEqual({ rangeKcal: 150, status: 'ABOVE' })
+    expect(planRange(-180, 4_120)).toEqual({ rangeKcal: 150, status: 'BELOW' })
+    // The edges are within.
+    expect(planRange(325, 10_830).status).toBe('WITHIN')
+    expect(planRange(-325, 10_830).status).toBe('WITHIN')
+    expect(planRange(326, 10_830).status).toBe('ABOVE')
   })
 })
 
@@ -181,7 +231,21 @@ describe('the request', () => {
     const request = buildSuggestionRequest(
       input({
         plan: { kind: 'PROTEIN', maxKcal: 250 },
-        week: { days: 4, balanceKcal: -450, proteinG: -62, fatG: 40, carbsG: 0, measuredDays: 2 },
+        week: {
+          from: '2026-11-22',
+          to: '2026-11-25',
+          periodDays: 4,
+          days: 4,
+          balanceKcal: -450,
+          budgetKcal: 8600,
+          proteinG: -62,
+          fatG: 40,
+          carbsG: 0,
+          measuredDays: 2,
+          excluded: [],
+          sparse: false,
+          today: { day: '2026-11-25', eatenKcal: 2000, targetKcal: 2150 },
+        },
         toCome: [{ slot: 'DINNER', usualKcal: 650, usualTime: '20:00' }],
         training: { workouts: [{ kind: 'STRENGTH', minutes: 62 }], activeKcal: 640 },
         preferences: { diets: ['NO_MEAT_WITH_DAIRY'], avoid: 'peanuts' },
@@ -190,7 +254,8 @@ describe('the request', () => {
     expect(request).toMatchObject({
       mode: 'PROTEIN',
       maxKcal: 250,
-      week: { days: 4, balanceKcal: -450, proteinG: -62, fatG: 40, carbsG: 0, measuredDays: 2 },
+      // The period as the model needs it: no dates, and where it stands against plan.
+      week: { days: 4, balanceKcal: -450, proteinG: -62, fatG: 40, carbsG: 0, measuredDays: 2, rangeKcal: 258, status: 'BELOW' },
       stillToCome: [{ slot: 'DINNER', usualKcal: 650, usualTime: '20:00' }],
       trainingToday: { workouts: [{ kind: 'STRENGTH', minutes: 62 }], activeKcal: 640 },
       preferences: { diets: ['NO_MEAT_WITH_DAIRY'], avoid: 'peanuts' },
@@ -259,17 +324,40 @@ describe('the request', () => {
 describe('the week so far', () => {
   const rule = { energyKcal: 2150, proteinG: 140, carbsG: 215, fatG: 72, balanceKcal: -350, energy: { from: 'RULE' as const } }
   const ate = (energyKcal: number, proteinG = 140, fatG = 72, carbsG = 215) => ({ energyKcal, proteinG, fatG, carbsG })
+  const on = (day: number) => `2026-11-${String(day).padStart(2, '0')}`
+
+  it('the owner’s Thursday, exactly: +89 against a 10,830 budget', () => {
+    // Sunday to Wednesday: 8,533 eaten, 10,170 burned; the plan cuts 350 a day.
+    const burned = [2500, 2550, 2560, 2560]
+    const eaten = [2100, 2150, 2140, 2143]
+    const week = weekSoFar(
+      burned.map((burn, i) => ({ day: on(22 + i), eaten: ate(eaten[i]), targets: { ...rule, energyKcal: 2060 }, burnedKcal: burn })),
+      { day: on(26), eaten: ate(2386), targets: { ...rule, energyKcal: 2060 } },
+    )
+    expect(week).toMatchObject({ from: on(22), to: on(26), periodDays: 5, days: 5, balanceKcal: 89, budgetKcal: 10_830 })
+    expect(week.before).toEqual({
+      from: on(22),
+      to: on(25),
+      days: 4,
+      eatenKcal: 8533,
+      expenditureKcal: 10_170,
+      plannedKcal: 1400,
+      budgetKcal: 8770,
+    })
+    expect(week.today).toEqual({ day: on(26), eatenKcal: 2386, targetKcal: 2060 })
+    expect(week.sparse).toBe(false)
+  })
 
   it('weighs each day before today against what it really burned, and today against its target', () => {
     const week = weekSoFar(
       [
         // Burned 2,900 on a long run: a budget of 2,550, eaten 2,300, 250 under.
-        { eaten: ate(2300), targets: rule, burnedKcal: 2900 },
+        { day: on(23), eaten: ate(2300), targets: rule, burnedKcal: 2900 },
         // No burn recorded: against the target, 2,150; eaten 2,000, 150 under.
-        { eaten: ate(2000), targets: rule },
+        { day: on(24), eaten: ate(2000), targets: rule },
       ],
       // Today: 2,476 against 2,150, 326 over.
-      { eaten: ate(2476), targets: rule },
+      { day: on(25), eaten: ate(2476), targets: rule },
     )
     expect(week).toMatchObject({ days: 3, balanceKcal: -74, measuredDays: 1 })
   })
@@ -277,30 +365,155 @@ describe('the week so far', () => {
   it('adds up protein, fat and carbs against each day’s own targets', () => {
     const week = weekSoFar(
       [
-        { eaten: ate(2150, 110, 90, 215), targets: rule },
-        { eaten: ate(2150, 120, 85, 190), targets: rule },
+        { day: on(23), eaten: ate(2150, 110, 90, 215), targets: rule },
+        { day: on(24), eaten: ate(2150, 120, 85, 190), targets: rule },
       ],
-      { eaten: ate(2150, 129, 78, 215), targets: rule },
+      { day: on(25), eaten: ate(2150, 129, 78, 215), targets: rule },
     )
     expect(week).toMatchObject({ proteinG: -61, fatG: 37, carbsG: -25 })
   })
 
-  it('leaves out a day with nothing on it, and a day without targets', () => {
-    const week = weekSoFar([{ eaten: ate(0), targets: rule }, { eaten: ate(1800) }], { eaten: ate(2000), targets: rule })
-    expect(week).toMatchObject({ days: 1, balanceKcal: -150, measuredDays: 0 })
+  it('leaves out an empty day and a day without targets, and says so', () => {
+    const week = weekSoFar(
+      [
+        { day: on(23), eaten: ate(0), targets: rule },
+        { day: on(24), eaten: ate(1800) },
+      ],
+      { day: on(25), eaten: ate(2000), targets: rule },
+    )
+    expect(week).toMatchObject({ periodDays: 3, days: 1, balanceKcal: -150, sparse: true })
+    expect(week.excluded.map((d) => [d.day, d.reason])).toEqual([
+      [on(23), 'EMPTY'],
+      [on(24), 'NO_TARGETS'],
+    ])
+  })
+
+  it('a day under half its target is out until answered; answered complete it counts, incomplete it stays out', () => {
+    const tuesday = { day: on(24), eaten: ate(900), targets: rule }
+    const others = [{ day: on(22), eaten: ate(2150), targets: rule }, { day: on(23), eaten: ate(2150), targets: rule }]
+    const today = { day: on(25), eaten: ate(2150), targets: rule }
+
+    const unanswered = weekSoFar([...others, tuesday], today)
+    expect(unanswered.days).toBe(3)
+    expect(unanswered.excluded).toEqual([{ day: on(24), reason: 'UNANSWERED', eatenKcal: 900, targetKcal: 2150 }])
+
+    const complete = weekSoFar([...others, { ...tuesday, completeness: 'COMPLETE' }], today)
+    expect(complete).toMatchObject({ days: 4, balanceKcal: 900 - 2150, excluded: [] })
+
+    const incomplete = weekSoFar([...others, { ...tuesday, completeness: 'INCOMPLETE' }], today)
+    expect(incomplete.days).toBe(3)
+    expect(incomplete.excluded[0].reason).toBe('INCOMPLETE')
+    // Out of both intake and budget: the balance is the other days' alone.
+    expect(incomplete.balanceKcal).toBe(0)
+    expect(incomplete.budgetKcal).toBe(3 * 2150)
+  })
+
+  it('a day set in one tap is an estimate by design, never "possibly incomplete"', () => {
+    const week = weekSoFar([{ day: on(24), eaten: ate(900), targets: rule, setInOneTap: true }], { day: on(25), eaten: ate(2150), targets: rule })
+    expect(week.excluded).toEqual([])
+    expect(week.days).toBe(2)
+  })
+
+  it('a day the person said is incomplete stays out, however much is on it', () => {
+    const week = weekSoFar(
+      [{ day: on(24), eaten: ate(2000), targets: rule, completeness: 'INCOMPLETE' }],
+      { day: on(25), eaten: ate(2150), targets: rule },
+    )
+    expect(week.excluded.map((d) => d.reason)).toEqual(['INCOMPLETE'])
   })
 
   it('does not believe a burn far below the usual: a watch that stopped counting', () => {
     // The usual burn is 2,500; 1,200 is a flat battery, not a day in bed.
-    const week = weekSoFar([{ eaten: ate(2150), targets: rule, burnedKcal: 1200 }], { eaten: ate(0), targets: rule })
+    const week = weekSoFar([{ day: on(24), eaten: ate(2150), targets: rule, burnedKcal: 1200 }], { day: on(25), eaten: ate(0), targets: rule })
     expect(week.measuredDays).toBe(0)
     expect(week.balanceKcal).toBe(0 - 2150)
   })
 
   it('keeps a target the person typed in as theirs, whatever was burned', () => {
     const own = { ...rule, energy: { from: 'GOAL' as const } }
-    const week = weekSoFar([{ eaten: ate(2150), targets: own, burnedKcal: 3000 }], { eaten: ate(2150), targets: own })
+    const week = weekSoFar([{ day: on(24), eaten: ate(2150), targets: own, burnedKcal: 3000 }], { day: on(25), eaten: ate(2150), targets: own })
     expect(week).toMatchObject({ days: 2, balanceKcal: 0, measuredDays: 0 })
+  })
+
+  it('is sparse with fewer than three counted days', () => {
+    expect(weekSoFar([], { day: on(22), eaten: ate(2000), targets: rule }).sparse).toBe(true)
+    expect(
+      weekSoFar(
+        [
+          { day: on(22), eaten: ate(2000), targets: rule },
+          { day: on(23), eaten: ate(2000), targets: rule },
+        ],
+        { day: on(24), eaten: ate(2000), targets: rule },
+      ).sparse,
+    ).toBe(false)
+  })
+})
+
+describe('asking about today first', () => {
+  /** Ten days of lunch at 13:00 and dinner at 20:00. */
+  const history: PastMeal[] = Array.from({ length: 10 }, (_, i) => {
+    const day = `2026-11-${String(10 + i).padStart(2, '0')}`
+    return [
+      { day, slot: 'LUNCH' as const, time: '13:00', kcal: 690 },
+      { day, slot: 'DINNER' as const, time: '20:00', kcal: 650 },
+    ]
+  }).flat()
+
+  it('a usual lunch not logged by 14:30 looks missing; not before, and not once skipped', () => {
+    expect(missingMeals(history, [], '20:40').map((m) => m.slot)).toEqual(['LUNCH'])
+    expect(missingMeals(history, [], '14:20')).toEqual([])
+    expect(missingMeals(history, ['LUNCH'], '20:40')).toEqual([])
+    expect(missingMeals(history, [], '20:40', ['LUNCH'])).toEqual([])
+    expect(missingMeals(history, [], '22:00').map((m) => m.slot)).toEqual(['LUNCH', 'DINNER'])
+  })
+
+  it('asks about a missing meal first; about a low day from 18:00; and nothing once today is answered complete', () => {
+    const lunch = { slot: 'LUNCH' as const, usualKcal: 690, usualTime: '13:00' }
+    expect(todayQuestion({ missing: [lunch], eatenKcal: 1500, targetKcal: 2150, nowTime: '20:40' })).toEqual({
+      kind: 'MISSING',
+      meals: [lunch],
+    })
+    expect(todayQuestion({ missing: [], eatenKcal: 900, targetKcal: 2150, nowTime: '20:40' })).toEqual({ kind: 'LOW' })
+    expect(todayQuestion({ missing: [], eatenKcal: 900, targetKcal: 2150, nowTime: '12:00' })).toBeUndefined()
+    expect(todayQuestion({ missing: [], eatenKcal: 1500, targetKcal: 2150, nowTime: '20:40' })).toBeUndefined()
+    expect(
+      todayQuestion({ missing: [lunch], eatenKcal: 900, targetKcal: 2150, nowTime: '20:40', completeness: 'COMPLETE' }),
+    ).toBeUndefined()
+    // A usual meal said to be skipped explains a low day: one question is enough.
+    expect(todayQuestion({ missing: [], eatenKcal: 900, targetKcal: 2150, nowTime: '20:40', skipped: ['LUNCH'] })).toBeUndefined()
+    // Said "not everything": not asked again.
+    expect(todayQuestion({ missing: [], eatenKcal: 900, targetKcal: 2150, nowTime: '20:40', completeness: 'INCOMPLETE' })).toBeUndefined()
+  })
+})
+
+describe('what the person said about a day', () => {
+  const check = (day: string, at: string, answer: Partial<DayCheck>): DayCheck => ({
+    id: `${day}-${at}`,
+    userId: USER,
+    day,
+    recordedAt: `${day}T${at}:00.000Z`,
+    ...answer,
+  })
+
+  it('the latest completeness wins, UNSET takes it back, and skipped meals add up', () => {
+    const answers = dayAnswers([
+      check('2026-11-24', '20:00', { completeness: 'INCOMPLETE' }),
+      check('2026-11-24', '21:00', { completeness: 'COMPLETE' }),
+      check('2026-11-25', '19:00', { completeness: 'COMPLETE' }),
+      check('2026-11-25', '19:30', { completeness: 'UNSET' }),
+      check('2026-11-26', '20:40', { skipped: 'LUNCH' }),
+      check('2026-11-26', '20:41', { skipped: 'LUNCH' }),
+      check('2026-11-26', '20:42', { skipped: 'BREAKFAST' }),
+    ])
+    expect(answers.get('2026-11-24')).toEqual({ completeness: 'COMPLETE', skipped: [] })
+    expect(answers.get('2026-11-25')).toEqual({ completeness: undefined, skipped: [] })
+    expect(answers.get('2026-11-26')).toEqual({ completeness: undefined, skipped: ['LUNCH', 'BREAKFAST'] })
+  })
+
+  it('an estimated portion stays one after confirming; typed numbers are not one', () => {
+    expect(isEstimatedPortion({ source: 'AI_ESTIMATE', kind: 'DERIVED', recordedAt: 'x' })).toBe(true)
+    expect(isEstimatedPortion({ source: 'USER', kind: 'USER_CONFIRMED', recordedAt: 'x', supersedes: ['a'] })).toBe(true)
+    expect(isEstimatedPortion({ source: 'USER', kind: 'RAW', recordedAt: 'x' })).toBe(false)
   })
 })
 
@@ -333,16 +546,12 @@ describe('how a suggestion fits the day', () => {
     expect(fit.proteinReached).toBe(false)
   })
 
-  it('on a full day, says what it adds today and where the week lands', () => {
+  it('on a full day, says what it adds today and where the period lands against its plan', () => {
     const full = dayProgress(targets, { energyKcal: 2476, proteinG: 134, carbsG: 241, fatG: 78 })
-    const fit = fitOf({ totals: { energyKcal: 105, proteinG: 17, carbsG: 5, fatG: 1.5 } }, full, {
-      days: 4,
-      balanceKcal: -450,
-      proteinG: -40,
-      fatG: 0,
-      carbsG: 0,
-      measuredDays: 2,
+    const fit = fitOf({ totals: { energyKcal: 120, proteinG: 17, carbsG: 5, fatG: 1.5 } }, full, {
+      balanceKcal: 89,
+      budgetKcal: 10_830,
     })
-    expect(fit).toMatchObject({ todayFull: true, proteinAfter: 151, proteinReached: true, weekAfter: -345 })
+    expect(fit).toMatchObject({ todayFull: true, proteinAfter: 151, proteinReached: true, balanceAfter: 209, statusAfter: 'WITHIN' })
   })
 })

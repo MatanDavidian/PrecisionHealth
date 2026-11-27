@@ -76,7 +76,7 @@ const OPERATOR = 'Matan Davidian, an individual based in Israel'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-11-26.2',
+  version: '2026-11-27',
   sections: [
     {
       heading: 'Who we are',
@@ -98,6 +98,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
         'Your email address, if you create an account.',
         'Whether you subscribe: your plan and when it renews. Card and billing details are held by Lemon Squeezy, or by Google Play if you subscribed in the Android app. We never hold them.',
         'The language you chose to read the app in.',
+        'Your answers about a day’s log, if you give them: that a day is fully logged or not, or that you skipped a usual meal. They decide which days count when the app suggests what to eat, and are never sent to anyone.',
         'Food preferences, if you set them: ways of eating you chose (such as vegetarian, or no meat with dairy) and the foods you wrote to avoid. They are used only for suggestions of what to eat. A choice like “no meat with dairy” can say something about your beliefs, so set only what you are comfortable sharing; you can clear them at any time in Settings.',
         'Reminders, if you turn them on: the times you chose, your time zone, the meals you usually eat at breakfast, lunch and dinner (so a reminder can offer one as a button), and, for each device you turned them on, the address your browser’s push service gave it.',
       ],

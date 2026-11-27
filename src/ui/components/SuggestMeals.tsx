@@ -5,20 +5,30 @@ import {
   fitOf,
   leftOf,
   LIGHT_SNACK_MAX_KCAL,
+  planRange,
   suggestPlan,
-  type WeekSoFar,
-  type MealToCome,
-  type SuggestionRequest,
+  todayQuestion,
   type AIInferenceId,
+  type CalendarDate,
   type DailyTargets,
   type Macros,
   type Meal,
   type MealSuggestion,
   type MealSuggestions,
+  type PlanStatus,
+  type SuggestionRequest,
+  type WeekSoFar,
 } from '@/domain'
 import { getEstimator, getRepositories } from '@/data'
 import { currentUserId } from '@/data/session'
-import { readMealsToCome, readSuggestionRequest, readWeekSoFar, slotFor } from '@/data/suggestions'
+import {
+  readSuggestionRequest,
+  readTodayContext,
+  readWeekSoFar,
+  slotFor,
+  type MissingMeal,
+  type TodayContext,
+} from '@/data/suggestions'
 import { buildSuggestionInference } from '@/data/estimatedMeal'
 import { EstimateError } from '@/ai/estimator'
 import { PlanExhaustedError, TrialExhaustedError } from '@/ai/proxyEstimator'
@@ -29,24 +39,32 @@ import type { StringKey } from '../i18n/strings'
 import { ReportAnswer } from './ReportAnswer'
 
 /**
- * What to eat now (docs/features/meal-suggestions.md).
+ * What to eat now (docs/features/meal-suggestions.md, and the precision
+ * design, meal-suggestions-precision.md).
  *
- * Inside Today's targets card, today only. One tap asks the model for up to
- * three things that fit what is left, built mostly from the person's own
- * foods; each one logs in a tap (with Undo), or opens the camera for when it
- * is made.
+ * Inside Today's targets card, today only. Vimetry decides whether to offer
+ * anything, how much, and why: today's room after the usual meals still to
+ * come, and, when today's calories are used, where the period stands against
+ * its plan range. The model only chooses foods within the stated cap, and
+ * the cap is checked again on its answer.
  *
- * When today's calories are used but protein is short, the week decides: room
- * in it offers a lean protein snack; none says it is better to stop for today,
- * without asking the model at all.
+ * Before asking, if a usual meal looks missing today (or the day looks low
+ * for the hour), the card asks about it first: a forgotten lunch would make
+ * every suggestion too generous.
  */
 
+type Want = { kind: 'FILL' | 'PROTEIN'; maxKcal: number; light?: boolean }
+
 type State =
-  | { kind: 'idle' }
+  | { kind: 'idle'; added?: string }
+  | { kind: 'question'; question: { kind: 'MISSING'; meal: MissingMeal } | { kind: 'LOW'; warned?: boolean }; want: Want }
   | { kind: 'running' }
   | { kind: 'done'; answer: MealSuggestions; answerId: AIInferenceId }
   | { kind: 'failed'; reason: 'FREE' | 'PLAN' | 'ACCOUNT' | 'SESSION' | 'OTHER'; resetsAt?: string }
   | { kind: 'logged'; suggestion: MealSuggestion; meal?: Meal; undone?: boolean }
+
+/** Few logged days: no usual foods yet, so the suggestions are general ideas. */
+const NEWCOMER_DAYS = 3
 
 export function SuggestMeals({
   targets,
@@ -61,41 +79,63 @@ export function SuggestMeals({
   const { t, lang } = useLang()
   const navigate = useNavigate()
   const { session, revision } = useDataRevision()
-  const { logSuggestion, deleteMeal } = useActions()
+  const { logSuggestion, deleteMeal, recordDayCheck, logRepeat } = useActions()
   const [state, setState] = useState<State>({ kind: 'idle' })
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
   const [offered, setOffered] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
-  /** The week so far and the usual meals still to come; undefined while they are read. */
-  const [context, setContext] = useState<{ week?: WeekSoFar; toCome: MealToCome[] }>()
-  const week = context?.week
-  const toCome = context?.toCome ?? []
+  /** The period so far, and today against the person's habits; undefined while read. */
+  const [context, setContext] = useState<{ week?: WeekSoFar; today: TodayContext }>()
   /** What the last request asked for, so Ask again asks the same. */
-  const [asked, setAsked] = useState<{ kind: 'FILL' | 'PROTEIN'; maxKcal: number }>()
-  const fmt = (n: number) => Math.round(n).toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')
+  const [asked, setAsked] = useState<Want>()
+  const locale = lang === 'he' ? 'he-IL' : 'en-US'
+  const fmt = (n: number) => Math.round(n).toLocaleString(locale)
+  /**
+   * "+89", "−237". In Hebrew the number is isolated left to right (U+2066 …
+   * U+2069), or the right-to-left line moves its sign to the other end: "89+".
+   */
+  const signed = (n: number) => {
+    const text = (Math.round(n) > 0 ? '+' : Math.round(n) < 0 ? '−' : '') + fmt(Math.abs(n))
+    return lang === 'he' ? `\u2066${text}\u2069` : text
+  }
+  const dateOf = (day: CalendarDate) =>
+    new Date(`${day}T12:00:00`).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    })
 
   useEffect(() => {
     let cancelled = false
-    void Promise.all([readWeekSoFar(currentUserId(), targets, eaten), readMealsToCome(currentUserId())])
-      .then(([readWeek, readToCome]) => !cancelled && setContext({ week: readWeek, toCome: readToCome }))
-      // Unreadable, the card still offers to fill a day with room: no week, nothing to come.
-      .catch(() => !cancelled && setContext({ toCome: [] }))
+    void Promise.all([readWeekSoFar(currentUserId(), targets, eaten), readTodayContext(currentUserId())])
+      .then(([week, today]) => !cancelled && setContext({ week, today }))
+      // Unreadable, the card still offers to fill a day with room: no period, nothing to come.
+      .catch(() => !cancelled && setContext({ today: { toCome: [], missing: [], answers: { skipped: [] }, loggedDays: 0 } }))
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revision, targets.energyKcal, eaten.energyKcal])
 
+  const week = context?.week
+  const toCome = context?.today.toCome ?? []
   const progress = dayProgress(targets, eaten)
   const plan = suggestPlan(progress, week, toCome)
   // Once asked or logged, the card stays, even though the day may now be full.
-  // While the week and the meals to come are read, it waits rather than
-  // offering a size it would then change, or saying "stop" too soon.
+  // While the period and today's habits are read, it waits rather than
+  // offering a size it would then change, or a verdict too soon.
   const showing = state.kind !== 'idle' || (plan && context)
   if (!showing) return null
+
   const left = leftOf(progress)
   const over = Math.max(0, Math.round(-progress.energy.remaining))
+  const today = week?.today.day
+  const period = week && !week.sparse ? `${dateOf(week.from)} – ${dateOf(week.to)}` : t('suggest.today')
+  /** The balance the plan range decided on: the period's, or today's alone. */
+  const balance =
+    plan?.kind === 'USED' ? { balanceKcal: plan.balanceKcal, budgetKcal: plan.budgetKcal } : undefined
+  const statusWords = (status: PlanStatus) => t(`suggest.status.${status}` as StringKey)
 
   const leftWords = [
     left.energyKcal > 0 ? t('suggest.leftKcal', { kcal: fmt(left.energyKcal) }) : undefined,
@@ -104,16 +144,35 @@ export function SuggestMeals({
     .filter(Boolean)
     .join(' · ')
 
-  async function ask(again = false, want = asked) {
-    const wanted = want ?? (plan && (plan.kind === 'FILL' || plan.kind === 'PROTEIN') ? plan : undefined)
-    if (!wanted) return
-    setAsked(wanted)
+  /** Asks the model, after asking the person about today if something looks missing. */
+  async function ask(want: Want, again = false, askedToday = false) {
+    const ctx = context?.today
+    const question =
+      !again && !askedToday && ctx
+        ? todayQuestion({
+            missing: ctx.missing,
+            eatenKcal: eaten.energyKcal,
+            targetKcal: targets.energyKcal,
+            nowTime: hhmm(new Date()),
+            completeness: ctx.answers.completeness,
+            skipped: ctx.answers.skipped,
+          })
+        : undefined
+    if (question) {
+      setState({
+        kind: 'question',
+        question: question.kind === 'MISSING' ? { kind: 'MISSING', meal: ctx!.missing[0] } : { kind: 'LOW' },
+        want,
+      })
+      return
+    }
+    setAsked(want)
     setState({ kind: 'running' })
     try {
       const request = await readSuggestionRequest(currentUserId(), targets, eaten, {
         note,
         avoid: again ? offered : undefined,
-        plan: wanted,
+        plan: { kind: want.kind, maxKcal: want.maxKcal },
         week,
         toCome,
         training,
@@ -150,63 +209,67 @@ export function SuggestMeals({
     navigate(`/log?mode=photo&note=${encodeURIComponent(words)}`)
   }
 
-  /** One row of the week: "450 under", "62 g behind", "40 g over", "on target". */
-  const weekCell = (balance: number, near: number, under: StringKey, over: StringKey) =>
-    Math.abs(balance) < near
+  /** One row of the period: "62 g behind", "40 g over", "on target". */
+  const weekCell = (value: number, near: number, under: StringKey, overKey: StringKey) =>
+    Math.abs(value) < near
       ? t('suggest.weekOnTarget')
-      : balance < 0
-        ? t(under, { n: fmt(-balance) })
-        : t(over, { n: fmt(balance) })
-  const fatHigh = !!week && week.fatG >= Math.max(10, targets.fatG * 0.15)
+      : value < 0
+        ? t(under, { n: fmt(-value) })
+        : t(overKey, { n: fmt(value) })
+  const fatHigh = !!week && !week.sparse && week.fatG >= Math.max(10, targets.fatG * 0.15)
   const slotsWords = (slots: readonly string[]) =>
     slots.map((slot) => t(`common.slotLabel.${slot}` as StringKey)).join(t('suggest.and'))
   const strength = training?.workouts.some((w) => w.kind === 'STRENGTH')
   const trainedMinutes = training?.workouts.reduce((sum, w) => sum + w.minutes, 0) ?? 0
+  const newcomer = (context?.today.loggedDays ?? 0) < NEWCOMER_DAYS
+  const lightWant: Want = { kind: 'PROTEIN', maxKcal: LIGHT_SNACK_MAX_KCAL, light: true }
 
   const date = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', { day: 'numeric', month: 'long' }) : ''
 
+  /** "Up to 120 kcal: Sun 22 – Thu 26 Nov would be at most +209, still within plan range." */
+  const projection = (maxKcal: number) => {
+    if (!balance) return undefined
+    const after = balance.balanceKcal + maxKcal
+    const now = planRange(balance.balanceKcal, balance.budgetKcal).status
+    const then = planRange(after, balance.budgetKcal).status
+    return t('suggest.projection', {
+      max: fmt(maxKcal),
+      period,
+      after: signed(after),
+      status: `${now === then ? t('suggest.still') : ''}${statusWords(then)}`,
+    })
+  }
+
   return (
     <div className="mt-5 border-t border-hairline pt-4" data-testid="suggest-meals">
+      {/* Today, in one line. */}
+      <p className="text-sm font-semibold" data-testid="suggest-line">
+        {over > 0 && today ? (
+          <>
+            {t('suggest.dayLine', { date: dateOf(today), kcal: fmt(over) })}
+            {left.proteinG > 0 && ` · ${t('suggest.dayProteinShort', { protein: fmt(left.proteinG) })}`}
+          </>
+        ) : (
+          <>
+            {t('suggest.left')} <span className="font-normal text-ink-soft">{leftWords}</span>
+          </>
+        )}
+      </p>
+
+      {/* The period, against its plan. */}
+      {week && week.periodDays > 1 && periodBlock()}
+
       {state.kind === 'idle' && plan && (
         <>
-          <p className="text-sm font-semibold" data-testid="suggest-line">
-            {over > 0 ? (
-              <>
-                {t('suggest.overLine', { kcal: fmt(over) })} · {t('suggest.shortLine', { protein: fmt(left.proteinG) })}
-              </>
-            ) : (
-              <>
-                {t('suggest.left')} <span className="font-normal text-ink-soft">{leftWords}</span>
-              </>
-            )}
-          </p>
-          {week && week.days > 1 && (
-            <div className="mt-2.5 rounded-xl bg-card-soft px-3.5 py-2.5" data-testid="suggest-week">
-              <p className="pb-1 text-xs font-semibold text-ink-muted">{t('suggest.weekTitle')}</p>
-              <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-[13px]">
-                <dt className="text-ink-soft">{t('estimate.calories')}</dt>
-                <dd className="tabular text-end font-semibold">
-                  {weekCell(week.balanceKcal, 50, 'suggest.weekKcalUnder', 'suggest.weekKcalOver')}
-                </dd>
-                <dt className="text-ink-soft">{t('estimate.protein')}</dt>
-                <dd className="tabular text-end font-semibold">
-                  {weekCell(week.proteinG, 5, 'suggest.weekProteinBehind', 'suggest.weekProteinAhead')}
-                </dd>
-                <dt className="text-ink-soft">{t('estimate.fat')}</dt>
-                <dd className="tabular text-end font-semibold">{weekCell(week.fatG, 5, 'suggest.weekGUnder', 'suggest.weekGOver')}</dd>
-                <dt className="text-ink-soft">{t('estimate.carbs')}</dt>
-                <dd className="tabular text-end font-semibold">{weekCell(week.carbsG, 10, 'suggest.weekGUnder', 'suggest.weekGOver')}</dd>
-              </dl>
-              <p className="pt-1 text-[11.5px] text-ink-muted">
-                {t('suggest.weekSpan')}
-                {week.measuredDays > 0 && ` ${t('suggest.weekMeasured')}`}
-              </p>
-            </div>
+          {state.added && (
+            <p role="status" className="mt-2.5 rounded-xl bg-leaf-soft px-3 py-2 text-[13px]">
+              {state.added}
+            </p>
           )}
-          {plan.kind === 'PROTEIN' && (
-            <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-hint">
-              {fatHigh ? t('suggest.hintLeanProtein') : t('suggest.weekRoomProtein')}
+          {context?.today.answers.completeness === 'INCOMPLETE' && (
+            <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-today-incomplete">
+              {t('suggest.todayIncomplete')}
             </p>
           )}
           {plan.kind === 'FILL' && toCome.length > 0 && (
@@ -218,49 +281,64 @@ export function SuggestMeals({
               })}
             </p>
           )}
-          {trainedMinutes > 0 && (plan.kind === 'FILL' || plan.kind === 'PROTEIN') && (
+          {plan.kind === 'USED' && plan.primary && (
+            <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-hint">
+              {fatHigh ? t('suggest.hintLeanProtein') : t('suggest.weekRoomProtein')}
+            </p>
+          )}
+          {plan.kind === 'USED' && !plan.primary && (
+            <div
+              className={`mt-3 rounded-2xl px-4 py-3 text-sm leading-relaxed ${plan.status === 'ABOVE' ? 'bg-leaf-soft' : 'bg-card-soft'}`}
+              data-testid="suggest-stop"
+            >
+              {plan.status === 'ABOVE' ? (
+                <>
+                  <p className="font-semibold">{t('suggest.stopTitle')}</p>
+                  <p>
+                    {plan.scope === 'WEEK'
+                      ? t('suggest.aboveWeek', { period, kcal: fmt(plan.balanceKcal) })
+                      : t('suggest.aboveToday', { kcal: fmt(plan.balanceKcal) })}
+                  </p>
+                </>
+              ) : (
+                <p data-testid="suggest-status">
+                  {plan.scope === 'WEEK'
+                    ? over > 0
+                      ? t('suggest.withinWeek', { kcal: fmt(over), period })
+                      : t('suggest.withinWeekUsed', { period })
+                    : t('suggest.withinToday', { balance: signed(plan.balanceKcal), range: fmt(plan.rangeKcal) })}
+                </p>
+              )}
+              {plan.proteinAhead && week && (
+                <p className="pt-1" data-testid="suggest-protein-ahead">
+                  {t('suggest.proteinAheadNote', { ahead: fmt(week.proteinG + left.proteinG), protein: fmt(left.proteinG) })}
+                </p>
+              )}
+            </div>
+          )}
+          {trainedMinutes > 0 && (plan.kind === 'FILL' || plan.kind === 'USED') && (
             <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-training">
               {t(strength ? 'suggest.trainedStrength' : 'suggest.trained', { minutes: fmt(trainedMinutes) })}
             </p>
           )}
-          {plan.kind === 'STOP' || plan.kind === 'WAIT' ? (
-            <>
-              <div className="mt-3 rounded-2xl bg-leaf-soft px-4 py-3 text-sm leading-relaxed" data-testid="suggest-stop">
-                {plan.kind === 'WAIT' ? (
-                  <>
-                    <p className="font-semibold">{t('suggest.waitTitle', { meals: slotsWords(plan.meals) })}</p>
-                    <p>{t('suggest.waitBody', { kcal: fmt(plan.kcal) })}</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-semibold">{t('suggest.stopTitle')}</p>
-                    <p>
-                      {over > 0 ? t('suggest.stopOver', { kcal: fmt(over) }) : t('suggest.stopFull')}{' '}
-                      {plan.reason === 'PROTEIN_AHEAD' && week
-                        ? t('suggest.stopProteinAhead', { ahead: fmt(week.proteinG + left.proteinG), protein: fmt(left.proteinG) })
-                        : `${t('suggest.stopWeek')} ${t('suggest.stopProtein', { protein: fmt(left.proteinG) })}`}
-                    </p>
-                  </>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => void ask(false, { kind: 'PROTEIN', maxKcal: LIGHT_SNACK_MAX_KCAL })}
-                className="mt-2.5 text-sm text-ink-soft underline underline-offset-2"
-              >
-                {t('suggest.hungry')}
-              </button>
-            </>
-          ) : (
+
+          {plan.kind === 'WAIT' && (
+            <div className="mt-3 rounded-2xl bg-leaf-soft px-4 py-3 text-sm leading-relaxed" data-testid="suggest-stop">
+              <p className="font-semibold">{t('suggest.waitTitle', { meals: slotsWords(plan.meals) })}</p>
+              <p>{t('suggest.waitBody', { kcal: fmt(plan.kcal) })}</p>
+            </div>
+          )}
+
+          {plan.kind === 'FILL' || (plan.kind === 'USED' && plan.primary) ? (
             <>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3">
                 <button
                   type="button"
-                  onClick={() => void ask(false, plan)}
+                  onClick={() => void ask({ kind: plan.kind === 'FILL' ? 'FILL' : 'PROTEIN', maxKcal: plan.maxKcal })}
                   className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-canvas"
                 >
                   <SparkIcon />
-                  {plan.kind === 'PROTEIN' ? t('suggest.askProtein') : t('suggest.ask')}
+                  {plan.kind === 'FILL' ? t('suggest.ask') : t('suggest.askProtein')}
                 </button>
                 {!noteOpen && (
                   <button type="button" onClick={() => setNoteOpen(true)} className="text-sm text-ink-soft underline underline-offset-2">
@@ -284,14 +362,139 @@ export function SuggestMeals({
                   />
                 </div>
               )}
-              <p className="pt-2.5 text-xs leading-relaxed text-ink-muted">{t('suggest.costs')}</p>
+              <p className="pt-2.5 text-xs leading-relaxed text-ink-muted">
+                {newcomer ? t('suggest.newcomer') : t('suggest.costs')}
+              </p>
             </>
+          ) : (
+            <div className="pt-3">
+              <button
+                type="button"
+                onClick={() => void ask(lightWant)}
+                className="rounded-full border border-hairline bg-surface px-4 py-2 text-sm"
+              >
+                {t('suggest.light')}
+              </button>
+              {projection(LIGHT_SNACK_MAX_KCAL) && (
+                <p className="pt-2 text-xs leading-relaxed text-ink-muted" data-testid="suggest-projection">
+                  {projection(LIGHT_SNACK_MAX_KCAL)}
+                </p>
+              )}
+            </div>
           )}
         </>
       )}
 
+      {state.kind === 'question' && (
+        <div className="mt-3 rounded-2xl bg-surface px-4 py-3 text-sm leading-relaxed" data-testid="suggest-question">
+          {state.question.kind === 'MISSING' ? (
+            <>
+              <p className="font-semibold">
+                {t('suggest.qMissing', { meal: t(`common.slotLabel.${state.question.meal.slot}` as StringKey) })}
+              </p>
+              <div className="flex flex-wrap gap-2 pt-2.5">
+                {state.question.meal.usual && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      const missing = (state.question as { meal: MissingMeal }).meal
+                      setBusy(true)
+                      void logRepeat(missing.usual!, missing.slot).then((meal) => {
+                        setBusy(false)
+                        if (meal) {
+                          setState({
+                            kind: 'idle',
+                            added: t('suggest.addedUsual', { meal: t(`common.slotLabel.${missing.slot}` as StringKey) }),
+                          })
+                        }
+                      })
+                    }}
+                    className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-canvas"
+                  >
+                    {t('suggest.qAddUsual', {
+                      meal: t(`common.slotLabel.${state.question.meal.slot}` as StringKey),
+                      kcal: fmt(state.question.meal.usualKcal),
+                    })}
+                  </button>
+                )}
+                <Link to="/log" className="rounded-full border border-hairline px-4 py-1.5 text-sm">
+                  {t('suggest.qLogNow')}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const { meal } = state.question as { meal: MissingMeal }
+                    const want = state.want
+                    void (today ? recordDayCheck(today, { skipped: meal.slot }) : Promise.resolve(true)).then(() =>
+                      ask(want, false, true),
+                    )
+                  }}
+                  className="rounded-full border border-hairline px-4 py-1.5 text-sm"
+                >
+                  {t('suggest.qSkipped')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold">
+                {t('suggest.qLow', { eaten: fmt(eaten.energyKcal), target: fmt(targets.energyKcal) })}
+              </p>
+              {state.question.warned && <p className="pt-1 text-ink-soft">{t('suggest.qLowWarn')}</p>}
+              <div className="flex flex-wrap gap-2 pt-2.5">
+                {state.question.warned ? (
+                  <>
+                    <Link to="/log" className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-canvas">
+                      {t('suggest.qLogNow')}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => void ask(state.want, false, true)}
+                      className="rounded-full border border-hairline px-4 py-1.5 text-sm"
+                    >
+                      {t('suggest.qLowContinue')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const want = state.want
+                        void (today ? recordDayCheck(today, { completeness: 'COMPLETE' }) : Promise.resolve(true)).then(() =>
+                          ask(want, false, true),
+                        )
+                      }}
+                      className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-canvas"
+                    >
+                      {t('suggest.qLowYes')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const want = state.want
+                        void (today ? recordDayCheck(today, { completeness: 'INCOMPLETE' }) : Promise.resolve(true)).then(() =>
+                          setState({ kind: 'question', question: { kind: 'LOW', warned: true }, want }),
+                        )
+                      }}
+                      className="rounded-full border border-hairline px-4 py-1.5 text-sm"
+                    >
+                      {t('suggest.qLowNo')}
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+          <button type="button" onClick={() => setState({ kind: 'idle' })} className="mt-2.5 text-xs text-ink-muted underline">
+            {t('suggest.qNotNow')}
+          </button>
+        </div>
+      )}
+
       {state.kind === 'running' && (
-        <div role="status" aria-live="polite">
+        <div role="status" aria-live="polite" className="pt-3">
           <div className="flex items-center gap-3.5">
             <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
@@ -313,16 +516,19 @@ export function SuggestMeals({
       )}
 
       {state.kind === 'done' && (
-        <section aria-labelledby="suggest-title">
+        <section aria-labelledby="suggest-title" className="pt-3">
           <h3 id="suggest-title" className="text-sm font-semibold">
-            {asked?.kind === 'PROTEIN'
-              ? t('suggest.forProtein', { kcal: fmt(asked.maxKcal) })
-              : t('suggest.for', { left: leftWords })}
+            {asked?.light
+              ? t('suggest.forLight', { kcal: fmt(asked.maxKcal) })
+              : asked?.kind === 'PROTEIN'
+                ? t('suggest.forProtein', { kcal: fmt(asked.maxKcal) })
+                : t('suggest.for', { left: leftWords })}
           </h3>
           {state.answer.note && <p className="pt-2 text-sm text-ink-soft">{state.answer.note}</p>}
+          {newcomer && <p className="pt-2 text-xs text-ink-muted">{t('suggest.newcomer')}</p>}
           <ul className="grid gap-2.5 pt-3">
             {state.answer.suggestions.map((suggestion, index) => {
-              const fit = fitOf(suggestion, progress, asked?.kind === 'PROTEIN' ? week : undefined)
+              const fit = fitOf(suggestion, progress, asked?.kind === 'PROTEIN' ? balance : undefined)
               return (
                 <li
                   key={`${suggestion.title}-${index}`}
@@ -358,7 +564,7 @@ export function SuggestMeals({
                     })}
                   </p>
                   <p
-                    className={`pt-1 text-[12.5px] font-semibold ${fit.spareKcal >= 0 || (fit.weekAfter ?? 1) <= 0 ? 'text-ink' : 'text-ink-soft'}`}
+                    className={`pt-1 text-[12.5px] font-semibold ${fit.spareKcal >= 0 || fit.statusAfter !== 'ABOVE' ? 'text-ink' : 'text-ink-soft'}`}
                     data-testid="suggestion-fit"
                   >
                     {fit.todayFull
@@ -369,11 +575,12 @@ export function SuggestMeals({
                     {' · '}
                     {t('suggest.fitProtein', { after: fmt(fit.proteinAfter), target: fmt(fit.proteinTarget) })}
                     {fit.proteinReached && ' ✓'}
-                    {fit.weekAfter !== undefined &&
+                    {fit.balanceAfter !== undefined &&
+                      fit.statusAfter &&
                       ` · ${
-                        fit.weekAfter <= 0
-                          ? t('suggest.fitWeekUnder', { kcal: fmt(-fit.weekAfter) })
-                          : t('suggest.fitWeekOver', { kcal: fmt(fit.weekAfter) })
+                        plan?.kind === 'USED' && plan.scope === 'WEEK' && week
+                          ? t('suggest.fitDays', { days: fmt(week.days), after: signed(fit.balanceAfter), status: statusWords(fit.statusAfter) })
+                          : t('suggest.fitToday', { after: signed(fit.balanceAfter), status: statusWords(fit.statusAfter) })
                       }`}
                   </p>
                   {suggestion.why && <p className="pt-1 text-[12.5px] leading-relaxed text-ink-muted">{suggestion.why}</p>}
@@ -402,7 +609,11 @@ export function SuggestMeals({
           </ul>
           <p className="pt-2.5 text-xs leading-relaxed text-ink-muted">{t('suggest.photoHint')}</p>
           <div className="flex flex-wrap gap-2 pt-3">
-            <button type="button" onClick={() => void ask(true)} className="rounded-full border border-hairline bg-surface px-4 py-1.5 text-sm">
+            <button
+              type="button"
+              onClick={() => asked && void ask(asked, true)}
+              className="rounded-full border border-hairline bg-surface px-4 py-1.5 text-sm"
+            >
               {t('suggest.again')}
             </button>
             <button type="button" onClick={() => setState({ kind: 'idle' })} className="rounded-full border border-hairline bg-surface px-4 py-1.5 text-sm">
@@ -415,7 +626,7 @@ export function SuggestMeals({
       )}
 
       {state.kind === 'logged' && (
-        <div role="status" aria-live="polite" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-leaf-soft px-4 py-3 text-sm">
+        <div role="status" aria-live="polite" className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-leaf-soft px-4 py-3 text-sm">
           <span>
             {state.undone
               ? t('suggest.undone')
@@ -428,9 +639,7 @@ export function SuggestMeals({
           {state.meal && !state.undone ? (
             <button
               type="button"
-              onClick={() =>
-                void deleteMeal(state.meal!).then((ok) => ok && setState({ ...state, undone: true }))
-              }
+              onClick={() => void deleteMeal(state.meal!).then((ok) => ok && setState({ ...state, undone: true }))}
               className="font-semibold underline underline-offset-2"
             >
               {t('suggest.undo')}
@@ -444,7 +653,7 @@ export function SuggestMeals({
       )}
 
       {state.kind === 'failed' && (
-        <div role="alert" className="rounded-2xl bg-surface px-4 py-3 text-sm leading-relaxed">
+        <div role="alert" className="mt-3 rounded-2xl bg-surface px-4 py-3 text-sm leading-relaxed">
           {state.reason === 'FREE' && (
             <>
               <p>{t('suggest.outFree')}</p>
@@ -470,7 +679,7 @@ export function SuggestMeals({
           {state.reason === 'OTHER' && (
             <>
               <p>{t('suggest.failed')}</p>
-              <button type="button" onClick={() => void ask()} className="mt-2 font-medium underline underline-offset-2">
+              <button type="button" onClick={() => asked && void ask(asked, true)} className="mt-2 font-medium underline underline-offset-2">
                 {t('common.retry')}
               </button>
             </>
@@ -479,7 +688,130 @@ export function SuggestMeals({
       )}
     </div>
   )
+
+  /** The period: its dates, the days counted, the balance against plan, the macros, and why. */
+  function periodBlock() {
+    if (!week) return null
+    const flagged = week.excluded.filter((day) => day.reason === 'UNANSWERED')
+    const marked = week.excluded.filter((day) => day.reason === 'INCOMPLETE')
+    const range = planRange(week.balanceKcal, week.budgetKcal)
+    const objective = targets.objective
+    return (
+      <div className="mt-2.5 rounded-xl bg-card-soft px-3.5 py-2.5" data-testid="suggest-week">
+        <p className="pb-1 text-xs font-semibold text-ink-muted" data-testid="suggest-period">
+          {t('suggest.period', {
+            from: dateOf(week.from),
+            to: dateOf(week.to),
+            counted: fmt(week.days),
+            days: fmt(week.periodDays),
+          })}
+        </p>
+        {week.sparse ? (
+          <p className="text-[13px] text-ink-soft" data-testid="suggest-sparse">
+            {t('suggest.sparse')}
+          </p>
+        ) : (
+          <>
+            {/* The plan range on a line of its own: a value this long squeezes a label beside it. */}
+            <p className="pb-1 text-[13px]">
+              <span className="text-ink-soft">{t('suggest.againstPlan')}: </span>
+              <span className="tabular font-semibold" data-testid="suggest-range">
+                {t(`suggest.range.${range.status}` as StringKey, { balance: signed(week.balanceKcal), range: fmt(range.rangeKcal) })}
+              </span>
+            </p>
+            <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-[13px]">
+              <dt className="text-ink-soft">{t('estimate.protein')}</dt>
+              <dd className="tabular text-end font-semibold">
+                {weekCell(week.proteinG, 5, 'suggest.weekProteinBehind', 'suggest.weekProteinAhead')}
+              </dd>
+              <dt className="text-ink-soft">{t('estimate.fat')}</dt>
+              <dd className="tabular text-end font-semibold">{weekCell(week.fatG, 5, 'suggest.weekGUnder', 'suggest.weekGOver')}</dd>
+              <dt className="text-ink-soft">{t('estimate.carbs')}</dt>
+              <dd className="tabular text-end font-semibold">{weekCell(week.carbsG, 10, 'suggest.weekGUnder', 'suggest.weekGOver')}</dd>
+            </dl>
+            <details className="pt-1.5 text-[12px] text-ink-soft" data-testid="suggest-why">
+              <summary className="cursor-pointer underline underline-offset-2">{t('suggest.why')}</summary>
+              <div className="grid gap-1 pt-1.5 leading-relaxed">
+                {week.before && (
+                  <>
+                    <p>
+                      {t('suggest.whyBurn', {
+                        period: `${dateOf(week.before.from)} – ${dateOf(week.before.to)}`,
+                        eaten: fmt(week.before.eatenKcal),
+                        burned: fmt(week.before.expenditureKcal),
+                        diff: signed(week.before.eatenKcal - week.before.expenditureKcal),
+                      })}
+                    </p>
+                    {week.before.plannedKcal !== 0 && (
+                      <p>
+                        {t(week.before.plannedKcal > 0 ? 'suggest.whyPlannedUnder' : 'suggest.whyPlannedOver', {
+                          planned: fmt(Math.abs(week.before.plannedKcal)),
+                          perDay: fmt(Math.abs(week.before.plannedKcal / week.before.days)),
+                          goal: objective ? t(`objective.${objective}` as StringKey) : '',
+                          diff: signed(week.before.eatenKcal - week.before.budgetKcal),
+                        })}
+                      </p>
+                    )}
+                  </>
+                )}
+                {week.today.targetKcal !== undefined && (
+                  <p>
+                    {t('suggest.whyToday', {
+                      date: dateOf(week.today.day),
+                      eaten: fmt(week.today.eatenKcal),
+                      target: fmt(week.today.targetKcal),
+                      diff: signed(week.today.eatenKcal - week.today.targetKcal),
+                    })}
+                  </p>
+                )}
+                <p className="font-semibold text-ink">
+                  {t('suggest.whyTotal', { period: `${dateOf(week.from)} – ${dateOf(week.to)}`, diff: signed(week.balanceKcal) })}
+                </p>
+              </div>
+            </details>
+          </>
+        )}
+        {flagged.map((day) => (
+          <div key={day.day} className="mt-2 rounded-lg bg-surface px-3 py-2 text-[12.5px]" data-testid="suggest-flag">
+            <p>
+              {t('suggest.flagged', { date: dateOf(day.day), kcal: fmt(day.eatenKcal) })}{' '}
+              <span className="text-ink-muted">{t('suggest.flagNote')}</span>
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1.5">
+              <button
+                type="button"
+                onClick={() => void recordDayCheck(day.day, { completeness: 'COMPLETE' })}
+                className="rounded-full border border-hairline px-3 py-1"
+              >
+                {t('suggest.flagYes')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void recordDayCheck(day.day, { completeness: 'INCOMPLETE' })}
+                className="rounded-full border border-hairline px-3 py-1"
+              >
+                {t('suggest.flagNo')}
+              </button>
+            </div>
+          </div>
+        ))}
+        {marked.map((day) => (
+          <p key={day.day} className="pt-1.5 text-[12px] text-ink-muted" data-testid="suggest-marked">
+            {t('suggest.markedIncomplete', { date: dateOf(day.day) })}{' '}
+            <button type="button" onClick={() => void recordDayCheck(day.day, { completeness: 'UNSET' })} className="underline">
+              {t('suggest.undo')}
+            </button>
+          </p>
+        ))}
+        {week.measuredDays > 0 && !week.sparse && (
+          <p className="pt-1 text-[11.5px] text-ink-muted">{t('suggest.weekMeasured')}</p>
+        )}
+      </div>
+    )
+  }
 }
+
+const hhmm = (at: Date) => `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`
 
 function SparkIcon() {
   return (

@@ -54,6 +54,8 @@ import {
   type Workout,
   type LeftoverEstimate,
   type CalendarDate,
+  type DayCheck,
+  type DayCompleteness,
   type DayIntake,
   type QuickSetChoice,
 } from '@/domain'
@@ -499,6 +501,25 @@ export function useActions() {
     [runWrite],
   )
 
+  /**
+   * An answer about a day's log (meal-suggestions-precision.md §4.6): "I
+   * logged everything", "I didn't", "UNSET" to take it back, or a usual meal
+   * skipped. Appended, like everything else; the latest answer for a day wins.
+   */
+  const recordDayCheck = useCallback(
+    async (day: CalendarDate, answer: { completeness?: DayCompleteness; skipped?: MealSlot }) => {
+      const check: DayCheck = {
+        id: newId(),
+        userId: currentUserId(),
+        day,
+        recordedAt: new Date().toISOString(),
+        ...answer,
+      }
+      return runWrite('that answer', () => getRepositories().dayChecks.add(check))
+    },
+    [runWrite],
+  )
+
   /** Takes back everything a whole-day repeat wrote. */
   const deleteMeals = useCallback(
     async (meals: Meal[]) => {
@@ -536,6 +557,7 @@ export function useActions() {
     logFoods,
     logDay,
     logSuggestion,
+    recordDayCheck,
     deleteMeal,
     deleteMeals,
     undeleteMeal,

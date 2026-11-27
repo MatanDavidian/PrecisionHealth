@@ -78,7 +78,7 @@ export interface SuggestionRequest {
   mode: 'FILL' | 'PROTEIN'
   /** The most calories one suggestion may have. Enforced again on the reply. */
   maxKcal: number
-  /** The week so far, Sunday to now, against its targets: negative is under (protein: behind). */
+  /** The last seven days against their targets: negative is under (protein: behind). */
   week?: {
     days: number
     balanceKcal: number

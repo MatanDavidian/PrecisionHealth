@@ -68,7 +68,7 @@ test('today, with room left, the card offers to suggest what to eat', async ({ p
   await expect(section(page).getByText(/Uses one written analysis. Built from what you usually eat./)).toBeVisible()
   // The period so far: its dates and days, against its plan, and every macro against each day's targets.
   const week = section(page).getByTestId('suggest-week')
-  await expect(week.getByTestId('suggest-period')).toHaveText(/^\w{3} \d+ \w{3} – \w{3} \d+ \w{3} · \d of \d days counted$/)
+  await expect(week.getByTestId('suggest-period')).toHaveText(/^\w{3} \d+ \w{3} – \w{3} \d+ \w{3} · \d of 7 days counted$/)
   await expect(week.getByTestId('suggest-range')).toHaveText(/^[+−]?[\d,]+ · (below|within|above) plan range \(±[\d,]+\)$/)
   for (const [name, value] of [
     ['Protein', /^([\d,]+ g (behind|ahead)|on target)$/],
@@ -197,7 +197,7 @@ test('in Hebrew, the protein snack reads right', async ({ page }) => {
   await switchToHebrew(page)
   await open(page, '/today')
   const week = section(page).getByTestId('suggest-week')
-  await expect(week.getByTestId('suggest-period')).toHaveText(/נספרו 3 מתוך 4 ימים$/, { timeout: 15_000 })
+  await expect(week.getByTestId('suggest-period')).toHaveText(/נספרו 3 מתוך 7 ימים$/, { timeout: 15_000 })
   await expect(week.locator('dt', { hasText: 'חלבון' }).locator('+ dd')).toHaveText('חסרים 127 גרם')
   await expect(section(page).getByTestId('suggest-hint')).toHaveText('נשנוש חלבון קל עדיין נכנס.')
   await expect(section(page).getByTestId('suggest-training')).toHaveText(

@@ -19,7 +19,6 @@ import {
   mealsToCome,
   timeOfDay,
   weekSoFar,
-  weekStartOf,
   type DailyTargets,
   type Macros,
   type Meal,
@@ -38,6 +37,9 @@ import { deviceZone, suggestSlot } from './newRecords'
 import { USUALS_WINDOW_DAYS } from './usuals'
 import { readTargetsHistory } from './targets'
 
+/** The suggestion card's period: the last seven days, today included. */
+export const PERIOD_DAYS = 7
+
 const instantOf = (meal: Meal): string | undefined =>
   meal.time.kind === 'instant' ? meal.time.at : meal.time.kind === 'interval' ? meal.time.start : undefined
 
@@ -46,9 +48,12 @@ const hhmm = (at: Date) => `${String(at.getHours()).padStart(2, '0')}:${String(a
 const mealKcal = (meal: Meal) => liveItems(meal.items).reduce((sum, item) => sum + item.nutrients.energy.value, 0)
 
 /**
- * The week so far, Sunday to now: each day before today against its own
- * targets and what it really burned, with what the person said about its
- * log, and today against its targets.
+ * The last seven days, today among them (meal-suggestions-precision.md
+ * §5.1, Phase 2): each day before today against its own targets and what it
+ * really burned, with what the person said about its log, and today against
+ * its targets. Rolling rather than the calendar week, so Sunday is not a
+ * blind spot and Saturday is not forgotten overnight; the week view keeps
+ * calendar weeks, for reporting.
  */
 export async function readWeekSoFar(
   userId: UserId,
@@ -57,7 +62,7 @@ export async function readWeekSoFar(
   now: Date = new Date(),
 ): Promise<WeekSoFar> {
   const today = dayKey(now.toISOString(), deviceZone())
-  const start = weekStartOf(today)
+  const start = addDays(today, -(PERIOD_DAYS - 1))
   const repos = getRepositories()
   const [before, checks] = await Promise.all([
     start < today ? readTargetsHistory(userId, start, addDays(today, -1), repos) : Promise.resolve([]),

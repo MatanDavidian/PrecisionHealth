@@ -180,6 +180,6 @@ export const dayKeyBack = (back: number) => {
   d.setDate(d.getDate() - back)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
-/** The period Sunday to the pinned Wednesday. */
-export const PERIOD = `${label(3)} – ${label(0)}`
+/** The card's period: the last seven days, to the pinned Wednesday. */
+export const PERIOD = `${label(6)} – ${label(0)}`
 

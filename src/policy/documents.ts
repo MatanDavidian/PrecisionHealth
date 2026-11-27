@@ -76,7 +76,7 @@ const OPERATOR = 'Matan Davidian, an individual based in Israel'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-11-27',
+  version: '2026-11-27.2',
   sections: [
     {
       heading: 'Who we are',
@@ -159,7 +159,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       heading: 'What we send to OpenAI, exactly',
       body: [
         'When you photograph or describe a meal, that photograph or description is sent, with the hints you supplied: the day, and anything you typed in "add details". When you ask for a weekly insight, a summary of that week’s totals is sent.',
-        'When you ask what to eat now, what is sent is: what is left of today’s targets, how the week so far stands against its targets (calories, protein, fat and carbs), your goal, the time and the meal, the usual meals still to come today, today’s training (its kind, its length and the active calories), the names of the foods you have eaten today, the meals and foods you log most often with their usual amounts and their nutrition, your food preferences if you set them, and the note you wrote, if any.',
+        'When you ask what to eat now, what is sent is: what is left of today’s targets, how the recent days stand against their targets (calories, protein, fat and carbs), your goal, the time and the meal, the usual meals still to come today, today’s training (its kind, its length and the active calories), the names of the foods you have eaten today, the meals and foods you log most often with their usual amounts and their nutrition, your food preferences if you set them, and the note you wrote, if any.',
         'Neither the weekly summary nor a request for suggestions carries any identity: no name, no email, no account id, no record ids, no dates. That is enforced in the code and there are tests asserting it.',
         'If you supply your own OpenAI key in Settings (on the website), requests go directly from your browser to OpenAI and never pass through our servers. That key is stored on your device only and is never uploaded, synced, or included in an export.',
       ],

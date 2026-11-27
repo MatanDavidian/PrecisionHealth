@@ -5,7 +5,8 @@ document says what Vimetry knows about the person's day and week, how sure it
 is of each number, and exactly how those numbers decide whether to offer
 anything, how much, and with what explanation.
 
-Status: **Phase 1 built 2026-11-27** (§4), with the owner's decisions of
+Status: **Phase 1 built 2026-11-27** (§4); **Phase 2 built 2026-11-27**
+(§5.1: the card's period is the last seven days). Phase 1, with the owner's decisions of
 2026-11-26: the range ±max(150 kcal, 3%); under 3 counted days, today alone;
 an unanswered possibly-incomplete day left out until answered (option B);
 the week view showing every day regardless; and a question about today
@@ -295,12 +296,19 @@ Unit tests cover every row of §4.2 and §4.3, the incomplete-day rules of
 
 ## 5. Later phases, each separate
 
-### 5.1 Phase 2: a rolling seven days for suggestions
+### 5.1 Phase 2: a rolling seven days for suggestions (built 2026-11-27)
 
 Suggestions use **the last seven days** (today and the six before); the week
 view keeps **calendar weeks** for reporting. The card names its period with
 dates (*"Fri 20 – Thu 26 Nov"*), so the two never look like the same thing.
 Removes the Sunday blind spot, when a calendar week has one day.
+
+As built: `readWeekSoFar` reads today and the six days before it
+(`PERIOD_DAYS`); every Phase 1 rule applies unchanged over that window
+(days left out, the plan range, too few counted days). The card says "last
+7 days" where it said "this week". Tested: on a Sunday, Saturday's 850 over
+still counts (+1,176, above plan range), while the week view shows the
+calendar week alone.
 
 **Daily targets stay stable after an overage.** An overage changes what the
 card offers and says, never the next days' targets: no "eat less tomorrow

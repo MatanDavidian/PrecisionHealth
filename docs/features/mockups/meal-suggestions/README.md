@@ -80,3 +80,13 @@ week page.
 | --- | --- |
 | ![](43-built-nutrition-minimal.png) **43. Nutrition: the button, one line, ⓘ** | ![](44-built-nutrition-details.png) **44. ⓘ opened** |
 | ![](45-built-week-page-macros.png) **45. The week page: protein, fat and carbs** | ![](46-built-he-nutrition-minimal.png) **46. Hebrew** |
+
+**The minimal design, drawn** (2026-11-27), every state of the card on
+Nutrition, closed and with ⓘ open:
+
+| | |
+| --- | --- |
+| ![](47-nutrition-fill.png) **47. Room today: Suggest what to eat** | ![](48-nutrition-within-light.png) **48. Over today, within plan: the light snack, optional** |
+| ![](49-nutrition-stop-with-dot.png) **49. Above plan: better to stop, with a dot on ⓘ for a day waiting** | ![](50-nutrition-wait.png) **50. Dinner to come: better to wait** |
+| ![](51-nutrition-details-open.png) **51. ⓘ open: the period, why, the day waiting, the projection** | ![](52-week-page-macros.png) **52. The week page: protein, fat and carbs** |
+| ![](53-he-nutrition-within-light.png) **53. Hebrew** | ![](54-he-nutrition-details-open.png) **54. Hebrew, ⓘ open** |

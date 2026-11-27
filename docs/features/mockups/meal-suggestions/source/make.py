@@ -331,3 +331,89 @@ for name, html in {
   '28-he-food-preferences': r3_prefs('he'),
 }.items():
     (HERE / f"{name}.html").write_text(html)
+
+
+# --- 2026-11-27, fourth round: on Nutrition, minimal, the details behind ⓘ ---
+R4 = {
+ 'en': dict(title='Nutrition', date='Today · Fri 27 Nov', total="TODAY'S TOTAL", cal='CALORIES', prot='PROTEIN', carbs='CARBS', fat='FAT', g='g',
+   ask='Suggest what to eat', askP='Suggest a protein snack', light='Hungry? Suggest a light protein snack',
+   leftLine='Left today: 300 kcal · 38 g protein', overLine='326 kcal over · protein 11 g short', stop='Better to stop for today.',
+   wait='Better to wait for dinner.', logged='LOGGED (3)', add='+ Add meal',
+   period='Sat 21 Nov – Fri 27 Nov · 6 of 7 days counted', plan='Against your plan:', within='+89 · within plan range (±325)',
+   why='Why two numbers?', status='Today is 326 kcal above target; Sat 21 – Fri 27 Nov is within plan range.',
+   proj='Up to 120 kcal: the 7 days would be at most +209, still within plan range.',
+   flag='Tue 24 Nov: 900 kcal logged. Is that everything?', yes='Yes, all of it', no='No, some is missing',
+   training='62 min of strength training today: protein first, and some carbs are fine.',
+   cost='Uses one written analysis. Built from what you usually eat.',
+   wk='TARGETS THIS WEEK', wkLine='2 of 4 days on target · protein reached on 0 of 4', behind='127 g behind', fu='52 g under', cu='115 g under',
+   meals=[('Breakfast','560 kcal','Eggs and oats · 320 g'),('Lunch','711 kcal','Grilled chicken breast · 170 g'),('Dinner','859 kcal','Salmon, potatoes, salad · 430 g')]),
+ 'he': dict(title='תזונה', date='היום · יום ו׳, 27 בנוב׳', total='הסך הכל להיום', cal='קלוריות', prot='חלבון', carbs='פחמימות', fat='שומן', g='גרם',
+   ask='מה לאכול עכשיו?', askP='הצעה לנשנוש חלבון', light='רעבים? הצעה לנשנוש חלבון קל',
+   leftLine='נשאר להיום: 300 קלוריות · 38 גרם חלבון', overLine='326 קלוריות מעל · חסרים 11 גרם חלבון', stop='עדיף לעצור להיום.',
+   wait='עדיף לחכות לארוחת ערב.', logged='נרשמו (3)', add='+ הוספת ארוחה',
+   period='יום ש׳, 21 בנוב׳ – יום ו׳, 27 בנוב׳ · נספרו 6 מתוך 7 ימים', plan='מול התוכנית:', within='⁦+89⁩ · בטווח התוכנית (±325)',
+   why='למה שני מספרים?', status='היום 326 קלוריות מעל היעד; 7 הימים בטווח התוכנית.',
+   proj='עד 120 קלוריות: 7 הימים יהיו לכל היותר ⁦+209⁩, עדיין בטווח התוכנית.',
+   flag='יום ג׳, 24 בנוב׳: נרשמו 900 קלוריות. זה הכול?', yes='כן, הכול', no='לא, חסר משהו',
+   training='אימון כוח של 62 דקות היום: חלבון קודם, וגם קצת פחמימות זה בסדר.',
+   cost='משתמש בניתוח טקסט אחד. מבוסס על מה שאתם אוכלים בדרך כלל.',
+   wk='היעדים השבוע', wkLine='2 מתוך 4 ימים ביעד · חלבון הושג ב־0 מתוך 4', behind='חסרים 127 גרם', fu='52 גרם מתחת', cu='115 גרם מתחת',
+   meals=[('ארוחת בוקר','560 קלוריות','ביצים ושיבולת שועל · 320 גרם'),('ארוחת צהריים','711 קלוריות','חזה עוף בגריל · 170 גרם'),('ארוחת ערב','859 קלוריות','סלמון, תפוחי אדמה, סלט · 430 גרם')]),
+}
+
+INFO_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.01"/></svg>'
+
+def r4_page(lang, inner, after=''):
+    L = T[lang]; R = R4[lang]
+    totals = f"""<div class="card"><div class="lab" style="padding-bottom:12px">{R['total']}</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px">
+<div><div class="lab" style="font-size:10.5px">{R['cal']}</div><div style="font-size:20px;font-weight:500"><span class="num">2,476</span> <span style="font-size:13px;color:#656056" class="num">/ 2,150</span></div></div>
+<div><div class="lab" style="font-size:10.5px">{R['prot']}</div><div style="font-size:20px;font-weight:500"><span class="num">134</span> <span style="font-size:13px;color:#656056" class="num">/ 145 {R['g'] if lang=='en' else 'g'}</span></div></div>
+<div><div class="lab" style="font-size:10.5px">{R['carbs']}</div><div style="font-size:20px;font-weight:500"><span class="num">241</span> <span style="font-size:13px;color:#656056" class="num">/ 235 g</span></div></div>
+<div><div class="lab" style="font-size:10.5px">{R['fat']}</div><div style="font-size:20px;font-weight:500"><span class="num">78</span> <span style="font-size:13px;color:#656056" class="num">/ 70 g</span></div></div>
+</div><div style="border-top:1px solid #ddd4c2;margin-top:16px;padding-top:16px">{inner}</div></div>"""
+    meals = ''.join(f"""<div style="border-top:1px solid #ddd4c2;padding:12px 0"><div style="display:flex;justify-content:space-between;font-size:14.5px;font-weight:500"><span>{a}</span><span class="num">{b}</span></div><div style="font-size:13px;color:#656056;padding-top:3px">{c}</div></div>""" for a,b,c in R['meals'])
+    logged = f"""<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px"><span class="lab">{R['logged']}</span><span style="font-size:12.5px;padding:5px 12px;border:1px solid #ddd4c2;border-radius:99px;background:#faf7f0">{R['add']}</span></div>{meals}</div>"""
+    html = page(L, totals + after + logged)
+    return html.replace(f">{L['today']}<", f">{R['title']}<").replace(L['date'], R['date'])
+
+def row(lang, button, primary, line, dot=False, extra=''):
+    R = R4[lang]
+    cls = 'btn' if primary else 'btn ghost'
+    spark = '✦ ' if primary else ''
+    d = '<span style="position:absolute;top:-2px;inset-inline-end:-2px;width:10px;height:10px;border-radius:99px;background:#c2673e"></span>' if dot else ''
+    return f"""<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="{cls}">{spark}{button}</button>
+<span style="position:relative;display:inline-flex;width:32px;height:32px;border:1px solid #ddd4c2;border-radius:99px;align-items:center;justify-content:center;color:#504c45">{INFO_SVG}{d}</span></div>
+<p style="margin:8px 0 0;font-size:13px;color:#504c45">{line}</p>{extra}"""
+
+def details(lang):
+    R = R4[lang]
+    return f"""<div style="margin-top:12px;background:#eee8da;border-radius:16px;padding:12px 16px;font-size:13px;line-height:1.55;color:#504c45">
+<div style="font-size:12px;font-weight:600;color:#656056">{R['period']}</div>
+<div>{R['plan']} <b style="color:#2b2721">{R['within']}</b></div>
+<div style="text-decoration:underline;padding:2px 0">▸ {R['why']}</div>
+<div style="background:#faf7f0;border-radius:10px;padding:8px 10px;margin:6px 0">{R['flag']}<div style="display:flex;gap:8px;padding-top:6px"><span style="font-size:12px;padding:4px 10px;border:1px solid #ddd4c2;border-radius:99px;background:#faf7f0">{R['yes']}</span><span style="font-size:12px;padding:4px 10px;border:1px solid #ddd4c2;border-radius:99px;background:#faf7f0">{R['no']}</span></div></div>
+<div>{R['status']}</div><div>{R['proj']}</div><div>{R['training']}</div>
+<div style="font-size:12px;color:#656056;padding-top:2px">{R['cost']}</div></div>"""
+
+def r4_week(lang):
+    L = T[lang]; R = R4[lang]
+    dots = ''.join(f'<span style="display:inline-flex;width:30px;height:30px;border-radius:99px;{st};margin:0 3px"></span>' for st in ['border:2px solid #c2673e','background:#6f7f53','background:#faf7f0;border:1px solid #ddd4c2','background:#6f7f53','border:1px dashed #ddd4c2','border:1px dashed #ddd4c2','border:1px dashed #ddd4c2'])
+    cells = ''.join(f'<div style="background:#eee8da;border-radius:12px;padding:8px;text-align:center"><div style="font-size:11px;color:#656056">{n}</div><div style="font-size:13px;font-weight:600;padding-top:2px">{v}</div></div>' for n,v in [(R['prot'].title() if lang=='en' else R['prot'],R['behind']),(R['fat'].title() if lang=='en' else R['fat'],R['fu']),(R['carbs'].title() if lang=='en' else R['carbs'],R['cu'])])
+    body = f"""<div class="card"><div class="lab">{R['wk']}</div><div style="padding:14px 0 10px;display:flex;justify-content:center">{dots}</div>
+<p style="font-size:14px;font-weight:500;margin:0">{R['wkLine']}</p>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">{cells}</div></div>"""
+    html = page(L, body)
+    return html.replace(L['date'], R['date'].split(' · ')[1] if ' · ' in R['date'] else R['date'])
+
+for name, html in {
+  '47-nutrition-fill': r4_page('en', row('en', R4['en']['ask'], True, R4['en']['leftLine'])),
+  '48-nutrition-within-light': r4_page('en', row('en', R4['en']['light'], False, R4['en']['overLine'])),
+  '49-nutrition-stop-with-dot': r4_page('en', row('en', R4['en']['light'], False, R4['en']['stop'], dot=True)),
+  '50-nutrition-wait': r4_page('en', row('en', R4['en']['light'], False, R4['en']['wait'])),
+  '51-nutrition-details-open': r4_page('en', row('en', R4['en']['light'], False, R4['en']['overLine'], dot=True, extra=details('en'))),
+  '52-week-page-macros': r4_week('en'),
+  '53-he-nutrition-within-light': r4_page('he', row('he', R4['he']['light'], False, R4['he']['overLine'])),
+  '54-he-nutrition-details-open': r4_page('he', row('he', R4['he']['light'], False, R4['he']['overLine'], dot=True, extra=details('he'))),
+}.items():
+    (HERE / f"{name}.html").write_text(html)

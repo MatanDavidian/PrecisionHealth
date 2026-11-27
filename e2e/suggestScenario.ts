@@ -40,6 +40,8 @@ export interface Scenario {
   sleepStarts?: Record<number, string>
   /** Weigh-ins by day back, in kg; replaces the sample's weights. */
   weighIns?: Record<number, number>
+  /** Open the suggestion card's details behind ⓘ at the end (the default), or leave them closed. */
+  details?: boolean
 }
 
 const NAMES: Record<Slot, string> = {
@@ -246,8 +248,20 @@ export async function scenario(page: Page, s: Scenario) {
       weighIns: s.weighIns,
     },
   )
-  await open(page, '/today')
-  await expect(page.getByTestId('targets-card')).toBeVisible({ timeout: 15_000 })
+  await openSuggestions(page, s.details ?? true)
+}
+
+/**
+ * Nutrition, where the suggestion card lives (today only), with its details
+ * behind ⓘ opened unless `details` is false.
+ */
+export async function openSuggestions(page: Page, details = true) {
+  await open(page, '/nutrition')
+  await expect(page.getByTestId('nutrition-total-kcal')).toBeVisible({ timeout: 15_000 })
+  if (!details) return
+  const toggle = page.getByTestId('suggest-info-toggle')
+  await toggle.waitFor({ timeout: 5_000 }).catch(() => undefined)
+  if ((await toggle.isVisible()) && (await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click()
 }
 
 /** A day of the pinned week as the card writes it: "Wed 25 Nov", or in Hebrew with its weekday letter. */

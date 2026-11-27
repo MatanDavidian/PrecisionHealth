@@ -4,6 +4,18 @@
 left in the evening), one tap asks the model for three things to eat that
 fit it, built mostly from foods you already eat, each one tap to log.
 
+**Where, since 2026-11-27:** the Nutrition tab, in the day's total card,
+today only, and minimal (the owner's redesign): one button (*Suggest what
+to eat*, *Suggest a protein snack*, or the optional *Hungry? Suggest a light
+protein snack*), one short line (*Left today: 300 kcal · 38 g protein*,
+*326 kcal over · protein 11 g short*, *Better to stop for today.*, *Better
+to wait for dinner.*), and ⓘ, which opens everything else: the period and
+its plan range, *Why two numbers?*, days waiting for an answer (a dot on ⓘ
+when there is one), training, protein per sitting, fat, bedtime, the meals
+still to come, the projection, the note and the cost. The week's protein,
+fat and carbs against their targets moved to the week page's *Targets this
+week*. Screens 43–46 in [`mockups/meal-suggestions/`](mockups/meal-suggestions/).
+
 How to make the suggestions precise to the person (the burn, training, the week, uncertainty), and what comes next: [`meal-suggestions-precision.md`](meal-suggestions-precision.md).
 
 Status: **built 2026-11-26; live with the next deploy** (the app and the

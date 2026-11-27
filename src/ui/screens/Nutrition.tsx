@@ -11,6 +11,7 @@ import { MealEditor } from '../components/MealEditor'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
 import { EstimatedTotals } from '../components/EstimatedTotals'
 import { DayCompleteness } from '../components/DayCompleteness'
+import { SuggestMeals } from '../components/SuggestMeals'
 import { showNumber } from '../format'
 import { useActions, useDay } from '../useHealthData'
 import { useSelectedDay, dayLabel } from '../useSelectedDay'
@@ -99,7 +100,7 @@ export function Nutrition() {
   if (error) return <DataUnavailable error={error} onRetry={retry} signedIn={session.authenticated} />
   if (!data) return <p className="text-sm text-ink-muted">{t('usuals.looking')}</p>
 
-  const { nutrients, meals, goals } = data
+  const { nutrients, meals, goals, workouts, effective } = data
   // A filled day has totals and no meals: the estimate is shown with the
   // numbers it produced, and the list counts only what somebody logged.
   const logged = meals.filter((meal) => !isPatternFilled(meal))
@@ -168,6 +169,7 @@ export function Nutrition() {
             <Total
               name={t('estimate.calories')}
               value={showNumber(nutrients.energy, 'kcal')}
+              testId="nutrition-total-kcal"
               sub={targets ? `/ ${fmt(targets.energyKcal)}` : undefined}
             />
             <Total
@@ -193,6 +195,23 @@ export function Nutrition() {
               sub={targets ? `/ ${fmt(targets.fatG)} g` : 'g'}
             />
           </div>
+          {/* What to eat now (meal-suggestions.md): today only, and minimal; the details are behind ⓘ. */}
+          {isToday && targets && targetsReading && (
+            <SuggestMeals
+              targets={targets}
+              eaten={{
+                energyKcal: convert(nutrients.energy, 'kcal'),
+                proteinG: convert(nutrients.protein, 'g'),
+                carbsG: convert(nutrients.carbs, 'g'),
+                fatG: convert(nutrients.fat, 'g'),
+              }}
+              weightKg={targetsReading.input.weightKg}
+              training={{
+                workouts: workouts.map((w) => ({ kind: w.type, minutes: Math.round(convert(w.duration, 'min')) })),
+                activeKcal: effective.ACTIVE_ENERGY ? Math.round(convert(effective.ACTIVE_ENERGY.value, 'kcal')) : undefined,
+              }}
+            />
+          )}
           {estimates.length > 0 && (
             <EstimatedTotals
               action={
@@ -466,9 +485,11 @@ function Total({
   value,
   sub,
   good,
+  testId,
 }: {
   name: string
   value: string
+  testId?: string
   /** Unit, or unit and target — always secondary to `value`. */
   sub?: string
   good?: boolean
@@ -479,7 +500,9 @@ function Total({
       {/* The number in its own element: read on its own, and with a target
           beside it ("/ 2,150") the figure is still just the figure. */}
       <p className="ltr-nums pt-1 text-xl font-medium sm:text-lg">
-        <span className={`tabular ${good ? 'text-leaf' : ''}`}>{value}</span>
+        <span className={`tabular ${good ? 'text-leaf' : ''}`} data-testid={testId}>
+          {value}
+        </span>
         {sub && <span className="ps-1 text-[0.81rem] font-normal text-ink-muted">{sub}</span>}
       </p>
     </div>

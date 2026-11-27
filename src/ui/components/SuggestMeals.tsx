@@ -91,6 +91,8 @@ export function SuggestMeals({
   const { logSuggestion, deleteMeal, recordDayCheck, logRepeat } = useActions()
   const [state, setState] = useState<State>({ kind: 'idle' })
   const [noteOpen, setNoteOpen] = useState(false)
+  /** The details behind ⓘ: closed until asked for. */
+  const [infoOpen, setInfoOpen] = useState(false)
   const [note, setNote] = useState('')
   const [offered, setOffered] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
@@ -246,13 +248,6 @@ export function SuggestMeals({
     navigate(`/log?mode=photo&note=${encodeURIComponent(words)}`)
   }
 
-  /** One row of the period: "62 g behind", "40 g over", "on target". */
-  const weekCell = (value: number, near: number, under: StringKey, overKey: StringKey) =>
-    Math.abs(value) < near
-      ? t('suggest.weekOnTarget')
-      : value < 0
-        ? t(under, { n: fmt(-value) })
-        : t(overKey, { n: fmt(value) })
   const fatHigh = !!week && !week.sparse && week.fatG >= Math.max(10, targets.fatG * 0.15)
   const slotsWords = (slots: readonly string[]) =>
     slots.map((slot) => t(`common.slotLabel.${slot}` as StringKey)).join(t('suggest.and'))
@@ -268,6 +263,8 @@ export function SuggestMeals({
       : t('suggest.minutesOnly', { m: fmt(minutes) })
   const trainedMinutes = training?.workouts.reduce((sum, w) => sum + w.minutes, 0) ?? 0
   const newcomer = (context?.today.loggedDays ?? 0) < NEWCOMER_DAYS
+  /** A day waiting for an answer: a dot on ⓘ, so it is not missed with the details closed. */
+  const waiting = !!week?.excluded.some((day) => day.reason === 'UNANSWERED')
   const lightWant: Want = { kind: 'PROTEIN', maxKcal: LIGHT_SNACK_MAX_KCAL, light: true }
 
   const date = (iso?: string) =>
@@ -288,65 +285,78 @@ export function SuggestMeals({
   }
 
   return (
-    <div className="mt-5 border-t border-hairline pt-4" data-testid="suggest-meals">
-      {/* Today, in one line. */}
-      <p className="text-sm font-semibold" data-testid="suggest-line">
-        {over > 0 && today ? (
-          <>
-            {t('suggest.dayLine', { date: dateOf(today), kcal: fmt(over) })}
-            {left.proteinG > 0 && ` · ${t('suggest.dayProteinShort', { protein: fmt(left.proteinG) })}`}
-          </>
-        ) : (
-          <>
-            {t('suggest.left')} <span className="font-normal text-ink-soft">{leftWords}</span>
-          </>
-        )}
-      </p>
-
-      {/* The period, against its plan. */}
-      {week && week.periodDays > 1 && periodBlock()}
-
+    <div className="mt-4 border-t border-hairline pt-4" data-testid="suggest-meals">
+      {/*
+        Minimal on purpose (owner, 2026-11-27): one button and one short line.
+        Everything that explains it (the period, the plan range, why, the
+        days waiting for an answer, training, protein per sitting, bedtime)
+        is one tap away behind ⓘ.
+      */}
       {state.kind === 'idle' && plan && (
         <>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {plan.kind === 'FILL' || (plan.kind === 'USED' && plan.primary) ? (
+              <button
+                type="button"
+                onClick={() => void ask({ kind: plan.kind === 'FILL' ? 'FILL' : 'PROTEIN', maxKcal: plan.maxKcal })}
+                className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-canvas"
+              >
+                <SparkIcon />
+                {plan.kind === 'FILL' ? t('suggest.ask') : t('suggest.askProtein')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void ask(lightWant)}
+                className="inline-flex items-center gap-2 rounded-full border border-hairline bg-surface px-4 py-2.5 text-sm"
+              >
+                {t('suggest.light')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setInfoOpen((open) => !open)}
+              aria-expanded={infoOpen}
+              aria-controls="suggest-info"
+              aria-label={t('suggest.info')}
+              className="relative inline-flex size-8 items-center justify-center rounded-full border border-hairline text-ink-soft"
+              data-testid="suggest-info-toggle"
+            >
+              <InfoIcon />
+              {waiting && (
+                <span className="absolute -end-0.5 -top-0.5 size-2.5 rounded-full bg-accent" aria-hidden="true" data-testid="suggest-info-dot" />
+              )}
+            </button>
+          </div>
+          <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-line">
+            {plan.kind === 'WAIT'
+              ? t('suggest.waitTitle', { meals: slotsWords(plan.meals) })
+              : plan.kind === 'USED' && plan.status === 'ABOVE'
+                ? t('suggest.stopTitle')
+                : over > 0
+                  ? `${t('suggest.overShort', { kcal: fmt(over) })}${left.proteinG > 0 ? ` · ${t('suggest.dayProteinShort', { protein: fmt(left.proteinG) })}` : ''}`
+                  : `${t('suggest.left')} ${leftWords}`}
+          </p>
           {state.added && (
-            <p role="status" className="mt-2.5 rounded-xl bg-leaf-soft px-3 py-2 text-[13px]">
+            <p role="status" className="mt-2 rounded-xl bg-leaf-soft px-3 py-2 text-[13px]">
               {state.added}
             </p>
           )}
-          {context?.today.answers.completeness === 'INCOMPLETE' && (
-            <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-today-incomplete">
-              {t('suggest.todayIncomplete')}
-            </p>
-          )}
-          {plan.kind === 'FILL' && toCome.length > 0 && (
-            <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-to-come">
-              {t(toCome.length === 1 ? 'suggest.toComeOne' : 'suggest.toComeMany', {
-                meals: slotsWords(toCome.map((meal) => meal.slot)),
-                kcal: fmt(toCome.reduce((sum, meal) => sum + meal.usualKcal, 0)),
-                max: fmt(plan.maxKcal),
-              })}
-            </p>
-          )}
-          {plan.kind === 'USED' && plan.primary && (
-            <p className="pt-2 text-[13px] text-ink-soft" data-testid="suggest-hint">
-              {fatHigh ? t('suggest.hintLeanProtein') : t('suggest.weekRoomProtein')}
-            </p>
-          )}
-          {plan.kind === 'USED' && !plan.primary && (
-            <div
-              className={`mt-3 rounded-2xl px-4 py-3 text-sm leading-relaxed ${plan.status === 'ABOVE' ? 'bg-leaf-soft' : 'bg-card-soft'}`}
-              data-testid="suggest-stop"
-            >
+        </>
+      )}
+
+      {infoOpen && (
+        <div id="suggest-info" className="mt-3 grid gap-1.5 rounded-2xl bg-card-soft px-4 py-3 text-[13px] leading-relaxed text-ink-soft" data-testid="suggest-info">
+          {week && week.periodDays > 1 && periodBlock()}
+          {plan?.kind === 'USED' && (
+            <div data-testid="suggest-stop">
               {plan.status === 'ABOVE' ? (
-                <>
-                  <p className="font-semibold">{t('suggest.stopTitle')}</p>
-                  <p>
-                    {plan.scope === 'WEEK'
-                      ? t('suggest.aboveWeek', { period, kcal: fmt(plan.balanceKcal) })
-                      : t('suggest.aboveToday', { kcal: fmt(plan.balanceKcal) })}
-                  </p>
-                </>
-              ) : (
+                <p>
+                  {plan.scope === 'WEEK'
+                    ? t('suggest.aboveWeek', { period, kcal: fmt(plan.balanceKcal) })
+                    : t('suggest.aboveToday', { kcal: fmt(plan.balanceKcal) })}
+                </p>
+              ) : plan.status === 'WITHIN' ? (
                 <p data-testid="suggest-status">
                   {plan.scope === 'WEEK'
                     ? over > 0
@@ -354,68 +364,55 @@ export function SuggestMeals({
                       : t('suggest.withinWeekUsed', { period })
                     : t('suggest.withinToday', { balance: signed(plan.balanceKcal), range: fmt(plan.rangeKcal) })}
                 </p>
+              ) : (
+                <p data-testid="suggest-hint">{fatHigh ? t('suggest.hintLeanProtein') : t('suggest.weekRoomProtein')}</p>
               )}
               {plan.proteinAhead && week && (
-                <p className="pt-1" data-testid="suggest-protein-ahead">
+                <p data-testid="suggest-protein-ahead">
                   {t('suggest.proteinAheadNote', { ahead: fmt(week.proteinG + left.proteinG), protein: fmt(left.proteinG) })}
                 </p>
               )}
+              {!plan.primary && projection(LIGHT_SNACK_MAX_KCAL) && (
+                <p data-testid="suggest-projection">{projection(LIGHT_SNACK_MAX_KCAL)}</p>
+              )}
             </div>
           )}
-          {credit && (plan.kind === 'FILL' || plan.kind === 'USED') && (
-            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-credit">
-              {t('suggest.trainingCredit', { extra: fmt(credit.extraKcal), credit: fmt(credit.creditKcal) })}
+          {plan?.kind === 'WAIT' && (
+            <p data-testid="suggest-stop">{t('suggest.waitBody', { kcal: fmt(plan.kcal) })}</p>
+          )}
+          {plan?.kind === 'FILL' && toCome.length > 0 && (
+            <p data-testid="suggest-to-come">
+              {t(toCome.length === 1 ? 'suggest.toComeOne' : 'suggest.toComeMany', {
+                meals: slotsWords(toCome.map((meal) => meal.slot)),
+                kcal: fmt(toCome.reduce((sum, meal) => sum + meal.usualKcal, 0)),
+                max: fmt(plan.maxKcal),
+              })}
             </p>
           )}
-          {trainedMinutes > 0 && (plan.kind === 'FILL' || plan.kind === 'USED') && (
-            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-training">
+          {context?.today.answers.completeness === 'INCOMPLETE' && (
+            <p data-testid="suggest-today-incomplete">{t('suggest.todayIncomplete')}</p>
+          )}
+          {credit && <p data-testid="suggest-credit">{t('suggest.trainingCredit', { extra: fmt(credit.extraKcal), credit: fmt(credit.creditKcal) })}</p>}
+          {trainedMinutes > 0 && (
+            <p data-testid="suggest-training">
               {t(refuel ? 'suggest.trainedEndurance' : strength ? 'suggest.trainedStrength' : 'suggest.trained', {
                 minutes: fmt(trainedMinutes),
               })}
             </p>
           )}
-          {sitting && left.proteinG > sitting.maxG && (plan.kind === 'FILL' || plan.kind === 'USED') && (
-            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-sitting">
-              {t('suggest.perSitting', { gap: fmt(left.proteinG), max: fmt(sitting.maxG) })}
-            </p>
+          {sitting && left.proteinG > sitting.maxG && (
+            <p data-testid="suggest-sitting">{t('suggest.perSitting', { gap: fmt(left.proteinG), max: fmt(sitting.maxG) })}</p>
           )}
-          {lowFat && week && (plan.kind === 'FILL' || plan.kind === 'USED') && (
-            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-fat-low">
-              {t('suggest.fatLow', { avg: fmt(week.fatEatenG / week.days) })}
-            </p>
-          )}
-          {plan.kind === 'FILL' && plan.bedtime && toBed !== undefined && context?.bedtime && (
-            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-bedtime">
+          {lowFat && week && <p data-testid="suggest-fat-low">{t('suggest.fatLow', { avg: fmt(week.fatEatenG / week.days) })}</p>}
+          {plan?.kind === 'FILL' && plan.bedtime && toBed !== undefined && context?.bedtime && (
+            <p data-testid="suggest-bedtime">
               {t('suggest.bedtime', { time: duration(toBed), bedtime: context.bedtime, max: fmt(plan.maxKcal) })}
             </p>
           )}
-
-          {plan.kind === 'WAIT' && (
-            <div className="mt-3 rounded-2xl bg-leaf-soft px-4 py-3 text-sm leading-relaxed" data-testid="suggest-stop">
-              <p className="font-semibold">{t('suggest.waitTitle', { meals: slotsWords(plan.meals) })}</p>
-              <p>{t('suggest.waitBody', { kcal: fmt(plan.kcal) })}</p>
-            </div>
-          )}
-
-          {plan.kind === 'FILL' || (plan.kind === 'USED' && plan.primary) ? (
+          {state.kind === 'idle' && (plan?.kind === 'FILL' || (plan?.kind === 'USED' && plan.primary)) && (
             <>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => void ask({ kind: plan.kind === 'FILL' ? 'FILL' : 'PROTEIN', maxKcal: plan.maxKcal })}
-                  className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-canvas"
-                >
-                  <SparkIcon />
-                  {plan.kind === 'FILL' ? t('suggest.ask') : t('suggest.askProtein')}
-                </button>
-                {!noteOpen && (
-                  <button type="button" onClick={() => setNoteOpen(true)} className="text-sm text-ink-soft underline underline-offset-2">
-                    {t('suggest.addNote')}
-                  </button>
-                )}
-              </div>
-              {noteOpen && (
-                <div className="pt-3">
+              {noteOpen ? (
+                <div className="pt-1">
                   <label htmlFor="suggest-note" className="sr-only">
                     {t('suggest.noteLabel')}
                   </label>
@@ -426,31 +423,18 @@ export function SuggestMeals({
                     maxLength={200}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder={t('suggest.notePlaceholder')}
-                    className="w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm outline-none focus:border-accent"
+                    className="w-full rounded-xl border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
                   />
                 </div>
+              ) : (
+                <button type="button" onClick={() => setNoteOpen(true)} className="justify-self-start underline underline-offset-2">
+                  {t('suggest.addNote')}
+                </button>
               )}
-              <p className="pt-2.5 text-xs leading-relaxed text-ink-muted">
-                {newcomer ? t('suggest.newcomer') : t('suggest.costs')}
-              </p>
             </>
-          ) : (
-            <div className="pt-3">
-              <button
-                type="button"
-                onClick={() => void ask(lightWant)}
-                className="rounded-full border border-hairline bg-surface px-4 py-2 text-sm"
-              >
-                {t('suggest.light')}
-              </button>
-              {projection(LIGHT_SNACK_MAX_KCAL) && (
-                <p className="pt-2 text-xs leading-relaxed text-ink-muted" data-testid="suggest-projection">
-                  {projection(LIGHT_SNACK_MAX_KCAL)}
-                </p>
-              )}
-            </div>
           )}
-        </>
+          <p className="text-xs text-ink-muted">{newcomer ? t('suggest.newcomer') : t('suggest.costs')}</p>
+        </div>
       )}
 
       {state.kind === 'question' && (
@@ -585,13 +569,14 @@ export function SuggestMeals({
 
       {state.kind === 'done' && (
         <section aria-labelledby="suggest-title" className="pt-3">
-          <h3 id="suggest-title" className="text-sm font-semibold">
+          {/* h2: on Nutrition it sits under the page's h1, with no h2 between. */}
+          <h2 id="suggest-title" className="text-sm font-semibold">
             {asked?.light
               ? t('suggest.forLight', { kcal: fmt(asked.maxKcal) })
               : asked?.kind === 'PROTEIN'
                 ? t('suggest.forProtein', { kcal: fmt(asked.maxKcal) })
                 : t('suggest.for', { left: leftWords })}
-          </h3>
+          </h2>
           {state.answer.note && <p className="pt-2 text-sm text-ink-soft">{state.answer.note}</p>}
           {newcomer && <p className="pt-2 text-xs text-ink-muted">{t('suggest.newcomer')}</p>}
           <ul className="grid gap-2.5 pt-3">
@@ -757,7 +742,7 @@ export function SuggestMeals({
     </div>
   )
 
-  /** The period: its dates, the days counted, the balance against plan, the macros, and why. */
+  /** The period: its dates, the days counted, the balance against plan, and why. The macros are on the week page. */
   function periodBlock() {
     if (!week) return null
     const flagged = week.excluded.filter((day) => day.reason === 'UNANSWERED')
@@ -765,7 +750,7 @@ export function SuggestMeals({
     const range = planRange(week.balanceKcal, week.budgetKcal)
     const objective = targets.objective
     return (
-      <div className="mt-2.5 rounded-xl bg-card-soft px-3.5 py-2.5" data-testid="suggest-week">
+      <div data-testid="suggest-week">
         <p className="pb-1 text-xs font-semibold text-ink-muted" data-testid="suggest-period">
           {t('suggest.period', {
             from: dateOf(week.from),
@@ -787,16 +772,6 @@ export function SuggestMeals({
                 {t(`suggest.range.${range.status}` as StringKey, { balance: signed(week.balanceKcal), range: fmt(range.rangeKcal) })}
               </span>
             </p>
-            <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-[13px]">
-              <dt className="text-ink-soft">{t('estimate.protein')}</dt>
-              <dd className="tabular text-end font-semibold">
-                {weekCell(week.proteinG, 5, 'suggest.weekProteinBehind', 'suggest.weekProteinAhead')}
-              </dd>
-              <dt className="text-ink-soft">{t('estimate.fat')}</dt>
-              <dd className="tabular text-end font-semibold">{weekCell(week.fatG, 5, 'suggest.weekGUnder', 'suggest.weekGOver')}</dd>
-              <dt className="text-ink-soft">{t('estimate.carbs')}</dt>
-              <dd className="tabular text-end font-semibold">{weekCell(week.carbsG, 10, 'suggest.weekGUnder', 'suggest.weekGOver')}</dd>
-            </dl>
             <details className="pt-1.5 text-[12px] text-ink-soft" data-testid="suggest-why">
               <summary className="cursor-pointer underline underline-offset-2">{t('suggest.why')}</summary>
               <div className="grid gap-1 pt-1.5 leading-relaxed">
@@ -880,6 +855,16 @@ export function SuggestMeals({
 }
 
 const hhmm = (at: Date) => `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`
+
+function InfoIcon() {
+  return (
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <path d="M12 7.5v.01" />
+    </svg>
+  )
+}
 
 function SparkIcon() {
   return (

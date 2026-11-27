@@ -682,6 +682,21 @@ export function TargetsWeekCard({
   const past = days.filter((d) => d.day <= today)
   const summary = summariseTargets(past)
   if (summary.counted === 0) return null
+  /*
+    Protein, fat and carbs over the week so far, each against each day's own
+    targets (moved here from the suggestion card, owner, 2026-11-27): the days
+    with food on them and targets, today included.
+  */
+  const macroDays = past.filter((d) => d.targets && d.eaten.energyKcal > 0)
+  const macro = (pick: (d: DayAgainstTargets) => [number, number]) =>
+    Math.round(macroDays.reduce((sum, d) => sum + pick(d)[0] - pick(d)[1], 0))
+  const macros = {
+    protein: macro((d) => [d.eaten.proteinG, d.targets!.proteinG]),
+    fat: macro((d) => [d.eaten.fatG, d.targets!.fatG]),
+    carbs: macro((d) => [d.eaten.carbsG, d.targets!.carbsG]),
+  }
+  const cell = (value: number, near: number, under: StringKey, overKey: StringKey) =>
+    Math.abs(value) < near ? t('suggest.weekOnTarget') : value < 0 ? t(under, { n: fmt(-value) }) : t(overKey, { n: fmt(value) })
 
   const letter = (day: string) =>
     new Date(`${day}T12:00:00Z`).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { weekday: 'narrow', timeZone: 'UTC' })
@@ -739,6 +754,24 @@ export function TargetsWeekCard({
           {t('targets.week.protein', { reached: summary.proteinReached, count: summary.counted })}
         </span>
       </p>
+      {macroDays.length > 0 && (
+        <dl className="mt-3 grid grid-cols-3 gap-2 text-center" data-testid="targets-week-macros">
+          {(
+            [
+              ['estimate.protein', cell(macros.protein, 5, 'suggest.weekProteinBehind', 'suggest.weekProteinAhead'), 'protein'],
+              ['estimate.fat', cell(macros.fat, 5, 'suggest.weekGUnder', 'suggest.weekGOver'), 'fat'],
+              ['estimate.carbs', cell(macros.carbs, 10, 'suggest.weekGUnder', 'suggest.weekGOver'), 'carbs'],
+            ] as const
+          ).map(([name, value, id]) => (
+            <div key={id} className="rounded-xl bg-card-soft px-2 py-2">
+              <dt className="text-[11px] text-ink-muted">{t(name)}</dt>
+              <dd className="tabular pt-0.5 text-[13px] font-semibold" data-testid={`targets-week-${id}`}>
+                {value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
       {streak && streak.days >= 2 && (
         <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-leaf-soft px-3 py-1 text-xs font-semibold text-ink">
           <StreakIcon />

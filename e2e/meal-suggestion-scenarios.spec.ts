@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { open, switchToHebrew } from './app'
-import { day, dayKeyBack, label, PERIOD, scenario, weekOf, type Scenario } from './suggestScenario'
+import { day, dayKeyBack, label, openSuggestions, PERIOD, scenario, weekOf, type Scenario } from './suggestScenario'
 
 /**
  * What to eat now, every way a day and a week can stand
@@ -31,8 +31,6 @@ const section = (page: Page) => page.getByTestId('suggest-meals')
 const line = (page: Page) => section(page).getByTestId('suggest-line')
 const stop = (page: Page) => section(page).getByTestId('suggest-stop')
 const suggestions = (page: Page) => page.getByTestId('suggestion')
-const weekRow = (page: Page, name: string) =>
-  section(page).getByTestId('suggest-week').locator('dt', { hasText: name }).locator('+ dd')
 /** Where the period stands against its plan: "+89 · within plan range (±325)". */
 const range = (page: Page) => section(page).getByTestId('suggest-range')
 const light = (page: Page) => section(page).getByRole('button', { name: 'Hungry? Suggest a light protein snack' })
@@ -49,7 +47,6 @@ test.describe('today has room: fill it', () => {
     await expect(line(page)).toHaveText('Left today: 1,750 kcal · 120 g protein')
     // The week: three days on target, and today so far.
     await expect(range(page)).toHaveText('−1,750 · below plan range (±258)')
-    await expect(weekRow(page, 'Protein')).toHaveText('120 g behind')
     await section(page).getByRole('button', { name: 'Suggest what to eat' }).click()
     await expect(suggestions(page)).not.toHaveCount(0, { timeout: 15_000 })
     // Up to what is left plus 10%.
@@ -73,13 +70,13 @@ test.describe('today has room: fill it', () => {
 test.describe('today reached its calories, or went over', () => {
   test('at the target with the protein reached: nothing to suggest', async ({ page }) => {
     await scenario(page, { today: day(2150, 145), days: weekOf(day(1800, 120)) })
-    await expect(page.getByTestId('targets-status')).toHaveText('On target')
+    await expect(page.getByTestId('nutrition-total-kcal')).toHaveText('2,150')
     await expect(section(page)).toHaveCount(0)
   })
 
   test('over with the protein reached: nothing either, whatever the week', async ({ page }) => {
     await scenario(page, { today: day(2476, 150), days: weekOf(day(1600, 100)) })
-    await expect(page.getByTestId('targets-status')).toHaveText('326 over')
+    await expect(page.getByTestId('nutrition-total-kcal')).toHaveText('2,476')
     await expect(section(page)).toHaveCount(0)
   })
 
@@ -88,7 +85,6 @@ test.describe('today reached its calories, or went over', () => {
     await scenario(page, { today: day(2120, 120), days: weekOf(day(1900, 130)) })
     await expect(line(page)).toHaveText('Left today: 30 kcal · 25 g protein')
     await expect(range(page)).toHaveText('−780 · below plan range (±258)')
-    await expect(weekRow(page, 'Protein')).toHaveText('70 g behind')
     await expect(section(page).getByTestId('suggest-hint')).toHaveText('A light protein snack still fits.')
     await section(page).getByRole('button', { name: 'Suggest a protein snack' }).click()
     await expect(section(page).getByRole('heading', { name: /up to 250 kcal/ })).toBeVisible({ timeout: 15_000 })
@@ -98,7 +94,7 @@ test.describe('today reached its calories, or went over', () => {
   test('at the limit, protein short, but the week above plan range: better to stop, the light snack optional', async ({ page }) => {
     await scenario(page, { today: day(2120, 120), days: weekOf(day(2400, 130)) })
     await expect(range(page)).toHaveText('+720 · above plan range (±258)')
-    await expect(stop(page)).toContainText('Better to stop for today.')
+    await expect(line(page)).toHaveText('Better to stop for today.')
     await expect(stop(page)).toContainText(`${PERIOD} is 720 kcal above plan.`)
     await expect(section(page).getByRole('button', { name: /^Suggest/ })).toHaveCount(0)
     await expect(light(page)).toBeVisible()
@@ -110,7 +106,7 @@ test.describe('today reached its calories, or went over', () => {
   test('over today, protein short, the week with plenty of room: a protein snack of at most 250', async ({ page }) => {
     // 326 over, 11 g short; the week 750 under before today, 424 with it.
     await scenario(page, { today: day(2476, 134), days: weekOf(day(1900, 130)) })
-    await expect(line(page)).toHaveText(`${label(0)} · 326 kcal above target · protein 11 g short`)
+    await expect(line(page)).toHaveText('326 kcal over · protein 11 g short')
     await expect(range(page)).toHaveText('−424 · below plan range (±258)')
     await section(page).getByRole('button', { name: 'Suggest a protein snack' }).click()
     await expect(section(page).getByRole('heading', { name: /up to 250 kcal/ })).toBeVisible({ timeout: 15_000 })
@@ -139,7 +135,7 @@ test.describe('today reached its calories, or went over', () => {
   test('over today and above plan range for the week: better to stop, and the light snack on request', async ({ page }) => {
     await scenario(page, { today: day(2476, 134), days: weekOf(day(2300, 130)) })
     await expect(range(page)).toHaveText('+776 · above plan range (±258)')
-    await expect(stop(page)).toContainText('Better to stop for today.')
+    await expect(line(page)).toHaveText('Better to stop for today.')
     await expect(stop(page)).toContainText(`${PERIOD} is 776 kcal above plan.`)
     await light(page).click()
     await expect(section(page).getByRole('heading', { name: /up to 120 kcal/ })).toBeVisible({ timeout: 15_000 })
@@ -149,7 +145,6 @@ test.describe('today reached its calories, or went over', () => {
   test('the week’s protein ahead is said, and the light snack is still offered', async ({ page }) => {
     // The week 75 g ahead on protein before today.
     await scenario(page, { today: day(2476, 134), days: weekOf(day(2000, 170)) })
-    await expect(weekRow(page, 'Protein')).toHaveText('64 g ahead')
     await expect(section(page).getByTestId('suggest-protein-ahead')).toHaveText(
       'Protein over the last 7 days is 75 g ahead, so today’s 11 g can also wait.',
     )
@@ -158,7 +153,6 @@ test.describe('today reached its calories, or went over', () => {
 
   test('the week over on fat: the snack is a lean one', async ({ page }) => {
     await scenario(page, { today: day(2476, 134), days: weekOf(day(1900, 130, 90)) })
-    await expect(weekRow(page, 'Fat')).toHaveText(/^\d+ g over$/)
     await expect(section(page).getByTestId('suggest-hint')).toHaveText(
       'The last 7 days are behind on protein and over on fat: a lean protein snack makes sense.',
     )
@@ -227,7 +221,7 @@ test.describe('the usual meals still to come', () => {
       ],
       days: usual,
     })
-    await expect(stop(page)).toContainText('Better to wait for dinner.')
+    await expect(line(page)).toHaveText('Better to wait for dinner.')
     await expect(stop(page)).toContainText('It usually comes to about 650 kcal, about what is left today.')
     await expect(light(page)).toBeVisible()
   })
@@ -262,8 +256,7 @@ test.describe('in Hebrew', () => {
   test('the week, the protein ahead and the light snack read right', async ({ page }) => {
     await scenario(page, { today: day(2476, 134), days: weekOf(day(2000, 170)) })
     await switchToHebrew(page)
-    await open(page, '/today')
-    await expect(weekRow(page, 'חלבון')).toHaveText('64 גרם מעל')
+    await openSuggestions(page)
     await expect(section(page).getByTestId('suggest-protein-ahead')).toHaveText(
       'החלבון ב־7 הימים האחרונים 75 גרם מעל היעד, אז גם ה־11 גרם של היום יכולים לחכות.',
     )
@@ -273,11 +266,11 @@ test.describe('in Hebrew', () => {
   test('above plan range: the stop, with dates', async ({ page }) => {
     await scenario(page, { today: day(2476, 134), days: weekOf(day(2300, 130)) })
     await switchToHebrew(page)
-    await open(page, '/today')
-    await expect(line(page)).toHaveText(`${label(0, 'he')} · 326 קלוריות מעל היעד · חסרים 11 גרם חלבון`)
+    await openSuggestions(page)
+    await expect(section(page).getByTestId('suggest-period')).toContainText(label(0, 'he'))
     // The signed number isolated left to right, so its sign stays in front.
     await expect(range(page)).toHaveText('\u2066+776\u2069 · מעל טווח התוכנית (±258)')
-    await expect(stop(page)).toContainText('עדיף לעצור להיום.')
+    await expect(line(page)).toHaveText('עדיף לעצור להיום.')
   })
 })
 
@@ -327,10 +320,10 @@ test.describe('Phase 1 acceptance: the owner’s Thursday, replayed', () => {
 
   test('the card, the validator, logging and Undo: +89 → +209 → +89', async ({ page }) => {
     await scenario(page, thursday())
-    await expect(page.getByTestId('targets-card').getByText('of 2,060 kcal')).toBeVisible()
+    await expect(page.getByText('/ 2,060', { exact: true })).toBeVisible()
 
     // The card: dates, days counted, within plan range.
-    await expect(line(page)).toHaveText(`${thu()} · 326 kcal above target · protein 11 g short`)
+    await expect(line(page)).toHaveText('326 kcal over · protein 11 g short')
     await expect(section(page).getByTestId('suggest-period')).toHaveText(`${sunToThu()} · 5 of 7 days counted`)
     await expect(range(page)).toHaveText('+89 · within plan range (±325)')
     await expect(section(page).getByTestId('suggest-status')).toHaveText(
@@ -416,7 +409,7 @@ test.describe('a day possibly incomplete', () => {
     await question.getByRole('button', { name: 'No, some is missing' }).click()
     await expect(question).toContainText('Marked as not fully logged: left out of the suggestions’ balance.')
 
-    await open(page, '/today')
+    await openSuggestions(page)
     await expect(section(page).getByTestId('suggest-marked')).toHaveText(`${label(2)}: marked as not fully logged, not counted. Undo`)
     await expect(section(page).getByTestId('suggest-period')).toHaveText(`${PERIOD} · 3 of 7 days counted`)
     await section(page).getByTestId('suggest-marked').getByRole('button', { name: 'Undo' }).click()
@@ -525,7 +518,7 @@ test.describe('Phase 2: the last seven days, not the calendar week', () => {
     })
     await expect(section(page).getByTestId('suggest-period')).toHaveText(`${label(9)} – ${label(3)} · 7 of 7 days counted`)
     await expect(range(page)).toHaveText('+1,176 · above plan range (±452)')
-    await expect(stop(page)).toContainText('Better to stop for today.')
+    await expect(line(page)).toHaveText('Better to stop for today.')
   })
 
   test('the week view keeps calendar weeks, for reporting', async ({ page }) => {
@@ -556,7 +549,7 @@ test.describe('Phase 3: today’s training, counted', () => {
     await expect(line(page)).toHaveText('Left today: 220 kcal · 25 g protein')
     await expect(section(page).getByRole('button', { name: 'Suggest what to eat' })).toBeVisible()
     // The day's target itself stays as it is.
-    await expect(page.getByTestId('targets-card').getByText('of 2,150 kcal')).toBeVisible()
+    await expect(page.getByText('/ 2,150', { exact: true })).toBeVisible()
   })
 
   test('a usual day earns nothing: the usual burn already holds it', async ({ page }) => {
@@ -665,5 +658,36 @@ test.describe('Phase 5: the real burn, learned from the weight', () => {
     await open(page, '/settings?tab=goals')
     await expect(card.getByTestId('burn-offer')).toHaveCount(0, { timeout: 15_000 })
     await expect(card.getByTestId('burn-dismissed')).toBeVisible()
+  })
+})
+
+test.describe('the week page carries the protein, fat and carbs', () => {
+  test('each against each day’s own targets, for the calendar week', async ({ page }) => {
+    // Sunday to Tuesday protein 130 (15 short each), fat 90 (20 over each); today 134 protein, 2,476 kcal.
+    await scenario(page, { today: day(2476, 134), days: weekOf(day(1900, 130, 90)), burns: { 0: 2500, 1: 2500, 2: 2500, 3: 2500 } })
+    await open(page, '/today?view=week')
+    await expect(page.getByTestId('targets-week-protein')).toHaveText('56 g behind', { timeout: 15_000 })
+    await expect(page.getByTestId('targets-week-fat')).toHaveText(/^\d+ g over$/)
+  })
+})
+
+test.describe('minimal: one button, one line, the details behind ⓘ', () => {
+  test('closed, only the button and the line; ⓘ opens the details, with a dot for a day waiting for an answer', async ({ page }) => {
+    await scenario(page, { today: day(2476, 134), days: { 1: day(2150, 130), 2: day(900, 60), 3: day(2150, 130) }, details: false })
+    await expect(line(page)).toHaveText('Better to stop for today.')
+    await expect(light(page)).toBeVisible()
+    await expect(section(page).getByTestId('suggest-info')).toHaveCount(0)
+    await expect(section(page).getByTestId('suggest-info-dot')).toBeVisible()
+    await section(page).getByRole('button', { name: 'More about this suggestion' }).click()
+    await expect(section(page).getByTestId('suggest-flag')).toBeVisible()
+    await expect(section(page).getByTestId('suggest-range')).toBeVisible()
+  })
+
+  test('the suggestions are on Nutrition, not on Today', async ({ page }) => {
+    await scenario(page, { today: day(2476, 134), days: weekOf(day(1900, 130)) })
+    await expect(section(page)).toBeVisible()
+    await open(page, '/today')
+    await expect(page.getByTestId('targets-card')).toBeVisible({ timeout: 15_000 })
+    await expect(section(page)).toHaveCount(0)
   })
 })

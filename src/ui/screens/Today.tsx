@@ -63,7 +63,6 @@ import { SampleDayLabel } from '../components/SampleDayLabel'
 import { SetDayCard } from '../components/QuickSet'
 import { Welcome } from '../components/Welcome'
 import { TargetsCard, TargetsSetupCard, TargetsWeekCard } from '../components/DailyTargets'
-import { SuggestMeals } from '../components/SuggestMeals'
 import { useTargetsHistory } from '../useTargetsHistory'
 import { useDailyTargets } from '../useDailyTargets'
 import type { StringKey } from '../i18n/strings'
@@ -538,23 +537,7 @@ export function Today() {
             isToday={isToday}
             dayName={dayLabel(day, today, t)}
             streak={isToday ? streak : undefined}
-            extra={
-              <>
-                {nutritionNotes}
-                {/* What to eat now (meal-suggestions.md): today only, while the day has room. */}
-                {isToday && (
-                  <SuggestMeals
-                    targets={targetsReading.result.targets}
-                    eaten={eatenToday}
-                    weightKg={targetsReading.input.weightKg}
-                    training={{
-                      workouts: workouts.map((w) => ({ kind: w.type, minutes: Math.round(convert(w.duration, 'min')) })),
-                      activeKcal: effective.ACTIVE_ENERGY ? Math.round(convert(effective.ACTIVE_ENERGY.value, 'kcal')) : undefined,
-                    }}
-                  />
-                )}
-              </>
-            }
+            extra={nutritionNotes}
           />
         </div>
       ) : (

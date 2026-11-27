@@ -222,6 +222,12 @@ this is a label only; it does not change any decision.
 
 ### 4.8 The card, revised (Phase 1)
 
+*Superseded on 2026-11-27 by the owner's minimal redesign: the card is on
+the Nutrition tab, one button and one line, with everything below behind ⓘ;
+the week's protein, fat and carbs are on the week page. See
+[`meal-suggestions.md`](meal-suggestions.md). The sketch below is the
+content of ⓘ.*
+
 ```
 Today's targets                                    How?
 2,386 of 2,060 kcal                           326 over

@@ -70,3 +70,13 @@ As built (all four chosen), on the sample day:
 | ![](38-built-training-sitting-fat-bedtime.png) **38. Training counted, protein per sitting, fat low, bedtime** | ![](39-built-he-training-sitting-fat-bedtime.png) **39. Hebrew** |
 | ![](40-built-burn-offer.png) **40. Your burn, from your weight: the offer** | ![](41-built-burn-applied.png) **41. Applied, and how to stop** |
 | ![](42-built-he-burn-applied.png) **42. Hebrew, applied** | |
+
+**Moved to Nutrition, minimal** (2026-11-27, the owner's redesign): one
+button and one line in the day's total card; the details behind ⓘ (a dot
+when a day waits for an answer); the week's protein, fat and carbs on the
+week page.
+
+| | |
+| --- | --- |
+| ![](43-built-nutrition-minimal.png) **43. Nutrition: the button, one line, ⓘ** | ![](44-built-nutrition-details.png) **44. ⓘ opened** |
+| ![](45-built-week-page-macros.png) **45. The week page: protein, fat and carbs** | ![](46-built-he-nutrition-minimal.png) **46. Hebrew** |

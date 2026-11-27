@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { dayKey, open, switchToHebrew } from './app'
+import { openSuggestions } from './suggestScenario'
 
 /**
  * What to eat now (docs/features/meal-suggestions.md).
@@ -18,7 +19,7 @@ const section = (page: Page) => page.getByTestId('suggest-meals')
 const suggestions = (page: Page) => page.getByTestId('suggestion')
 
 async function eatenKcal(page: Page): Promise<number> {
-  return Number((await card(page).locator('.font-display').first().innerText()).replace(/[^\d]/g, ''))
+  return Number((await page.getByTestId('nutrition-total-kcal').innerText()).replace(/[^\d]/g, ''))
 }
 
 /** Takes the sample day's first meal back, which leaves room to fill. */
@@ -52,7 +53,7 @@ async function skipIfAsked(page: Page) {
 
 async function askOnToday(page: Page) {
   await makeRoom(page)
-  await open(page, '/today')
+  await openSuggestions(page)
   await expect(section(page)).toBeVisible({ timeout: 15_000 })
   await section(page).getByRole('button', { name: 'Suggest what to eat' }).click()
   await skipIfAsked(page)
@@ -61,7 +62,7 @@ async function askOnToday(page: Page) {
 
 test('today, with room left, the card offers to suggest what to eat', async ({ page }) => {
   await makeRoom(page)
-  await open(page, '/today')
+  await openSuggestions(page)
   await expect(section(page)).toBeVisible({ timeout: 15_000 })
   await expect(section(page).getByText('Left today:')).toBeVisible()
   await expect(section(page).getByTestId('suggest-line')).toHaveText(/g protein$/)
@@ -70,22 +71,14 @@ test('today, with room left, the card offers to suggest what to eat', async ({ p
   const week = section(page).getByTestId('suggest-week')
   await expect(week.getByTestId('suggest-period')).toHaveText(/^\w{3} \d+ \w{3} – \w{3} \d+ \w{3} · \d of 7 days counted$/)
   await expect(week.getByTestId('suggest-range')).toHaveText(/^[+−]?[\d,]+ · (below|within|above) plan range \(±[\d,]+\)$/)
-  for (const [name, value] of [
-    ['Protein', /^([\d,]+ g (behind|ahead)|on target)$/],
-    ['Fat', /^([\d,]+ g (under|over)|on target)$/],
-    ['Carbs', /^([\d,]+ g (under|over)|on target)$/],
-  ] as const) {
-    await expect(week.locator('dt', { hasText: name }).locator('+ dd')).toHaveText(value)
-  }
 })
 
 test('calories used but protein short, with room in the week: a lean protein snack, within the room', async ({ page }) => {
-  await open(page, '/today')
+  await openSuggestions(page)
   await expect(section(page).getByTestId('suggest-line')).toHaveText('Left today: 20 kcal · 17 g protein', { timeout: 15_000 })
   const week = section(page).getByTestId('suggest-week')
   // Just below its plan range: a protein snack, up to the 190 below plan.
   await expect(week.getByTestId('suggest-range')).toHaveText('−190 · below plan range (±188)')
-  await expect(week.locator('dt', { hasText: 'Protein' }).locator('+ dd')).toHaveText('127 g behind')
   await expect(section(page).getByTestId('suggest-hint')).toHaveText('A light protein snack still fits.')
   // The sample day has a 62-minute strength session.
   await expect(section(page).getByTestId('suggest-training')).toHaveText(
@@ -108,10 +101,10 @@ test('calories used but protein short, with room in the week: a lean protein sna
 
 test('above plan range: better to stop, said without asking the model, with the light snack optional', async ({ page }) => {
   await overfill(page)
-  await open(page, '/today')
+  await openSuggestions(page)
   await expect(section(page).getByTestId('suggest-stop')).toBeVisible({ timeout: 15_000 })
-  await expect(section(page).getByTestId('suggest-line')).toHaveText(/^\w{3} \d+ \w{3} · [\d,]+ kcal above target · protein 17 g short$/)
-  await expect(section(page).getByTestId('suggest-stop')).toContainText('Better to stop for today.')
+  await expect(section(page).getByTestId('suggest-line')).toHaveText('Better to stop for today.')
+  await expect(section(page).getByTestId('suggest-line')).toHaveText('Better to stop for today.')
   await expect(section(page).getByTestId('suggest-stop')).toContainText(/ is [\d,]+ kcal above plan\./)
   await expect(section(page).getByRole('button', { name: 'Suggest a protein snack' })).toHaveCount(0)
 
@@ -173,7 +166,7 @@ test('a past day has no suggestions', async ({ page }) => {
 test('it reads in Hebrew, and passes an accessibility scan', async ({ page }) => {
   await makeRoom(page)
   await switchToHebrew(page)
-  await open(page, '/today')
+  await openSuggestions(page)
   await expect(section(page).getByText('נשאר להיום:')).toBeVisible({ timeout: 15_000 })
   await section(page).getByRole('button', { name: 'מה לאכול עכשיו?' }).click()
   // The breakfast taken back is asked about first, in Hebrew too.
@@ -195,10 +188,9 @@ test('it reads in Hebrew, and passes an accessibility scan', async ({ page }) =>
 
 test('in Hebrew, the protein snack reads right', async ({ page }) => {
   await switchToHebrew(page)
-  await open(page, '/today')
+  await openSuggestions(page)
   const week = section(page).getByTestId('suggest-week')
   await expect(week.getByTestId('suggest-period')).toHaveText(/נספרו 3 מתוך 7 ימים$/, { timeout: 15_000 })
-  await expect(week.locator('dt', { hasText: 'חלבון' }).locator('+ dd')).toHaveText('חסרים 127 גרם')
   await expect(section(page).getByTestId('suggest-hint')).toHaveText('נשנוש חלבון קל עדיין נכנס.')
   await expect(section(page).getByTestId('suggest-training')).toHaveText(
     'אימון כוח של 62 דקות היום: חלבון קודם, וגם קצת פחמימות זה בסדר.',
@@ -209,8 +201,8 @@ test('in Hebrew, the protein snack reads right', async ({ page }) => {
 test('in Hebrew, the stop reads right', async ({ page }) => {
   await overfill(page)
   await switchToHebrew(page)
-  await open(page, '/today')
-  await expect(section(page).getByTestId('suggest-stop')).toContainText('עדיף לעצור להיום.', { timeout: 15_000 })
+  await openSuggestions(page)
+  await expect(section(page).getByTestId('suggest-line')).toHaveText('עדיף לעצור להיום.', { timeout: 15_000 })
   await expect(section(page).getByRole('button', { name: 'רעבים? הצעה לנשנוש חלבון קל' })).toBeVisible()
 })
 
@@ -231,7 +223,7 @@ test('food preferences are set in Settings, kept, and go with every request', as
 
   // Sent: the test model says which rules it was given.
   await makeRoom(page)
-  await open(page, '/today')
+  await openSuggestions(page)
   await section(page).getByRole('button', { name: 'Suggest what to eat' }).click()
   await skipIfAsked(page)
   await expect(section(page).getByText('Following: NO_MEAT_WITH_DAIRY.')).toBeVisible({ timeout: 15_000 })

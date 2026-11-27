@@ -5,9 +5,14 @@ import {
   fitOf,
   leftOf,
   LIGHT_SNACK_MAX_KCAL,
+  carbFocus,
+  fatLow,
+  minutesToBedtime,
   planRange,
+  proteinPerSitting,
   suggestPlan,
   todayQuestion,
+  type TrainingCredit,
   type AIInferenceId,
   type CalendarDate,
   type DailyTargets,
@@ -30,6 +35,7 @@ import {
   type TodayContext,
 } from '@/data/suggestions'
 import { buildSuggestionInference } from '@/data/estimatedMeal'
+import { readTrainingCredit, readUsualBedtime } from '@/data/precision'
 import { EstimateError } from '@/ai/estimator'
 import { PlanExhaustedError, TrialExhaustedError } from '@/ai/proxyEstimator'
 import { useActions } from '../useHealthData'
@@ -67,14 +73,17 @@ type State =
 const NEWCOMER_DAYS = 3
 
 export function SuggestMeals({
-  targets,
+  targets: dayTargets,
   eaten,
   training,
+  weightKg,
 }: {
   targets: DailyTargets
   eaten: Macros
   /** Today's training, which shapes what is suggested: protein first after a workout. */
   training?: SuggestionRequest['trainingToday']
+  /** The person's weight: protein per sitting and the fat floor (§5.3). */
+  weightKg?: number
 }) {
   const { t, lang } = useLang()
   const navigate = useNavigate()
@@ -85,8 +94,13 @@ export function SuggestMeals({
   const [note, setNote] = useState('')
   const [offered, setOffered] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
-  /** The period so far, and today against the person's habits; undefined while read. */
-  const [context, setContext] = useState<{ week?: WeekSoFar; today: TodayContext }>()
+  /** The period so far, today against the person's habits, today's training credit and the usual bedtime; undefined while read. */
+  const [context, setContext] = useState<{
+    week?: WeekSoFar
+    today: TodayContext
+    credit?: TrainingCredit
+    bedtime?: string
+  }>()
   /** What the last request asked for, so Ask again asks the same. */
   const [asked, setAsked] = useState<Want>()
   const locale = lang === 'he' ? 'he-IL' : 'en-US'
@@ -108,20 +122,41 @@ export function SuggestMeals({
 
   useEffect(() => {
     let cancelled = false
-    void Promise.all([readWeekSoFar(currentUserId(), targets, eaten), readTodayContext(currentUserId())])
-      .then(([week, today]) => !cancelled && setContext({ week, today }))
+    void Promise.all([
+      readWeekSoFar(currentUserId(), dayTargets, eaten),
+      readTodayContext(currentUserId()),
+      readTrainingCredit(currentUserId(), dayTargets).catch(() => undefined),
+      readUsualBedtime(currentUserId()).catch(() => undefined),
+    ])
+      .then(([week, today, credit, bedtime]) => !cancelled && setContext({ week, today, credit, bedtime }))
       // Unreadable, the card still offers to fill a day with room: no period, nothing to come.
       .catch(() => !cancelled && setContext({ today: { toCome: [], missing: [], answers: { skipped: [] }, loggedDays: 0 } }))
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [revision, targets.energyKcal, eaten.energyKcal])
+  }, [revision, dayTargets.energyKcal, eaten.energyKcal])
 
-  const week = context?.week
+  /*
+    Today's training beyond the usual earns room (§5.2): today's target, and
+    so today's budget in the period, go up by the credit. The targets card
+    above keeps the day's target as it is; only what the suggestions offer
+    changes.
+  */
+  const credit = context?.credit
+  const targets = credit ? { ...dayTargets, energyKcal: dayTargets.energyKcal + credit.creditKcal } : dayTargets
+  const week =
+    context?.week && credit
+      ? {
+          ...context.week,
+          balanceKcal: context.week.balanceKcal - credit.creditKcal,
+          budgetKcal: context.week.budgetKcal + credit.creditKcal,
+        }
+      : context?.week
   const toCome = context?.today.toCome ?? []
   const progress = dayProgress(targets, eaten)
-  const plan = suggestPlan(progress, week, toCome)
+  const toBed = minutesToBedtime(hhmm(new Date()), context?.bedtime)
+  const plan = suggestPlan(progress, week, toCome, { nearBedtime: toBed !== undefined })
   // Once asked or logged, the card stays, even though the day may now be full.
   // While the period and today's habits are read, it waits rather than
   // offering a size it would then change, or a verdict too soon.
@@ -176,6 +211,8 @@ export function SuggestMeals({
         week,
         toCome,
         training,
+        weightKg,
+        minutesToBedtime: toBed,
       })
       const answer = await getEstimator().suggestMeals(request, { language: lang })
       const inference = buildSuggestionInference(currentUserId(), request, answer)
@@ -220,6 +257,15 @@ export function SuggestMeals({
   const slotsWords = (slots: readonly string[]) =>
     slots.map((slot) => t(`common.slotLabel.${slot}` as StringKey)).join(t('suggest.and'))
   const strength = training?.workouts.some((w) => w.kind === 'STRENGTH')
+  const refuel = carbFocus(training?.workouts ?? []) === 'REFUEL'
+  const sitting = weightKg ? proteinPerSitting(weightKg) : undefined
+  const lowFat = fatLow(week, weightKg)
+  const duration = (minutes: number) =>
+    minutes >= 60
+      ? minutes % 60 === 0
+        ? t('suggest.hoursOnly', { h: fmt(minutes / 60) })
+        : t('suggest.hoursMinutes', { h: fmt(Math.floor(minutes / 60)), m: fmt(minutes % 60) })
+      : t('suggest.minutesOnly', { m: fmt(minutes) })
   const trainedMinutes = training?.workouts.reduce((sum, w) => sum + w.minutes, 0) ?? 0
   const newcomer = (context?.today.loggedDays ?? 0) < NEWCOMER_DAYS
   const lightWant: Want = { kind: 'PROTEIN', maxKcal: LIGHT_SNACK_MAX_KCAL, light: true }
@@ -316,9 +362,31 @@ export function SuggestMeals({
               )}
             </div>
           )}
+          {credit && (plan.kind === 'FILL' || plan.kind === 'USED') && (
+            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-credit">
+              {t('suggest.trainingCredit', { extra: fmt(credit.extraKcal), credit: fmt(credit.creditKcal) })}
+            </p>
+          )}
           {trainedMinutes > 0 && (plan.kind === 'FILL' || plan.kind === 'USED') && (
             <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-training">
-              {t(strength ? 'suggest.trainedStrength' : 'suggest.trained', { minutes: fmt(trainedMinutes) })}
+              {t(refuel ? 'suggest.trainedEndurance' : strength ? 'suggest.trainedStrength' : 'suggest.trained', {
+                minutes: fmt(trainedMinutes),
+              })}
+            </p>
+          )}
+          {sitting && left.proteinG > sitting.maxG && (plan.kind === 'FILL' || plan.kind === 'USED') && (
+            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-sitting">
+              {t('suggest.perSitting', { gap: fmt(left.proteinG), max: fmt(sitting.maxG) })}
+            </p>
+          )}
+          {lowFat && week && (plan.kind === 'FILL' || plan.kind === 'USED') && (
+            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-fat-low">
+              {t('suggest.fatLow', { avg: fmt(week.fatEatenG / week.days) })}
+            </p>
+          )}
+          {plan.kind === 'FILL' && plan.bedtime && toBed !== undefined && context?.bedtime && (
+            <p className="pt-1.5 text-[13px] text-ink-soft" data-testid="suggest-bedtime">
+              {t('suggest.bedtime', { time: duration(toBed), bedtime: context.bedtime, max: fmt(plan.maxKcal) })}
             </p>
           )}
 

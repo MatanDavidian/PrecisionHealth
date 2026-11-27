@@ -62,3 +62,11 @@ As built (all four chosen), on the sample day:
 | ![](33-built-thursday-within-plan.png) **33. The owner's Thursday: +89, within plan range, and why** | ![](34-built-thursday-light-snack.png) **34. The optional light snack, at most 120** |
 | ![](35-built-possibly-incomplete-day.png) **35. A day possibly incomplete, not counted until answered** | ![](36-built-missing-lunch-question.png) **36. Asked first: no lunch logged** |
 | ![](37-built-he-possibly-incomplete-day.png) **37. Hebrew** | |
+
+**Phases 3 to 5, as built** (2026-11-27):
+
+| | |
+| --- | --- |
+| ![](38-built-training-sitting-fat-bedtime.png) **38. Training counted, protein per sitting, fat low, bedtime** | ![](39-built-he-training-sitting-fat-bedtime.png) **39. Hebrew** |
+| ![](40-built-burn-offer.png) **40. Your burn, from your weight: the offer** | ![](41-built-burn-applied.png) **41. Applied, and how to stop** |
+| ![](42-built-he-burn-applied.png) **42. Hebrew, applied** | |

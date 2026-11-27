@@ -69,12 +69,15 @@ export async function readWeekSoFar(
     repos.dayChecks.listByRange(userId, { from: start, to: today }).catch(() => []),
   ])
   const answers = dayAnswers(checks)
+  // An approved correction from the weight trend applies to a day's recorded
+  // burn as it does to the usual one (§5.4): it corrects the watch.
+  const factor = (await repos.profiles.get(userId).catch(() => undefined))?.burnCalibration?.factor ?? 1
   return weekSoFar(
     before.map((day) => ({
       day: day.day,
       eaten: day.eaten,
       targets: day.targets,
-      burnedKcal: day.burnedKcal,
+      burnedKcal: day.burnedKcal === undefined ? undefined : day.burnedKcal * factor,
       // Food on the day, but no meal anyone logged: a day set in one tap.
       setInOneTap: !day.logged && day.eaten.energyKcal > 0,
       completeness: answers.get(day.day)?.completeness,
@@ -155,6 +158,8 @@ export async function readSuggestionRequest(
     week?: WeekSoFar
     toCome?: readonly MealToCome[]
     training?: SuggestionRequest['trainingToday']
+    weightKg?: number
+    minutesToBedtime?: number
   } = {},
 ): Promise<SuggestionRequest> {
   const now = options.now ?? new Date()
@@ -176,6 +181,8 @@ export async function readSuggestionRequest(
     toCome: options.toCome,
     training: options.training,
     preferences: cleanFoodPreferences(profile?.foodPreferences),
+    weightKg: options.weightKg,
+    minutesToBedtime: options.minutesToBedtime,
   })
 }
 

@@ -542,3 +542,128 @@ test.describe('Phase 2: the last seven days, not the calendar week', () => {
     await expect(page.getByLabel(/3,000 of 2,150 kcal$/)).toHaveCount(0)
   })
 })
+
+test.describe('Phase 3: today’s training, counted', () => {
+  /** Ten earlier days of 400 active calories from the watch. */
+  const usualActive = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, 400]))
+
+  test('380 kcal more active than usual: half of it, 190, is room today', async ({ page }) => {
+    // 30 kcal left before the credit; 220 with it, so the day can be filled.
+    await scenario(page, { today: day(2120, 120), days: weekOf(day(1900, 130)), active: { ...usualActive, 0: 780 } })
+    await expect(section(page).getByTestId('suggest-credit')).toHaveText(
+      '380 kcal more active than usual today: 190 of it counted towards today.',
+    )
+    await expect(line(page)).toHaveText('Left today: 220 kcal · 25 g protein')
+    await expect(section(page).getByRole('button', { name: 'Suggest what to eat' })).toBeVisible()
+    // The day's target itself stays as it is.
+    await expect(page.getByTestId('targets-card').getByText('of 2,150 kcal')).toBeVisible()
+  })
+
+  test('a usual day earns nothing: the usual burn already holds it', async ({ page }) => {
+    await scenario(page, { today: day(2120, 120), days: weekOf(day(1900, 130)), active: { ...usualActive, 0: 400 } })
+    await expect(line(page)).toHaveText('Left today: 30 kcal · 25 g protein')
+    await expect(section(page).getByTestId('suggest-credit')).toHaveCount(0)
+  })
+})
+
+test.describe('Phase 4: better food choices', () => {
+  test('a protein gap bigger than one sitting is said, with this person’s number', async ({ page }) => {
+    // 72.8 kg: about 36 g a sitting at most; 105 g short.
+    await scenario(page, { today: [{ kcal: 1000, protein: 40 }], days: weekOf(day()) })
+    await expect(section(page).getByTestId('suggest-sitting')).toHaveText(
+      'A 105 g protein gap is more than one sitting uses well (about 36 g for you): this closes what one can, and the rest is for your next meal.',
+    )
+  })
+
+  test('fat low over the last seven days: some is welcome', async ({ page }) => {
+    // 20 g a day for three days and 33 today: 23 a day, under 0.5 g per kg (36).
+    await scenario(page, { today: [{ kcal: 1000, protein: 40 }], days: weekOf(day(2150, 145, 20)) })
+    await expect(section(page).getByTestId('suggest-fat-low')).toHaveText(
+      'Fat has been low over the last 7 days (23 g a day): some is welcome.',
+    )
+  })
+
+  test('two hours before the usual bedtime: something light, at most 400 kcal', async ({ page }) => {
+    const nights = Object.fromEntries(Array.from({ length: 7 }, (_, i) => [i, '23:30']))
+    await scenario(page, { at: '21:30', today: [{ kcal: 1200, protein: 60 }], days: weekOf(day()), sleepStarts: nights })
+    await expect(section(page).getByTestId('suggest-bedtime')).toHaveText(
+      'About 2 h before your usual bedtime (23:30): something light, at most 400 kcal.',
+    )
+    await section(page).getByRole('button', { name: 'Suggest what to eat' }).click()
+    await expect(suggestions(page)).not.toHaveCount(0, { timeout: 15_000 })
+    for (const kcal of await suggestedKcal(page)) expect(kcal).toBeLessThanOrEqual(400)
+  })
+
+  test('after an hour of endurance training, carbs are part of the answer', async ({ page }) => {
+    await scenario(page, { today: [{ kcal: 1200, protein: 60 }], days: weekOf(day()), workouts: [{ kind: 'RUNNING', minutes: 75 }] })
+    await expect(section(page).getByTestId('suggest-training')).toHaveText(
+      '75 min of endurance training today: carbs are part of the answer, to refuel.',
+    )
+  })
+})
+
+test.describe('Phase 5: the real burn, learned from the weight', () => {
+  test('with too little data, Settings says how far along it is', async ({ page }) => {
+    await open(page, '/settings?tab=goals')
+    await expect(page.getByTestId('burn-not-enough')).toHaveText(
+      /^Learning your real burn from your weight needs 28 days of logging and weigh-ins: so far \d+ of 24 days logged fully, and \d of 6 weigh-ins\.$/,
+      { timeout: 15_000 },
+    )
+  })
+
+  test('offered, approved, used in the targets, and stopped', async ({ page }) => {
+    // 28 days of 2,000 eaten at a steady 72.8 kg: a burn of 2,000, against the 2,500 estimated.
+    const weighIns = Object.fromEntries(
+      Array.from({ length: 28 }, (_, i) => i + 1)
+        .filter((back) => back % 4 === 1 || back === 28)
+        .map((back) => [back, 72.8]),
+    )
+    await scenario(page, {
+      today: day(1500, 100),
+      days: Object.fromEntries(Array.from({ length: 28 }, (_, i) => [i + 1, day(2000, 140)])),
+      weighIns,
+    })
+    await open(page, '/settings?tab=goals')
+    const card = page.getByTestId('burn-from-weight')
+    await expect(card.getByTestId('burn-offer')).toContainText(
+      'Over the last 28 days, your weight trend says you burn about 2,000 kcal a day, not the 2,500 your targets use (20% less).',
+      { timeout: 15_000 },
+    )
+    // Nothing changes until the person says so.
+    await open(page, '/today')
+    await expect(page.getByTestId('targets-card').getByText('of 2,150 kcal')).toBeVisible({ timeout: 15_000 })
+
+    await open(page, '/settings?tab=goals')
+    await card.getByRole('button', { name: 'Use 2,000 a day' }).click()
+    await expect(card.getByTestId('burn-applied')).toContainText('Your targets use your weight trend: your burn × 0.80')
+    // 2,498 × 0.80 = 1,999, less 350: 1,650.
+    await open(page, '/today')
+    await expect(page.getByTestId('targets-card').getByText('of 1,650 kcal')).toBeVisible({ timeout: 15_000 })
+
+    await open(page, '/settings?tab=goals')
+    await card.getByRole('button', { name: 'Stop using it' }).click()
+    await expect(card.getByTestId('burn-applied')).toHaveCount(0)
+    await open(page, '/today')
+    await expect(page.getByTestId('targets-card').getByText('of 2,150 kcal')).toBeVisible({ timeout: 15_000 })
+  })
+
+  test('“Not now” is remembered', async ({ page }) => {
+    const weighIns = Object.fromEntries(
+      Array.from({ length: 28 }, (_, i) => i + 1)
+        .filter((back) => back % 4 === 1 || back === 28)
+        .map((back) => [back, 72.8]),
+    )
+    await scenario(page, {
+      today: day(1500, 100),
+      days: Object.fromEntries(Array.from({ length: 28 }, (_, i) => [i + 1, day(2000, 140)])),
+      weighIns,
+    })
+    await open(page, '/settings?tab=goals')
+    const card = page.getByTestId('burn-from-weight')
+    await card.getByRole('button', { name: 'Not now' }).click()
+    await expect(card.getByTestId('burn-dismissed')).toBeVisible()
+    await open(page, '/settings?tab=goals')
+    await expect(card.getByTestId('burn-offer')).toHaveCount(0, { timeout: 15_000 })
+    await expect(card.getByTestId('burn-dismissed')).toBeVisible()
+  })
+})

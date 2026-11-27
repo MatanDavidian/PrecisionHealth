@@ -105,6 +105,7 @@ function inputFor(day: CalendarDate, basis: Basis, burns: Map<CalendarDate, numb
     burnHistory: history,
     proteinGoalG: ownProtein ? convert(ownProtein.target, 'g') : undefined,
     energyGoalKcal: ownEnergy ? convert(ownEnergy.target, 'kcal') : undefined,
+    burnFactor: profile?.burnCalibration?.factor,
   }
 }
 

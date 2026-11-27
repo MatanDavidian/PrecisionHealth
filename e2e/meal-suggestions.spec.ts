@@ -64,7 +64,7 @@ test('today, with room left, the card offers to suggest what to eat', async ({ p
   await open(page, '/today')
   await expect(section(page)).toBeVisible({ timeout: 15_000 })
   await expect(section(page).getByText('Left today:')).toBeVisible()
-  await expect(section(page).getByText(/g protein/)).toBeVisible()
+  await expect(section(page).getByTestId('suggest-line')).toHaveText(/g protein$/)
   await expect(section(page).getByText(/Uses one written analysis. Built from what you usually eat./)).toBeVisible()
   // The period so far: its dates and days, against its plan, and every macro against each day's targets.
   const week = section(page).getByTestId('suggest-week')

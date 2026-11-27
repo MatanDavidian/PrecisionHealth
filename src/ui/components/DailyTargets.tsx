@@ -419,10 +419,18 @@ function TargetsWorkingBody({
     if (targets.balanceKcal > 0) return t('targets.work.surplus', { goal, n: fmt(targets.balanceKcal), target })
     return t('targets.work.level', { goal, target })
   }
+  const calibratedLine =
+    burn?.factor && burn.uncorrectedKcal !== undefined
+      ? t('targets.work.calibrated', {
+          factor: burn.factor.toFixed(2),
+          from: fmt(Math.round(burn.uncorrectedKcal / 10) * 10),
+          to: fmt(Math.round(burn.kcal / 10) * 10),
+        })
+      : undefined
   const lines = [
     ...(targets.energy.from === 'GOAL'
       ? [t('targets.work.ownEnergy', { kcal: target })]
-      : [burnLine!, balanceLine()]),
+      : [burnLine!, ...(calibratedLine ? [calibratedLine] : []), balanceLine()]),
     ...(targets.floored ? [t('targets.floored', { kcal: target })] : []),
     ...(targets.belowFloor ? [t('targets.belowFloor', { kcal: fmt(minIntakeKcal(undefined)) })] : []),
     targets.protein.from === 'GOAL'

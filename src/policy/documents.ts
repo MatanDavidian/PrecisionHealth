@@ -76,7 +76,7 @@ const OPERATOR = 'Matan Davidian, an individual based in Israel'
 export const PRIVACY_POLICY: PolicyDocument = {
   id: 'PRIVACY',
   title: 'Privacy Policy',
-  version: '2026-11-27.2',
+  version: '2026-11-27.3',
   sections: [
     {
       heading: 'Who we are',
@@ -92,7 +92,7 @@ export const PRIVACY_POLICY: PolicyDocument = {
       ],
       bullets: [
         'Meals: what you ate, when, and their calories and macronutrients, whether you typed them, described them, or photographed them.',
-        'Body details: weight, body fat, height, year of birth, sex and how active your day usually is, used to work out your daily targets, and anything else you record.',
+        'Body details: weight, body fat, height, year of birth, sex and how active your day usually is, used to work out your daily targets, and anything else you record. If you approve it, a correction to your burn learned from how your weight moved against what you logged, which you can stop using at any time.',
         'Activity and recovery: calories burned, steps, distance, resting heart rate, VO₂ max, respiration and stress, when you connect a Garmin watch.',
         'Goals: the programme you chose and any target you set.',
         'Your email address, if you create an account.',

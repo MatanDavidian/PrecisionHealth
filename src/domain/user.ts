@@ -87,6 +87,14 @@ export interface UserProfile {
   /** What suggestions must follow: ways of eating, and anything to avoid. */
   foodPreferences?: FoodPreferences
   /**
+   * A correction to the usual burn, learned from the weight trend and
+   * approved by the person (meal-suggestions-precision.md §5.4). Never set
+   * without their approval; clearing it goes back to the burn as measured.
+   */
+  burnCalibration?: BurnCalibration
+  /** When the person last said "Not now" to a correction: not offered again for 14 days. */
+  burnCalibrationDismissedAt?: string
+  /**
    * The zone stamped onto new records. Historical records keep the zone they
    * were created with, so changing this never rewrites the past.
    */
@@ -94,4 +102,13 @@ export interface UserProfile {
   /** Display preferences. Storage stays canonical regardless. */
   preferredMassUnit: MassUnit
   preferredLengthUnit: LengthUnit
+}
+
+export interface BurnCalibration {
+  /** What the usual burn is multiplied by. */
+  factor: number
+  /** The burn the weight trend showed, and the burn in use then, a day. */
+  trendKcal: number
+  usedKcal: number
+  approvedAt: string
 }

@@ -32,6 +32,14 @@ export interface Scenario {
   burns?: Record<number, number>
   /** Clear today's workout, which the sample has (62 minutes of strength). */
   restDay?: boolean
+  /** Active calories by day back (0 = today), from the watch; replaces the sample's. */
+  active?: Record<number, number>
+  /** Today's workouts, replacing the sample's. */
+  workouts?: { kind: string; minutes: number }[]
+  /** When each night began, by its wake day back (0 = last night); replaces the sample's sleep. */
+  sleepStarts?: Record<number, string>
+  /** Weigh-ins by day back, in kg; replaces the sample's weights. */
+  weighIns?: Record<number, number>
 }
 
 const NAMES: Record<Slot, string> = {
@@ -63,7 +71,7 @@ export async function scenario(page: Page, s: Scenario) {
     ...Object.entries(s.days ?? {}).map(([back, foods]) => ({ back: Number(back), foods })),
   ]
   await page.evaluate(
-    async ({ days, burns, restDay, names }) => {
+    async ({ days, burns, restDay, names, active, workouts, sleepStarts, weighIns }) => {
       const db: IDBDatabase = await new Promise((resolve, reject) => {
         const request = indexedDB.open('timeline-health')
         request.onsuccess = () => resolve(request.result)
@@ -83,13 +91,78 @@ export async function scenario(page: Page, s: Scenario) {
           const request = db.transaction(name).objectStore(name).getAll()
           request.onsuccess = () => resolve(request.result)
         })
-      const [observations, workouts] = await Promise.all([all('observations'), all('workouts')])
+      const [observations, storedWorkouts] = await Promise.all([all('observations'), all('workouts')])
       const today = dayKey(new Date())
 
-      const tx = db.transaction(['meals', 'observations', 'workouts'], 'readwrite')
+      const tx = db.transaction(['meals', 'observations', 'workouts', 'sleep'], 'readwrite')
       tx.objectStore('meals').clear()
-      for (const o of observations) if (o.code === 'TOTAL_ENERGY') tx.objectStore('observations').delete(o.id)
-      if (restDay) for (const w of workouts) if (w.day === today) tx.objectStore('workouts').delete(w.id)
+      for (const o of observations) {
+        if (o.code === 'TOTAL_ENERGY') tx.objectStore('observations').delete(o.id)
+        if (active && o.code === 'ACTIVE_ENERGY') tx.objectStore('observations').delete(o.id)
+        if (weighIns && o.code === 'WEIGHT') tx.objectStore('observations').delete(o.id)
+      }
+      if (restDay || workouts) for (const w of storedWorkouts) if (w.day === today) tx.objectStore('workouts').delete(w.id)
+      if (sleepStarts) tx.objectStore('sleep').clear()
+      const observation = (id: string, code: string, key: string, value: unknown, time: unknown, source: string) =>
+        tx.objectStore('observations').put({
+          id,
+          userId: 'user-demo',
+          day: key,
+          code,
+          data: { id, userId: 'user-demo', code, time, value, provenance: { source, kind: 'RAW', recordedAt: `${key}T21:50:00.000Z` } },
+        })
+      for (const [back, kcal] of Object.entries(active ?? {})) {
+        const key = dayKey(dayBack(Number(back)))
+        observation(`scenario-active-${back}`, 'ACTIVE_ENERGY', key, q(kcal, 'kcal'), { kind: 'daily', date: key, zone }, 'GARMIN')
+      }
+      for (const [back, kg] of Object.entries(weighIns ?? {})) {
+        const date = dayBack(Number(back))
+        date.setHours(7, 0, 0, 0)
+        const key = dayKey(date)
+        observation(`scenario-weight-${back}`, 'WEIGHT', key, q(kg * 1000, 'g'), { kind: 'instant', at: date.toISOString(), zone }, 'SMART_SCALE')
+      }
+      for (const [i, workout] of (workouts ?? []).entries()) {
+        const start = new Date()
+        start.setHours(7, 0, 0, 0)
+        const end = new Date(start.getTime() + workout.minutes * 60_000)
+        const id = `scenario-workout-${i}`
+        tx.objectStore('workouts').put({
+          id,
+          userId: 'user-demo',
+          day: today,
+          data: {
+            id,
+            userId: 'user-demo',
+            type: workout.kind,
+            time: { kind: 'interval', start: start.toISOString(), end: end.toISOString(), zone },
+            duration: q(workout.minutes * 60, 's'),
+            exercises: [],
+            provenance: { source: 'GARMIN', kind: 'RAW', recordedAt: end.toISOString() },
+          },
+        })
+      }
+      for (const [back, startTime] of Object.entries(sleepStarts ?? {})) {
+        const wake = dayBack(Number(back))
+        const [sh, sm] = startTime.split(':').map(Number)
+        const start = new Date(wake)
+        // A night that starts before midnight began the evening before its wake day.
+        if (sh >= 12) start.setDate(start.getDate() - 1)
+        start.setHours(sh, sm, 0, 0)
+        const end = new Date(start.getTime() + 7 * 3600_000)
+        const id = `scenario-sleep-${back}`
+        tx.objectStore('sleep').put({
+          id,
+          userId: 'user-demo',
+          day: dayKey(wake),
+          data: {
+            id,
+            userId: 'user-demo',
+            time: { kind: 'interval', start: start.toISOString(), end: end.toISOString(), zone },
+            duration: q(7 * 3600, 's'),
+            provenance: { source: 'GARMIN', kind: 'RAW', recordedAt: end.toISOString() },
+          },
+        })
+      }
 
       let n = 0
       for (const { back, foods } of days) {
@@ -162,7 +235,16 @@ export async function scenario(page: Page, s: Scenario) {
       await new Promise((resolve) => (tx.oncomplete = resolve))
       db.close()
     },
-    { days, burns: s.burns ?? {}, restDay: s.restDay ?? false, names: NAMES },
+    {
+      days,
+      burns: s.burns ?? {},
+      restDay: s.restDay ?? false,
+      names: NAMES,
+      active: s.active,
+      workouts: s.workouts,
+      sleepStarts: s.sleepStarts,
+      weighIns: s.weighIns,
+    },
   )
   await open(page, '/today')
   await expect(page.getByTestId('targets-card')).toBeVisible({ timeout: 15_000 })

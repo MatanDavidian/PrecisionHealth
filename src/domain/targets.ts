@@ -96,9 +96,18 @@ export function measuredBurn(daily: readonly number[]): { kcal: number; days: nu
 }
 
 /** Where the day's burn came from: the watch, or the formula. */
-export type BurnBasis =
+export type BurnBasis = (
   | { kind: 'MEASURED'; kcal: number; days: number }
   | { kind: 'ESTIMATED'; kcal: number; restingKcal: number; activity: ActivityLevel }
+) & {
+  /**
+   * The correction the person approved from their weight trend
+   * (meal-suggestions-precision.md §5.4), already applied to `kcal`; absent
+   * without one. `uncorrectedKcal` is the burn before it.
+   */
+  factor?: number
+  uncorrectedKcal?: number
+}
 
 export interface TargetsInput {
   /** The goal leading the calories (several-goals.md). */
@@ -119,6 +128,11 @@ export interface TargetsInput {
   proteinGoalG?: number
   /** A calorie target the person typed in. It wins over the rule, and needs no burn. */
   energyGoalKcal?: number
+  /**
+   * The person's approved correction from their weight trend (§5.4 of the
+   * precision design): the usual burn is multiplied by it. Absent, or 1, is none.
+   */
+  burnFactor?: number
 }
 
 /** What stands between the person and their targets, in the order to fix it. */
@@ -151,12 +165,15 @@ export type TargetsResult = { ok: true; targets: DailyTargets } | { ok: false; m
 
 /** The burn to build on: measured if there is enough of it, else the formula, else nothing. */
 export function burnBasis(input: TargetsInput): BurnBasis | undefined {
+  const factor = input.burnFactor && Math.abs(input.burnFactor - 1) > 0.001 ? input.burnFactor : undefined
+  const corrected = <B extends BurnBasis>(basis: B): B =>
+    factor ? { ...basis, kcal: basis.kcal * factor, factor, uncorrectedKcal: basis.kcal } : basis
   const measured = measuredBurn(input.burnHistory)
-  if (measured) return { kind: 'MEASURED', ...measured }
+  if (measured) return corrected({ kind: 'MEASURED', ...measured })
   const { weightKg, heightCm, ageYears, activity } = input
   if (weightKg === undefined || heightCm === undefined || ageYears === undefined || !activity) return undefined
   const resting = restingKcal({ weightKg, heightCm, ageYears, sex: input.sex })
-  return { kind: 'ESTIMATED', kcal: resting * ACTIVITY_FACTOR[activity], restingKcal: resting, activity }
+  return corrected({ kind: 'ESTIMATED', kcal: resting * ACTIVITY_FACTOR[activity], restingKcal: resting, activity })
 }
 
 /**

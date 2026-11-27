@@ -3,6 +3,7 @@ import { Reminders } from '../components/Reminders'
 import { remindersDeployed } from '@/data/reminders'
 import { AboutYou, TargetsWorking } from '../components/DailyTargets'
 import { FoodPreferences } from '../components/FoodPreferences'
+import { BurnFromWeight } from '../components/BurnFromWeight'
 import { useDailyTargets } from '../useDailyTargets'
 import { askToKeep, storagePersistence, type Persistence } from '@/data/persistence'
 import { useSearchParams } from 'react-router-dom'
@@ -321,6 +322,13 @@ export function Settings() {
                   <FoodPreferences
                     value={targetsReading.profile?.foodPreferences}
                     onSave={(foodPreferences) => saveProfile({ foodPreferences })}
+                  />
+                  <BurnFromWeight
+                    applied={targetsReading.profile?.burnCalibration}
+                    dismissedAt={targetsReading.profile?.burnCalibrationDismissedAt}
+                    onApprove={(burnCalibration) => saveProfile({ burnCalibration })}
+                    onDismiss={() => saveProfile({ burnCalibrationDismissedAt: new Date().toISOString() })}
+                    onStop={() => saveProfile({ burnCalibration: undefined })}
                   />
                   <TargetsWorking
                     reading={targetsReading}

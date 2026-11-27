@@ -5,8 +5,12 @@ document says what Vimetry knows about the person's day and week, how sure it
 is of each number, and exactly how those numbers decide whether to offer
 anything, how much, and with what explanation.
 
-Status: **Phase 1 built 2026-11-27** (§4); **Phase 2 built 2026-11-27**
-(§5.1: the card's period is the last seven days). Phase 1, with the owner's decisions of
+Status: **all five phases built, 2026-11-27.** Phase 1 (§4); Phase 2
+(§5.1: the card's period is the last seven days); Phase 3 (§5.2: today's
+training counted); Phase 4 (§5.3: protein per sitting, the fat floor, carbs
+by training, bedtime); Phase 5 (§5.4: the real burn from the weight trend,
+offered and approved in Settings → Goals). Screens as built: 33–42 in
+[`mockups/meal-suggestions/`](mockups/meal-suggestions/). Phase 1, with the owner's decisions of
 2026-11-26: the range ±max(150 kcal, 3%); under 3 counted days, today alone;
 an unanswered possibly-incomplete day left out until answered (option B);
 the week view showing every day regardless; and a question about today
@@ -314,7 +318,7 @@ calendar week alone.
 card offers and says, never the next days' targets: no "eat less tomorrow
 to make up".
 
-### 5.2 Phase 3: today's training counted
+### 5.2 Phase 3: today's training counted (built 2026-11-27)
 
 ```
 extra   = today's active calories so far − the usual day's active calories
@@ -333,10 +337,15 @@ room    = today's target − eaten + credit
 - **Manual targets preserved:** a calorie target the person typed in gets no
   credit; it is their number.
 - **Never downwards during the day:** a quiet morning is not a quiet day.
-- **Shown:** *"62 min of strength training, 380 kcal more than usual: 190
-  counted."*
+- **Shown:** *"380 kcal more active than usual today: 190 of it counted
+  towards today."* The day's target on the targets card stays as it is; the
+  credit raises only what the suggestions offer, and today's budget in the
+  period.
+- **As built:** `trainingCredit` (pure) over `ACTIVE_ENERGY` by day, the
+  effective reading per day with its source (`readTrainingCredit`); a
+  baseline needs 5 earlier days from the same source.
 
-### 5.3 Phase 4: better food choices
+### 5.3 Phase 4: better food choices (built 2026-11-27)
 
 - **Protein per sitting:** about 0.3–0.5 g per kg (25–40 g for most). A
   70 g gap late in the evening is not closed in one snack; the card says
@@ -348,12 +357,25 @@ room    = today's target − eaten + credit
   modest.
 - **Before sleep:** within 3 hours of the usual bedtime (from the watch's
   sleep), at most 400 kcal, light and slow protein.
+- **As built:** each is a line on the card when it applies (*"A 105 g protein
+  gap is more than one sitting uses well (about 36 g for you)…"*, *"Fat has
+  been low over the last 7 days (23 g a day)…"*, *"75 min of endurance
+  training today: carbs are part of the answer…"*, *"About 2 h before your
+  usual bedtime (23:30): something light, at most 400 kcal."*), and a field
+  in the request the model follows (`proteinPerSittingG`, `fatLow`,
+  `carbFocus`, `minutesToBedtime`). The usual bedtime is the median start
+  of the last 14 nights (5 or more), after midnight counted as late
+  evening.
 
-### 5.4 Phase 5: learning the real burn from the weight (deferred)
+### 5.4 Phase 5: learning the real burn from the weight (built 2026-11-27)
 
 ```
-real burn ≈ average eaten − (smoothed weight change in kg × 7,700) ÷ days
+real burn ≈ average eaten − (weight slope in kg a day × 7,700)
 ```
+
+The slope is a straight line fitted through the weigh-ins (least squares):
+one weigh-in cannot sway it, and unlike a smoothed series it does not lag
+behind real change (a lag would read as a burn that is not there).
 
 Days the person answered "I logged everything" (§4.6) weigh most; days
 marked incomplete are never used. Offered only when **all** of these hold,
@@ -363,9 +385,21 @@ all provisional:
   marked incomplete, and regular weigh-ins);
 - a **persistent discrepancy of at least 10%** from the burn in use, over
   that whole span, not one week;
+- at least 3 weigh-ins in each half of the 28 days, and the gap in the same
+  direction over each half, so one odd week cannot do it; a gap over 30% is
+  not offered (*"usually meals missing from the log"*);
 - **explicit approval** from the person: *"Your weight trend says you burn
   about 2,250 a day, not 2,410. Use 2,250 for your targets?"* Never switched
   silently, and undoable.
+
+As built: Settings → Goals → *Your burn, from your weight*, with every
+state: how far along the data is (*"so far 12 of 24 days logged fully, and
+3 of 6 weigh-ins"*), agrees, unclear, the offer (*Use 2,000 a day* · *Not
+now*, which waits two weeks), and applied (*"your burn × 0.80, since 27
+November"* · *Stop using it*). Applied, it multiplies the usual burn in the
+targets (and a past day's recorded burn in the period), and the working
+says *"Corrected by your weight trend, × 0.80: from 2,500 to 2,000 kcal a
+day."* Kept in the profile; the Privacy Policy lists it (2026-11-27.3).
 
 ## 6. Who decides what
 

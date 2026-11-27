@@ -96,6 +96,14 @@ export interface SuggestionRequest {
   trainingToday?: { workouts: { kind: string; minutes: number }[]; activeKcal?: number }
   /** Rules the suggestions must follow: ways of eating, and foods to avoid. */
   preferences?: FoodPreferences
+  /** Protein one sitting uses well, for this person: the aim and the most (§5.3). */
+  proteinPerSittingG?: { aim: number; max: number }
+  /** What carbs should do, by today's training (§5.3). */
+  carbFocus?: CarbFocus
+  /** The recent days averaged under the fat floor: some fat is welcome (§5.3). */
+  fatLow?: boolean
+  /** Minutes to the usual bedtime, when within three hours: light, slow protein (§5.3). */
+  minutesToBedtime?: number
 }
 
 export type SuggestionSource = 'USUAL' | 'FOODS' | 'NEW'
@@ -184,6 +192,8 @@ export interface WeekSoFar {
   carbsG: number
   /** Of the counted days before today, how many used a recorded burn. */
   measuredDays: number
+  /** Fat eaten over the counted days, in grams: for the fat floor (§5.3). */
+  fatEatenG: number
   /** Days left out, and why; those UNANSWERED are the ones the card asks about. */
   excluded: { day: CalendarDate; reason: ExcludedReason; eatenKcal: number; targetKcal?: number }[]
   /** Fewer than 3 counted days: the period is not used, and today alone decides. */
@@ -238,7 +248,7 @@ function budgetOf(day: WeekDayInput): { kcal: number; measured: boolean } | unde
  * shows them all; only this balance leaves them out.
  */
 export function weekSoFar(before: readonly WeekDayInput[], today: WeekDayInput): WeekSoFar {
-  const sum = { kcal: 0, budget: 0, protein: 0, fat: 0, carbs: 0 }
+  const sum = { kcal: 0, budget: 0, protein: 0, fat: 0, carbs: 0, fatEaten: 0 }
   const earlier = { days: 0, eaten: 0, expenditure: 0, planned: 0, budget: 0, from: '', to: '' }
   const excluded: WeekSoFar['excluded'] = []
   let days = 0
@@ -249,6 +259,7 @@ export function weekSoFar(before: readonly WeekDayInput[], today: WeekDayInput):
     sum.budget += budgetKcal
     sum.protein += day.eaten.proteinG - targets.proteinG
     sum.fat += day.eaten.fatG - targets.fatG
+    sum.fatEaten += day.eaten.fatG
     sum.carbs += day.eaten.carbsG - targets.carbsG
     days += 1
   }
@@ -296,6 +307,7 @@ export function weekSoFar(before: readonly WeekDayInput[], today: WeekDayInput):
     fatG: Math.round(sum.fat),
     carbsG: Math.round(sum.carbs),
     measuredDays,
+    fatEatenG: Math.round(sum.fatEaten),
     excluded,
     sparse: days < MIN_COUNTED_DAYS,
     ...(earlier.days > 0
@@ -450,8 +462,11 @@ export function todayQuestion(input: {
 
 /** What the card offers, by today, the meals still to come and the period. */
 export type SuggestPlan =
-  /** Today has room, after the meals still to come: suggestions that fill it. */
-  | { kind: 'FILL'; maxKcal: number }
+  /**
+   * Today has room, after the meals still to come: suggestions that fill it.
+   * Close to bedtime, at most 400 kcal, and light (§5.3).
+   */
+  | { kind: 'FILL'; maxKcal: number; bedtime?: boolean }
   /** Today's room is the meals still to come: better to wait for them. */
   | { kind: 'WAIT'; meals: MealSlot[]; kcal: number }
   /**
@@ -489,11 +504,17 @@ export function suggestPlan(
   progress: DayProgress,
   week?: WeekSoFar,
   toCome: readonly MealToCome[] = [],
+  options: { nearBedtime?: boolean } = {},
 ): SuggestPlan | undefined {
   const left = progress.energy.remaining
   const kept = toCome.reduce((sum, meal) => sum + meal.usualKcal, 0)
   const room = left - kept
-  if (room >= SUGGEST_MIN_KCAL) return { kind: 'FILL', maxKcal: Math.round(room * 1.1) }
+  if (room >= SUGGEST_MIN_KCAL) {
+    const maxKcal = Math.round(room * 1.1)
+    return options.nearBedtime && maxKcal > BEDTIME_MAX_KCAL
+      ? { kind: 'FILL', maxKcal: BEDTIME_MAX_KCAL, bedtime: true }
+      : { kind: 'FILL', maxKcal, ...(options.nearBedtime ? { bedtime: true } : {}) }
+  }
   if (left >= SUGGEST_MIN_KCAL && toCome.length > 0) {
     return { kind: 'WAIT', meals: toCome.map((meal) => meal.slot), kcal: kept }
   }
@@ -515,6 +536,129 @@ export function suggestPlan(
     primary: below,
     proteinAhead: useWeek && week!.proteinG >= 0,
   }
+}
+
+// --- Phase 3: today's training, counted (meal-suggestions-precision.md §5.2) ---
+
+/** Half of the activity beyond a usual day counts towards today: watches overestimate it. */
+export const ACTIVITY_CREDIT_SHARE = 0.5
+/** A baseline needs this many earlier days from the same source. */
+export const MIN_ACTIVE_BASELINE_DAYS = 5
+
+/** A day's active calories, with where they came from: the same source is compared with itself. */
+export interface ActiveReading {
+  day: CalendarDate
+  kcal: number
+  source: string
+}
+
+export interface TrainingCredit {
+  /** Active calories so far today, and the usual day's, from the same source. */
+  activeKcal: number
+  baselineKcal: number
+  /** Today beyond the usual, and the share of it counted. */
+  extraKcal: number
+  creditKcal: number
+  baselineDays: number
+}
+
+/**
+ * The extra room today's training earns (§5.2).
+ *
+ * - Only beyond the usual: the usual burn already includes a usual day's
+ *   training, so counting a usual workout again would count it twice.
+ * - Equivalent measurements: today's active calories against the usual
+ *   active calories from the SAME source (the same watch), never against a
+ *   formula's total.
+ * - Half of the extra, to start: wrist watches overestimate exercise.
+ * - None on a calorie target the person typed in: that is their number.
+ * - Never downwards during the day; and the day is settled with its real
+ *   burn once it is over, so the credit is never added to a past day.
+ */
+export function trainingCredit(input: {
+  today?: ActiveReading
+  history: readonly ActiveReading[]
+  ownTarget: boolean
+}): TrainingCredit | undefined {
+  const today = input.today
+  if (!today || input.ownTarget) return undefined
+  const same = input.history.filter((r) => r.source === today.source && r.day < today.day)
+  if (same.length < MIN_ACTIVE_BASELINE_DAYS) return undefined
+  const baselineKcal = Math.round(same.reduce((sum, r) => sum + r.kcal, 0) / same.length)
+  const extraKcal = Math.round(today.kcal - baselineKcal)
+  if (extraKcal <= 0) return undefined
+  return {
+    activeKcal: Math.round(today.kcal),
+    baselineKcal,
+    extraKcal,
+    creditKcal: Math.round(extraKcal * ACTIVITY_CREDIT_SHARE),
+    baselineDays: same.length,
+  }
+}
+
+// --- Phase 4: better food choices (§5.3) ---
+
+/** Protein one sitting uses well: about 0.3–0.5 g per kg. The aim, and the most. */
+export const PROTEIN_SITTING_AIM_G_PER_KG = 0.4
+export const PROTEIN_SITTING_MAX_G_PER_KG = 0.5
+
+export const proteinPerSitting = (weightKg: number): { aimG: number; maxG: number } => ({
+  aimG: Math.round(weightKg * PROTEIN_SITTING_AIM_G_PER_KG),
+  maxG: Math.round(weightKg * PROTEIN_SITTING_MAX_G_PER_KG),
+})
+
+/** A week averaging less fat than this, a day, gets suggestions with some fat. */
+export const FAT_FLOOR_G_PER_KG = 0.5
+
+/** The counted days averaged under the fat floor. */
+export function fatLow(week: Pick<WeekSoFar, 'fatEatenG' | 'days' | 'sparse'> | undefined, weightKg?: number): boolean {
+  if (!week || week.sparse || week.days === 0 || !weightKg) return false
+  return week.fatEatenG / week.days < FAT_FLOOR_G_PER_KG * weightKg
+}
+
+/** Training that runs on carbs: an hour of it makes carbs part of the answer. */
+const ENDURANCE = new Set(['RUNNING', 'CYCLING', 'SWIMMING', 'SOCCER', 'TENNIS'])
+export const ENDURANCE_REFUEL_MIN = 60
+
+export type CarbFocus = 'REFUEL' | 'MODERATE' | 'MODEST'
+
+/**
+ * What carbs should do, by today's training: refuel after an hour or more of
+ * endurance; moderate after strength or other training; modest on a rest day.
+ */
+export function carbFocus(workouts: readonly { kind: string; minutes: number }[]): CarbFocus {
+  const endurance = workouts.filter((w) => ENDURANCE.has(w.kind)).reduce((sum, w) => sum + w.minutes, 0)
+  if (endurance >= ENDURANCE_REFUEL_MIN) return 'REFUEL'
+  return workouts.some((w) => w.minutes > 0) ? 'MODERATE' : 'MODEST'
+}
+
+/** Within this long before the usual bedtime, a suggestion is light. */
+export const BEDTIME_WINDOW_MIN = 180
+export const BEDTIME_MAX_KCAL = 400
+/** A usual bedtime needs this many nights. */
+export const MIN_NIGHTS = 5
+
+/**
+ * The usual bedtime, "HH:MM", from when nights started: the median, with
+ * times after midnight counted as late evening rather than early morning.
+ */
+export function usualBedtime(starts: readonly string[]): string | undefined {
+  if (starts.length < MIN_NIGHTS) return undefined
+  const minutes = starts.map((time) => {
+    const m = minutesOf(time)
+    return m < 12 * 60 ? m + 24 * 60 : m
+  })
+  const usual = Math.round(median(minutes)) % (24 * 60)
+  return hhmmOf(usual)
+}
+
+/** Minutes until the usual bedtime, when it is within the window; otherwise undefined. */
+export function minutesToBedtime(nowTime: string, bedtime: string | undefined): number | undefined {
+  if (!bedtime) return undefined
+  let until = minutesOf(bedtime) - minutesOf(nowTime)
+  if (until < -12 * 60) until += 24 * 60
+  if (until > 12 * 60) until -= 24 * 60
+  return until > 0 && until <= BEDTIME_WINDOW_MIN ? until : undefined
 }
 
 /** What is left of the day, as the card says it and the model is sent it. */
@@ -556,6 +700,9 @@ export interface SuggestionInput {
   toCome?: readonly MealToCome[]
   training?: SuggestionRequest['trainingToday']
   preferences?: FoodPreferences
+  /** The person's weight, for protein per sitting and the fat floor. */
+  weightKg?: number
+  minutesToBedtime?: number
 }
 
 /**
@@ -652,6 +799,15 @@ export function buildSuggestionRequest(input: SuggestionInput): SuggestionReques
       ? { trainingToday: input.training }
       : {}),
     ...(input.preferences ? { preferences: input.preferences } : {}),
+    ...(input.weightKg
+      ? (() => {
+          const sitting = proteinPerSitting(input.weightKg)
+          return { proteinPerSittingG: { aim: sitting.aimG, max: sitting.maxG } }
+        })()
+      : {}),
+    carbFocus: carbFocus(input.training?.workouts ?? []),
+    ...(fatLow(input.week, input.weightKg) ? { fatLow: true } : {}),
+    ...(input.minutesToBedtime !== undefined ? { minutesToBedtime: input.minutesToBedtime } : {}),
   }
 }
 

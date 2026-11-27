@@ -546,6 +546,7 @@ export function Today() {
                   <SuggestMeals
                     targets={targetsReading.result.targets}
                     eaten={eatenToday}
+                    weightKg={targetsReading.input.weightKg}
                     training={{
                       workouts: workouts.map((w) => ({ kind: w.type, minutes: Math.round(convert(w.duration, 'min')) })),
                       activeKcal: effective.ACTIVE_ENERGY ? Math.round(convert(effective.ACTIVE_ENERGY.value, 'kcal')) : undefined,
